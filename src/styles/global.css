@@ -1,0 +1,341 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   ROUX - GLOBAL STYLES
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Colors */
+  --cream: #faf5ed;
+  --warm: #fff9f2;
+  --card: #fffcf7;
+  --ink: #1c1108;
+  --ink-mid: #4e3420;
+  --ink-soft: #8a6040;
+  --ink-faint: #c4a07a;
+  --sienna: #b5481e;
+  --sienna-d: #8c3210;
+  --sienna-pale: #faede6;
+  --forest: #2e6644;
+  --forest-l: #4a8860;
+  --forest-pale: #e2f0e7;
+  --sage: #5a7a5a;
+  --sage-l: #7a9e7a;
+  --sage-pale: #eaf2ea;
+  --sage-d: #3d5c3d;
+  --amber: #c08820;
+  --amber-pale: #fdf3d8;
+  --plum: #6b3a8a;
+  --plum-pale: #f2eaf8;
+  --border: #e4d0b8;
+  --border-s: #ede0cc;
+
+  /* Shadows */
+  --shadow-s: 0 1px 5px rgba(28, 17, 8, 0.07);
+  --shadow-m: 0 4px 18px rgba(28, 17, 8, 0.11);
+  --shadow-l: 0 12px 40px rgba(28, 17, 8, 0.18);
+
+  /* Layout */
+  --nav-h: 70px;
+  --safe: env(safe-area-inset-bottom, 0px);
+  --radius: 14px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  max-width: 430px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  max-width: 430px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+}
+
+/* Typography */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.62rem 1.1rem;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.btn-full {
+  width: 100%;
+}
+
+.btn-primary {
+  background: var(--sienna);
+  color: #fff;
+}
+
+.btn-primary:active {
+  background: var(--sienna-d);
+  transform: scale(0.98);
+}
+
+.btn-sage {
+  background: var(--sage);
+  color: #fff;
+}
+
+.btn-sage:active {
+  background: var(--sage-d);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--ink-mid);
+  border: 1.5px solid var(--border);
+}
+
+.btn-outline:active {
+  background: var(--border-s);
+}
+
+.btn-ghost {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+}
+
+.btn-sm {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.78rem;
+  border-radius: 8px;
+}
+
+/* Input fields */
+input[type='text'],
+input[type='email'],
+input[type='password'],
+textarea {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  padding: 0.65rem 0.85rem;
+  background: var(--card);
+  color: var(--ink);
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+input:focus,
+textarea:focus {
+  border-color: var(--sage);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Loading spinner */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--sage);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Toast notifications */
+.toast {
+  position: fixed;
+  bottom: calc(var(--nav-h) + var(--safe) + 0.75rem);
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background: var(--ink);
+  color: var(--cream);
+  padding: 0.6rem 1.2rem;
+  border-radius: 99px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  z-index: 500;
+  opacity: 0;
+  transition: all 0.25s;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Utility classes */
+.px {
+  padding: 0 1.1rem;
+}
+
+.py {
+  padding: 0.75rem 0;
+}
+
+.mb-1 {
+  margin-bottom: 1rem;
+}
+
+.mb-2 {
+  margin-bottom: 2rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-soft {
+  color: var(--ink-soft);
+}
+
+.text-faint {
+  color: var(--ink-faint);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   APP LAYOUT
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(var(--nav-h) + var(--safe) + 1rem);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   BOTTOM NAVIGATION
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  height: calc(var(--nav-h) + var(--safe));
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  padding-top: 8px;
+  z-index: 100;
+  box-shadow: 0 -3px 20px rgba(28, 17, 8, 0.09);
+}
+
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  padding: 4px 0;
+  border: none;
+  background: none;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+}
+
+.nav-icon {
+  width: 40px;
+  height: 30px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  transition: all 0.2s;
+}
+
+.nav-label {
+  font-size: 0.57rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  transition: color 0.15s;
+}
+
+.nav-item.active .nav-icon {
+  background: var(--sage-pale);
+}
+
+.nav-item.active .nav-label {
+  color: var(--sage);
+}
+
+.nav-item:active {
+  transform: scale(0.95);
+}
