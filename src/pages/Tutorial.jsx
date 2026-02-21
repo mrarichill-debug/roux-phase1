@@ -60,7 +60,9 @@ First, tell me about your household — is this just for you, or are you plannin
       
       addSageMessage(response)
     } catch (error) {
-      addSageMessage("I'm having trouble connecting right now. Please try again.")
+      console.error('Tutorial error:', error)
+      // Show the actual error message to the user
+      addSageMessage(`I'm having trouble connecting: ${error.message}\n\nPlease try again, or if this continues, let me know what error you're seeing.`)
     } finally {
       setLoading(false)
     }
@@ -141,13 +143,58 @@ First, tell me about your household — is this just for you, or are you plannin
       <div className="tutorial-input">
         {step === 1 && (
           <div className="quick-responses">
-            <button className="quick-btn" onClick={() => { setUserInput("Just me"); handleSend(); }}>
+            <button className="quick-btn" onClick={async () => { 
+              addUserMessage("Just me")
+              setLoading(true)
+              try {
+                const response = await callSage(
+                  [...conversation, { role: 'user', content: "Just me" }],
+                  getTutorialSystemPrompt(userName)
+                )
+                addSageMessage(response)
+              } catch (error) {
+                console.error('Quick response error:', error)
+                addSageMessage(`I'm having trouble connecting: ${error.message}\n\nPlease try again, or if this continues, let me know what error you're seeing.`)
+              } finally {
+                setLoading(false)
+              }
+            }}>
               Just me
             </button>
-            <button className="quick-btn" onClick={() => { setUserInput("Family of 2"); handleSend(); }}>
+            <button className="quick-btn" onClick={async () => { 
+              addUserMessage("Family of 2")
+              setLoading(true)
+              try {
+                const response = await callSage(
+                  [...conversation, { role: 'user', content: "Family of 2" }],
+                  getTutorialSystemPrompt(userName)
+                )
+                addSageMessage(response)
+              } catch (error) {
+                console.error('Quick response error:', error)
+                addSageMessage(`I'm having trouble connecting: ${error.message}\n\nPlease try again, or if this continues, let me know what error you're seeing.`)
+              } finally {
+                setLoading(false)
+              }
+            }}>
               Family of 2
             </button>
-            <button className="quick-btn" onClick={() => { setUserInput("Family of 7 - 2 adults and 5 kids"); handleSend(); }}>
+            <button className="quick-btn" onClick={async () => { 
+              addUserMessage("Family of 7 - 2 adults and 5 kids")
+              setLoading(true)
+              try {
+                const response = await callSage(
+                  [...conversation, { role: 'user', content: "Family of 7 - 2 adults and 5 kids" }],
+                  getTutorialSystemPrompt(userName)
+                )
+                addSageMessage(response)
+              } catch (error) {
+                console.error('Quick response error:', error)
+                addSageMessage(`I'm having trouble connecting: ${error.message}\n\nPlease try again, or if this continues, let me know what error you're seeing.`)
+              } finally {
+                setLoading(false)
+              }
+            }}>
               Family of 7
             </button>
           </div>
