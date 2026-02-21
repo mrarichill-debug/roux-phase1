@@ -1,12 +1,26 @@
 const ANTHROPIC_API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY
 
-if (!ANTHROPIC_API_KEY) {
-  throw new Error('Missing Anthropic API key. Check your .env file.')
-}
-
 // Call Claude API with context
 export const callSage = async (messages, systemPrompt = null) => {
+  // Check for API key
+  if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY === 'undefined' || ANTHROPIC_API_KEY === '') {
+    console.error('Anthropic API key is missing or invalid:', ANTHROPIC_API_KEY)
+    throw new Error('Configuration error: Anthropic API key not found. Please contact support.')
+  }
+
+  console.log('Calling Sage with', messages.length, 'messages')
+  console.log('API Key starts with:', ANTHROPIC_API_KEY.substring(0, 10) + '...')
+
   try {
+    const requestBody = {
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: systemPrompt || getDefaultSystemPrompt(),
+      messages: messages
+    }
+
+    console.log('Sending request to Claude API...')
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -14,22 +28,42 @@ export const callSage = async (messages, systemPrompt = null) => {
         'x-api-key': ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01'
       },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: systemPrompt || getDefaultSystemPrompt(),
-        messages: messages
-      })
+      body: JSON.stringify(requestBody)
     })
 
+    console.log('Response status:', response.status)
+
     if (!response.ok) {
-      throw new Error(`Claude API error: ${response.statusText}`)
+      const errorText = await response.text()
+      console.error('API error response:', errorText)
+      
+      if (response.status === 401) {
+        throw new Error('Invalid API key. Please check your Anthropic API key.')
+      } else if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again in a moment.')
+      } else if (response.status === 400) {
+        throw new Error('Bad request. There may be an issue with the message format.')
+      } else {
+        throw new Error(`API error (${response.status}): ${errorText}`)
+      }
     }
 
     const data = await response.json()
+    console.log('Got response from Sage')
+    
+    if (!data.content || !data.content[0] || !data.content[0].text) {
+      console.error('Unexpected response format:', data)
+      throw new Error('Unexpected response from Sage')
+    }
+
     return data.content[0].text
   } catch (error) {
     console.error('Error calling Sage:', error)
+    
+    if (error.message.includes('fetch')) {
+      throw new Error('Network error. Please check your internet connection.')
+    }
+    
     throw error
   }
 }
