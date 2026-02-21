@@ -1,32 +1,21 @@
-const ANTHROPIC_API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY
+// Sage AI Integration - calls backend proxy to avoid CORS issues
 
-// Call Claude API with context
+// Call Sage via backend proxy (avoids CORS issues)
 export const callSage = async (messages, systemPrompt = null) => {
-  // Check for API key
-  if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY === 'undefined' || ANTHROPIC_API_KEY === '') {
-    console.error('Anthropic API key is missing or invalid:', ANTHROPIC_API_KEY)
-    throw new Error('Configuration error: Anthropic API key not found. Please contact support.')
-  }
-
   console.log('Calling Sage with', messages.length, 'messages')
-  console.log('API Key starts with:', ANTHROPIC_API_KEY.substring(0, 10) + '...')
 
   try {
     const requestBody = {
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
-      system: systemPrompt || getDefaultSystemPrompt(),
-      messages: messages
+      messages: messages,
+      systemPrompt: systemPrompt || null
     }
 
-    console.log('Sending request to Claude API...')
+    console.log('Sending request to backend proxy...')
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('/api/sage', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(requestBody)
     })
@@ -34,8 +23,8 @@ export const callSage = async (messages, systemPrompt = null) => {
     console.log('Response status:', response.status)
 
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error('API error response:', errorText)
+      const errorData = await response.json()
+      console.error('Backend error:', errorData)
       
       if (response.status === 401) {
         throw new Error('Invalid API key. Please check your Anthropic API key.')
@@ -44,7 +33,7 @@ export const callSage = async (messages, systemPrompt = null) => {
       } else if (response.status === 400) {
         throw new Error('Bad request. There may be an issue with the message format.')
       } else {
-        throw new Error(`API error (${response.status}): ${errorText}`)
+        throw new Error(errorData.error || `Server error (${response.status})`)
       }
     }
 
@@ -60,7 +49,7 @@ export const callSage = async (messages, systemPrompt = null) => {
   } catch (error) {
     console.error('Error calling Sage:', error)
     
-    if (error.message.includes('fetch')) {
+    if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
       throw new Error('Network error. Please check your internet connection.')
     }
     
