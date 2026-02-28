@@ -119,6 +119,29 @@ export default function Welcome({ onComplete }) {
     }
   }
 
+  const handleLogin = async (e) => {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
+
+      if (authError) throw authError
+      if (!authData.user) throw new Error('Login failed')
+
+      onComplete(authData.user)
+    } catch (err) {
+      console.error('Login error:', err)
+      setError(err.message === 'Invalid login credentials' ? 'Invalid email or password' : err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleContinueAfterInvite = () => {
     setShowInviteCode(false)
     // User is already created, just trigger the completion flow
@@ -185,6 +208,12 @@ export default function Welcome({ onComplete }) {
             <div className="choice-icon">🔗</div>
             <div className="choice-title">Join Existing Household</div>
             <div className="choice-desc">Enter an invite code from your family</div>
+          </button>
+
+          <button className="choice-card" onClick={() => setMode('login')}>
+            <div className="choice-icon">👤</div>
+            <div className="choice-title">Log In</div>
+            <div className="choice-desc">Already have an account? Sign in here</div>
           </button>
         </div>
 
@@ -258,10 +287,7 @@ export default function Welcome({ onComplete }) {
               <button 
                 type="button" 
                 className="password-toggle"
-                onMouseDown={(e) => {
-                  e.preventDefault()
-                  setShowPassword(!showPassword)
-                }}
+                onClick={() => setShowPassword(!showPassword)}
                 tabIndex={-1}
               >
                 {showPassword ? '👁️' : '👁️‍🗨️'}
@@ -344,10 +370,7 @@ export default function Welcome({ onComplete }) {
               <button 
                 type="button" 
                 className="password-toggle"
-                onMouseDown={(e) => {
-                  e.preventDefault()
-                  setShowPassword(!showPassword)
-                }}
+                onClick={() => setShowPassword(!showPassword)}
                 tabIndex={-1}
               >
                 {showPassword ? '👁️' : '👁️‍🗨️'}
@@ -360,6 +383,68 @@ export default function Welcome({ onComplete }) {
 
           <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
             {loading ? <span className="spinner" /> : 'Join Household'}
+          </button>
+        </form>
+      </div>
+    )
+  }
+
+  // Login form
+  if (mode === 'login') {
+    return (
+      <div className="auth-container">
+        <button className="btn-ghost back-btn" onClick={() => setMode(null)}>
+          ← Back
+        </button>
+
+        <div className="auth-header">
+          <h1 className="auth-title">Welcome Back</h1>
+          <p className="auth-subtitle">Log in to your household</p>
+        </div>
+
+        <form onSubmit={handleLogin} className="auth-form">
+          <div className="form-group">
+            <label>Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@email.com"
+              required
+              autoComplete="email"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Password</label>
+            <div className="password-input-wrapper">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="password-input"
+                autoComplete="current-password"
+              />
+              <button 
+                type="button" 
+                className="password-toggle"
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  setShowPassword(!showPassword)
+                }}
+                tabIndex={-1}
+              >
+                {showPassword ? '👁️' : '👁️‍🗨️'}
+              </button>
+            </div>
+          </div>
+
+          {error && <div className="error-message">{error}</div>}
+
+          <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
+            {loading ? <span className="spinner" /> : 'Log In'}
           </button>
         </form>
       </div>
