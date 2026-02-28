@@ -29,8 +29,9 @@
   flex: 1;
   padding: 1.25rem;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  max-height: calc(100vh - 200px);
 }
-
 .tw-footer {
   padding: 1rem 1.25rem calc(1rem + var(--safe-bottom));
   background: var(--card);
