@@ -81,7 +81,6 @@ export default function ThisWeek() {
 
   const handleGetSageInsights = async () => {
     if (Object.keys(dayTypes).length < 7) {
-      alert('Please set day types for all 7 days first!')
       return
     }
 
@@ -108,6 +107,13 @@ export default function ThisWeek() {
       setLoading(false)
     }
   }
+
+  // Auto-trigger Sage insights when reaching step 4
+  useEffect(() => {
+    if (step === 4 && !sageResponse && !loading && Object.keys(dayTypes).length === 7) {
+      handleGetSageInsights()
+    }
+  }, [step])
 
   const handleContinueToPlanner = async () => {
     // Save week plan to database
@@ -416,16 +422,6 @@ export default function ThisWeek() {
               <div className="preview-label">Breakfast & Lunch:</div>
               <div className="preview-value">{breakfastLunchNotes}</div>
             </div>
-          )}
-
-          {!sageResponse && !loading && (
-            <button 
-              className="btn btn-outline btn-full" 
-              onClick={handleGetSageInsights}
-              style={{ marginTop: '1rem' }}
-            >
-              💡 Get Sage's Insights
-            </button>
           )}
 
           {loading && (
