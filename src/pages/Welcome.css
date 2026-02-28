@@ -151,3 +151,134 @@
   color: #c00;
   font-weight: 500;
 }
+
+/* Password Toggle */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input {
+  flex: 1;
+  padding-right: 3rem;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.password-toggle:hover {
+  opacity: 1;
+}
+
+/* Invite Code Display */
+.invite-code-display {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  min-height: 100vh;
+}
+
+.invite-hero {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.invite-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--forest);
+  color: #fff;
+  font-size: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  box-shadow: 0 8px 24px rgba(46, 102, 68, 0.2);
+}
+
+.invite-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+
+.invite-subtitle {
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+.invite-code-box {
+  background: var(--card);
+  border: 2px solid var(--border-s);
+  border-radius: 18px;
+  padding: 1.5rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-m);
+}
+
+.invite-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 0.75rem;
+}
+
+.invite-code {
+  font-family: 'Fraunces', serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--sienna);
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+.invite-instructions {
+  background: var(--sage-pale);
+  border: 1px solid var(--sage);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.invite-instructions p {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink-mid);
+  margin-bottom: 0.75rem;
+}
+
+.invite-instructions ol {
+  margin-left: 1.25rem;
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+.invite-instructions li {
+  margin-bottom: 0.35rem;
+}
+
+.invite-instructions strong {
+  color: var(--sienna);
+  font-family: monospace;
+  font-size: 1.05em;
+}
