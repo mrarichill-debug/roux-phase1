@@ -2,7 +2,7 @@
 .this-week-container {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
   background: var(--warm);
 }
 
@@ -10,6 +10,7 @@
   padding: 1.5rem 1.25rem 1rem;
   background: var(--card);
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .tw-title {
@@ -26,7 +27,8 @@
 }
 
 .tw-content {
-  padding: 1.25rem 1.25rem 0.5rem;
+  flex: 1;
+  padding: 1.25rem;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -49,10 +51,10 @@
   background: var(--sage-pale);
   border: 1.5px solid var(--sage);
   border-radius: 14px;
-  padding: 1rem;
-  margin-bottom: 1rem;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
   display: flex;
-  gap: 0.85rem;
+  gap: 1rem;
   align-items: flex-start;
 }
 
@@ -120,8 +122,8 @@
   background: var(--card);
   border: 2px solid var(--border-s);
   border-radius: 14px;
-  padding: 1rem;
-  margin-bottom: 0;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .week-header {
@@ -172,8 +174,8 @@
 .day-item {
   background: var(--card);
   border: 1.5px solid var(--border);
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -244,10 +246,10 @@
 .modal-content {
   background: var(--card);
   border-radius: 20px 20px 0 0;
-  padding: 1.5rem 1.25rem calc(1.5rem + var(--safe-bottom));
   width: 100%;
-  max-height: 80vh;
-  overflow-y: auto;
+  max-height: 75vh;
+  display: flex;
+  flex-direction: column;
   animation: slideUp 0.25s;
 }
 
@@ -258,9 +260,13 @@
 
 .modal-header {
   text-align: center;
-  margin-bottom: 1.25rem;
-  padding-bottom: 1rem;
+  padding: 1.25rem 1.25rem 1rem;
   border-bottom: 2px solid var(--border);
+  flex-shrink: 0;
+  background: var(--card);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .modal-header h3 {
@@ -280,16 +286,20 @@
 .day-type-options {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.65rem;
+  padding: 1rem 1.25rem calc(1.25rem + var(--safe-bottom));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .day-type-option {
   background: var(--warm);
   border: 2px solid var(--border);
-  border-radius: 14px;
-  padding: 1rem 1.1rem;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
   cursor: pointer;
   transition: all 0.15s;
+  flex-shrink: 0;
 }
 
 .day-type-option:active {
@@ -305,19 +315,19 @@
 .dt-top {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
-  margin-bottom: 0.5rem;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
 }
 
 .dt-icon-box {
-  width: 44px;
-  height: 44px;
-  border-radius: 11px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   background: linear-gradient(135deg, var(--sage-pale), #d5e8d5);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
+  font-size: 1.25rem;
   flex-shrink: 0;
 }
 
@@ -330,7 +340,7 @@
 }
 
 .dt-name-box {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--ink);
 }
@@ -340,14 +350,14 @@
 }
 
 .dt-check {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   border: 2px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: transparent;
   flex-shrink: 0;
 }
@@ -359,10 +369,10 @@
 }
 
 .dt-desc-box {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--ink-soft);
-  line-height: 1.5;
-  padding-left: 3.5rem;
+  line-height: 1.4;
+  padding-left: 3rem;
 }
 
 /* Constraints */
@@ -423,40 +433,40 @@
 
 /* Week Skeleton Preview */
 .week-skeleton {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.65rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .skeleton-day {
   background: var(--card);
   border: 1px solid var(--border-s);
   border-radius: 10px;
-  padding: 0.85rem 1rem;
+  padding: 0.75rem 0.85rem;
 }
 
 .skeleton-day-header {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  margin-bottom: 0.35rem;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
 }
 
 .skeleton-icon {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
 }
 
 .skeleton-name {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: var(--ink);
 }
 
 .skeleton-type {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--ink-soft);
-  padding-left: 2rem;
+  padding-left: 1.6rem;
 }
 
 /* Preview Sections */
