@@ -200,20 +200,26 @@ export default function Welcome({ onComplete }) {
         <div className="welcome-choices">
           <button className="choice-card" onClick={() => setMode('create')}>
             <div className="choice-icon">🏠</div>
-            <div className="choice-title">Create New Household</div>
-            <div className="choice-desc">Start fresh and invite others to join</div>
+            <div className="choice-content">
+              <div className="choice-title">Create New Household</div>
+              <div className="choice-desc">Start fresh and invite others to join</div>
+            </div>
           </button>
 
           <button className="choice-card" onClick={() => setMode('join')}>
             <div className="choice-icon">🔗</div>
-            <div className="choice-title">Join Existing Household</div>
-            <div className="choice-desc">Enter an invite code from your family</div>
+            <div className="choice-content">
+              <div className="choice-title">Join Existing Household</div>
+              <div className="choice-desc">Enter an invite code from your family</div>
+            </div>
           </button>
 
           <button className="choice-card" onClick={() => setMode('login')}>
             <div className="choice-icon">👤</div>
-            <div className="choice-title">Log In</div>
-            <div className="choice-desc">Already have an account? Sign in here</div>
+            <div className="choice-content">
+              <div className="choice-title">Log In</div>
+              <div className="choice-desc">Already have an account? Sign in here</div>
+            </div>
           </button>
         </div>
 
