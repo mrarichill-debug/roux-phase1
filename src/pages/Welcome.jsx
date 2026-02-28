@@ -258,7 +258,10 @@ export default function Welcome({ onComplete }) {
               <button 
                 type="button" 
                 className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  setShowPassword(!showPassword)
+                }}
                 tabIndex={-1}
               >
                 {showPassword ? '👁️' : '👁️‍🗨️'}
@@ -341,7 +344,10 @@ export default function Welcome({ onComplete }) {
               <button 
                 type="button" 
                 className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  setShowPassword(!showPassword)
+                }}
                 tabIndex={-1}
               >
                 {showPassword ? '👁️' : '👁️‍🗨️'}
