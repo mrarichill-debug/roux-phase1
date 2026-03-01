@@ -49,24 +49,29 @@ export default function Welcome({ onComplete }) {
 
       console.log('Step 3: Creating household...')
       // 3. Create household
-      const { data: household, error: householdError } = await supabase
+      const { data: householdData, error: householdError } = await supabase
         .from('households')
         .insert({
           name: householdName,
           invite_code: newInviteCode
         })
         .select()
-        .single()
 
       if (householdError) {
         console.error('Household error:', householdError)
         throw householdError
       }
+      
+      if (!householdData || householdData.length === 0) {
+        throw new Error('Household was created but no data returned')
+      }
+      
+      const household = householdData[0]
       console.log('Household created:', household.id)
 
       console.log('Step 4: Creating user profile...')
       // 4. Create user profile
-      const { data: userData, error: userError } = await supabase
+      const { data: userDataArray, error: userError } = await supabase
         .from('users')
         .insert({
           id: authData.user.id,
@@ -76,12 +81,17 @@ export default function Welcome({ onComplete }) {
           tutorial_completed: false
         })
         .select()
-        .single()
 
       if (userError) {
         console.error('User profile error:', userError)
         throw new Error(`Failed to create user profile: ${userError.message}`)
       }
+      
+      if (!userDataArray || userDataArray.length === 0) {
+        throw new Error('User profile was created but no data returned')
+      }
+      
+      const userData = userDataArray[0]
       console.log('User profile created:', userData)
 
       // 5. Show invite code to user
@@ -132,7 +142,7 @@ export default function Welcome({ onComplete }) {
 
       console.log('Step 3: Creating user profile...')
       // 3. Create user profile linked to household
-      const { data: userData, error: userError } = await supabase
+      const { data: userDataArray, error: userError } = await supabase
         .from('users')
         .insert({
           id: authData.user.id,
@@ -142,12 +152,17 @@ export default function Welcome({ onComplete }) {
           tutorial_completed: false
         })
         .select()
-        .single()
 
       if (userError) {
         console.error('User profile error:', userError)
         throw new Error(`Failed to create user profile: ${userError.message}`)
       }
+      
+      if (!userDataArray || userDataArray.length === 0) {
+        throw new Error('User profile was created but no data returned')
+      }
+      
+      const userData = userDataArray[0]
       console.log('User profile created:', userData)
 
       setLoading(false)
