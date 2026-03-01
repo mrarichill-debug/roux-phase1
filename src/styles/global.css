@@ -346,3 +346,29 @@ textarea {
 .nav-item:active {
   transform: scale(0.95);
 }
+
+/* Logout Button */
+.logout-btn {
+  position: fixed;
+  top: calc(1rem + var(--safe-top));
+  right: 1rem;
+  background: var(--warm);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.8rem;
+  color: var(--ink);
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.logout-btn:hover {
+  background: var(--card);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.logout-btn:active {
+  transform: scale(0.95);
+}
