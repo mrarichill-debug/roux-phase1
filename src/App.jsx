@@ -63,9 +63,16 @@ function BottomNav() {
 }
 
 // Main App Layout
-function AppLayout({ children }) {
+function AppLayout({ children, onLogout }) {
   return (
     <>
+      <button 
+        className="logout-btn"
+        onClick={onLogout}
+        title="Log out"
+      >
+        👤 Log out
+      </button>
       <div className="app-content">{children}</div>
       <BottomNav />
     </>
@@ -122,6 +129,12 @@ function App() {
     setNeedsTutorial(false)
   }
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    setUser(null)
+    setNeedsTutorial(false)
+  }
+
   if (loading) {
     return (
       <div style={{ 
@@ -156,7 +169,7 @@ function App() {
         <Route
           path="/thisweek"
           element={
-            <AppLayout>
+            <AppLayout onLogout={handleLogout}>
               <ThisWeek />
             </AppLayout>
           }
@@ -164,7 +177,7 @@ function App() {
         <Route
           path="/planner"
           element={
-            <AppLayout>
+            <AppLayout onLogout={handleLogout}>
               <Planner />
             </AppLayout>
           }
@@ -172,7 +185,7 @@ function App() {
         <Route
           path="/recipes"
           element={
-            <AppLayout>
+            <AppLayout onLogout={handleLogout}>
               <Recipes />
             </AppLayout>
           }
@@ -180,7 +193,7 @@ function App() {
         <Route
           path="/shopping"
           element={
-            <AppLayout>
+            <AppLayout onLogout={handleLogout}>
               <Shopping />
             </AppLayout>
           }
@@ -188,7 +201,7 @@ function App() {
         <Route
           path="/sage"
           element={
-            <AppLayout>
+            <AppLayout onLogout={handleLogout}>
               <SageChat />
             </AppLayout>
           }
