@@ -49,25 +49,34 @@ export default function Welcome({ onComplete }) {
 
       console.log('Step 3: Creating household...')
       // 3. Create household
-      const { data: householdData, error: householdError } = await supabase
+      const { error: householdError } = await supabase
         .from('households')
         .insert({
           name: householdName,
           invite_code: newInviteCode
         })
-        .select()
 
       if (householdError) {
         console.error('Household error:', householdError)
         throw householdError
       }
       
-      if (!householdData || householdData.length === 0) {
-        throw new Error('Household was created but no data returned')
+      console.log('Household created successfully')
+      
+      // Get the household ID by querying for the invite code we just created
+      const { data: householdData, error: fetchError } = await supabase
+        .from('households')
+        .select('*')
+        .eq('invite_code', newInviteCode)
+        .single()
+      
+      if (fetchError || !householdData) {
+        console.error('Fetch household error:', fetchError)
+        throw new Error('Household created but could not retrieve it')
       }
       
-      const household = householdData[0]
-      console.log('Household created:', household.id)
+      const household = householdData
+      console.log('Household retrieved:', household.id)
 
       console.log('Step 4: Creating user profile...')
       // 4. Create user profile
