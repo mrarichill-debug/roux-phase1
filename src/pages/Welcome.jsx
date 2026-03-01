@@ -23,20 +23,31 @@ export default function Welcome({ onComplete }) {
     setLoading(true)
 
     try {
+      console.log('Step 1: Generating invite code...')
       // 1. Generate invite code first
       const { data: codeData, error: codeError } = await supabase.rpc('generate_invite_code')
-      if (codeError) throw codeError
+      if (codeError) {
+        console.error('Invite code error:', codeError)
+        throw codeError
+      }
       const newInviteCode = codeData
+      console.log('Invite code generated:', newInviteCode)
 
+      console.log('Step 2: Signing up user...')
       // 2. Sign up user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password
       })
 
-      if (authError) throw authError
+      if (authError) {
+        console.error('Auth error:', authError)
+        throw authError
+      }
       if (!authData.user) throw new Error('User creation failed')
+      console.log('User signed up:', authData.user.id)
 
+      console.log('Step 3: Creating household...')
       // 3. Create household
       const { data: household, error: householdError } = await supabase
         .from('households')
@@ -47,10 +58,15 @@ export default function Welcome({ onComplete }) {
         .select()
         .single()
 
-      if (householdError) throw householdError
+      if (householdError) {
+        console.error('Household error:', householdError)
+        throw householdError
+      }
+      console.log('Household created:', household.id)
 
-      // 4. Create user profile (FIX: This now happens automatically)
-      const { error: userError } = await supabase
+      console.log('Step 4: Creating user profile...')
+      // 4. Create user profile
+      const { data: userData, error: userError } = await supabase
         .from('users')
         .insert({
           id: authData.user.id,
@@ -59,12 +75,19 @@ export default function Welcome({ onComplete }) {
           preferences: {},
           tutorial_completed: false
         })
+        .select()
+        .single()
 
-      if (userError) throw userError
+      if (userError) {
+        console.error('User profile error:', userError)
+        throw new Error(`Failed to create user profile: ${userError.message}`)
+      }
+      console.log('User profile created:', userData)
 
       // 5. Show invite code to user
       setGeneratedInviteCode(newInviteCode)
       setShowInviteCode(true)
+      setLoading(false)
 
     } catch (err) {
       console.error('Household creation error:', err)
@@ -79,6 +102,7 @@ export default function Welcome({ onComplete }) {
     setLoading(true)
 
     try {
+      console.log('Step 1: Finding household with code:', joinInviteCode)
       // 1. Find household by invite code
       const { data: household, error: householdError } = await supabase
         .from('households')
@@ -86,19 +110,29 @@ export default function Welcome({ onComplete }) {
         .eq('invite_code', joinInviteCode.toUpperCase())
         .single()
 
-      if (householdError) throw new Error('Invalid invite code')
+      if (householdError) {
+        console.error('Household lookup error:', householdError)
+        throw new Error('Invalid invite code')
+      }
+      console.log('Household found:', household.id)
 
+      console.log('Step 2: Signing up user...')
       // 2. Sign up user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password
       })
 
-      if (authError) throw authError
+      if (authError) {
+        console.error('Auth error:', authError)
+        throw authError
+      }
       if (!authData.user) throw new Error('User creation failed')
+      console.log('User signed up:', authData.user.id)
 
+      console.log('Step 3: Creating user profile...')
       // 3. Create user profile linked to household
-      const { error: userError } = await supabase
+      const { data: userData, error: userError } = await supabase
         .from('users')
         .insert({
           id: authData.user.id,
@@ -107,14 +141,20 @@ export default function Welcome({ onComplete }) {
           preferences: {},
           tutorial_completed: false
         })
+        .select()
+        .single()
 
-      if (userError) throw userError
+      if (userError) {
+        console.error('User profile error:', userError)
+        throw new Error(`Failed to create user profile: ${userError.message}`)
+      }
+      console.log('User profile created:', userData)
 
+      setLoading(false)
       onComplete(authData.user)
     } catch (err) {
       console.error('Join household error:', err)
       setError(err.message)
-    } finally {
       setLoading(false)
     }
   }
