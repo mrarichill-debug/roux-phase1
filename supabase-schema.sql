@@ -1387,10 +1387,13 @@ CREATE POLICY notifications_update ON notifications
 -- GRANT controls whether the role can touch the table at all.
 -- Without grants, Postgres returns 42501 permission denied before RLS runs.
 
-GRANT USAGE ON SCHEMA public TO authenticated, anon;
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
 
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;
 

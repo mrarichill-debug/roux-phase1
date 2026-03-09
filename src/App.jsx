@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { loadAppUser } from './lib/auth'
 import Auth from './pages/Auth'
+import AppShell from './components/AppShell'
 
 export default function App() {
   const [session, setSession]   = useState(undefined) // undefined = still loading
@@ -44,24 +45,6 @@ export default function App() {
   // Logged in but user record not yet loaded
   if (!appUser) return null
 
-  // Logged in + user record loaded — main app shell goes here
-  return (
-    <div className="min-h-screen bg-[#faf9f7] flex items-center justify-center px-4">
-      <div className="text-center space-y-3">
-        <h1 className="font-display text-4xl font-light text-stone-800">Roux</h1>
-        <p className="text-stone-600 text-sm">
-          Welcome, {appUser.name}
-        </p>
-        <p className="text-stone-400 text-xs">
-          Household ready. Main app shell coming next.
-        </p>
-        <button
-          onClick={() => supabase.auth.signOut()}
-          className="text-xs text-stone-400 hover:text-stone-600 underline"
-        >
-          Sign out
-        </button>
-      </div>
-    </div>
-  )
+  // Logged in + user record loaded
+  return <AppShell appUser={appUser} />
 }

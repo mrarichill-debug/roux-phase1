@@ -7,8 +7,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['DM Sans', 'sans-serif'],
-        display: ['Fraunces', 'serif'],
+        sans:        ['DM Sans', 'sans-serif'],
+        display:     ['Fraunces', 'serif'],
+        handwriting: ['Caveat', 'cursive'],
       },
     },
   },

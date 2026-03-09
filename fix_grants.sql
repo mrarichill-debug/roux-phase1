@@ -12,14 +12,15 @@
 -- anon          — unauthenticated requests, no access to any app tables
 -- ══════════════════════════════════════════════════════════════════════════════
 
-GRANT USAGE ON SCHEMA public TO authenticated, anon;
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 
--- Full CRUD on all app tables for authenticated users.
--- RLS policies on each table then restrict which rows they can actually touch.
+-- Full CRUD for authenticated users (RLS policies restrict which rows)
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
-
--- Sequences (needed for any serial/generated columns)
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO authenticated;
 
--- Revoke all table access from anon — no unauthenticated data access
+-- service_role needs full access for server-side operations and seeding
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
+
+-- Revoke table access from anon — no unauthenticated data access
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;

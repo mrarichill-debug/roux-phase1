@@ -1069,3 +1069,16 @@ but must be re-run manually after any wipe that doesn't use the full schema file
 ---
 
 *This document represents weeks of careful product thinking. Every decision here was made deliberately. When in doubt — read this document before writing code.*
+
+---
+
+## 17. PHASE 3 VISION
+
+### Home Screen Navigation Concept
+The main screen looks like a **kitchen shelf with physical objects** the user taps to navigate:
+
+- **Recipe box** → Recipes
+- **Calendar** → This Week
+- **Notepad** → Shopping List
+
+This is a core UX vision for the app's future. The home screen should feel like walking into a kitchen and reaching for a familiar object — tactile, warm, and immediately intuitive. No icon grid, no dashboard — physical metaphors for physical things.
