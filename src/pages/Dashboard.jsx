@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import WatermarkLayer from '../components/WatermarkLayer'
+import ProfileSheet from '../components/ProfileSheet'
 import { getWeekDatesTZ, getWeekStartTZ, getDayOfWeekTZ, getTodayStr, timeGreetingTZ, toLocalDateStr } from '../lib/dateUtils'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
@@ -64,6 +65,7 @@ export default function Dashboard({ appUser }) {
   const [spendUsedPct, setSpendUsedPct]     = useState(null)
   const [loading, setLoading]               = useState(true)
   const [sageOpen, setSageOpen]             = useState(false)
+  const [profileOpen, setProfileOpen]       = useState(false)
 
   const tz         = appUser?.timezone ?? 'America/Chicago'
   const weekDates  = getWeekDatesTZ(tz)                     // [Mon..Sun]
@@ -222,17 +224,21 @@ export default function Dashboard({ appUser }) {
           </button>
 
           {/* Avatar */}
-          <div style={{
-            width: '34px', height: '34px', borderRadius: '50%',
-            background: 'rgba(255,255,255,0.18)',
-            color: 'rgba(250,247,242,0.95)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '13px', fontWeight: 500, cursor: 'pointer',
-            marginLeft: '6px', border: '1.5px solid rgba(255,255,255,0.25)',
-            userSelect: 'none',
-          }}>
+          <button
+            onClick={() => setProfileOpen(true)}
+            aria-label="Profile"
+            style={{
+              width: '34px', height: '34px', borderRadius: '50%',
+              background: 'rgba(255,255,255,0.18)',
+              color: 'rgba(250,247,242,0.95)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+              marginLeft: '6px', border: '1.5px solid rgba(255,255,255,0.25)',
+              userSelect: 'none',
+            }}
+          >
             {firstName.charAt(0).toUpperCase() || '?'}
-          </div>
+          </button>
         </div>
       </header>
 
@@ -327,6 +333,13 @@ export default function Dashboard({ appUser }) {
 
       {/* ── Bottom Nav ────────────────────────────────────────────────────── */}
       <BottomNav navigate={navigate} />
+
+      {/* ── Profile Sheet ─────────────────────────────────────────────────── */}
+      <ProfileSheet
+        appUser={appUser}
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+      />
 
     </div>
   )
