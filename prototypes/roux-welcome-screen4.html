@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Roux — Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sage:      #7A8C6E;
+    --forest:    #3D6B4F;
+    --forest-dk: #2E5038;
+    --ink:       #2C2417;
+    --driftwood: #8C7B6B;
+    --linen:     #E8E0D0;
+    --cream:     #FAF8F4;
+    --honey:     #C49A3C;
+    --red:       #A03030;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--cream);
+    font-family: 'Jost', sans-serif; font-weight: 300;
+    min-height: 100vh; max-width: 430px;
+    margin: 0 auto; overflow-x: hidden; position: relative;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse at 15% 15%, rgba(122,140,110,0.07) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 85%, rgba(196,154,60,0.04) 0%, transparent 50%);
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ── NAV ROW ── */
+  .nav-row {
+    position: relative; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 52px 24px 0;
+    opacity: 0; animation: fadeIn 0.4s ease 0.05s forwards;
+  }
+  .back-btn {
+    width: 38px; height: 38px; border-radius: 50%;
+    border: 1px solid rgba(200,185,160,0.6); background: white;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--driftwood); box-shadow: 0 1px 4px rgba(80,60,30,0.07);
+    transition: all 0.15s;
+  }
+  .back-btn:active { background: var(--linen); }
+  .back-btn svg { width: 16px; height: 16px; }
+  .mini-wordmark {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px; font-weight: 600; color: var(--ink); letter-spacing: -0.5px;
+  }
+  .mini-wordmark em { font-style: italic; color: var(--forest); }
+  .nav-spacer { width: 38px; }
+
+  /* ── SCREEN ── */
+  .screen {
+    position: relative; z-index: 1;
+    padding: 0 28px 48px;
+    min-height: calc(100vh - 110px);
+    display: flex; flex-direction: column;
+  }
+
+  /* ── HEADING ── */
+  .step-head {
+    padding: 44px 0 36px;
+    opacity: 0; animation: fadeUp 0.5s ease 0.12s forwards;
+  }
+  .step-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 30px; font-weight: 500; color: var(--ink);
+    line-height: 1.2; margin-bottom: 8px;
+  }
+  .step-sub {
+    font-size: 13.5px; color: var(--driftwood);
+    font-weight: 300; line-height: 1.6;
+  }
+
+  /* ── FORM ── */
+  .field-group {
+    display: flex; flex-direction: column; gap: 16px;
+    margin-bottom: 10px;
+    opacity: 0; animation: fadeUp 0.5s ease 0.2s forwards;
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field-label {
+    font-size: 11px; font-weight: 500; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--driftwood); padding-left: 2px;
+  }
+  .field-input-wrap { position: relative; }
+  .field-input {
+    width: 100%; padding: 15px 16px;
+    border-radius: 12px; border: 1.5px solid var(--linen);
+    background: white; font-family: 'Jost', sans-serif;
+    font-size: 15px; font-weight: 300; color: var(--ink);
+    outline: none; transition: border-color 0.18s, box-shadow 0.18s;
+    -webkit-appearance: none;
+  }
+  .field-input::placeholder { color: rgba(140,123,107,0.45); }
+  .field-input:focus {
+    border-color: var(--sage);
+    box-shadow: 0 0 0 3px rgba(122,140,110,0.12);
+  }
+  .field-input.has-value { border-color: rgba(61,107,79,0.35); }
+  .field-input.error {
+    border-color: var(--red);
+    box-shadow: 0 0 0 3px rgba(160,48,48,0.08);
+  }
+  .pw-toggle {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer;
+    color: var(--driftwood); padding: 4px;
+    display: flex; align-items: center;
+  }
+  .pw-toggle svg { width: 18px; height: 18px; }
+
+  /* ── ERROR BANNER ── */
+  .error-banner {
+    background: rgba(160,48,48,0.07);
+    border: 1px solid rgba(160,48,48,0.2);
+    border-radius: 10px; padding: 11px 14px;
+    font-size: 13px; color: var(--red); font-weight: 300;
+    margin-bottom: 16px; display: none;
+    animation: fadeUp 0.3s ease forwards;
+  }
+  .error-banner.visible { display: block; }
+
+  /* ── SIGN IN BUTTON ── */
+  .btn-signin {
+    width: 100%; padding: 16px 20px; border-radius: 14px;
+    background: var(--forest); color: white;
+    font-family: 'Jost', sans-serif; font-size: 15px;
+    font-weight: 500; letter-spacing: 0.3px;
+    border: none; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(30,55,35,0.25);
+    transition: background 0.15s, transform 0.12s, box-shadow 0.15s;
+    margin-top: 24px; margin-bottom: 6px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    opacity: 0; animation: fadeUp 0.5s ease 0.28s forwards;
+  }
+  .btn-signin:active { background: var(--forest-dk); transform: scale(0.98); }
+  .btn-signin:disabled {
+    background: var(--linen); color: var(--driftwood);
+    box-shadow: none; cursor: default;
+  }
+
+  /* Loading state */
+  .btn-signin.loading { pointer-events: none; }
+  .spinner {
+    width: 17px; height: 17px; border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white; border-radius: 50%;
+    animation: spin 0.7s linear infinite; display: none;
+  }
+  .btn-signin.loading .btn-label { display: none; }
+  .btn-signin.loading .spinner   { display: block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── FORGOT PASSWORD ── */
+  .forgot-wrap {
+    text-align: center; margin-top: 8px;
+    opacity: 0; animation: fadeUp 0.5s ease 0.33s forwards;
+  }
+  .forgot-btn {
+    background: none; border: none; cursor: pointer;
+    font-family: 'Jost', sans-serif; font-size: 13px;
+    font-weight: 300; color: var(--driftwood);
+    padding: 6px; transition: color 0.15s;
+    text-decoration: underline; text-underline-offset: 3px;
+    text-decoration-color: rgba(140,123,107,0.3);
+  }
+  .forgot-btn:active { color: var(--ink); }
+
+  /* ── FORGOT PASSWORD PANEL ── */
+  .forgot-panel {
+    background: white; border: 1px solid var(--linen);
+    border-radius: 14px; padding: 20px 18px;
+    margin-top: 16px; display: none;
+    box-shadow: 0 2px 10px rgba(80,60,30,0.07);
+    animation: fadeUp 0.3s ease forwards;
+  }
+  .forgot-panel.visible { display: block; }
+  .forgot-panel-title {
+    font-size: 13px; font-weight: 500; color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .forgot-panel-sub {
+    font-size: 12px; color: var(--driftwood); font-weight: 300;
+    margin-bottom: 12px; line-height: 1.5;
+  }
+  .forgot-input-row { display: flex; gap: 8px; }
+  .forgot-input {
+    flex: 1; padding: 11px 14px; border-radius: 10px;
+    border: 1.5px solid var(--linen); background: var(--cream);
+    font-family: 'Jost', sans-serif; font-size: 14px;
+    font-weight: 300; color: var(--ink); outline: none;
+    transition: border-color 0.15s;
+  }
+  .forgot-input:focus { border-color: var(--sage); }
+  .btn-send-reset {
+    padding: 11px 16px; border-radius: 10px;
+    background: var(--forest); color: white;
+    font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 500;
+    border: none; cursor: pointer; white-space: nowrap;
+    transition: background 0.15s;
+  }
+  .btn-send-reset:active { background: var(--forest-dk); }
+  .forgot-sent {
+    font-size: 12px; color: var(--forest); font-weight: 300;
+    margin-top: 8px; display: none;
+  }
+  .forgot-sent.visible { display: block; }
+
+  /* ── SPACER + NEW TO ROUX ── */
+  .bottom-area {
+    margin-top: auto; padding-top: 40px; text-align: center;
+    opacity: 0; animation: fadeIn 0.5s ease 0.5s forwards;
+  }
+  .new-to-roux {
+    font-size: 12.5px; color: var(--driftwood); font-weight: 300;
+  }
+  .new-to-roux a {
+    color: var(--forest); font-weight: 400;
+    text-decoration: none; border-bottom: 1px solid rgba(61,107,79,0.25);
+    padding-bottom: 1px;
+  }
+
+  /* ── SUCCESS STATE ── */
+  .success-wrap {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; gap: 0;
+    display: none;
+  }
+  .success-wrap.visible { display: flex; animation: fadeUp 0.5s ease forwards; }
+  .success-icon {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: rgba(61,107,79,0.1);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+    animation: iconPop 0.4s cubic-bezier(0.22,1,0.36,1) 0.1s both;
+  }
+  @keyframes iconPop { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .success-icon svg { width: 28px; height: 28px; color: var(--forest); }
+  .success-greeting {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px; font-weight: 500; color: var(--ink); margin-bottom: 6px;
+  }
+  .success-name {
+    font-family: 'Caveat', cursive; font-size: 28px; color: var(--forest); margin-bottom: 14px;
+  }
+  .success-sub { font-size: 13.5px; color: var(--driftwood); font-weight: 300; margin-bottom: 32px; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { to { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<div class="nav-row">
+  <button class="back-btn" onclick="history.back()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+  </button>
+  <div class="mini-wordmark">R<em>oux</em></div>
+  <div class="nav-spacer"></div>
+</div>
+
+<div class="screen" id="main-screen">
+
+  <!-- HEADING -->
+  <div class="step-head">
+    <div class="step-title">Welcome back.</div>
+    <div class="step-sub">Sign in to your kitchen.</div>
+  </div>
+
+  <!-- FIELDS -->
+  <div class="field-group">
+    <div class="field">
+      <div class="field-label">Email</div>
+      <input class="field-input" id="email" type="email"
+             placeholder="lauren@example.com" autocomplete="email"
+             oninput="onInput()" />
+    </div>
+    <div class="field">
+      <div class="field-label">Password</div>
+      <div class="field-input-wrap">
+        <input class="field-input" id="password" type="password"
+               placeholder="Your password" autocomplete="current-password"
+               oninput="onInput()" onkeydown="onEnter(event)" />
+        <button class="pw-toggle" onclick="togglePw()" type="button">
+          <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ERROR BANNER -->
+  <div class="error-banner" id="error-banner">
+    That email and password don't match. Try again, or reset your password below.
+  </div>
+
+  <!-- SIGN IN BUTTON -->
+  <button class="btn-signin" id="btn-signin" onclick="signIn()" disabled>
+    <span class="btn-label">Sign in</span>
+    <div class="spinner"></div>
+  </button>
+
+  <!-- FORGOT PASSWORD -->
+  <div class="forgot-wrap">
+    <button class="forgot-btn" onclick="toggleForgot()">Forgot your password?</button>
+  </div>
+
+  <!-- FORGOT PANEL -->
+  <div class="forgot-panel" id="forgot-panel">
+    <div class="forgot-panel-title">Reset your password</div>
+    <div class="forgot-panel-sub">Enter your email and we'll send a reset link.</div>
+    <div class="forgot-input-row">
+      <input class="forgot-input" id="forgot-email" type="email" placeholder="Your email" />
+      <button class="btn-send-reset" onclick="sendReset()">Send</button>
+    </div>
+    <div class="forgot-sent" id="forgot-sent">Check your inbox — link sent.</div>
+  </div>
+
+  <!-- BOTTOM -->
+  <div class="bottom-area">
+    <div class="new-to-roux">New to Roux? <a href="#">Get started</a></div>
+  </div>
+
+</div>
+
+<!-- SUCCESS STATE -->
+<div class="screen success-wrap" id="success-screen">
+  <div class="success-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+  </div>
+  <div class="success-greeting">Good to see you,</div>
+  <div class="success-name" id="success-name">Lauren</div>
+  <div class="success-sub">Taking you to your kitchen…</div>
+</div>
+
+<script>
+  let pwVisible = false;
+  let forgotOpen = false;
+
+  // Demo credentials
+  const DEMO = { email: 'lauren@example.com', password: 'Password1!' };
+
+  function onInput() {
+    const email = document.getElementById('email').value;
+    const pw    = document.getElementById('password').value;
+    document.getElementById('btn-signin').disabled = !(email && pw);
+    // Clear error on re-type
+    document.getElementById('error-banner').classList.remove('visible');
+    document.getElementById('email').classList.remove('error');
+    document.getElementById('password').classList.remove('error');
+  }
+
+  function onEnter(e) {
+    if (e.key === 'Enter') signIn();
+  }
+
+  function togglePw() {
+    pwVisible = !pwVisible;
+    document.getElementById('password').type = pwVisible ? 'text' : 'password';
+    document.getElementById('eye-icon').innerHTML = pwVisible
+      ? '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+      : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+
+  function signIn() {
+    const email = document.getElementById('email').value.trim();
+    const pw    = document.getElementById('password').value;
+    const btn   = document.getElementById('btn-signin');
+
+    // Loading state
+    btn.classList.add('loading');
+
+    setTimeout(() => {
+      btn.classList.remove('loading');
+      if (email === DEMO.email && pw === DEMO.password) {
+        // Success
+        document.getElementById('main-screen').style.display = 'none';
+        const successName = email.split('@')[0];
+        document.getElementById('success-name').textContent =
+          successName.charAt(0).toUpperCase() + successName.slice(1);
+        document.getElementById('success-screen').classList.add('visible');
+        setTimeout(() => alert('→ Dashboard'), 1600);
+      } else {
+        // Error
+        document.getElementById('error-banner').classList.add('visible');
+        document.getElementById('email').classList.add('error');
+        document.getElementById('password').classList.add('error');
+        document.getElementById('password').value = '';
+        document.getElementById('password').classList.remove('has-value');
+        document.getElementById('btn-signin').disabled = true;
+      }
+    }, 1000);
+  }
+
+  function toggleForgot() {
+    forgotOpen = !forgotOpen;
+    const panel = document.getElementById('forgot-panel');
+    if (forgotOpen) {
+      panel.classList.add('visible');
+      // Pre-fill with whatever is in the email field
+      const email = document.getElementById('email').value;
+      if (email) document.getElementById('forgot-email').value = email;
+      setTimeout(() => document.getElementById('forgot-email').focus(), 100);
+    } else {
+      panel.classList.remove('visible');
+    }
+  }
+
+  function sendReset() {
+    const email = document.getElementById('forgot-email').value;
+    if (email) {
+      document.getElementById('forgot-sent').classList.add('visible');
+      document.querySelector('.btn-send-reset').disabled = true;
+      document.querySelector('.btn-send-reset').style.opacity = '0.5';
+    }
+  }
+</script>
+</body>
+</html>

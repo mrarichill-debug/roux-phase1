@@ -1,31 +1,22 @@
 import { useState } from 'react'
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import ThisWeek from '../pages/ThisWeek'
-import Recipes from '../pages/Recipes'
-import ShoppingList from '../pages/ShoppingList'
 import SageChat from '../pages/SageChat'
 import Family from '../pages/Family'
 
-export default function AppShell({ appUser }) {
-  return (
-    <BrowserRouter>
-      <Shell appUser={appUser} />
-    </BrowserRouter>
-  )
-}
-
-function Shell({ appUser }) {
+// BrowserRouter lives in App.jsx — Shell just uses the router context
+export function Shell({ appUser }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
 
   const menuItems = [
-    { label: 'This Week',     path: '/',         icon: <CalendarIcon /> },
-    { label: 'Recipes',       path: '/recipes',  icon: <RecipesIcon /> },
-    { label: 'Shopping List', path: '/shopping', icon: <ShoppingIcon /> },
-    { label: 'Sage',          path: '/sage',     icon: <SageIcon /> },
-    { label: 'Family',        path: '/family',   icon: <FamilyIcon /> },
+    { label: 'Home',          path: '/',          icon: <CalendarIcon /> },
+    { label: 'This Week',     path: '/thisweek',  icon: <CalendarIcon /> },
+    { label: 'Recipes',       path: '/recipes',   icon: <RecipesIcon /> },
+    { label: 'Shopping List', path: '/shopping',  icon: <ShoppingIcon /> },
+    { label: 'Sage',          path: '/sage',      icon: <SageIcon /> },
+    { label: 'Family',        path: '/family',    icon: <FamilyIcon /> },
   ]
 
   function go(path) {
@@ -54,9 +45,6 @@ function Shell({ appUser }) {
       {/* ── Page content ─────────────────────────────────────────── */}
       <main className="flex-1 overflow-y-auto">
         <Routes>
-          <Route path="/"         element={<ThisWeek   appUser={appUser} />} />
-          <Route path="/recipes"  element={<Recipes    appUser={appUser} />} />
-          <Route path="/shopping" element={<ShoppingList appUser={appUser} />} />
           <Route path="/sage"     element={<SageChat   appUser={appUser} />} />
           <Route path="/family"   element={<Family     appUser={appUser} />} />
         </Routes>

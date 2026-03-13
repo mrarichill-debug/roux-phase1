@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Roux — Recipes</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&family=Caveat:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sage:#7A8C6E; --forest:#3D6B4F;
+    --ink:#2C2417; --driftwood:#8C7B6B; --linen:#E8E0D0;
+    --cream:#FAF7F2; --honey:#C49A3C; --walnut:#8B6F52;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body {
+    background:var(--cream); color:var(--ink);
+    font-family:'Jost',sans-serif; font-weight:300;
+    min-height:100vh; max-width:430px; margin:0 auto;
+    padding-bottom:88px; position:relative; overflow-x:hidden;
+  }
+
+  /* ── WATERMARK LAYER ── */
+  #wm-layer {
+    position:fixed; top:0; left:50%; transform:translateX(-50%);
+    width:100%; max-width:430px; height:100%;
+    pointer-events:none; z-index:0; overflow:hidden;
+  }
+  .wm-object { position:absolute; pointer-events:none; opacity:0; color:rgba(60,42,22,1); }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    position:sticky; top:0; z-index:100;
+    padding:14px 22px 12px;
+    background:var(--forest);
+    box-shadow:
+      0 2px  0px rgba(20,40,25,0.55),
+      0 4px  8px rgba(20,40,25,0.40),
+      0 8px 24px rgba(30,55,35,0.28),
+      0 16px 40px rgba(30,55,35,0.14),
+      0 1px  0px rgba(255,255,255,0.06) inset;
+  }
+  .topbar-row1 {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:12px;
+  }
+  .logo { font-family:'Playfair Display',serif; font-size:26px; font-weight:600; color:rgba(250,247,242,0.95); }
+  .logo em { font-style:italic; color:rgba(188,218,178,0.82); }
+  .add-btn {
+    background:rgba(255,255,255,0.14); color:rgba(250,247,242,0.92);
+    border:1px solid rgba(255,255,255,0.22); border-radius:8px;
+    padding:8px 14px; font-family:'Jost',sans-serif;
+    font-size:12px; font-weight:500; cursor:pointer;
+    transition:background 0.15s;
+  }
+  .add-btn:active { background:rgba(255,255,255,0.22); }
+
+  /* Search */
+  .search-wrap { position:relative; margin-bottom:11px; }
+  .search-icon { position:absolute; left:13px; top:50%; transform:translateY(-50%); color:rgba(210,230,200,0.6); }
+  .search-icon svg { width:15px; height:15px; }
+  .search-input {
+    width:100%; background:rgba(255,255,255,0.12);
+    border:1px solid rgba(255,255,255,0.18); border-radius:10px;
+    padding:10px 14px 10px 36px;
+    font-family:'Jost',sans-serif; font-size:14px; font-weight:300;
+    color:rgba(250,247,242,0.92); outline:none;
+    transition:background 0.15s, border-color 0.15s;
+  }
+  .search-input::placeholder { color:rgba(210,230,200,0.55); }
+  .search-input:focus { background:rgba(255,255,255,0.18); border-color:rgba(255,255,255,0.32); }
+
+  /* Category pills */
+  .cat-scroll { display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; padding-bottom:2px; }
+  .cat-scroll::-webkit-scrollbar { display:none; }
+  .cat-pill {
+    background:rgba(255,255,255,0.10); border:1px solid rgba(255,255,255,0.18);
+    border-radius:20px; padding:6px 13px; font-size:12px; font-weight:400;
+    color:rgba(210,230,200,0.8); cursor:pointer; white-space:nowrap;
+    font-family:'Jost',sans-serif; transition:all 0.15s;
+  }
+  .cat-pill.active {
+    background:rgba(255,255,255,0.22); border-color:rgba(255,255,255,0.4);
+    color:white; font-weight:500;
+  }
+
+  .row-label {
+    padding:14px 22px 6px;
+    font-size:9px; font-weight:500; letter-spacing:2px;
+    text-transform:uppercase; color:var(--driftwood);
+    position:relative; z-index:1;
+  }
+
+  /* ── BODY ── */
+  .filter-row {
+    display:flex; gap:6px; overflow-x:auto;
+    padding:14px 22px 0; scrollbar-width:none;
+  }
+  .filter-row::-webkit-scrollbar { display:none; }
+  .filter-pill {
+    background:white; border:1px solid rgba(200,185,160,0.55);
+    border-radius:20px; padding:6px 13px; font-size:11px; font-weight:400;
+    color:var(--driftwood); cursor:pointer; white-space:nowrap;
+    font-family:'Jost',sans-serif; flex-shrink:0;
+    box-shadow:0 1px 3px rgba(80,60,30,0.06);
+    transition:all 0.15s;
+  }
+  .filter-pill.active {
+    background:rgba(122,140,110,0.10); border-color:var(--sage);
+    color:var(--forest); font-weight:500;
+  }
+
+  .results-bar { padding:14px 22px 10px; font-size:12px; color:var(--driftwood); position:relative; z-index:1; }
+
+  /* ── CARD GRID ── */
+  .card-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:0 22px 16px; position:relative; z-index:1; }
+
+  .recipe-card {
+    background:white; border:1px solid rgba(200,185,160,0.55);
+    border-radius:16px; overflow:hidden; cursor:pointer;
+    box-shadow:0 1px 4px rgba(80,60,30,0.07), 0 3px 12px rgba(80,60,30,0.05);
+    transition:transform 0.15s, box-shadow 0.15s;
+    animation:fadeUp 0.35s ease both;
+  }
+  .recipe-card:active { transform:scale(0.97); box-shadow:0 1px 3px rgba(80,60,30,0.08); }
+  .recipe-card:nth-child(1){animation-delay:0.04s}
+  .recipe-card:nth-child(2){animation-delay:0.08s}
+  .recipe-card:nth-child(3){animation-delay:0.12s}
+  .recipe-card:nth-child(4){animation-delay:0.16s}
+  .recipe-card:nth-child(5){animation-delay:0.20s}
+  .recipe-card:nth-child(6){animation-delay:0.24s}
+
+  .card-body { padding:12px 12px 10px; }
+  .card-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:6px; }
+  .card-cat {
+    display:inline-block; background:rgba(122,140,110,0.10);
+    border:1px solid rgba(122,140,110,0.2); border-radius:4px;
+    padding:2px 7px; font-size:9px; font-weight:500;
+    letter-spacing:1.5px; text-transform:uppercase; color:var(--forest);
+  }
+  .card-fav { color:var(--honey); font-size:15px; line-height:1; flex-shrink:0; margin-left:4px; }
+  .card-name {
+    font-family:'Playfair Display',serif; font-size:14px;
+    font-weight:500; color:var(--ink); line-height:1.3; margin-bottom:4px;
+  }
+  .card-handwritten { font-family:'Caveat',cursive; font-size:12px; color:var(--walnut); opacity:0.8; margin-bottom:8px; }
+  .card-meta { font-size:11px; color:var(--driftwood); display:flex; gap:8px; margin-bottom:8px; }
+  .card-footer {
+    display:flex; align-items:center; justify-content:space-between;
+    padding-top:8px; border-top:1px solid var(--linen);
+  }
+  .dietary-dots { display:flex; gap:4px; }
+  .d-dot { width:7px; height:7px; border-radius:50%; }
+  .dot-gf { background:var(--honey); }
+  .dot-veg { background:var(--sage); }
+  .dot-df { background:var(--walnut); }
+  .add-link { font-size:10px; color:var(--sage); font-weight:500; cursor:pointer; letter-spacing:0.3px; }
+
+  /* ── LEGEND ── */
+  .legend { padding:4px 22px 18px; display:flex; gap:14px; flex-wrap:wrap; position:relative; z-index:1; }
+  .legend-item { display:flex; align-items:center; gap:5px; font-size:10px; color:var(--driftwood); }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+    width:100%; max-width:430px; height:80px; padding:10px 0 22px;
+    display:grid; grid-template-columns:repeat(4,1fr);
+    z-index:100; background:var(--cream);
+    border-top:1px solid var(--linen);
+    box-shadow:0 -2px 12px rgba(80,60,30,0.08);
+  }
+  .nav-item {
+    display:flex; flex-direction:column; align-items:center; gap:5px;
+    cursor:pointer; padding:4px 0; text-decoration:none;
+    color:var(--driftwood); transition:color 0.15s;
+  }
+  .nav-item svg { width:22px; height:22px; }
+  .nav-label { font-size:10px; font-weight:400; letter-spacing:0.3px; }
+  .nav-item.active { color:var(--forest); }
+  .nav-item.active .nav-label { font-weight:600; }
+  .nav-dot { width:4px; height:4px; border-radius:50%; background:var(--forest); }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+
+<div id="wm-layer"></div>
+
+<!-- TOPBAR -->
+<header class="topbar" id="topbar">
+  <div class="topbar-row1">
+    <div class="logo">Ro<em>ux</em></div>
+    <button class="add-btn">Save a Recipe</button>
+  </div>
+  <div class="search-wrap">
+    <div class="search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+    <input class="search-input" type="text" placeholder="Search recipes…">
+  </div>
+  <div style="font-size:9px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:rgba(210,230,200,0.55);margin-bottom:6px;">Browse by</div>
+  <div class="cat-scroll">
+    <button class="cat-pill active">All</button>
+    <button class="cat-pill">Breakfast</button>
+    <button class="cat-pill">Lunch</button>
+    <button class="cat-pill">Dinner</button>
+    <button class="cat-pill">Soups</button>
+    <button class="cat-pill">Salads</button>
+    <button class="cat-pill">Sides</button>
+    <button class="cat-pill">Desserts</button>
+  </div>
+</header>
+
+<!-- FILTER ROW -->
+<div class="row-label">Filter by</div>
+<div class="filter-row">
+  <div class="filter-pill active">All</div>
+  <div class="filter-pill">★ Favorites</div>
+  <div class="filter-pill">Recent</div>
+  <div class="filter-pill">Quick ≤30m</div>
+  <div class="filter-pill">Gluten Free</div>
+  <div class="filter-pill">Vegetarian</div>
+</div>
+
+<div class="results-bar">48 recipes</div>
+
+<!-- CARD GRID -->
+<div class="card-grid">
+
+  <div class="recipe-card" onclick="window.location='roux-recipe-card-style1-objects.html'">
+    <div class="card-body">
+      <div class="card-top"><div class="card-cat">Dinner</div><div class="card-fav">★</div></div>
+      <div class="card-name">Lemon Herb Roast Chicken</div>
+      <div class="card-handwritten">Grandma's ✦</div>
+      <div class="card-meta"><span>1h 20m</span><span>4 srv</span></div>
+      <div class="card-footer"><div class="dietary-dots"><div class="d-dot dot-gf"></div><div class="d-dot dot-df"></div></div><span class="add-link">+ Week</span></div>
+    </div>
+  </div>
+
+  <div class="recipe-card">
+    <div class="card-body">
+      <div class="card-top"><div class="card-cat">Pasta</div><div class="card-fav">★</div></div>
+      <div class="card-name">Brown Butter Pasta with Sage</div>
+      <div class="card-meta"><span>25m</span><span>4 srv</span></div>
+      <div class="card-footer"><div class="dietary-dots"><div class="d-dot dot-veg"></div></div><span class="add-link">+ Week</span></div>
+    </div>
+  </div>
+
+  <div class="recipe-card">
+    <div class="card-body">
+      <div class="card-top"><div class="card-cat">Soup</div></div>
+      <div class="card-name">Tuscan White Bean Soup</div>
+      <div class="card-meta"><span>45m</span><span>6 srv</span></div>
+      <div class="card-footer"><div class="dietary-dots"><div class="d-dot dot-gf"></div><div class="d-dot dot-veg"></div></div><span class="add-link">+ Week</span></div>
+    </div>
+  </div>
+
+  <div class="recipe-card">
+    <div class="card-body">
+      <div class="card-top"><div class="card-cat">Side</div><div class="card-fav">★</div></div>
+      <div class="card-name">Spring Pea & Mint Salad</div>
+      <div class="card-handwritten">Spring fave ✦</div>
+      <div class="card-meta"><span>15m</span><span>4 srv</span></div>
+      <div class="card-footer"><div class="dietary-dots"><div class="d-dot dot-gf"></div><div class="d-dot dot-veg"></div><div class="d-dot dot-df"></div></div><span class="add-link">+ Week</span></div>
+    </div>
+  </div>
+
+  <div class="recipe-card">
+    <div class="card-body">
+      <div class="card-top"><div class="card-cat">Dessert</div><div class="card-fav">★</div></div>
+      <div class="card-name">Mom's Apple Galette</div>
+      <div class="card-handwritten">Mom's recipe ✦</div>
+      <div class="card-meta"><span>1h</span><span>8 srv</span></div>
+      <div class="card-footer"><div class="dietary-dots"><div class="d-dot dot-veg"></div></div><span class="add-link">+ Week</span></div>
+    </div>
+  </div>
+
+  <div class="recipe-card">
+    <div class="card-body">
+      <div class="card-top"><div class="card-cat">Dinner</div></div>
+      <div class="card-name">Miso-Glazed Salmon</div>
+      <div class="card-meta"><span>30m</span><span>4 srv</span></div>
+      <div class="card-footer"><div class="dietary-dots"><div class="d-dot dot-gf"></div><div class="d-dot dot-df"></div></div><span class="add-link">+ Week</span></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="legend-item"><div class="d-dot dot-gf"></div> Gluten Free</div>
+  <div class="legend-item"><div class="d-dot dot-veg"></div> Vegetarian</div>
+  <div class="legend-item"><div class="d-dot dot-df"></div> Dairy Free</div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <a class="nav-item" href="roux-dashboard-style1-objects.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-label">Home</span></a>
+  <a class="nav-item active" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span class="nav-label">Recipes</span><div class="nav-dot"></div></a>
+  <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg><span class="nav-label">This Week</span></a>
+  <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" x2="21" y1="6" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><span class="nav-label">Shopping</span></a>
+</nav>
+
+<script>
+// Pill interactions
+document.querySelectorAll('.cat-pill').forEach(p => {
+  p.addEventListener('click', () => {
+    document.querySelectorAll('.cat-pill').forEach(x => x.classList.remove('active'));
+    p.classList.add('active');
+  });
+});
+document.querySelectorAll('.filter-pill').forEach(p => {
+  p.addEventListener('click', () => {
+    document.querySelectorAll('.filter-pill').forEach(x => x.classList.remove('active'));
+    p.classList.add('active');
+  });
+});
+
+// ── WATERMARK OBJECTS (shared library) ──────────────────────
+const OBJ = {
+  recipeBox: (s=1) => `<svg width="${Math.round(160*s)}" height="${Math.round(140*s)}" viewBox="0 0 160 140" fill="none"><rect x="10" y="62" width="140" height="72" rx="6" stroke="currentColor" stroke-width="2"/><rect x="4" y="38" width="152" height="28" rx="6" stroke="currentColor" stroke-width="2"/><rect x="4" y="30" width="152" height="10" rx="3" stroke="currentColor" stroke-width="1.5"/><rect x="62" y="72" width="36" height="18" rx="4" stroke="currentColor" stroke-width="1.8"/><rect x="70" y="78" width="20" height="8" rx="2" stroke="currentColor" stroke-width="1.2"/><text x="80" y="53" text-anchor="middle" font-family="Jost,sans-serif" font-size="9" font-weight="500" letter-spacing="4" fill="currentColor">RECIPES</text><rect x="28" y="16" width="38" height="16" rx="3" stroke="currentColor" stroke-width="1.5" transform="rotate(-5 47 24)"/><rect x="60" y="10" width="40" height="16" rx="3" stroke="currentColor" stroke-width="1.5"/><rect x="96" y="15" width="36" height="16" rx="3" stroke="currentColor" stroke-width="1.5" transform="rotate(4 114 23)"/><line x1="10" y1="90" x2="150" y2="90" stroke="currentColor" stroke-width="0.8" stroke-dasharray="4 6"/><line x1="10" y1="110" x2="150" y2="110" stroke="currentColor" stroke-width="0.8" stroke-dasharray="4 6"/></svg>`,
+  cuttingBoard: (s=1) => `<svg width="${Math.round(100*s)}" height="${Math.round(160*s)}" viewBox="0 0 100 160" fill="none"><rect x="14" y="8" width="72" height="120" rx="10" stroke="currentColor" stroke-width="2.2"/><rect x="24" y="18" width="52" height="100" rx="6" stroke="currentColor" stroke-width="1.2"/><line x1="18" y1="38" x2="82" y2="38" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 5"/><line x1="18" y1="58" x2="82" y2="58" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 5"/><line x1="18" y1="78" x2="82" y2="78" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 5"/><line x1="18" y1="98" x2="82" y2="98" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 5"/><rect x="28" y="128" width="44" height="18" rx="4" stroke="currentColor" stroke-width="1.8"/><circle cx="50" cy="148" r="7" stroke="currentColor" stroke-width="1.8"/></svg>`,
+  herbs: (s=1) => `<svg width="${Math.round(110*s)}" height="${Math.round(140*s)}" viewBox="0 0 110 140" fill="none"><line x1="55" y1="138" x2="38" y2="44" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="55" y1="138" x2="55" y2="36" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="55" y1="138" x2="72" y2="44" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="55" y1="138" x2="22" y2="68" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="55" y1="138" x2="88" y2="68" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><ellipse cx="32" cy="58" rx="9" ry="4.5" stroke="currentColor" stroke-width="1.4" transform="rotate(-30 32 58)"/><ellipse cx="26" cy="76" rx="8" ry="4" stroke="currentColor" stroke-width="1.2" transform="rotate(-28 26 76)"/><ellipse cx="40" cy="42" rx="9" ry="4.5" stroke="currentColor" stroke-width="1.4" transform="rotate(-32 40 42)"/><ellipse cx="50" cy="52" rx="10" ry="4.5" stroke="currentColor" stroke-width="1.4" transform="rotate(5 50 52)"/><ellipse cx="55" cy="32" rx="10" ry="5" stroke="currentColor" stroke-width="1.5"/><ellipse cx="55" cy="58" rx="8" ry="3.8" stroke="currentColor" stroke-width="1.2" transform="rotate(8 55 58)"/><ellipse cx="78" cy="58" rx="9" ry="4.5" stroke="currentColor" stroke-width="1.4" transform="rotate(30 78 58)"/><ellipse cx="70" cy="42" rx="9" ry="4.5" stroke="currentColor" stroke-width="1.4" transform="rotate(32 70 42)"/><ellipse cx="84" cy="76" rx="8" ry="4" stroke="currentColor" stroke-width="1.2" transform="rotate(28 84 76)"/><path d="M36 118 Q55 110 74 118" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/><path d="M40 126 Q55 120 70 126" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>`,
+  spiceJars: (s=1) => `<svg width="${Math.round(140*s)}" height="${Math.round(150*s)}" viewBox="0 0 140 150" fill="none"><rect x="6" y="24" width="54" height="14" rx="4" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="31" r="2" stroke="currentColor" stroke-width="1.2"/><circle cx="30" cy="31" r="2" stroke="currentColor" stroke-width="1.2"/><circle cx="42" cy="31" r="2" stroke="currentColor" stroke-width="1.2"/><rect x="14" y="37" width="38" height="7" rx="2" stroke="currentColor" stroke-width="1.5"/><rect x="4" y="43" width="58" height="86" rx="8" stroke="currentColor" stroke-width="2"/><rect x="12" y="62" width="42" height="34" rx="3" stroke="currentColor" stroke-width="1.3"/><line x1="16" y1="74" x2="50" y2="74" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 5"/><line x1="16" y1="84" x2="46" y2="84" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 5"/><rect x="82" y="34" width="52" height="13" rx="4" stroke="currentColor" stroke-width="1.8"/><circle cx="94" cy="40.5" r="2" stroke="currentColor" stroke-width="1.2"/><circle cx="108" cy="40.5" r="2" stroke="currentColor" stroke-width="1.2"/><rect x="90" y="46" width="36" height="7" rx="2" stroke="currentColor" stroke-width="1.5"/><rect x="80" y="52" width="58" height="76" rx="8" stroke="currentColor" stroke-width="2"/><rect x="88" y="70" width="42" height="30" rx="3" stroke="currentColor" stroke-width="1.3"/><line x1="92" y1="80" x2="126" y2="80" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 5"/><line x1="92" y1="90" x2="122" y2="90" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 5"/></svg>`,
+  cookieJar: (s=1) => `<svg width="${Math.round(120*s)}" height="${Math.round(155*s)}" viewBox="0 0 120 155" fill="none"><ellipse cx="60" cy="14" rx="14" ry="9" stroke="currentColor" stroke-width="2"/><ellipse cx="60" cy="10" rx="10" ry="6" stroke="currentColor" stroke-width="1.5"/><ellipse cx="60" cy="32" rx="48" ry="16" stroke="currentColor" stroke-width="2"/><ellipse cx="60" cy="27" rx="40" ry="11" stroke="currentColor" stroke-width="1.4"/><path d="M14 40 Q10 82 10 100 Q10 140 60 140 Q110 140 110 100 Q110 82 106 40 Z" stroke="currentColor" stroke-width="2.2" fill="none"/><path d="M16 56 Q60 48 104 56" stroke="currentColor" stroke-width="1.2"/><path d="M16 62 Q60 55 104 62" stroke="currentColor" stroke-width="0.9"/><circle cx="60" cy="98" r="22" stroke="currentColor" stroke-width="1.5"/><circle cx="52" cy="92" r="3" stroke="currentColor" stroke-width="1.3"/><circle cx="68" cy="92" r="3" stroke="currentColor" stroke-width="1.3"/><circle cx="56" cy="104" r="3" stroke="currentColor" stroke-width="1.3"/><circle cx="72" cy="104" r="2.5" stroke="currentColor" stroke-width="1.2"/><circle cx="46" cy="104" r="2.5" stroke="currentColor" stroke-width="1.2"/></svg>`,
+  oliveOil: (s=1) => `<svg width="${Math.round(80*s)}" height="${Math.round(160*s)}" viewBox="0 0 80 160" fill="none"><rect x="30" y="6" width="20" height="15" rx="4" stroke="currentColor" stroke-width="2"/><rect x="26" y="20" width="28" height="30" rx="5" stroke="currentColor" stroke-width="2"/><line x1="24" y1="36" x2="56" y2="36" stroke="currentColor" stroke-width="1.2"/><path d="M16 50 Q12 86 12 106 Q12 144 40 144 Q68 144 68 106 Q68 86 64 50 Z" stroke="currentColor" stroke-width="2.2" fill="none"/><rect x="20" y="66" width="40" height="48" rx="4" stroke="currentColor" stroke-width="1.5"/><line x1="26" y1="80" x2="54" y2="80" stroke="currentColor" stroke-width="1" stroke-dasharray="3 4"/><line x1="26" y1="90" x2="52" y2="90" stroke="currentColor" stroke-width="1" stroke-dasharray="3 4"/><path d="M28 104 Q40 96 52 104" stroke="currentColor" stroke-width="1.3" fill="none"/><ellipse cx="36" cy="100" rx="5" ry="3" stroke="currentColor" stroke-width="1.1" transform="rotate(-20 36 100)"/><ellipse cx="48" cy="100" rx="5" ry="3" stroke="currentColor" stroke-width="1.1" transform="rotate(20 48 100)"/></svg>`,
+  castIron: (s=1) => `<svg width="${Math.round(160*s)}" height="${Math.round(120*s)}" viewBox="0 0 160 120" fill="none"><ellipse cx="76" cy="76" rx="56" ry="40" stroke="currentColor" stroke-width="2.2"/><ellipse cx="76" cy="76" rx="44" ry="30" stroke="currentColor" stroke-width="1.4"/><ellipse cx="72" cy="68" rx="14" ry="9" stroke="currentColor" stroke-width="1" transform="rotate(-15 72 68)"/><rect x="128" y="70" width="30" height="14" rx="7" stroke="currentColor" stroke-width="2"/><rect x="130" y="73" width="24" height="8" rx="4" stroke="currentColor" stroke-width="1.3"/><path d="M24 76 Q12 76 9 68 Q7 60 13 60 L22 60" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" fill="none"/></svg>`,
+  lemon: (s=1) => `<svg width="${Math.round(110*s)}" height="${Math.round(100*s)}" viewBox="0 0 110 100" fill="none"><path d="M6 55 Q6 14 55 10 Q104 14 104 55 Z" stroke="currentColor" stroke-width="2" fill="none"/><line x1="55" y1="10" x2="55" y2="55" stroke="currentColor" stroke-width="1.3"/><line x1="8" y1="30" x2="55" y2="55" stroke="currentColor" stroke-width="1.1"/><line x1="102" y1="30" x2="55" y2="55" stroke="currentColor" stroke-width="1.1"/><line x1="16" y1="15" x2="55" y2="55" stroke="currentColor" stroke-width="0.9"/><line x1="94" y1="15" x2="55" y2="55" stroke="currentColor" stroke-width="0.9"/><line x1="6" y1="55" x2="104" y2="55" stroke="currentColor" stroke-width="2"/><path d="M55 10 Q55 4 59 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M57 7 Q64 2 68 8 Q62 12 57 7Z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>`,
+  pinecone: (s=1) => `<svg width="${Math.round(88*s)}" height="${Math.round(145*s)}" viewBox="0 0 88 145" fill="none"><line x1="44" y1="6" x2="44" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M38 10 Q44 3 50 10" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M30 22 Q44 14 58 22 Q54 36 44 40 Q34 36 30 22Z" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M22 40 Q44 28 66 40 Q61 58 44 63 Q27 58 22 40Z" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M16 62 Q44 47 72 62 Q66 84 44 90 Q22 84 16 62Z" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M18 90 Q44 75 70 90 Q65 110 44 116 Q23 110 18 90Z" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M24 116 Q44 104 64 116 Q60 130 44 135 Q28 130 24 116Z" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M34 135 Q44 128 54 135 Q52 142 44 145 Q36 142 34 135Z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>`,
+};
+
+const SEASONS = {
+  spring: [
+    { slot:'top-right', key:'recipeBox',    scale:0.72, opacity:0.07, delay:500 },
+    { slot:'mid-left',  key:'herbs',        scale:0.62, opacity:0.07, delay:700 },
+    { slot:'bot-right', key:'spiceJars',    scale:0.60, opacity:0.07, delay:900 },
+  ],
+  summer: [
+    { slot:'top-right', key:'lemon',        scale:0.78, opacity:0.08, delay:500 },
+    { slot:'mid-left',  key:'oliveOil',     scale:0.60, opacity:0.07, delay:700 },
+    { slot:'bot-right', key:'herbs',        scale:0.62, opacity:0.07, delay:900 },
+  ],
+  fall: [
+    { slot:'top-right', key:'cookieJar',    scale:0.68, opacity:0.07, delay:500 },
+    { slot:'mid-left',  key:'cuttingBoard', scale:0.58, opacity:0.07, delay:700 },
+    { slot:'bot-right', key:'pinecone',     scale:0.64, opacity:0.07, delay:900 },
+  ],
+  winter: [
+    { slot:'top-right', key:'cookieJar',    scale:0.70, opacity:0.08, delay:500 },
+    { slot:'mid-left',  key:'castIron',     scale:0.62, opacity:0.07, delay:700 },
+    { slot:'bot-right', key:'pinecone',     scale:0.62, opacity:0.07, delay:900 },
+  ],
+};
+
+const SLOTS = {
+  'top-right': { top:'88px',    right:'-4px',  bottom:'auto', left:'auto' },
+  'mid-left':  { top:'42%',     left:'-8px',   bottom:'auto', right:'auto' },
+  'bot-right': { bottom:'68px', right:'-4px',  top:'auto',    left:'auto' },
+};
+
+const PARALLAX_RATE = { 'top-right':0.10, 'mid-left':0.15, 'bot-right':0.20 };
+
+function getSeason() {
+  const m = new Date().getMonth();
+  if (m>=2&&m<=4) return 'spring';
+  if (m>=5&&m<=7) return 'summer';
+  if (m>=8&&m<=10) return 'fall';
+  return 'winter';
+}
+
+function injectWatermarks(seasonKey) {
+  const layer = document.getElementById('wm-layer');
+  if (!layer) return;
+  const injected = [];
+  SEASONS[seasonKey].forEach(({ slot, key, scale, opacity, delay }) => {
+    const pos = SLOTS[slot];
+    const wrap = document.createElement('div');
+    wrap.className = 'wm-object';
+    wrap.style.top = pos.top; wrap.style.right = pos.right;
+    wrap.style.bottom = pos.bottom; wrap.style.left = pos.left;
+    wrap.style.willChange = 'transform, opacity';
+    wrap.innerHTML = OBJ[key] ? OBJ[key](scale) : '';
+    layer.appendChild(wrap);
+    injected.push({ el:wrap, slot });
+    setTimeout(() => { wrap.style.transition='opacity 1.4s ease'; wrap.style.opacity=String(opacity); }, delay+50);
+  });
+  // Parallax
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        const scrollY = window.scrollY;
+        injected.forEach(({ el, slot }) => {
+          el.style.transform = `translateY(${-(scrollY*(PARALLAX_RATE[slot]||0.15)).toFixed(2)}px)`;
+        });
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive:true });
+}
+
+window.addEventListener('load', () => injectWatermarks(getSeason()));
+if (document.readyState === 'complete') injectWatermarks(getSeason());
+</script>
+</body>
+</html>

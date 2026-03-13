@@ -1,0 +1,1007 @@
+/**
+ * Dashboard.jsx — Home screen.
+ * Matches prototypes/roux-dashboard-cuttingboard.html exactly.
+ */
+
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
+import WatermarkLayer from '../components/WatermarkLayer'
+import { getWeekDatesTZ, getWeekStartTZ, getDayOfWeekTZ, getTodayStr, timeGreetingTZ, toLocalDateStr } from '../lib/dateUtils'
+
+// ── Design tokens ──────────────────────────────────────────────────────────────
+const C = {
+  forest:    '#3D6B4F',
+  forestDk:  '#2E5038',
+  sage:      '#7A8C6E',
+  honey:     '#C49A3C',
+  cream:     '#FAF7F2',
+  ink:       '#2C2417',
+  driftwood: '#8C7B6B',
+  linen:     '#E8E0D0',
+  walnut:    '#8B6F52',
+  red:       '#A03030',
+}
+
+// ── Date/time helpers ──────────────────────────────────────────────────────────
+const DOW_KEYS  = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday']
+const MON_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] // Mon-based
+
+function getMondayBasedIndex(jsDay) {
+  // Convert JS getDay() (0=Sun) to Monday-based index (0=Mon, 6=Sun)
+  return jsDay === 0 ? 6 : jsDay - 1
+}
+
+function formatGreetingDate(d) {
+  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+}
+
+function getDayType(jsDay) {
+  // 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
+  if (jsDay === 0 || jsDay === 6) return { label: 'Weekend', emoji: '🟢', color: '#3D6B4F', bg: 'rgba(61,107,79,0.10)', border: 'rgba(61,107,79,0.18)' }
+  return { label: 'School Day', emoji: '🔵', color: '#3A6CB5', bg: 'rgba(91,141,217,0.10)', border: 'rgba(91,141,217,0.18)' }
+}
+
+function getMealName(meal) {
+  if (!meal) return null
+  if (meal.slot_type === 'meal')     return meal.meals?.name ?? null
+  if (meal.slot_type === 'recipe')   return meal.recipes?.name ?? null
+  if (meal.slot_type === 'note')     return meal.note ?? null
+  if (meal.slot_type === 'leftover') return 'Leftovers'
+  if (meal.slot_type === 'takeout')  return 'Eating Out'
+  return meal.meals?.name ?? meal.recipes?.name ?? meal.note ?? null
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
+export default function Dashboard({ appUser }) {
+  const navigate = useNavigate()
+
+  const [householdName, setHouseholdName]   = useState(null)
+  const [activePlan, setActivePlan]         = useState(null)
+  const [tonightMeal, setTonightMeal]       = useState(null)
+  const [weekMeals, setWeekMeals]           = useState([])
+  const [shoppingList, setShoppingList]     = useState(null)
+  const [spendUsedPct, setSpendUsedPct]     = useState(null)
+  const [loading, setLoading]               = useState(true)
+  const [sageOpen, setSageOpen]             = useState(false)
+
+  const tz         = appUser?.timezone ?? 'America/Chicago'
+  const weekDates  = getWeekDatesTZ(tz)                     // [Mon..Sun]
+  const today      = new Date()
+  const todayJsDay = getDayOfWeekTZ(tz)                     // 0=Sun..6=Sat in user's TZ
+  const todayDow   = DOW_KEYS[todayJsDay]                   // e.g. 'thursday'
+  const todayMbIdx = getMondayBasedIndex(todayJsDay)        // 0=Mon..6=Sun
+  const dayType    = getDayType(todayJsDay)
+  const firstName  = appUser?.name?.split(' ')[0] ?? ''
+
+  useEffect(() => {
+    if (appUser?.household_id) loadDashboardData()
+  }, [appUser?.household_id])
+
+  async function loadDashboardData() {
+    setLoading(true)
+    try {
+      const hid = appUser.household_id
+      const weekStart = getWeekStartTZ(tz)
+
+      const [householdRes, planRes] = await Promise.all([
+        supabase.from('households').select('name').eq('id', hid).maybeSingle(),
+        supabase.from('meal_plans')
+          .select('id, status, week_start_date, week_end_date')
+          .eq('household_id', hid)
+          .eq('week_start_date', weekStart)
+          .maybeSingle(),
+      ])
+
+      if (householdRes.data) setHouseholdName(householdRes.data.name)
+
+      const plan = planRes.data
+      setActivePlan(plan)
+
+      if (plan) {
+        const [tonightRes, weekRes, shoppingRes] = await Promise.all([
+          supabase.from('planned_meals')
+            .select('*, meals(name), recipes(name, prep_time_minutes), household_traditions(name)')
+            .eq('meal_plan_id', plan.id)
+            .eq('day_of_week', todayDow)
+            .eq('meal_type', 'dinner')
+            .maybeSingle(),
+
+          supabase.from('planned_meals')
+            .select('day_of_week, status, tradition_id, slot_type, note')
+            .eq('meal_plan_id', plan.id)
+            .eq('meal_type', 'dinner'),
+
+          supabase.from('shopping_lists')
+            .select('id, estimated_cost, actual_cost')
+            .eq('meal_plan_id', plan.id)
+            .maybeSingle(),
+        ])
+
+        if (tonightRes.data) setTonightMeal(tonightRes.data)
+        if (weekRes.data)    setWeekMeals(weekRes.data)
+
+        if (shoppingRes.data) {
+          setShoppingList(shoppingRes.data)
+          // Fetch used % from item counts
+          const sid = shoppingRes.data.id
+          const [totalRes, purchasedRes] = await Promise.all([
+            supabase.from('shopping_list_items').select('id', { count: 'exact', head: true }).eq('shopping_list_id', sid),
+            supabase.from('shopping_list_items').select('id', { count: 'exact', head: true }).eq('shopping_list_id', sid).eq('is_purchased', true),
+          ])
+          const total     = totalRes.count ?? 0
+          const purchased = purchasedRes.count ?? 0
+          if (total > 0) setSpendUsedPct(Math.round((purchased / total) * 100))
+        }
+      }
+    } catch (err) {
+      console.error('Dashboard load error:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Compute open dinner days (today onward) for Sage nudge
+  const plannedDows = new Set(weekMeals.map(m => m.day_of_week))
+  const openDayNames = weekDates
+    .slice(todayMbIdx)
+    .filter(d => !plannedDows.has(DOW_KEYS[getMondayBasedIndex(d.getDay())]))
+    .map(d => MON_SHORT[getMondayBasedIndex(d.getDay())])
+
+  // Plan status text for greeting
+  const plannedCount = weekMeals.length
+  const planStatusText = !activePlan ? 'No plan yet'
+    : activePlan.status === 'published' ? 'Plan published'
+    : activePlan.status === 'active'    ? 'Week active'
+    : activePlan.status === 'draft'     ? 'Draft in progress'
+    : activePlan.status === 'completed' ? 'Week complete'
+    : 'Plan exists'
+
+  return (
+    <div style={{
+      background: C.cream,
+      fontFamily: "'Jost', sans-serif",
+      fontWeight: 300,
+      minHeight: '100vh',
+      maxWidth: '430px',
+      margin: '0 auto',
+      display: 'flex',
+      flexDirection: 'column',
+      position: 'relative',
+      paddingBottom: '96px',
+    }}>
+
+      <WatermarkLayer />
+
+      {/* ── Topbar ──────────────────────────────────────────────────────── */}
+      <header style={{
+        position: 'sticky', top: 0, zIndex: 100,
+        height: '66px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 22px',
+        background: C.forest,
+        boxShadow: `
+          0 2px 0px rgba(20,40,25,0.55),
+          0 4px 8px rgba(20,40,25,0.40),
+          0 8px 24px rgba(30,55,35,0.28),
+          0 16px 40px rgba(30,55,35,0.14),
+          0 1px 0px rgba(255,255,255,0.06) inset
+        `,
+        flexShrink: 0,
+      }}>
+        <div style={{
+          fontFamily: "'Playfair Display', serif",
+          fontSize: '26px', fontWeight: 600,
+          color: 'rgba(250,247,242,0.95)',
+          userSelect: 'none', letterSpacing: '-0.3px',
+        }}>
+          Ro<em style={{ fontStyle: 'italic', color: 'rgba(188,218,178,0.82)' }}>ux</em>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+          {/* Bell */}
+          <button style={iconBtnStyle} aria-label="Notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            {/* Notification dot */}
+            <span style={{
+              position: 'absolute', top: '7px', right: '7px',
+              width: '7px', height: '7px', borderRadius: '50%',
+              background: C.honey, border: `1.5px solid ${C.forest}`,
+            }} />
+          </button>
+
+          {/* Search */}
+          <button style={iconBtnStyle} aria-label="Search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.35-4.35"/>
+            </svg>
+          </button>
+
+          {/* Avatar */}
+          <div style={{
+            width: '34px', height: '34px', borderRadius: '50%',
+            background: 'rgba(255,255,255,0.18)',
+            color: 'rgba(250,247,242,0.95)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+            marginLeft: '6px', border: '1.5px solid rgba(255,255,255,0.25)',
+            userSelect: 'none',
+          }}>
+            {firstName.charAt(0).toUpperCase() || '?'}
+          </div>
+        </div>
+      </header>
+
+      {/* ── Scrollable content ────────────────────────────────────────────── */}
+      <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
+
+        {/* ── Greeting ──────────────────────────────────────────────────── */}
+        <div style={{
+          padding: '24px 22px 18px',
+          animation: 'fadeUp 0.4s ease both',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{
+              fontSize: '10px', letterSpacing: '2.5px', textTransform: 'uppercase',
+              color: C.sage, fontWeight: 500,
+            }}>
+              {formatGreetingDate(today)}
+            </span>
+            <span style={{
+              fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px',
+              textTransform: 'uppercase', padding: '3px 9px', borderRadius: '20px',
+              background: dayType.bg, color: dayType.color,
+              border: `1px solid ${dayType.border}`,
+            }}>
+              {dayType.emoji} {dayType.label}
+            </span>
+          </div>
+
+          <h1 style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: '29px', fontWeight: 500, color: C.ink, lineHeight: 1.2,
+            margin: 0,
+          }}>
+            {timeGreetingTZ(tz)},<br />
+            <em style={{ fontStyle: 'italic', color: C.sage }}>
+              {householdName ? `${householdName}.` : (loading ? '…' : `${firstName}.`)}
+            </em>
+          </h1>
+
+          {!loading && (
+            <div style={{
+              marginTop: '5px', fontSize: '12px', color: C.driftwood, fontWeight: 300,
+              display: 'flex', alignItems: 'center', gap: '10px',
+            }}>
+              <span>{plannedCount} of 7 nights planned</span>
+              <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: C.linen, flexShrink: 0 }} />
+              <span>{planStatusText}</span>
+            </div>
+          )}
+        </div>
+
+        {/* ── Tonight Card ──────────────────────────────────────────────── */}
+        {loading ? (
+          <ShimmerCard height="160px" margin="0 22px 14px" />
+        ) : tonightMeal ? (
+          <TonightFilled meal={tonightMeal} onView={() => navigate('/thisweek')} />
+        ) : (
+          <TonightEmpty onPlan={() => navigate('/thisweek')} />
+        )}
+
+        {/* ── This Week Strip ───────────────────────────────────────────── */}
+        {loading ? (
+          <ShimmerCard height="88px" margin="0 22px 14px" />
+        ) : (
+          <WeekStrip
+            weekDates={weekDates}
+            weekMeals={weekMeals}
+            todayMbIdx={todayMbIdx}
+            onFullPlan={() => navigate('/thisweek')}
+          />
+        )}
+
+        {/* ── Sage Nudge ────────────────────────────────────────────────── */}
+        <SageNudge
+          openDayNames={openDayNames}
+          loading={loading}
+          open={sageOpen}
+          onToggle={() => setSageOpen(v => !v)}
+        />
+
+        {/* ── Spending Snapshot ─────────────────────────────────────────── */}
+        <SpendingSnapshot
+          shoppingList={shoppingList}
+          usedPct={spendUsedPct}
+          loading={loading}
+        />
+
+        {/* ── Quick Access ──────────────────────────────────────────────── */}
+        <QuickAccess navigate={navigate} />
+
+      </div>
+
+      {/* ── Bottom Nav ────────────────────────────────────────────────────── */}
+      <BottomNav navigate={navigate} />
+
+    </div>
+  )
+}
+
+// ── Shared icon button style (topbar) ─────────────────────────────────────────
+const iconBtnStyle = {
+  width: '38px', height: '38px', borderRadius: '50%',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  border: 'none', background: 'none', cursor: 'pointer',
+  color: 'rgba(210,230,200,0.7)',
+  position: 'relative',
+}
+
+// ── Shimmer placeholder card ──────────────────────────────────────────────────
+function ShimmerCard({ height, margin }) {
+  return (
+    <div
+      className="shimmer-block"
+      style={{ height, margin: margin ?? '0 22px 14px' }}
+    />
+  )
+}
+
+// ── Tonight Card — filled (cutting board) ────────────────────────────────────
+function TonightFilled({ meal, onView }) {
+  const mealName = getMealName(meal)
+  const tradition = meal.household_traditions?.name
+  const prepMin = meal.recipes?.prep_time_minutes
+
+  return (
+    <div
+      className="tonight-board"
+      style={{ margin: '0 22px 14px' }}
+      onClick={onView}
+    >
+      <div style={{ padding: '20px 20px 18px', position: 'relative', zIndex: 1 }}>
+        {/* Top row */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '11px' }}>
+          <div style={{
+            fontSize: '9px', fontWeight: 500, letterSpacing: '2.5px',
+            textTransform: 'uppercase', color: 'rgba(80,38,8,0.52)',
+            display: 'flex', alignItems: 'center', gap: '6px',
+          }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 10, height: 10 }}>
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+            </svg>
+            Tonight
+          </div>
+          {tradition && (
+            <span style={{
+              fontSize: '10px', fontWeight: 500, padding: '4px 10px', borderRadius: '20px',
+              background: 'rgba(80,38,8,0.12)', color: 'rgba(60,25,5,0.88)',
+              border: '1px solid rgba(80,38,8,0.18)', letterSpacing: '0.2px',
+            }}>
+              {tradition}
+            </span>
+          )}
+        </div>
+
+        {/* Meal name */}
+        <div style={{
+          fontFamily: "'Playfair Display', serif",
+          fontSize: '27px', fontWeight: 500,
+          color: 'rgba(40,18,4,0.92)', lineHeight: 1.2, marginBottom: '16px',
+        }}>
+          {mealName ?? 'Dinner'}
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: '1px', background: 'rgba(80,38,8,0.14)', marginBottom: '14px' }} />
+
+        {/* Footer */}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          {prepMin && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'rgba(80,38,8,0.58)', fontWeight: 300, flex: 1 }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13, opacity: 0.65 }}>
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 6v6l4 2"/>
+                </svg>
+                <strong style={{ color: 'rgba(40,18,4,0.88)', fontWeight: 500 }}>{prepMin}m</strong>&nbsp;prep
+              </div>
+              <div style={{ width: '1px', height: '16px', background: 'rgba(80,38,8,0.14)', margin: '0 8px' }} />
+            </>
+          )}
+          <button
+            onClick={e => { e.stopPropagation(); onView() }}
+            style={{
+              fontSize: '11px', fontWeight: 500, letterSpacing: '0.3px',
+              color: 'rgba(40,18,4,0.80)', background: 'rgba(80,38,8,0.10)',
+              border: '1px solid rgba(80,38,8,0.20)', borderRadius: '8px',
+              padding: '6px 13px', cursor: 'pointer', whiteSpace: 'nowrap',
+              marginLeft: 'auto',
+            }}
+          >
+            View recipe →
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Tonight Card — empty state ─────────────────────────────────────────────────
+function TonightEmpty({ onPlan }) {
+  return (
+    <div
+      style={{
+        margin: '0 22px 14px', borderRadius: '20px',
+        border: `1.5px dashed rgba(61,107,79,0.3)`,
+        padding: '22px 20px', cursor: 'pointer',
+        position: 'relative', zIndex: 1,
+        animation: 'fadeUp 0.4s ease 0.05s both',
+        transition: 'all 0.15s',
+      }}
+      onClick={onPlan}
+    >
+      <div style={{
+        fontSize: '9px', fontWeight: 500, letterSpacing: '2.5px',
+        textTransform: 'uppercase', color: C.sage, marginBottom: '8px',
+      }}>
+        Tonight
+      </div>
+      <div style={{
+        fontFamily: "'Playfair Display', serif",
+        fontSize: '22px', fontStyle: 'italic',
+        color: 'rgba(44,36,23,0.38)', marginBottom: '14px',
+      }}>
+        What's for dinner?
+      </div>
+      <button
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: '6px',
+          background: C.forest, color: 'white', border: 'none',
+          borderRadius: '9px', padding: '9px 16px',
+          fontFamily: "'Jost', sans-serif", fontSize: '12px', fontWeight: 500,
+          cursor: 'pointer', boxShadow: '0 2px 8px rgba(61,107,79,0.22)',
+        }}
+        onClick={e => { e.stopPropagation(); onPlan() }}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        Plan tonight's meal
+      </button>
+    </div>
+  )
+}
+
+// ── This Week Strip ───────────────────────────────────────────────────────────
+function WeekStrip({ weekDates, weekMeals, todayMbIdx, onFullPlan }) {
+  const plannedMap = {}
+  weekMeals.forEach(m => {
+    plannedMap[m.day_of_week] = m
+  })
+
+  return (
+    <div style={{ margin: '0 22px 14px', position: 'relative', zIndex: 1, animation: 'fadeUp 0.4s ease 0.10s both' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '9px' }}>
+        <span style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood }}>
+          This Week
+        </span>
+        <button
+          onClick={onFullPlan}
+          style={{
+            fontSize: '12px', color: C.forest, background: 'none', border: 'none',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px', fontWeight: 400,
+            fontFamily: "'Jost', sans-serif",
+          }}
+        >
+          Full plan
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13 }}>
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </button>
+      </div>
+
+      {/* Day cells */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '5px' }}>
+        {weekDates.map((d, i) => {
+          const isToday   = i === todayMbIdx
+          const dowKey    = DOW_KEYS[getMondayBasedIndex(d.getDay())]
+          const meal      = plannedMap[dowKey]
+          const hasPlanned = !!meal
+          const hasTrad   = hasPlanned && !!meal.tradition_id
+          const isOpen    = !hasPlanned
+
+          return (
+            <div
+              key={i}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+                padding: '9px 4px 7px', borderRadius: '11px',
+                background: isToday ? C.forest : isOpen ? 'rgba(250,247,242,0.5)' : 'white',
+                border: `1px ${isOpen ? 'dashed' : 'solid'} ${isToday ? C.forest : 'rgba(200,185,160,0.5)'}`,
+                boxShadow: isToday ? '0 3px 10px rgba(30,65,42,0.22), 0 8px 20px rgba(30,65,42,0.14)' : '0 1px 3px rgba(80,60,30,0.05)',
+                transform: isToday ? 'translateY(-2px)' : 'none',
+                cursor: 'pointer',
+                transition: 'transform 0.12s',
+              }}
+            >
+              <span style={{
+                fontSize: '8px', fontWeight: 500, letterSpacing: '1px',
+                textTransform: 'uppercase',
+                color: isToday ? 'rgba(255,255,255,0.58)' : C.driftwood,
+              }}>
+                {MON_SHORT[i]}
+              </span>
+              <span style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: '16px', fontWeight: 400, lineHeight: 1,
+                color: isToday ? 'white' : isOpen ? 'rgba(140,123,107,0.45)' : C.ink,
+              }}>
+                {d.getDate()}
+              </span>
+              {/* Pip */}
+              <span style={{
+                width: '5px', height: '5px', borderRadius: '50%',
+                background: isToday
+                  ? (hasTrad ? C.honey : 'rgba(255,255,255,0.55)')
+                  : hasTrad
+                  ? C.honey
+                  : hasPlanned
+                  ? C.sage
+                  : 'rgba(200,185,160,0.45)',
+                animation: `pipIn 0.3s ease ${0.15 + i * 0.04}s both`,
+              }} />
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── Sage Nudge ────────────────────────────────────────────────────────────────
+function SageNudge({ openDayNames, loading, open, onToggle }) {
+  let preview = 'Your week is all set. Let me know if you want ideas.'
+  let fullMsg  = 'Looks like you\'ve got the whole week covered — I\'ll stay quiet unless you need me. Just tap here to chat.'
+
+  if (!loading && openDayNames.length === 1) {
+    preview = `${openDayNames[0]} is still open — want a suggestion?`
+    fullMsg  = `${openDayNames[0]} doesn't have a dinner planned yet. Want me to suggest something based on what you have this week?`
+  } else if (!loading && openDayNames.length >= 2) {
+    const last  = openDayNames[openDayNames.length - 1]
+    const other = openDayNames.slice(0, -1).join(', ')
+    preview  = `${other} and ${last} are still open — want suggestions?`
+    fullMsg  = `${other} and ${last} don't have dinners yet. I have some ideas that would work with this week's groceries without feeling repetitive.`
+  }
+
+  return (
+    <div
+      style={{
+        margin: '0 22px 14px',
+        background: 'white',
+        border: `1px solid rgba(200,185,160,0.55)`,
+        borderLeft: `3px solid ${C.sage}`,
+        borderRadius: '14px',
+        overflow: 'hidden',
+        cursor: 'pointer',
+        boxShadow: '0 1px 4px rgba(80,60,30,0.06), 0 3px 10px rgba(80,60,30,0.04)',
+        animation: 'fadeUp 0.4s ease 0.14s both',
+        position: 'relative', zIndex: 1,
+      }}
+      onClick={onToggle}
+    >
+      {/* Collapsed row */}
+      <div style={{ padding: '13px 14px', display: 'flex', alignItems: 'center', gap: '11px' }}>
+        <div style={{
+          width: '28px', height: '28px', borderRadius: '50%',
+          background: 'rgba(122,140,110,0.10)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke={C.sage} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+          </svg>
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '3px' }}>
+            <span
+              className="sage-pulse-dot"
+              style={{ width: '5px', height: '5px', borderRadius: '50%', background: C.sage, flexShrink: 0 }}
+            />
+            <span style={{ fontSize: '9px', letterSpacing: '2px', textTransform: 'uppercase', color: C.sage, fontWeight: 500 }}>
+              Sage
+            </span>
+          </div>
+          <div style={{
+            fontSize: '13px', color: C.driftwood, fontWeight: 300,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            opacity: open ? 0 : 1,
+            transition: 'opacity 0.12s ease',
+          }}>
+            {loading ? '…' : preview}
+          </div>
+        </div>
+
+        {/* Chevron */}
+        <svg
+          viewBox="0 0 24 24" fill="none" stroke={C.sage} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+          style={{ width: 14, height: 14, opacity: 0.55, flexShrink: 0, transition: 'transform 0.28s', transform: open ? 'rotate(180deg)' : 'none' }}
+        >
+          <path d="m6 9 6 6 6-6"/>
+        </svg>
+      </div>
+
+      {/* Expanded content */}
+      <div style={{
+        maxHeight: open ? '130px' : '0',
+        overflow: 'hidden',
+        opacity: open ? 1 : 0,
+        transition: 'max-height 0.32s ease, opacity 0.22s ease 0.10s',
+        padding: open ? '0 14px' : '0 14px',
+      }}>
+        <p style={{ fontSize: '14px', color: C.ink, lineHeight: 1.62, fontWeight: 300, paddingBottom: '12px' }}>
+          {fullMsg}
+        </p>
+        <div style={{ display: 'flex', gap: '8px', paddingBottom: '14px' }}>
+          <button
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'rgba(122,140,110,0.12)', border: '1px solid rgba(122,140,110,0.22)',
+              color: C.forest, padding: '7px 14px', borderRadius: '8px',
+              fontSize: '12px', fontFamily: "'Jost', sans-serif", cursor: 'pointer', fontWeight: 400,
+            }}
+          >
+            Show me ideas
+          </button>
+          <button
+            onClick={e => { e.stopPropagation(); onToggle() }}
+            style={{
+              background: 'none', border: 'none', color: C.driftwood,
+              fontSize: '12px', fontFamily: "'Jost', sans-serif",
+              fontWeight: 300, cursor: 'pointer', padding: '7px 8px',
+            }}
+          >
+            Not now
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Spending Snapshot ─────────────────────────────────────────────────────────
+function SpendingSnapshot({ shoppingList, usedPct, loading }) {
+  if (loading) return <ShimmerCard height="120px" margin="0 22px 14px" />
+
+  const estimated = shoppingList?.estimated_cost
+  const spent     = shoppingList?.actual_cost
+  const variance  = (estimated != null && spent != null) ? (estimated - spent) : null
+  const under     = variance != null && variance >= 0
+
+  // No data yet
+  if (!shoppingList || (estimated == null && spent == null)) {
+    return (
+      <div style={{
+        margin: '0 22px 14px',
+        background: 'white',
+        border: '1px solid rgba(200,185,160,0.55)',
+        borderRadius: '16px',
+        overflow: 'hidden',
+        boxShadow: '0 1px 4px rgba(80,60,30,0.06), 0 3px 10px rgba(80,60,30,0.04)',
+        animation: 'fadeUp 0.4s ease 0.18s both',
+        position: 'relative', zIndex: 1,
+      }}>
+        <div style={{
+          padding: '13px 16px 12px',
+          borderBottom: '1px solid rgba(232,224,208,0.8)',
+        }}>
+          <span style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood }}>
+            This Week's Spend
+          </span>
+        </div>
+        <div style={{ padding: '18px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke={C.sage} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
+            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+          </svg>
+          <span style={{ fontSize: '13px', color: C.driftwood, fontWeight: 300, lineHeight: 1.5 }}>
+            Spending insights appear after your first completed week.
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{
+      margin: '0 22px 14px',
+      background: 'white',
+      border: '1px solid rgba(200,185,160,0.55)',
+      borderRadius: '16px',
+      overflow: 'hidden',
+      boxShadow: '0 1px 4px rgba(80,60,30,0.06), 0 3px 10px rgba(80,60,30,0.04)',
+      animation: 'fadeUp 0.4s ease 0.18s both',
+      position: 'relative', zIndex: 1,
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '13px 16px 12px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        borderBottom: '1px solid rgba(232,224,208,0.8)',
+      }}>
+        <span style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood }}>
+          This Week's Spend
+        </span>
+        {variance != null && (
+          <span style={{
+            display: 'flex', alignItems: 'center', gap: '4px',
+            fontSize: '12px', fontWeight: 500, padding: '3px 9px', borderRadius: '20px',
+            background: under ? 'rgba(61,107,79,0.08)' : 'rgba(180,55,55,0.07)',
+            color: under ? C.forest : C.red,
+            border: `1px solid ${under ? 'rgba(61,107,79,0.14)' : 'rgba(180,55,55,0.15)'}`,
+          }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 11, height: 11 }}>
+              <path d={under ? 'm18 15-6-6-6 6' : 'm6 9 6 6 6-6'} />
+            </svg>
+            ${Math.abs(Math.round(variance))} {under ? 'under' : 'over'}
+          </span>
+        )}
+      </div>
+
+      {/* Three figures */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr 1px 1fr', alignItems: 'stretch' }}>
+        <SpendFig
+          value={estimated != null ? `$${Math.round(estimated)}` : '—'}
+          label="Estimated"
+          quiet
+        />
+        <div style={{ background: 'rgba(232,224,208,0.7)' }} />
+        <SpendFig
+          value={spent != null ? `$${Math.round(spent)}` : '—'}
+          label="Spent"
+        />
+        <div style={{ background: 'rgba(232,224,208,0.7)' }} />
+        <SpendFig
+          value={usedPct != null ? `${usedPct}%` : '—'}
+          label="Used"
+          win={usedPct != null && usedPct >= 80}
+          alignRight
+        />
+      </div>
+
+      {/* Sage insight */}
+      <div style={{
+        padding: '10px 16px 11px',
+        borderTop: '1px dashed rgba(200,185,160,0.6)',
+        display: 'flex', alignItems: 'center', gap: '7px',
+      }}>
+        <svg viewBox="0 0 24 24" fill="none" stroke={C.sage} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12, flexShrink: 0 }}>
+          <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+        </svg>
+        <span style={{ fontSize: '11.5px', color: C.driftwood, fontWeight: 300, lineHeight: 1.4 }}>
+          Weeks with 5+ planned meals save an average of{' '}
+          <span style={{ color: C.forest, fontWeight: 500 }}>$34</span>
+          {' '}— you're on track.
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function SpendFig({ value, label, quiet, win, alignRight }) {
+  return (
+    <div style={{
+      padding: '14px 12px 13px',
+      textAlign: alignRight ? 'right' : quiet ? 'left' : 'center',
+      paddingLeft:  quiet ? '16px' : '12px',
+      paddingRight: alignRight ? '16px' : '12px',
+    }}>
+      <div style={{
+        fontFamily: "'Playfair Display', serif",
+        fontSize: quiet ? '19px' : '23px',
+        fontWeight: 400,
+        color: win ? C.forest : quiet ? C.driftwood : C.ink,
+        lineHeight: 1, marginBottom: '4px', letterSpacing: '-0.5px',
+      }}>
+        {value}
+      </div>
+      <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '1.8px', textTransform: 'uppercase', color: C.driftwood }}>
+        {label}
+      </div>
+    </div>
+  )
+}
+
+// ── Quick Access ─────────────────────────────────────────────────────────────
+function QuickAccess({ navigate }) {
+  const tiles = [
+    {
+      label: 'Add a Meal',
+      onClick: () => navigate('/thisweek'),
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ width: 17, height: 17 }}>
+          <rect width="18" height="18" x="3" y="4" rx="2"/>
+          <line x1="16" x2="16" y1="2" y2="6"/>
+          <line x1="8" x2="8" y1="2" y2="6"/>
+          <line x1="3" x2="21" y1="10" y2="10"/>
+          <line x1="12" x2="12" y1="14" y2="18"/>
+          <line x1="10" x2="14" y1="16" y2="16"/>
+        </svg>
+      ),
+    },
+    {
+      label: 'Browse Recipes',
+      onClick: () => navigate('/recipes'),
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ width: 17, height: 17 }}>
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+        </svg>
+      ),
+    },
+    {
+      // TODO: "By Ingredient" needs its own screen before go-live — dead tap for now
+      label: 'By Ingredient',
+      onClick: () => {},
+      disabled: true,
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ width: 17, height: 17 }}>
+          <path d="M12 22V12"/>
+          <path d="M12 12C12 8 9 5 5 5c0 4 3 7 7 7"/>
+          <path d="M12 12c0-4 3-7 7-7-1 4-4 7-7 7"/>
+        </svg>
+      ),
+    },
+    {
+      label: 'Shopping List',
+      onClick: () => navigate('/shopping'),
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ width: 17, height: 17 }}>
+          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+          <line x1="3" x2="21" y1="6" y2="6"/>
+          <path d="M16 10a4 4 0 0 1-8 0"/>
+        </svg>
+      ),
+    },
+  ]
+
+  return (
+    <div style={{
+      display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px',
+      padding: '0 22px',
+      animation: 'fadeUp 0.4s ease 0.22s both',
+      position: 'relative', zIndex: 1,
+    }}>
+      {tiles.map(tile => (
+        <button
+          key={tile.label}
+          onClick={tile.onClick}
+          style={{
+            background: 'white',
+            border: '1px solid rgba(200,185,160,0.55)',
+            borderRadius: '14px',
+            padding: '13px 5px 11px',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px',
+            cursor: tile.disabled ? 'default' : 'pointer',
+            boxShadow: '0 1px 4px rgba(80,60,30,0.06), 0 3px 8px rgba(80,60,30,0.04)',
+            transition: 'transform 0.12s',
+            opacity: tile.disabled ? 0.6 : 1,
+            fontFamily: "'Jost', sans-serif",
+          }}
+        >
+          <div style={{
+            width: '36px', height: '36px', borderRadius: '10px',
+            background: 'rgba(122,140,110,0.08)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: C.forest,
+          }}>
+            {tile.icon}
+          </div>
+          <span style={{ fontSize: '9px', fontWeight: 500, color: C.driftwood, textAlign: 'center', letterSpacing: '0.2px', lineHeight: 1.35 }}>
+            {tile.label}
+          </span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ── Bottom Navigation ─────────────────────────────────────────────────────────
+const NAV_TABS = [
+  {
+    key: 'home',
+    label: 'Home',
+    path: '/',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
+        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'recipes',
+    label: 'Recipes',
+    path: '/recipes',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'thisweek',
+    label: 'This Week',
+    path: '/thisweek',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
+        <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+        <line x1="16" x2="16" y1="2" y2="6"/>
+        <line x1="8" x2="8" y1="2" y2="6"/>
+        <line x1="3" x2="21" y1="10" y2="10"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'shopping',
+    label: 'Shopping',
+    path: '/shopping',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
+        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+        <line x1="3" x2="21" y1="6" y2="6"/>
+        <path d="M16 10a4 4 0 0 1-8 0"/>
+      </svg>
+    ),
+  },
+]
+
+function BottomNav({ navigate }) {
+  return (
+    <nav style={{
+      position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+      width: '100%', maxWidth: '430px', height: '80px',
+      padding: '10px 0 22px',
+      display: 'grid', gridTemplateColumns: 'repeat(4,1fr)',
+      zIndex: 100, background: C.cream,
+      borderTop: `1px solid ${C.linen}`,
+      boxShadow: '0 -2px 12px rgba(80,60,30,0.08)',
+    }}>
+      {NAV_TABS.map((tab, i) => {
+        const active = tab.key === 'home' // Dashboard is always the home tab
+        return (
+          <button
+            key={tab.key}
+            onClick={() => navigate(tab.path)}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
+              cursor: 'pointer', padding: '4px 0',
+              background: 'none', border: 'none',
+              color: active ? C.forest : C.driftwood,
+              transition: 'color 0.15s',
+              position: 'relative',
+              fontFamily: "'Jost', sans-serif",
+            }}
+          >
+            {active && (
+              <span style={{
+                position: 'absolute', bottom: '-2px', left: '50%', transform: 'translateX(-50%)',
+                width: '4px', height: '4px', borderRadius: '50%', background: C.forest,
+              }} />
+            )}
+            {tab.icon}
+            <span style={{ fontSize: '10px', fontWeight: active ? 600 : 400, letterSpacing: '0.3px' }}>
+              {tab.label}
+            </span>
+          </button>
+        )
+      })}
+    </nav>
+  )
+}

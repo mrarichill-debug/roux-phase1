@@ -1,0 +1,107 @@
+# BUILD FLAGS & PROGRESS TRACKER
+*Roux Phase 2 — Last updated March 12, 2026*
+
+---
+
+## Build Progress
+
+- [x] Complete database schema design
+- [x] Deploy Supabase schema SQL (30 tables, RLS policies, grants)
+- [x] Load Hill family sample data (13 recipes via seed_recipes.sql)
+- [x] Verify foreign key relationships
+- [x] Build recipe library Phase 1 (card list + expanded view)
+- [x] Design sprint complete (all prototypes approved, build notes complete)
+- [ ] Build welcome / onboarding flow (5 screens — all prototypes approved)
+- [ ] Build dashboard (cutting board design — prototype approved)
+- [ ] Build This Week planner (prototype approved)
+- [x] Build recipe library Phase 2 (2-col grid, search, filter, category pills — see SCREEN-SPECS.md)
+- [x] Build recipe card Phase 2 (tabs, serves adjuster, Sage strip, Family Notes, pinned CTA)
+- [x] Build shopping list (3-state flow — prototype approved)
+- [ ] Build recipe import with Sage (chat-style input)
+- [ ] Build household setup flow
+- [ ] Wire "By Ingredient" search (currently dead tap — must fix before launch)
+- [ ] Design child/view-only dashboard (required before onboarding ships)
+- [ ] Responsive design — tablet and desktop
+
+---
+
+## ⚠ Must-Fix Before Go-Live
+
+### 1. "By Ingredient" Shortcut — Dead Tap
+The "By Ingredient" tile on the dashboard Quick Access and the Recipe Library currently go nowhere. Build the screen or replace with a working destination before launch.
+
+### 2. Publish → Shopping List Handoff — Undesigned
+When Lauren publishes the plan, the app must immediately surface a prompt to build the shopping list. The transition from This Week → Shopping List is the most important workflow handoff in the app. Currently undesigned at the transition moment.
+
+### 3. Tonight Card Empty State — Board Must Always Show
+The cutting board background must always be present regardless of plan status. Empty state = same wood grain + dashed groove + warm italic text. Never show a blank or unstyled container.
+
+### 4. Recipe Library Results Count — Currently Static
+The prototype shows "48 recipes" as a static string. Must update dynamically based on active filter and search state in the real build.
+
+### 5. Child-Scoped Dashboard (View Only Role) — Not Designed
+A child or "Just browsing" member landing on the full dashboard is a broken experience. Must be fully designed before the onboarding flow ships — the role exists in Screen 3b but the destination hasn't been designed.
+
+### 6. Terms of Service Legal Line — Required
+Required on Screen 3a and Screen 3b account creation steps before launch.
+Copy: "By continuing you agree to our Terms of Service and Privacy Policy."
+Style: 10–11px, `--driftwood` color, below the sign-up button.
+
+### 7. Tonight Card — "Who's Cooking" Stat Missing
+The Tonight card footer shows prep time only. The prototype has a second stat ("Aric cooking" + vertical divider). Requires an `assigned_to` field on `planned_meals` referencing `users`. Wire this during the This Week build — query and display the assigned member's first name in the tonight card at that time.
+
+### 8. This Week — Day Type Badge Only Has School + Weekend
+`getDayType()` in ThisWeek.jsx returns only `School` (Mon–Fri) or `Weekend` (Sat/Sun). The prototype defines 4 types: School (blue), Weekend (sage), No School (orange `#D4874A`), Summer (honey `#C49A3C`). Requires a `day_type` data source per day — likely a `household_schedule` table or a `day_type` field on `planned_meals` / `household_traditions`. Decide schema approach and implement when wiring the full This Week edit flow.
+
+### 9. "Household" in UI Copy — Global Audit Required
+All user-facing strings must use "home" not "household." Run a global find-and-replace across all JSX and string literals before launch. Database table names are unaffected.
+
+### 10. Recipe Card — `family_notes` Field Missing from Schema
+The recipe card spec calls for a `family_notes` field supporting multiple bulleted notes per recipe. The `recipes` table only has `personal_notes TEXT` (single string — currently used for the handwritten card note on the library grid card AND as a single Family Notes item in the recipe card). Before launch, add `family_notes TEXT[]` to the `recipes` table and migrate any data from `personal_notes` that is intended as family notes rather than the card subtitle note. Update the recipe card to query `family_notes` and render one starred item per array element.
+
+### 11. Recipe Card — Favorite Toggle Uses Household-Level `is_family_favorite`
+The favorite ★ button on the recipe card currently reads/writes `recipes.is_family_favorite` (a household-level boolean — everyone sees the same state). The spec requires a per-user favorites store. Add a `user_favorites` table: `(id UUID, user_id UUID REFERENCES users(id), recipe_id UUID REFERENCES recipes(id), created_at TIMESTAMPTZ, UNIQUE(user_id, recipe_id))` with RLS policy scoped to the authenticated user. Update the favorite toggle to INSERT/DELETE from `user_favorites` instead. The library grid card's `is_family_favorite` display can remain household-level or be migrated to user-level at the same time.
+
+### 12. Shopping List — `shopping_lists.status` Values Mismatch
+The schema defines `status CHECK (status IN ('draft', 'finalized', 'completed'))`. The Shopping List UI uses three states: Building / Shopping / Complete. The mapping used in ShoppingList.jsx is: `draft`→Building, `finalized`→Shopping, `completed`→Complete. This is correct and functional. However, the spec language says "Building" which maps to DB `draft` — not `building`. No column rename needed, but the mapping must stay consistent.
+
+### 13. Shopping List — `shopping_list_items` Missing Several Expected Columns
+The schema for `shopping_list_items` does NOT have the following columns that were referenced in the build spec or the prototype:
+- **`is_checked`** — spec refers to this field. Actual column is `is_purchased`. ShoppingList.jsx uses `is_purchased` (correct).
+- **`checked_at`** — spec refers to this field. Actual column is `purchased_at`. ShoppingList.jsx uses `purchased_at` (correct).
+- **`got_it_at`** — referenced in spec. Does not exist. Omitted in build.
+- **`aisle_section`** — referenced in spec. Actual column is `category` (with CHECK constraint: protein/produce/dairy/pantry/frozen/bakery/other). ShoppingList.jsx uses `category` (correct). Note: "deli" aisle section shown in the prototype and SCREEN-SPECS.md does NOT exist in the schema CHECK constraint — items with category `deli` would fail a DB insert. Add `'deli'` to the `category` CHECK constraint before using it.
+- **`price_estimate`** — referenced in spec. Actual column is `estimated_price`. ShoppingList.jsx uses `estimated_price` (correct).
+- **`store_name`** — referenced in spec. Actual is a FK `store_id` referencing `grocery_stores`. Store name requires a join. Store filter pills in Building state are currently display-only (no join implemented).
+- **`is_staple`** — referenced in spec as recurring indicator. Actual column is `is_recurring`. ShoppingList.jsx uses `is_recurring` (correct).
+
+**Action required before launch:** Add `'deli'` to the `shopping_list_items.category` CHECK constraint in `supabase-schema.sql` and redeploy if the Deli aisle section is needed.
+
+### 14. Shopping List — Store Filter Pills Not Functional
+The store filter pills (All / Kroger / Costco) in the Building state topbar are display-only. Filtering by store requires either: (a) joining `shopping_list_items` with `grocery_stores` to get store names, or (b) storing a denormalized `store_name` TEXT on items. The store_id FK approach requires a second query or a Supabase join. Wire this properly when the grocery stores table is populated.
+
+---
+
+## ⚑ Planned But Not Yet Built
+
+- ~~**Shopping list screen**~~ — ✅ Built. Three-state flow (Building/Shopping/Complete), budget strip with inCartPulse animation, Got It / Already Have actions, aisle sections, Sage nudge strip, Complete card with receipt CTA, bottom nav. See schema gaps in items 12–14 above.
+- **"By Ingredient" search flow** — full screen design required before this can be built.
+- **Template picker / Repeat this week flow** — high-retention feature, post-MVP.
+- **Profile / Settings screen** — needed for: haptics toggle, home management, invite code generation.
+- **Related recipes on recipe card** — "Goes Well With" section. Invest properly, not a placeholder row.
+- **Avery (child) dashboard** — scoped view-only experience. Must be designed before onboarding ships.
+- **Serves adjuster with quantity scaling** — affects the data model. Plan this early in the recipe card build.
+
+---
+
+## Architecture Decisions (Locked)
+
+- **Cutting board Tonight card** — confirmed default. Forest green Tonight card variant is retired.
+- **Invite code lookup** — server-side only. Never expose invite table to client. Single-use, 7-day expiry.
+- **Session persistence** — valid Supabase session bypasses welcome screen entirely. Never flash auth screens for logged-in users.
+- **Sage nudges in Shopping state** — Sage strip is hidden during active shopping (Shopping and Complete states). Nudges in Building state only.
+- **Got It vs. Already Have** — these are two distinct actions with different spend tracking implications. Never collapse them into a single "check off" action.
+- **WatermarkLayer** — build core layout first, add watermark last. Never block layout work on decoration.
+- **Haptic feedback** — OFF by default. User toggle in profile settings. iOS Safari fails silently — no error, no fallback UI.
+- **Week start day** — Monday, set at household creation. Immutable.
+- **founded_by on households** — immutable historical record. Never update it.

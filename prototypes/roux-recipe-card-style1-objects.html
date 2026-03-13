@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Roux — Lemon Herb Roast Chicken</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sage:#7A8C6E; --forest:#3D6B4F;
+    --ink:#2C2417; --driftwood:#8C7B6B; --linen:#E8E0D0;
+    --cream:#FAF7F2; --honey:#C49A3C; --walnut:#8B6F52;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body {
+    background:var(--cream); color:var(--ink);
+    font-family:'Jost',sans-serif; font-weight:300;
+    min-height:100vh; max-width:430px; margin:0 auto;
+    padding-bottom:86px; position:relative; overflow-x:hidden;
+  }
+
+  /* ── WATERMARK LAYER ── */
+  #wm-layer {
+    position:fixed; top:0; left:50%; transform:translateX(-50%);
+    width:100%; max-width:430px; height:100%;
+    pointer-events:none; z-index:0; overflow:hidden;
+  }
+  .wm-object { position:absolute; pointer-events:none; opacity:0; color:rgba(60,42,22,1); }
+
+  /* ── SLIM TOPBAR ── */
+  .topbar {
+    position:sticky; top:0; z-index:100;
+    height:58px; display:flex; align-items:center;
+    justify-content:space-between; padding:0 20px;
+    background:var(--forest);
+    box-shadow:
+      0 2px  0px rgba(20,40,25,0.55),
+      0 4px  8px rgba(20,40,25,0.40),
+      0 8px 24px rgba(30,55,35,0.28),
+      0 16px 40px rgba(30,55,35,0.14),
+      0 1px  0px rgba(255,255,255,0.06) inset;
+  }
+  .back-btn {
+    width:36px; height:36px; border-radius:50%;
+    border:none; background:rgba(255,255,255,0.14);
+    color:rgba(250,247,242,0.9);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; text-decoration:none; transition:background 0.15s;
+  }
+  .back-btn:active { background:rgba(255,255,255,0.24); }
+  .back-btn svg { width:18px; height:18px; }
+  .topbar-logo { font-family:'Playfair Display',serif; font-size:22px; font-weight:600; color:rgba(250,247,242,0.95); }
+  .topbar-logo em { font-style:italic; color:rgba(188,218,178,0.82); }
+  .fav-btn {
+    width:36px; height:36px; border-radius:50%;
+    border:none; background:rgba(255,255,255,0.14);
+    color:var(--honey); font-size:16px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; transition:background 0.15s;
+  }
+  .fav-btn:active { background:rgba(255,255,255,0.24); }
+
+  /* ── HERO — contained image ── */
+  .recipe-hero {
+    margin:14px 22px 0;
+    height:220px;
+    border-radius:16px;
+    background:linear-gradient(150deg, #deebd8 0%, #b8d4ae 100%);
+    display:flex; align-items:center; justify-content:center;
+    font-size:72px; position:relative; overflow:hidden;
+    box-shadow:0 2px 12px rgba(80,60,30,0.10);
+  }
+  .hero-cat {
+    position:absolute; bottom:12px; left:12px;
+    background:rgba(255,255,255,0.88); backdrop-filter:blur(6px);
+    border-radius:6px; padding:4px 10px;
+    font-size:10px; font-weight:500; letter-spacing:2px;
+    text-transform:uppercase; color:var(--forest);
+  }
+
+  /* ── TITLE SECTION ── */
+  .title-section {
+    background:white; padding:20px 22px 16px;
+    margin:12px 22px 0;
+    border-radius:16px;
+    border:1px solid rgba(200,185,160,0.45);
+    animation:fadeUp 0.4s ease both;
+    box-shadow:0 2px 8px rgba(80,60,30,0.07);
+    position:relative; z-index:1;
+  }
+  .recipe-title { font-family:'Playfair Display',serif; font-size:28px; font-weight:500; color:var(--ink); line-height:1.2; margin-bottom:6px; }
+  .recipe-handwritten { font-family:'Caveat',cursive; font-size:15px; color:var(--walnut); opacity:0.85; margin-bottom:14px; }
+
+  .stat-row {
+    display:grid; grid-template-columns:repeat(4,1fr);
+    border:1px solid rgba(200,185,160,0.55); border-radius:12px;
+    overflow:hidden; margin-bottom:14px;
+  }
+  .stat-cell {
+    padding:10px 6px; text-align:center;
+    border-right:1px solid rgba(200,185,160,0.45);
+  }
+  .stat-cell:last-child { border-right:none; }
+  .stat-icon { font-size:13px; margin-bottom:2px; }
+  .stat-val { font-family:'Playfair Display',serif; font-size:16px; color:var(--ink); font-weight:400; }
+  .stat-lbl { font-size:9px; letter-spacing:1px; text-transform:uppercase; color:var(--driftwood); font-weight:500; }
+
+  .tag-row { display:flex; gap:6px; flex-wrap:wrap; }
+  .tag { background:rgba(122,140,110,0.10); border:1px solid rgba(122,140,110,0.2); color:var(--forest); padding:4px 10px; border-radius:20px; font-size:11px; }
+  .tag.warm { background:rgba(139,111,82,0.08); border-color:rgba(139,111,82,0.2); color:var(--walnut); }
+
+  /* ── ACTIONS ── */
+  .action-row {
+    display:grid; grid-template-columns:1fr; gap:10px;
+    padding:14px 22px 0;
+    position:relative; z-index:1;
+  }
+  .btn-main {
+    background:var(--forest); color:white; border:none;
+    border-radius:10px; padding:13px;
+    font-family:'Jost',sans-serif; font-size:12px; font-weight:500;
+    letter-spacing:0.5px; cursor:pointer;
+    box-shadow:0 2px 8px rgba(61,107,79,0.25);
+    transition:background 0.15s;
+  }
+  .btn-main:active { background:#2E5038; }
+  .btn-outline {
+    background:none; color:var(--ink);
+    border:1px solid rgba(200,185,160,0.7);
+    border-radius:10px; padding:13px;
+    font-family:'Jost',sans-serif; font-size:12px; cursor:pointer;
+    transition:background 0.15s;
+  }
+  .btn-outline:active { background:rgba(200,185,160,0.15); }
+
+  /* ── SAGE STRIP — collapsible ── */
+  .sage-strip {
+    background:var(--forest); margin:14px 22px;
+    border-radius:14px; padding:14px 16px;
+    display:flex; gap:12px; align-items:flex-start;
+    animation:fadeUp 0.4s ease 0.08s both;
+    box-shadow:0 3px 12px rgba(61,107,79,0.2);
+    position:relative; z-index:1;
+    cursor:pointer; transition:box-shadow 0.2s;
+  }
+  .sage-strip:active { box-shadow:0 1px 6px rgba(61,107,79,0.15); }
+  .sage-icon { font-size:18px; flex-shrink:0; margin-top:2px; }
+  .sage-strip-content { flex:1; min-width:0; }
+  .sage-strip-label {
+    font-size:9px; letter-spacing:2px; text-transform:uppercase;
+    color:rgba(188,218,178,0.75); font-weight:500;
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:0;
+  }
+  .sage-strip-label-left { display:flex; align-items:center; gap:6px; }
+  .sage-strip-pulse { width:5px; height:5px; border-radius:50%; background:rgba(188,218,178,0.75); animation:pulse 2.5s infinite; flex-shrink:0; }
+  .sage-strip-chevron {
+    width:13px; height:13px; color:rgba(188,218,178,0.6);
+    transition:transform 0.3s ease; flex-shrink:0;
+  }
+  .sage-strip.expanded .sage-strip-chevron { transform:rotate(180deg); }
+  .sage-strip-preview {
+    font-size:13px; color:rgba(255,255,255,0.7); font-weight:300;
+    margin-top:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .sage-strip.expanded .sage-strip-preview { display:none; }
+  .sage-strip-body {
+    max-height:0; overflow:hidden;
+    transition:max-height 0.35s ease, opacity 0.25s ease;
+    opacity:0;
+  }
+  .sage-strip.expanded .sage-strip-body { max-height:80px; opacity:1; }
+  .sage-text {
+    font-family:'Playfair Display',serif; font-size:14px;
+    font-style:italic; color:rgba(255,255,255,0.92);
+    line-height:1.55; margin-top:8px;
+  }
+
+  /* ── TABS ── */
+  .tab-nav {
+    display:grid; grid-template-columns:1fr 1fr;
+    background:white;
+    margin:14px 22px 0;
+    border-radius:12px;
+    border:1px solid rgba(200,185,160,0.45);
+    overflow:hidden;
+    position:sticky; top:58px; z-index:50;
+    box-shadow:0 1px 4px rgba(80,60,30,0.06);
+  }
+  .tab-btn {
+    padding:14px; text-align:center;
+    font-family:'Jost',sans-serif; font-size:12px;
+    font-weight:500; letter-spacing:1.5px; text-transform:uppercase;
+    color:var(--driftwood); cursor:pointer; border:none;
+    background:none; border-bottom:2px solid transparent;
+    transition:all 0.2s;
+  }
+  .tab-btn.active { color:var(--forest); border-bottom-color:var(--forest); }
+
+  /* ── PANELS ── */
+  .panel { display:none; position:relative; z-index:1; }
+  .panel.active { display:block; animation:panelFade 0.2s ease both; }
+  @keyframes panelFade { from{opacity:0} to{opacity:1} }
+
+  /* INGREDIENTS */
+  .ing-panel { padding:16px 22px; }
+  .serves-row {
+    display:flex; align-items:center; justify-content:space-between;
+    background:white; border:1px solid rgba(200,185,160,0.55);
+    border-radius:10px; padding:12px 16px; margin-bottom:18px;
+    box-shadow:0 1px 4px rgba(80,60,30,0.06);
+  }
+  .serves-label { font-size:13px; color:var(--driftwood); }
+  .serves-controls { display:flex; align-items:center; gap:14px; }
+  .serves-btn {
+    width:30px; height:30px; border-radius:50%;
+    border:1px solid rgba(200,185,160,0.6);
+    background:var(--cream); cursor:pointer;
+    font-size:16px; color:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .serves-count { font-family:'Playfair Display',serif; font-size:22px; color:var(--ink); min-width:24px; text-align:center; }
+  .ing-group { margin-bottom:20px; }
+  .ing-group-label { font-size:10px; font-weight:500; letter-spacing:2px; text-transform:uppercase; color:var(--sage); margin-bottom:8px; }
+  .ing-item {
+    display:flex; align-items:center; gap:12px;
+    padding:11px 0; border-bottom:1px solid rgba(200,185,160,0.4);
+    cursor:pointer; transition:opacity 0.15s;
+  }
+  .ing-item:last-child { border-bottom:none; }
+  .ing-check {
+    width:22px; height:22px; border-radius:6px;
+    border:1.5px solid rgba(200,185,160,0.7); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    background:white; font-size:12px; color:white; transition:all 0.15s;
+  }
+  .ing-item.checked .ing-check { background:var(--sage); border-color:var(--sage); animation:checkPulse 0.2s ease; }
+  @keyframes checkPulse { 0%{transform:scale(1)} 50%{transform:scale(1.22)} 100%{transform:scale(1)} }
+  .ing-item.checked .ing-name { text-decoration:line-through; color:var(--linen); }
+  .ing-amount { font-size:13px; font-weight:500; color:var(--forest); min-width:58px; flex-shrink:0; }
+  .ing-name { font-size:14px; color:var(--ink); line-height:1.4; transition:color 0.15s; }
+
+  /* DIRECTIONS */
+  .dir-panel { padding:16px 22px; }
+  .step-card {
+    background:white; border:1px solid rgba(200,185,160,0.55);
+    border-radius:14px; padding:16px; margin-bottom:12px;
+    cursor:pointer; transition:opacity 0.3s ease, border-color 0.2s, background 0.2s;
+    box-shadow:0 1px 4px rgba(80,60,30,0.06);
+  }
+  .step-card:active { transform:scale(0.99); }
+  .step-card.active { border-color:var(--sage); background:#f4f8f3; }
+  .step-card.done { opacity:0.48; }
+  .step-card.completing { opacity:0.15; } /* mid-animation dip */
+  .step-header { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+  .step-num { font-family:'Playfair Display',serif; font-size:22px; font-weight:400; color:var(--linen); line-height:1; flex-shrink:0; }
+  .step-card.active .step-num { color:var(--sage); }
+  .step-check-circle {
+    width:24px; height:24px; border-radius:50%;
+    border:1.5px solid rgba(200,185,160,0.6);
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; color:transparent; margin-left:auto;
+    background:var(--cream); transition:all 0.15s;
+  }
+  .step-card.done .step-check-circle { background:var(--sage); border-color:var(--sage); color:white; }
+  .step-text { font-size:14px; color:var(--ink); line-height:1.75; font-weight:300; }
+  .step-tip {
+    display:block; margin-top:10px; font-size:13px; color:var(--walnut);
+    font-style:italic; font-family:'Playfair Display',serif;
+    padding:8px 12px; background:rgba(139,111,82,0.06);
+    border-radius:8px; border-left:2px solid rgba(139,111,82,0.3); line-height:1.5;
+  }
+
+  /* NOTES */
+  .notes-card {
+    background:white; border:1px solid rgba(200,185,160,0.55);
+    border-radius:14px; padding:16px; margin-bottom:12px;
+    box-shadow:0 1px 4px rgba(80,60,30,0.06);
+  }
+  .notes-heading { font-family:'Caveat',cursive; font-size:20px; color:var(--walnut); margin-bottom:12px; }
+  .note-item { padding:8px 0; border-bottom:1px solid rgba(200,185,160,0.4); font-size:13px; color:var(--driftwood); line-height:1.65; display:flex; gap:8px; }
+  .note-item:last-child { border-bottom:none; }
+  .note-star { color:var(--honey); flex-shrink:0; }
+
+  /* RELATED */
+  .related-label {
+    font-size:10px; font-weight:500; letter-spacing:2px;
+    text-transform:uppercase; color:var(--driftwood); margin-bottom:10px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .related-label span { flex:1; height:1px; background:rgba(200,185,160,0.5); display:inline-block; }
+  .related-row { display:flex; flex-direction:column; gap:8px; }
+  .related-card {
+    background:white; border:1px solid rgba(200,185,160,0.55);
+    border-radius:12px; padding:14px;
+    display:flex; align-items:center; gap:12px; cursor:pointer;
+    box-shadow:0 1px 4px rgba(80,60,30,0.06); transition:transform 0.15s;
+  }
+  .related-card:active { transform:scale(0.98); }
+  .related-thumb { font-size:24px; width:40px; text-align:center; flex-shrink:0; }
+  .related-name { font-family:'Playfair Display',serif; font-size:14px; color:var(--ink); margin-bottom:2px; }
+  .related-meta { font-size:11px; color:var(--driftwood); }
+  .related-arrow { margin-left:auto; color:var(--linen); font-size:16px; }
+
+  /* ── BOTTOM CTA ── */
+  .bottom-cta {
+    position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+    width:100%; max-width:430px; height:80px;
+    padding:12px 22px 24px; z-index:100;
+    background:var(--cream); border-top:1px solid var(--linen);
+    box-shadow:0 -2px 12px rgba(80,60,30,0.08);
+  }
+  .cta-btn {
+    width:100%; background:var(--forest); color:white; border:none;
+    border-radius:12px; padding:14px;
+    font-family:'Jost',sans-serif; font-size:14px; font-weight:500;
+    letter-spacing:0.5px; cursor:pointer;
+    box-shadow:0 2px 10px rgba(61,107,79,0.28);
+    transition:background 0.15s;
+  }
+  .cta-btn:active { background:#2E5038; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+
+<div id="wm-layer"></div>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <a class="back-btn" href="roux-library-style1-objects.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+  </a>
+  <div class="topbar-logo">Ro<em>ux</em></div>
+  <button class="fav-btn">★</button>
+</header>
+
+<!-- HERO -->
+<div class="recipe-hero">
+  🍋
+  <div class="hero-cat">Dinner</div>
+</div>
+
+<!-- TITLE -->
+<div class="title-section">
+  <div class="recipe-title">Lemon Herb Roast Chicken</div>
+  <div class="recipe-handwritten">Grandma's Sunday roast ✦</div>
+  <div class="stat-row">
+    <div class="stat-cell"><div class="stat-icon">⏱</div><div class="stat-val">20m</div><div class="stat-lbl">Prep</div></div>
+    <div class="stat-cell"><div class="stat-icon">🔥</div><div class="stat-val">1h</div><div class="stat-lbl">Cook</div></div>
+    <div class="stat-cell"><div class="stat-icon">👥</div><div class="stat-val">4</div><div class="stat-lbl">Serves</div></div>
+    <div class="stat-cell"><div class="stat-icon">📊</div><div class="stat-val">Med</div><div class="stat-lbl">Level</div></div>
+  </div>
+  <div class="tag-row">
+    <span class="tag">Gluten Free</span>
+    <span class="tag">Dairy Free</span>
+    <span class="tag warm">Sunday Dinner</span>
+    <span class="tag warm">Family Favourite</span>
+  </div>
+</div>
+
+<!-- ACTIONS -->
+<div class="action-row">
+  <button class="btn-outline">+ Add to Shopping List</button>
+</div>
+
+<!-- SAGE STRIP — collapsed by default -->
+<div class="sage-strip" id="sage-strip" onclick="toggleSageStrip()">
+  <div class="sage-icon">✦</div>
+  <div class="sage-strip-content">
+    <div class="sage-strip-label">
+      <div class="sage-strip-label-left"><span class="sage-strip-pulse"></span>Sage</div>
+      <svg class="sage-strip-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
+    <div class="sage-strip-preview">Pairs beautifully with Spring Pea & Mint Salad.</div>
+    <div class="sage-strip-body">
+      <p class="sage-text">This pairs beautifully with the Spring Pea & Mint Salad — a natural match for the lemon and herb profile.</p>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('ingredients', this)">Ingredients</button>
+  <button class="tab-btn" onclick="switchTab('directions', this)">Directions</button>
+</div>
+
+<!-- INGREDIENTS PANEL -->
+<div class="panel active" id="panel-ingredients">
+  <div class="ing-panel">
+    <div class="serves-row">
+      <span class="serves-label">Serves</span>
+      <div class="serves-controls">
+        <button class="serves-btn" onclick="adjustServes(-1)">−</button>
+        <span class="serves-count" id="serves-count">4</span>
+        <button class="serves-btn" onclick="adjustServes(1)">+</button>
+      </div>
+    </div>
+    <div class="ing-group">
+      <div class="ing-group-label">The Bird</div>
+      <div class="ing-item" onclick="this.classList.toggle('checked')"><div class="ing-check">✓</div><div class="ing-amount">1 whole</div><div class="ing-name">Whole chicken, 3.5–4 lb</div></div>
+      <div class="ing-item" onclick="this.classList.toggle('checked')"><div class="ing-check">✓</div><div class="ing-amount">2 tbsp</div><div class="ing-name">Olive oil</div></div>
+      <div class="ing-item" onclick="this.classList.toggle('checked')"><div class="ing-check">✓</div><div class="ing-amount">1½ tsp</div><div class="ing-name">Kosher salt</div></div>
+      <div class="ing-item" onclick="this.classList.toggle('checked')"><div class="ing-check">✓</div><div class="ing-amount">½ tsp</div><div class="ing-name">Black pepper</div></div>
+    </div>
+    <div class="ing-group">
+      <div class="ing-group-label">Aromatics</div>
+      <div class="ing-item" onclick="this.classList.toggle('checked')"><div class="ing-check">✓</div><div class="ing-amount">1 lemon</div><div class="ing-name">Lemon, halved</div></div>
+      <div class="ing-item" onclick="this.classList.toggle('checked')"><div class="ing-check">✓</div><div class="ing-amount">1 head</div><div class="ing-name">Garlic, halved crosswise</div></div>
+      <div class="ing-item" onclick="this.classList.toggle('checked')"><div class="ing-check">✓</div><div class="ing-amount">4 sprigs</div><div class="ing-name">Fresh thyme</div></div>
+      <div class="ing-item" onclick="this.classList.toggle('checked')"><div class="ing-check">✓</div><div class="ing-amount">2 sprigs</div><div class="ing-name">Fresh rosemary</div></div>
+    </div>
+    <div class="ing-group">
+      <div class="ing-group-label">Resting Sauce</div>
+      <div class="ing-item" onclick="this.classList.toggle('checked')"><div class="ing-check">✓</div><div class="ing-amount">½ cup</div><div class="ing-name">Chicken stock</div></div>
+      <div class="ing-item" onclick="this.classList.toggle('checked')"><div class="ing-check">✓</div><div class="ing-amount">1 tbsp</div><div class="ing-name">Butter (optional)</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- DIRECTIONS PANEL -->
+<div class="panel" id="panel-directions">
+  <div class="dir-panel">
+    <div class="step-card" onclick="cycleStep(this)">
+      <div class="step-header"><div class="step-num">01</div><div class="step-check-circle">✓</div></div>
+      <div class="step-text">Preheat oven to 425°F (220°C). Pat the chicken completely dry with paper towels — this is the secret to crispy skin.</div>
+      <em class="step-tip">Grandma always said: dry bird, crispy skin. No shortcuts here.</em>
+    </div>
+    <div class="step-card" onclick="cycleStep(this)">
+      <div class="step-header"><div class="step-num">02</div><div class="step-check-circle">✓</div></div>
+      <div class="step-text">Rub the chicken all over with olive oil, then season generously with salt and pepper, including inside the cavity.</div>
+    </div>
+    <div class="step-card" onclick="cycleStep(this)">
+      <div class="step-header"><div class="step-num">03</div><div class="step-check-circle">✓</div></div>
+      <div class="step-text">Stuff the cavity with the lemon halves, garlic head, thyme, and rosemary. Tie legs together with kitchen twine if desired.</div>
+    </div>
+    <div class="step-card" onclick="cycleStep(this)">
+      <div class="step-header"><div class="step-num">04</div><div class="step-check-circle">✓</div></div>
+      <div class="step-text">Roast breast-side up for 60–70 minutes, until juices run clear and a thermometer reads 165°F at the thigh.</div>
+      <em class="step-tip">Don't open the oven in the first 45 minutes — you'll lose the heat that crisps the skin.</em>
+    </div>
+    <div class="step-card" onclick="cycleStep(this)">
+      <div class="step-header"><div class="step-num">05</div><div class="step-check-circle">✓</div></div>
+      <div class="step-text">Rest the chicken for 10–15 minutes before carving. Deglaze the pan with stock, scraping up the browned bits for a simple pan sauce.</div>
+    </div>
+
+    <!-- Family Notes -->
+    <div class="notes-card">
+      <div class="notes-heading">Family Notes</div>
+      <div class="note-item"><span class="note-star">★</span> Add a handful of cherry tomatoes to the roasting pan — they collapse into the sauce and it's wonderful.</div>
+      <div class="note-item"><span class="note-star">★</span> Grandma would baste every 20 minutes. We've stopped doing that and honestly can't tell the difference.</div>
+      <div class="note-item"><span class="note-star">★</span> Leftovers make the best chicken salad the next day.</div>
+    </div>
+
+    <!-- Related -->
+    <div class="related-label">Goes Well With <span></span></div>
+    <div class="related-row">
+      <div class="related-card">
+        <div class="related-thumb">🫛</div>
+        <div><div class="related-name">Spring Pea & Mint Salad</div><div class="related-meta">15m · Side</div></div>
+        <div class="related-arrow">›</div>
+      </div>
+      <div class="related-card">
+        <div class="related-thumb">🥔</div>
+        <div><div class="related-name">Crispy Roast Potatoes</div><div class="related-meta">50m · Side</div></div>
+        <div class="related-arrow">›</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- BOTTOM CTA -->
+<div class="bottom-cta">
+  <button class="cta-btn">+ Add to This Week's Plan</button>
+</div>
+
+<script>
+function toggleSageStrip() {
+  document.getElementById('sage-strip').classList.toggle('expanded');
+}
+
+function switchTab(panelId, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + panelId).classList.add('active');
+  btn.classList.add('active');
+}
+
+function cycleStep(card) {
+  if (!card.classList.contains('active') && !card.classList.contains('done')) {
+    card.classList.add('active');
+  } else if (card.classList.contains('active')) {
+    // Dip to near-invisible, then settle at done opacity
+    card.classList.remove('active');
+    card.classList.add('completing');
+    setTimeout(() => {
+      card.classList.remove('completing');
+      card.classList.add('done');
+    }, 180);
+  } else {
+    card.classList.remove('done');
+  }
+}
+
+let serves = 4;
+function adjustServes(delta) {
+  serves = Math.max(1, Math.min(12, serves + delta));
+  document.getElementById('serves-count').textContent = serves;
+}
+
+// ── WATERMARK OBJECTS ────────────────────────────────────────
+const OBJ = {
+  recipeBox: (s=1) => `<svg width="${Math.round(160*s)}" height="${Math.round(140*s)}" viewBox="0 0 160 140" fill="none"><rect x="10" y="62" width="140" height="72" rx="6" stroke="currentColor" stroke-width="2"/><rect x="4" y="38" width="152" height="28" rx="6" stroke="currentColor" stroke-width="2"/><rect x="4" y="30" width="152" height="10" rx="3" stroke="currentColor" stroke-width="1.5"/><rect x="62" y="72" width="36" height="18" rx="4" stroke="currentColor" stroke-width="1.8"/><rect x="70" y="78" width="20" height="8" rx="2" stroke="currentColor" stroke-width="1.2"/><text x="80" y="53" text-anchor="middle" font-family="Jost,sans-serif" font-size="9" font-weight="500" letter-spacing="4" fill="currentColor">RECIPES</text><rect x="28" y="16" width="38" height="16" rx="3" stroke="currentColor" stroke-width="1.5" transform="rotate(-5 47 24)"/><rect x="60" y="10" width="40" height="16" rx="3" stroke="currentColor" stroke-width="1.5"/><rect x="96" y="15" width="36" height="16" rx="3" stroke="currentColor" stroke-width="1.5" transform="rotate(4 114 23)"/><line x1="10" y1="90" x2="150" y2="90" stroke="currentColor" stroke-width="0.8" stroke-dasharray="4 6"/><line x1="10" y1="110" x2="150" y2="110" stroke="currentColor" stroke-width="0.8" stroke-dasharray="4 6"/></svg>`,
+  cuttingBoard: (s=1) => `<svg width="${Math.round(100*s)}" height="${Math.round(160*s)}" viewBox="0 0 100 160" fill="none"><rect x="14" y="8" width="72" height="120" rx="10" stroke="currentColor" stroke-width="2.2"/><rect x="24" y="18" width="52" height="100" rx="6" stroke="currentColor" stroke-width="1.2"/><line x1="18" y1="38" x2="82" y2="38" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 5"/><line x1="18" y1="58" x2="82" y2="58" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 5"/><line x1="18" y1="78" x2="82" y2="78" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 5"/><line x1="18" y1="98" x2="82" y2="98" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 5"/><rect x="28" y="128" width="44" height="18" rx="4" stroke="currentColor" stroke-width="1.8"/><circle cx="50" cy="148" r="7" stroke="currentColor" stroke-width="1.8"/></svg>`,
+  herbs: (s=1) => `<svg width="${Math.round(110*s)}" height="${Math.round(140*s)}" viewBox="0 0 110 140" fill="none"><line x1="55" y1="138" x2="38" y2="44" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="55" y1="138" x2="55" y2="36" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="55" y1="138" x2="72" y2="44" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="55" y1="138" x2="22" y2="68" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="55" y1="138" x2="88" y2="68" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><ellipse cx="32" cy="58" rx="9" ry="4.5" stroke="currentColor" stroke-width="1.4" transform="rotate(-30 32 58)"/><ellipse cx="26" cy="76" rx="8" ry="4" stroke="currentColor" stroke-width="1.2" transform="rotate(-28 26 76)"/><ellipse cx="40" cy="42" rx="9" ry="4.5" stroke="currentColor" stroke-width="1.4" transform="rotate(-32 40 42)"/><ellipse cx="50" cy="52" rx="10" ry="4.5" stroke="currentColor" stroke-width="1.4" transform="rotate(5 50 52)"/><ellipse cx="55" cy="32" rx="10" ry="5" stroke="currentColor" stroke-width="1.5"/><ellipse cx="55" cy="58" rx="8" ry="3.8" stroke="currentColor" stroke-width="1.2" transform="rotate(8 55 58)"/><ellipse cx="78" cy="58" rx="9" ry="4.5" stroke="currentColor" stroke-width="1.4" transform="rotate(30 78 58)"/><ellipse cx="70" cy="42" rx="9" ry="4.5" stroke="currentColor" stroke-width="1.4" transform="rotate(32 70 42)"/><ellipse cx="84" cy="76" rx="8" ry="4" stroke="currentColor" stroke-width="1.2" transform="rotate(28 84 76)"/><path d="M36 118 Q55 110 74 118" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/><path d="M40 126 Q55 120 70 126" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>`,
+  spiceJars: (s=1) => `<svg width="${Math.round(140*s)}" height="${Math.round(150*s)}" viewBox="0 0 140 150" fill="none"><rect x="6" y="24" width="54" height="14" rx="4" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="31" r="2" stroke="currentColor" stroke-width="1.2"/><circle cx="30" cy="31" r="2" stroke="currentColor" stroke-width="1.2"/><circle cx="42" cy="31" r="2" stroke="currentColor" stroke-width="1.2"/><rect x="14" y="37" width="38" height="7" rx="2" stroke="currentColor" stroke-width="1.5"/><rect x="4" y="43" width="58" height="86" rx="8" stroke="currentColor" stroke-width="2"/><rect x="12" y="62" width="42" height="34" rx="3" stroke="currentColor" stroke-width="1.3"/><line x1="16" y1="74" x2="50" y2="74" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 5"/><line x1="16" y1="84" x2="46" y2="84" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 5"/><rect x="82" y="34" width="52" height="13" rx="4" stroke="currentColor" stroke-width="1.8"/><circle cx="94" cy="40.5" r="2" stroke="currentColor" stroke-width="1.2"/><circle cx="108" cy="40.5" r="2" stroke="currentColor" stroke-width="1.2"/><rect x="90" y="46" width="36" height="7" rx="2" stroke="currentColor" stroke-width="1.5"/><rect x="80" y="52" width="58" height="76" rx="8" stroke="currentColor" stroke-width="2"/><rect x="88" y="70" width="42" height="30" rx="3" stroke="currentColor" stroke-width="1.3"/><line x1="92" y1="80" x2="126" y2="80" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 5"/><line x1="92" y1="90" x2="122" y2="90" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 5"/></svg>`,
+  cookieJar: (s=1) => `<svg width="${Math.round(120*s)}" height="${Math.round(155*s)}" viewBox="0 0 120 155" fill="none"><ellipse cx="60" cy="14" rx="14" ry="9" stroke="currentColor" stroke-width="2"/><ellipse cx="60" cy="10" rx="10" ry="6" stroke="currentColor" stroke-width="1.5"/><ellipse cx="60" cy="32" rx="48" ry="16" stroke="currentColor" stroke-width="2"/><ellipse cx="60" cy="27" rx="40" ry="11" stroke="currentColor" stroke-width="1.4"/><path d="M14 40 Q10 82 10 100 Q10 140 60 140 Q110 140 110 100 Q110 82 106 40 Z" stroke="currentColor" stroke-width="2.2" fill="none"/><path d="M16 56 Q60 48 104 56" stroke="currentColor" stroke-width="1.2"/><path d="M16 62 Q60 55 104 62" stroke="currentColor" stroke-width="0.9"/><circle cx="60" cy="98" r="22" stroke="currentColor" stroke-width="1.5"/><circle cx="52" cy="92" r="3" stroke="currentColor" stroke-width="1.3"/><circle cx="68" cy="92" r="3" stroke="currentColor" stroke-width="1.3"/><circle cx="56" cy="104" r="3" stroke="currentColor" stroke-width="1.3"/><circle cx="72" cy="104" r="2.5" stroke="currentColor" stroke-width="1.2"/><circle cx="46" cy="104" r="2.5" stroke="currentColor" stroke-width="1.2"/></svg>`,
+  oliveOil: (s=1) => `<svg width="${Math.round(80*s)}" height="${Math.round(160*s)}" viewBox="0 0 80 160" fill="none"><rect x="30" y="6" width="20" height="15" rx="4" stroke="currentColor" stroke-width="2"/><rect x="26" y="20" width="28" height="30" rx="5" stroke="currentColor" stroke-width="2"/><line x1="24" y1="36" x2="56" y2="36" stroke="currentColor" stroke-width="1.2"/><path d="M16 50 Q12 86 12 106 Q12 144 40 144 Q68 144 68 106 Q68 86 64 50 Z" stroke="currentColor" stroke-width="2.2" fill="none"/><rect x="20" y="66" width="40" height="48" rx="4" stroke="currentColor" stroke-width="1.5"/><line x1="26" y1="80" x2="54" y2="80" stroke="currentColor" stroke-width="1" stroke-dasharray="3 4"/><line x1="26" y1="90" x2="52" y2="90" stroke="currentColor" stroke-width="1" stroke-dasharray="3 4"/></svg>`,
+  castIron: (s=1) => `<svg width="${Math.round(160*s)}" height="${Math.round(120*s)}" viewBox="0 0 160 120" fill="none"><ellipse cx="76" cy="76" rx="56" ry="40" stroke="currentColor" stroke-width="2.2"/><ellipse cx="76" cy="76" rx="44" ry="30" stroke="currentColor" stroke-width="1.4"/><ellipse cx="72" cy="68" rx="14" ry="9" stroke="currentColor" stroke-width="1" transform="rotate(-15 72 68)"/><rect x="128" y="70" width="30" height="14" rx="7" stroke="currentColor" stroke-width="2"/><rect x="130" y="73" width="24" height="8" rx="4" stroke="currentColor" stroke-width="1.3"/><path d="M24 76 Q12 76 9 68 Q7 60 13 60 L22 60" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" fill="none"/></svg>`,
+  lemon: (s=1) => `<svg width="${Math.round(110*s)}" height="${Math.round(100*s)}" viewBox="0 0 110 100" fill="none"><path d="M6 55 Q6 14 55 10 Q104 14 104 55 Z" stroke="currentColor" stroke-width="2" fill="none"/><line x1="55" y1="10" x2="55" y2="55" stroke="currentColor" stroke-width="1.3"/><line x1="8" y1="30" x2="55" y2="55" stroke="currentColor" stroke-width="1.1"/><line x1="102" y1="30" x2="55" y2="55" stroke="currentColor" stroke-width="1.1"/><line x1="6" y1="55" x2="104" y2="55" stroke="currentColor" stroke-width="2"/><path d="M55 10 Q55 4 59 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M57 7 Q64 2 68 8 Q62 12 57 7Z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>`,
+  pinecone: (s=1) => `<svg width="${Math.round(88*s)}" height="${Math.round(145*s)}" viewBox="0 0 88 145" fill="none"><line x1="44" y1="6" x2="44" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M38 10 Q44 3 50 10" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M30 22 Q44 14 58 22 Q54 36 44 40 Q34 36 30 22Z" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M22 40 Q44 28 66 40 Q61 58 44 63 Q27 58 22 40Z" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M16 62 Q44 47 72 62 Q66 84 44 90 Q22 84 16 62Z" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M18 90 Q44 75 70 90 Q65 110 44 116 Q23 110 18 90Z" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M24 116 Q44 104 64 116 Q60 130 44 135 Q28 130 24 116Z" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M34 135 Q44 128 54 135 Q52 142 44 145 Q36 142 34 135Z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>`,
+};
+
+const SEASONS = {
+  spring: [
+    { slot:'top-right', key:'recipeBox',    scale:0.72, opacity:0.07, delay:500 },
+    { slot:'mid-left',  key:'herbs',        scale:0.62, opacity:0.07, delay:700 },
+    { slot:'bot-right', key:'spiceJars',    scale:0.60, opacity:0.07, delay:900 },
+  ],
+  summer: [
+    { slot:'top-right', key:'lemon',        scale:0.78, opacity:0.08, delay:500 },
+    { slot:'mid-left',  key:'oliveOil',     scale:0.60, opacity:0.07, delay:700 },
+    { slot:'bot-right', key:'herbs',        scale:0.62, opacity:0.07, delay:900 },
+  ],
+  fall: [
+    { slot:'top-right', key:'cookieJar',    scale:0.68, opacity:0.07, delay:500 },
+    { slot:'mid-left',  key:'cuttingBoard', scale:0.58, opacity:0.07, delay:700 },
+    { slot:'bot-right', key:'pinecone',     scale:0.64, opacity:0.07, delay:900 },
+  ],
+  winter: [
+    { slot:'top-right', key:'cookieJar',    scale:0.70, opacity:0.08, delay:500 },
+    { slot:'mid-left',  key:'castIron',     scale:0.62, opacity:0.07, delay:700 },
+    { slot:'bot-right', key:'pinecone',     scale:0.62, opacity:0.07, delay:900 },
+  ],
+};
+
+// Recipe card: top-right is just below the slim topbar
+const SLOTS = {
+  'top-right': { top:'68px',    right:'-4px',  bottom:'auto', left:'auto' },
+  'mid-left':  { top:'42%',     left:'-8px',   bottom:'auto', right:'auto' },
+  'bot-right': { bottom:'68px', right:'-4px',  top:'auto',    left:'auto' },
+};
+
+const PARALLAX_RATE = { 'top-right':0.10, 'mid-left':0.15, 'bot-right':0.20 };
+
+function getSeason() {
+  const m = new Date().getMonth();
+  if (m>=2&&m<=4) return 'spring';
+  if (m>=5&&m<=7) return 'summer';
+  if (m>=8&&m<=10) return 'fall';
+  return 'winter';
+}
+
+function injectWatermarks(seasonKey) {
+  const layer = document.getElementById('wm-layer');
+  if (!layer) return;
+  const injected = [];
+  SEASONS[seasonKey].forEach(({ slot, key, scale, opacity, delay }) => {
+    const pos = SLOTS[slot];
+    const wrap = document.createElement('div');
+    wrap.className = 'wm-object';
+    wrap.style.top = pos.top; wrap.style.right = pos.right;
+    wrap.style.bottom = pos.bottom; wrap.style.left = pos.left;
+    wrap.style.willChange = 'transform, opacity';
+    wrap.innerHTML = OBJ[key] ? OBJ[key](scale) : '';
+    layer.appendChild(wrap);
+    injected.push({ el:wrap, slot });
+    setTimeout(() => { wrap.style.transition='opacity 1.4s ease'; wrap.style.opacity=String(opacity); }, delay+50);
+  });
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        const scrollY = window.scrollY;
+        injected.forEach(({ el, slot }) => {
+          el.style.transform = `translateY(${-(scrollY*(PARALLAX_RATE[slot]||0.15)).toFixed(2)}px)`;
+        });
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive:true });
+}
+
+window.addEventListener('load', () => injectWatermarks(getSeason()));
+if (document.readyState === 'complete') injectWatermarks(getSeason());
+</script>
+</body>
+</html>

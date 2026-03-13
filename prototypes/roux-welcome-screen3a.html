@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Roux — Create Your Home</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sage:      #7A8C6E;
+    --forest:    #3D6B4F;
+    --forest-dk: #2E5038;
+    --ink:       #2C2417;
+    --driftwood: #8C7B6B;
+    --linen:     #E8E0D0;
+    --cream:     #FAF8F4;
+    --honey:     #C49A3C;
+    --walnut:    #8B6F52;
+    --red:       #A03030;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--cream);
+    font-family: 'Jost', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    max-width: 430px;
+    margin: 0 auto;
+    overflow-x: hidden;
+    position: relative;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse at 15% 15%, rgba(122,140,110,0.07) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 85%, rgba(196,154,60,0.04) 0%, transparent 50%);
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ── NAV ROW ── */
+  .nav-row {
+    position: relative; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 52px 24px 0;
+    opacity: 0; animation: fadeIn 0.4s ease 0.05s forwards;
+  }
+  .back-btn {
+    width: 38px; height: 38px; border-radius: 50%;
+    border: 1px solid rgba(200,185,160,0.6);
+    background: white; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--driftwood);
+    box-shadow: 0 1px 4px rgba(80,60,30,0.07);
+    transition: all 0.15s;
+  }
+  .back-btn:active { background: var(--linen); }
+  .back-btn svg { width: 16px; height: 16px; }
+  .mini-wordmark {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px; font-weight: 600;
+    color: var(--ink); letter-spacing: -0.5px;
+  }
+  .mini-wordmark em { font-style: italic; color: var(--forest); }
+  .nav-spacer { width: 38px; } /* balance back btn */
+
+  /* ── STEP PROGRESS ── */
+  .progress-wrap {
+    padding: 24px 24px 0;
+    position: relative; z-index: 1;
+    opacity: 0; animation: fadeIn 0.4s ease 0.1s forwards;
+  }
+  .progress-track {
+    height: 3px; background: var(--linen); border-radius: 2px;
+    overflow: hidden; margin-bottom: 8px;
+  }
+  .progress-fill {
+    height: 100%; background: var(--forest); border-radius: 2px;
+    transition: width 0.4s cubic-bezier(0.22,1,0.36,1);
+  }
+  .progress-label {
+    font-size: 10px; font-weight: 500; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--driftwood);
+  }
+
+  /* ── SCREEN WRAPPER ── */
+  .screen {
+    position: relative; z-index: 1;
+    padding: 0 28px 48px;
+    min-height: calc(100vh - 140px);
+    display: flex; flex-direction: column;
+  }
+
+  /* ── STEPS ── */
+  .step { display: none; flex-direction: column; flex: 1; }
+  .step.active { display: flex; }
+
+  /* ── STEP HEADING ── */
+  .step-head {
+    padding: 32px 0 28px;
+    opacity: 0; animation: fadeUp 0.45s ease 0.15s forwards;
+  }
+  .step-eyebrow {
+    font-size: 10px; font-weight: 500; letter-spacing: 2.5px;
+    text-transform: uppercase; color: var(--sage); margin-bottom: 8px;
+  }
+  .step-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px; font-weight: 500; color: var(--ink);
+    line-height: 1.25; margin-bottom: 8px;
+  }
+  .step-sub {
+    font-size: 13.5px; color: var(--driftwood);
+    font-weight: 300; line-height: 1.6;
+  }
+
+  /* ── FORM FIELDS ── */
+  .field-group {
+    display: flex; flex-direction: column; gap: 14px;
+    margin-bottom: 28px;
+    opacity: 0; animation: fadeUp 0.45s ease 0.22s forwards;
+  }
+  .field {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .field-label {
+    font-size: 11px; font-weight: 500; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--driftwood);
+    padding-left: 2px;
+  }
+  .field-input-wrap { position: relative; }
+  .field-input {
+    width: 100%; padding: 14px 16px;
+    border-radius: 12px;
+    border: 1.5px solid var(--linen);
+    background: white;
+    font-family: 'Jost', sans-serif;
+    font-size: 15px; font-weight: 300; color: var(--ink);
+    outline: none; transition: border-color 0.18s, box-shadow 0.18s;
+    -webkit-appearance: none;
+  }
+  .field-input::placeholder { color: rgba(140,123,107,0.5); }
+  .field-input:focus {
+    border-color: var(--sage);
+    box-shadow: 0 0 0 3px rgba(122,140,110,0.12);
+  }
+  .field-input.has-value { border-color: rgba(61,107,79,0.35); }
+  .field-input.error { border-color: var(--red); box-shadow: 0 0 0 3px rgba(160,48,48,0.08); }
+
+  /* Password toggle */
+  .pw-toggle {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer;
+    color: var(--driftwood); padding: 4px;
+    display: flex; align-items: center;
+  }
+  .pw-toggle svg { width: 18px; height: 18px; }
+
+  /* Password strength */
+  .pw-strength {
+    margin-top: 6px; display: flex; flex-direction: column; gap: 5px;
+    display: none;
+  }
+  .pw-strength.visible { display: flex; }
+  .pw-bars { display: flex; gap: 4px; }
+  .pw-bar {
+    flex: 1; height: 3px; border-radius: 2px;
+    background: var(--linen); transition: background 0.25s;
+  }
+  .pw-bar.weak   { background: #C49A3C; }
+  .pw-bar.medium { background: var(--sage); }
+  .pw-bar.strong { background: var(--forest); }
+  .pw-reqs { display: flex; flex-direction: column; gap: 3px; }
+  .pw-req {
+    font-size: 11px; color: var(--driftwood); font-weight: 300;
+    display: flex; align-items: center; gap: 6px; transition: color 0.2s;
+  }
+  .pw-req.met { color: var(--forest); }
+  .pw-req-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--linen); flex-shrink: 0; transition: background 0.2s;
+  }
+  .pw-req.met .pw-req-dot { background: var(--forest); }
+
+  /* Field hint */
+  .field-hint {
+    font-size: 11.5px; color: var(--driftwood); font-weight: 300;
+    padding-left: 2px; margin-top: 2px; line-height: 1.5;
+  }
+  .field-error {
+    font-size: 11.5px; color: var(--red); font-weight: 300;
+    padding-left: 2px; margin-top: 2px; display: none;
+  }
+  .field-error.visible { display: block; }
+
+  /* Home name suggestion chip */
+  .name-suggestion {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 8px; flex-wrap: wrap;
+  }
+  .name-suggestion-label {
+    font-size: 11px; color: var(--driftwood); font-weight: 300;
+  }
+  .suggestion-chip {
+    font-size: 11.5px; color: var(--forest); font-weight: 400;
+    padding: 4px 10px; border-radius: 20px;
+    background: rgba(61,107,79,0.08);
+    border: 1px solid rgba(61,107,79,0.2);
+    cursor: pointer; transition: all 0.15s;
+    font-family: 'Caveat', cursive; font-size: 14px;
+  }
+  .suggestion-chip:active { background: rgba(61,107,79,0.15); }
+
+  /* ── CONTINUE BUTTON ── */
+  .btn-continue {
+    width: 100%; padding: 16px 20px;
+    border-radius: 14px; background: var(--forest); color: white;
+    font-family: 'Jost', sans-serif;
+    font-size: 15px; font-weight: 500; letter-spacing: 0.3px;
+    border: none; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(30,55,35,0.25);
+    transition: background 0.15s, transform 0.12s, box-shadow 0.15s;
+    margin-top: auto; /* push to bottom */
+    opacity: 0; animation: fadeUp 0.45s ease 0.3s forwards;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-continue:active { background: var(--forest-dk); transform: scale(0.98); }
+  .btn-continue:disabled {
+    background: var(--linen); color: var(--driftwood);
+    box-shadow: none; cursor: default;
+  }
+  .btn-continue svg { width: 17px; height: 17px; }
+
+  /* ── COMPLETE STEP — landing moment ── */
+  .complete-wrap {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 20px 0 40px;
+    gap: 0;
+    opacity: 0; animation: fadeUp 0.6s ease 0.1s forwards;
+  }
+  .complete-icon {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: rgba(61,107,79,0.1);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 24px;
+    animation: iconPop 0.5s cubic-bezier(0.22,1,0.36,1) 0.3s both;
+  }
+  @keyframes iconPop {
+    from { transform: scale(0.7); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  .complete-icon svg { width: 34px; height: 34px; color: var(--forest); }
+  .complete-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px; font-weight: 500; color: var(--ink);
+    margin-bottom: 10px; line-height: 1.2;
+  }
+  .complete-home-name {
+    font-family: 'Caveat', cursive;
+    font-size: 26px; color: var(--forest);
+    margin-bottom: 16px;
+  }
+  .complete-sub {
+    font-size: 14px; color: var(--driftwood);
+    font-weight: 300; line-height: 1.7;
+    margin-bottom: 36px;
+  }
+  .complete-sub strong { color: var(--ink); font-weight: 400; }
+
+  /* Sage intro on complete */
+  .sage-intro {
+    width: 100%; background: white;
+    border-left: 3px solid var(--sage);
+    border-radius: 0 12px 12px 0;
+    padding: 14px 16px; text-align: left;
+    margin-bottom: 28px;
+    box-shadow: 0 1px 4px rgba(80,60,30,0.06);
+    opacity: 0; animation: fadeUp 0.5s ease 0.7s forwards;
+  }
+  .sage-name {
+    font-size: 10px; font-weight: 500; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--sage); margin-bottom: 5px;
+  }
+  .sage-msg {
+    font-size: 13px; color: var(--ink); line-height: 1.6; font-weight: 300;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn { to { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<!-- NAV ROW -->
+<div class="nav-row">
+  <button class="back-btn" onclick="goBack()" aria-label="Back">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+  </button>
+  <div class="mini-wordmark">R<em>oux</em></div>
+  <div class="nav-spacer"></div>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-wrap">
+  <div class="progress-track">
+    <div class="progress-fill" id="progress-fill" style="width:33%"></div>
+  </div>
+  <div class="progress-label" id="progress-label">Step 1 of 3</div>
+</div>
+
+<!-- SCREEN -->
+<div class="screen">
+
+  <!-- ══════════════════════
+       STEP 1 — Your name
+  ══════════════════════ -->
+  <div class="step active" id="step-1">
+    <div class="step-head">
+      <div class="step-eyebrow">Let's get acquainted</div>
+      <div class="step-title">What's your name?</div>
+      <div class="step-sub">This is how Roux will greet you.</div>
+    </div>
+    <div class="field-group">
+      <div class="field">
+        <div class="field-label">First name</div>
+        <div class="field-input-wrap">
+          <input class="field-input" id="first-name" type="text"
+                 placeholder="Lauren" autocomplete="given-name"
+                 oninput="onNameInput(this)" />
+        </div>
+      </div>
+      <div class="field">
+        <div class="field-label">Last name</div>
+        <div class="field-input-wrap">
+          <input class="field-input" id="last-name" type="text"
+                 placeholder="Hill" autocomplete="family-name"
+                 oninput="onNameInput(this)" />
+        </div>
+        <div class="field-hint">Used to suggest a name for your home.</div>
+      </div>
+    </div>
+    <button class="btn-continue" id="btn-1" onclick="goStep(2)" disabled>
+      Continue
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+
+  <!-- ══════════════════════
+       STEP 2 — Account
+  ══════════════════════ -->
+  <div class="step" id="step-2">
+    <div class="step-head">
+      <div class="step-eyebrow">Your account</div>
+      <div class="step-title">Create your login.</div>
+      <div class="step-sub">Just you — family members join separately later.</div>
+    </div>
+    <div class="field-group">
+      <div class="field">
+        <div class="field-label">Email</div>
+        <div class="field-input-wrap">
+          <input class="field-input" id="email" type="email"
+                 placeholder="lauren@example.com" autocomplete="email"
+                 oninput="onEmailInput(this)" />
+        </div>
+        <div class="field-error" id="email-error">Please enter a valid email address.</div>
+      </div>
+      <div class="field">
+        <div class="field-label">Password</div>
+        <div class="field-input-wrap">
+          <input class="field-input" id="password" type="password"
+                 placeholder="Choose a strong password"
+                 oninput="onPasswordInput(this)" />
+          <button class="pw-toggle" onclick="togglePassword()" type="button" aria-label="Show password">
+            <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+        <!-- Password strength -->
+        <div class="pw-strength" id="pw-strength">
+          <div class="pw-bars">
+            <div class="pw-bar" id="bar-1"></div>
+            <div class="pw-bar" id="bar-2"></div>
+            <div class="pw-bar" id="bar-3"></div>
+          </div>
+          <div class="pw-reqs">
+            <div class="pw-req" id="req-length"><div class="pw-req-dot"></div>At least 8 characters</div>
+            <div class="pw-req" id="req-number"><div class="pw-req-dot"></div>One number</div>
+            <div class="pw-req" id="req-special"><div class="pw-req-dot"></div>One special character</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="btn-continue" id="btn-2" onclick="goStep(3)" disabled>
+      Continue
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+
+  <!-- ══════════════════════
+       STEP 3 — Home name
+  ══════════════════════ -->
+  <div class="step" id="step-3">
+    <div class="step-head">
+      <div class="step-eyebrow">Almost there</div>
+      <div class="step-title" id="home-step-title">What do you call your kitchen?</div>
+      <div class="step-sub">This is your home's name in Roux. You can always change it later.</div>
+    </div>
+    <div class="field-group">
+      <div class="field">
+        <div class="field-label">Home name</div>
+        <div class="field-input-wrap">
+          <input class="field-input" id="home-name" type="text"
+                 placeholder="The Hill Family Kitchen"
+                 oninput="onHomeNameInput(this)" />
+        </div>
+        <div class="name-suggestion" id="name-suggestion">
+          <div class="name-suggestion-label">Suggestion:</div>
+          <div class="suggestion-chip" id="suggestion-chip" onclick="useSuggestion()">The Hill Family Kitchen</div>
+        </div>
+      </div>
+    </div>
+    <button class="btn-continue" id="btn-3" onclick="goStep(4)">
+      Create my home
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+    </button>
+  </div>
+
+  <!-- ══════════════════════
+       STEP 4 — Welcome moment
+  ══════════════════════ -->
+  <div class="step" id="step-4">
+    <div class="complete-wrap">
+      <div class="complete-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      </div>
+      <div class="complete-title">Welcome home,</div>
+      <div class="complete-home-name" id="complete-home-name">The Hill Family Kitchen</div>
+      <div class="complete-sub">
+        Your home is ready. <strong id="complete-name">Lauren</strong>, you're the admin —<br>
+        invite your family whenever you're ready.
+      </div>
+
+      <div class="sage-intro">
+        <div class="sage-name">Sage</div>
+        <div class="sage-msg" id="sage-welcome-msg">
+          "Welcome to your kitchen, Hill family. I'm Sage — I'll help you plan your week, shop smarter, and make the most of what's in your fridge. Let's start by setting up your first week."
+        </div>
+      </div>
+
+      <button class="btn-continue" style="animation-delay:0.9s;" onclick="alert('→ Dashboard (empty state)')">
+        Let's go
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+</div><!-- /screen -->
+
+<script>
+  let currentStep = 1;
+  const totalSteps = 3; // step 4 is the success screen, not a form step
+
+  // ── STEP NAVIGATION ──
+  function goStep(n) {
+    document.getElementById('step-' + currentStep).classList.remove('active');
+    currentStep = n;
+    document.getElementById('step-' + n).classList.add('active');
+    // Animate elements back in
+    document.querySelectorAll('#step-' + n + ' .step-head, #step-' + n + ' .field-group, #step-' + n + ' .btn-continue, #step-' + n + ' .complete-wrap').forEach(el => {
+      el.style.animation = 'none';
+      el.offsetHeight; // reflow
+      el.style.animation = '';
+    });
+    updateProgress(n);
+    // Focus first input
+    const firstInput = document.querySelector('#step-' + n + ' .field-input');
+    if (firstInput) setTimeout(() => firstInput.focus(), 350);
+    // Populate step 3 suggestion
+    if (n === 3) populateSuggestion();
+    // Populate step 4
+    if (n === 4) populateComplete();
+  }
+
+  function goBack() {
+    if (currentStep > 1) goStep(currentStep - 1);
+    else history.back();
+  }
+
+  function updateProgress(n) {
+    const pct = n <= totalSteps ? Math.round((n / totalSteps) * 100) : 100;
+    document.getElementById('progress-fill').style.width = pct + '%';
+    if (n <= totalSteps) {
+      document.getElementById('progress-label').textContent = 'Step ' + n + ' of ' + totalSteps;
+    } else {
+      document.getElementById('progress-label').textContent = 'All done ✓';
+    }
+  }
+
+  // ── STEP 1 — Name validation ──
+  function onNameInput(el) {
+    if (el.value.trim()) el.classList.add('has-value');
+    else el.classList.remove('has-value');
+    const first = document.getElementById('first-name').value.trim();
+    const last  = document.getElementById('last-name').value.trim();
+    document.getElementById('btn-1').disabled = !(first && last);
+  }
+
+  // ── STEP 2 — Email + password ──
+  function onEmailInput(el) {
+    const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(el.value);
+    const errEl = document.getElementById('email-error');
+    if (el.value && !valid) {
+      el.classList.add('error'); errEl.classList.add('visible');
+    } else {
+      el.classList.remove('error'); errEl.classList.remove('visible');
+    }
+    if (valid) el.classList.add('has-value');
+    else el.classList.remove('has-value');
+    checkStep2();
+  }
+
+  let pwVisible = false;
+  function togglePassword() {
+    pwVisible = !pwVisible;
+    const input = document.getElementById('password');
+    input.type = pwVisible ? 'text' : 'password';
+    document.getElementById('eye-icon').innerHTML = pwVisible
+      ? '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+      : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+
+  function onPasswordInput(el) {
+    const v = el.value;
+    const strength = document.getElementById('pw-strength');
+    if (v.length > 0) strength.classList.add('visible');
+    else strength.classList.remove('visible');
+
+    const hasLength  = v.length >= 8;
+    const hasNumber  = /\d/.test(v);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(v);
+
+    setReq('req-length', hasLength);
+    setReq('req-number', hasNumber);
+    setReq('req-special', hasSpecial);
+
+    const score = [hasLength, hasNumber, hasSpecial].filter(Boolean).length;
+    ['bar-1','bar-2','bar-3'].forEach((id, i) => {
+      const bar = document.getElementById(id);
+      bar.className = 'pw-bar';
+      if (i < score) {
+        if (score === 1) bar.classList.add('weak');
+        else if (score === 2) bar.classList.add('medium');
+        else bar.classList.add('strong');
+      }
+    });
+
+    if (v.length > 0) el.classList.add('has-value');
+    else el.classList.remove('has-value');
+    checkStep2();
+  }
+
+  function setReq(id, met) {
+    const el = document.getElementById(id);
+    if (met) el.classList.add('met'); else el.classList.remove('met');
+  }
+
+  function checkStep2() {
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(document.getElementById('email').value);
+    const pw = document.getElementById('password').value;
+    const pwOk = pw.length >= 8 && /\d/.test(pw) && /[!@#$%^&*(),.?":{}|<>]/.test(pw);
+    document.getElementById('btn-2').disabled = !(emailOk && pwOk);
+  }
+
+  // ── STEP 3 — Home name ──
+  function populateSuggestion() {
+    const last = document.getElementById('last-name').value.trim();
+    const suggestion = last ? 'The ' + last + ' Family Kitchen' : 'Our Family Kitchen';
+    document.getElementById('suggestion-chip').textContent = suggestion;
+    // Pre-fill input
+    const input = document.getElementById('home-name');
+    if (!input.value) {
+      input.value = suggestion;
+      input.classList.add('has-value');
+    }
+  }
+
+  function useSuggestion() {
+    const chip = document.getElementById('suggestion-chip');
+    const input = document.getElementById('home-name');
+    input.value = chip.textContent;
+    input.classList.add('has-value');
+    input.focus();
+  }
+
+  function onHomeNameInput(el) {
+    if (el.value.trim()) el.classList.add('has-value');
+    else el.classList.remove('has-value');
+  }
+
+  // ── STEP 4 — Complete ──
+  function populateComplete() {
+    const first = document.getElementById('first-name').value.trim() || 'Lauren';
+    const last  = document.getElementById('last-name').value.trim() || 'Hill';
+    const homeName = document.getElementById('home-name').value.trim() || 'The ' + last + ' Family Kitchen';
+    document.getElementById('complete-name').textContent = first;
+    document.getElementById('complete-home-name').textContent = homeName;
+    document.getElementById('sage-welcome-msg').textContent =
+      '"Welcome to your kitchen, ' + last + ' family. I\'m Sage — I\'ll help you plan your week, shop smarter, and make the most of what\'s in your fridge. Let\'s start by setting up your first week."';
+  }
+</script>
+</body>
+</html>

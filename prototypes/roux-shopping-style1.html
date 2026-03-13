@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Roux — Shopping List</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sage:#7A8C6E; --forest:#3D6B4F; --forest-dark:#2E5038;
+    --ink:#2C2417; --driftwood:#8C7B6B; --linen:#E8E0D0;
+    --cream:#FAF7F2; --honey:#C49A3C; --walnut:#8B6F52;
+    --red:#A03030;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body {
+    background:var(--cream); color:var(--ink);
+    font-family:'Jost',sans-serif; font-weight:300;
+    min-height:100vh; max-width:430px; margin:0 auto;
+    padding-bottom:140px; position:relative; overflow-x:hidden;
+  }
+
+  /* WATERMARK */
+  #wm-layer { position:fixed; top:0; left:50%; transform:translateX(-50%); width:100%; max-width:430px; height:100%; pointer-events:none; z-index:0; overflow:hidden; }
+  .wm-object { position:absolute; pointer-events:none; opacity:0; color:rgba(60,42,22,1); }
+
+  /* TOPBAR */
+  .topbar {
+    position:sticky; top:0; z-index:100;
+    height:68px; display:flex; align-items:center; justify-content:space-between;
+    padding:0 20px; background:var(--forest);
+    box-shadow: 0 2px 0px rgba(20,40,25,0.55), 0 4px 8px rgba(20,40,25,0.40), 0 8px 24px rgba(30,55,35,0.28), 0 16px 40px rgba(30,55,35,0.14), 0 1px 0px rgba(255,255,255,0.06) inset;
+  }
+  .logo { font-family:'Playfair Display',serif; font-size:26px; font-weight:600; color:rgba(250,247,242,0.95); }
+  .logo em { font-style:italic; color:rgba(188,218,178,0.82); }
+  .topbar-right { display:flex; align-items:center; gap:4px; }
+  .icon-btn { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:none; background:none; cursor:pointer; color:rgba(210,230,200,0.7); }
+  .icon-btn svg { width:20px; height:20px; }
+
+  /* HEADER */
+  .list-header { padding:20px 24px 0; position:relative; z-index:1; animation:fadeUp 0.35s ease both; }
+  .list-header-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
+  .list-week-label { font-size:10px; font-weight:500; letter-spacing:2.5px; text-transform:uppercase; color:var(--sage); margin-bottom:3px; }
+  .list-title { font-family:'Playfair Display',serif; font-size:22px; font-weight:500; color:var(--ink); }
+  .list-status-pill { font-size:10px; font-weight:500; letter-spacing:1px; text-transform:uppercase; padding:5px 11px; border-radius:20px; margin-top:4px; transition:all 0.3s; }
+  .pill-building { background:rgba(196,154,60,0.12); color:var(--honey); border:1px solid rgba(196,154,60,0.3); }
+  .pill-shopping { background:rgba(61,107,79,0.12); color:var(--forest); border:1px solid rgba(61,107,79,0.28); }
+  .pill-complete { background:rgba(122,140,110,0.12); color:var(--sage); border:1px solid rgba(122,140,110,0.28); }
+
+  /* BUDGET */
+  .budget-strip { margin:0 24px 16px; background:white; border:1px solid rgba(200,185,160,0.5); border-radius:12px; padding:12px 16px; display:flex; align-items:center; box-shadow:0 1px 4px rgba(80,60,30,0.06); position:relative; z-index:1; animation:fadeUp 0.35s ease 0.05s both; }
+  .budget-col { text-align:center; flex:1; }
+  .budget-col + .budget-col { border-left:1px solid var(--linen); }
+  .budget-label { font-size:9px; font-weight:500; letter-spacing:1.8px; text-transform:uppercase; color:var(--driftwood); margin-bottom:3px; }
+  .budget-value { font-size:18px; font-weight:400; color:var(--ink); font-family:'Playfair Display',serif; display:inline-block; transition:color 0.3s, transform 0.18s; }
+  .budget-value.muted { font-size:15px; color:var(--driftwood); }
+  .budget-value.forest { color:var(--forest); }
+  .budget-value.amber  { color:var(--honey); }
+  .budget-value.pulse  { transform:scale(1.07); }
+
+  /* STORE FILTER */
+  .store-filter { padding:0 24px 14px; display:flex; align-items:center; gap:8px; position:relative; z-index:1; animation:fadeUp 0.35s ease 0.07s both; overflow-x:auto; scrollbar-width:none; }
+  .store-filter::-webkit-scrollbar { display:none; }
+  .store-pill { font-size:11px; font-weight:500; padding:6px 14px; border-radius:20px; white-space:nowrap; cursor:pointer; border:1.5px solid var(--linen); color:var(--driftwood); background:white; transition:all 0.15s; flex-shrink:0; }
+  .store-pill.active { background:var(--forest); border-color:var(--forest); color:white; }
+
+  /* SAGE */
+  .sage-strip { margin:0 24px 16px; border-left:3px solid var(--sage); background:white; border-radius:0 10px 10px 0; padding:11px 14px; box-shadow:0 1px 4px rgba(80,60,30,0.06); position:relative; z-index:1; animation:fadeUp 0.35s ease 0.09s both; transition:opacity 0.2s; }
+  .sage-strip-inner { display:flex; align-items:flex-start; gap:10px; }
+  .sage-dot { width:7px; height:7px; border-radius:50%; background:var(--sage); flex-shrink:0; margin-top:4px; animation:sagePulse 2.5s ease-in-out infinite; }
+  @keyframes sagePulse { 0%,100%{opacity:0.6} 50%{opacity:0.14} }
+  .sage-text { font-size:12.5px; color:var(--ink); line-height:1.5; flex:1; }
+  .sage-text strong { font-weight:500; }
+  .sage-actions { display:flex; gap:8px; margin-top:8px; }
+  .sage-btn { font-size:11px; font-weight:500; padding:5px 12px; border-radius:8px; border:none; cursor:pointer; }
+  .sage-btn-add { background:rgba(61,107,79,0.1); color:var(--forest); }
+  .sage-btn-dismiss { background:none; color:var(--driftwood); }
+
+  /* SECTION HEADERS */
+  .section-header { padding:16px 24px 8px; display:flex; align-items:center; justify-content:space-between; position:relative; z-index:1; }
+  .section-title { font-size:10px; font-weight:500; letter-spacing:2px; text-transform:uppercase; color:var(--driftwood); display:flex; align-items:center; gap:7px; }
+  .section-count { font-size:10px; color:var(--driftwood); font-weight:300; opacity:0.7; }
+
+  /* LIST SECTIONS */
+  .list-section { margin:0 24px 4px; background:white; border-radius:14px; border:1px solid rgba(200,185,160,0.4); box-shadow:0 1px 4px rgba(80,60,30,0.05); overflow:hidden; position:relative; z-index:1; animation:fadeUp 0.35s ease both; }
+
+  /* LIST ITEMS */
+  .list-item { display:flex; flex-direction:column; padding:12px 14px 10px; border-bottom:1px solid rgba(200,185,160,0.2); position:relative; min-height:56px; transition:opacity 0.25s, max-height 0.3s; }
+  .list-item:last-child { border-bottom:none; }
+  .item-main { display:flex; align-items:center; gap:12px; width:100%; cursor:pointer; }
+
+  /* ALREADY HAVE ACTIONS */
+  .item-actions { display:none; gap:8px; padding-top:8px; width:100%; overflow:hidden; max-height:0; }
+  .item-actions.visible { display:flex; max-height:48px; animation:actionIn 0.22s ease forwards; }
+  @keyframes actionIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+  .btn-got-it, .btn-already-have {
+    flex:1; padding:8px 0; border-radius:9px;
+    font-size:12px; font-weight:500; border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:5px;
+    transition:all 0.15s;
+  }
+  .btn-got-it { background:rgba(61,107,79,0.1); color:var(--forest); border:1px solid rgba(61,107,79,0.18); }
+  .btn-got-it:active { background:rgba(61,107,79,0.2); }
+  .btn-already-have { background:rgba(196,154,60,0.08); color:var(--honey); border:1px solid rgba(196,154,60,0.2); }
+  .btn-already-have:active { background:rgba(196,154,60,0.18); }
+  .btn-got-it svg, .btn-already-have svg { width:12px; height:12px; }
+
+  /* CHECKBOX */
+  .cb { width:26px; height:26px; border-radius:8px; border:2px solid var(--linen); flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all 0.18s; background:white; }
+  .cb.checked-state { background:var(--forest); border-color:var(--forest); }
+  .cb svg { width:13px; height:13px; stroke-dasharray:20; }
+
+  /* ITEM PARTS */
+  .item-body { flex:1; min-width:0; }
+  .item-name { font-size:14px; font-weight:400; color:var(--ink); line-height:1.3; margin-bottom:2px; transition:color 0.2s; }
+  .item-name.struck { text-decoration:line-through; color:var(--driftwood); }
+  .item-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .item-recipe { font-size:11px; color:var(--driftwood); font-weight:300; }
+  .item-note   { font-size:11px; color:var(--walnut); font-weight:300; font-style:italic; }
+  .item-tag { font-size:9px; font-weight:500; letter-spacing:0.8px; text-transform:uppercase; padding:2px 6px; border-radius:4px; }
+  .tag-pantry { background:rgba(139,111,82,0.1); color:var(--walnut); }
+  .item-right { display:flex; flex-direction:column; align-items:flex-end; gap:3px; flex-shrink:0; }
+  .item-qty   { font-size:13px; color:var(--ink); font-weight:400; }
+  .item-price { font-size:11px; color:var(--driftwood); font-weight:300; }
+  .item-recurring { font-size:11px; color:var(--sage); opacity:0.7; }
+
+  /* SHOPPING STATE */
+  body.state-shopping .list-item { min-height:64px; }
+  body.state-shopping .item-name { font-size:15px; }
+  body.state-shopping .cb { width:30px; height:30px; border-radius:10px; }
+  body.state-shopping .item-recipe, body.state-shopping .item-note { display:none; }
+  body.state-shopping .sage-strip, body.state-shopping .store-filter, body.state-shopping .fab { display:none; }
+
+  /* GOT IT */
+  .got-it-header { padding:18px 24px 8px; display:flex; align-items:center; justify-content:space-between; position:relative; z-index:1; display:none; }
+  .got-it-left { display:flex; align-items:center; gap:8px; }
+  .got-it-label { font-size:10px; font-weight:500; letter-spacing:2px; text-transform:uppercase; color:var(--sage); }
+  .got-it-count { font-size:10px; color:var(--driftwood); font-weight:300; }
+  .got-it-section { opacity:0.5; }
+  /* Only show first 3 got-it items; rest hidden until expanded */
+  .got-it-section .list-item:nth-child(n+4) { display:none; }
+  .got-it-section.expanded .list-item { display:flex !important; }
+  .more-chip { margin:4px 12px 8px; padding:9px 14px; background:rgba(122,140,110,0.07); border:1px solid rgba(122,140,110,0.2); border-radius:8px; font-size:12px; color:var(--sage); text-align:center; cursor:pointer; transition:background 0.15s; }
+  .more-chip:active { background:rgba(122,140,110,0.14); }
+
+  /* START / DONE SHOPPING */
+  .start-shopping-bar { margin:0 24px 20px; position:relative; z-index:1; animation:fadeUp 0.35s ease 0.02s both; }
+  .btn-start-shopping { width:100%; padding:14px 20px; border-radius:12px; background:var(--forest); color:white; font-size:14px; font-weight:500; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 3px 10px rgba(30,55,35,0.22); transition:background 0.15s; }
+  .btn-start-shopping:active { background:var(--forest-dark); }
+  .btn-start-shopping svg { width:18px; height:18px; }
+  .btn-done-shopping { width:100%; padding:14px 20px; border-radius:12px; background:white; color:var(--forest); font-size:14px; font-weight:500; border:1.5px solid rgba(61,107,79,0.35); cursor:pointer; display:none; align-items:center; justify-content:center; gap:9px; transition:background 0.15s; }
+  .btn-done-shopping:active { background:rgba(61,107,79,0.06); }
+  .btn-done-shopping svg { width:18px; height:18px; }
+
+  /* COMPLETE CARD */
+  .complete-card { margin:0 24px 20px; background:white; border:1px solid rgba(61,107,79,0.2); border-radius:16px; padding:24px 20px; text-align:center; box-shadow:0 4px 20px rgba(61,107,79,0.1); position:relative; z-index:1; display:none; }
+  .complete-icon { font-size:40px; margin-bottom:12px; }
+  .complete-title { font-family:'Playfair Display',serif; font-size:22px; font-weight:500; color:var(--ink); margin-bottom:6px; }
+  .complete-summary { font-size:14px; color:var(--driftwood); font-weight:300; margin-bottom:20px; line-height:1.6; }
+  .complete-summary strong { color:var(--forest); font-weight:500; }
+  .complete-receipt-prompt { padding-top:18px; border-top:1px solid var(--linen); }
+  .receipt-cta-label { font-size:10px; font-weight:500; letter-spacing:2px; text-transform:uppercase; color:var(--driftwood); margin-bottom:12px; }
+  .btn-photograph { width:100%; padding:14px; border-radius:12px; background:var(--forest); color:white; font-size:14px; font-weight:500; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px; box-shadow:0 3px 10px rgba(30,55,35,0.2); transition:background 0.15s; }
+  .btn-photograph:active { background:var(--forest-dark); }
+  .btn-photograph svg { width:18px; height:18px; }
+  .btn-skip-receipt { width:100%; padding:11px; border-radius:12px; background:none; color:var(--driftwood); font-size:13px; font-weight:400; border:1px solid var(--linen); cursor:pointer; }
+  .receipt-hint { font-size:11px; color:var(--driftwood); font-weight:300; margin-top:10px; line-height:1.5; opacity:0.75; }
+
+  /* FAB */
+  .fab { position:fixed; bottom:96px; right:calc(50% - 215px + 20px); width:52px; height:52px; border-radius:50%; background:var(--forest); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(30,55,35,0.35); z-index:50; transition:transform 0.15s; }
+  .fab:active { transform:scale(0.94); }
+  .fab svg { width:22px; height:22px; color:white; }
+
+  /* BOTTOM NAV */
+  .bottom-nav { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:430px; height:80px; background:var(--cream); border-top:1px solid var(--linen); display:flex; align-items:center; justify-content:space-around; padding:0 8px 12px; z-index:100; }
+  .nav-item { display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; cursor:pointer; padding:8px 4px; position:relative; }
+  .nav-item svg { width:22px; height:22px; }
+  .nav-label { font-size:10px; font-weight:400; letter-spacing:0.3px; }
+  .nav-item.active svg, .nav-item.active .nav-label { color:var(--forest); }
+  .nav-item.active .nav-label { font-weight:600; }
+  .nav-item:not(.active) svg, .nav-item:not(.active) .nav-label { color:var(--driftwood); }
+  .nav-dot { position:absolute; bottom:2px; width:4px; height:4px; border-radius:50%; background:var(--forest); }
+
+  /* ══════════════════════════
+     RECEIPT CAPTURE OVERLAY
+  ══════════════════════════ */
+  .overlay { position:fixed; inset:0; background:rgba(30,20,10,0.55); z-index:200; display:none; align-items:flex-end; backdrop-filter:blur(2px); }
+  .overlay.active { display:flex; }
+  .sheet { width:100%; max-width:430px; margin:0 auto; background:var(--cream); border-radius:24px 24px 0 0; max-height:92vh; overflow-y:auto; animation:sheetUp 0.32s cubic-bezier(0.32,0.72,0,1) both; }
+  @keyframes sheetUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+  .sheet-handle { width:40px; height:4px; border-radius:2px; background:rgba(140,123,107,0.28); margin:14px auto 0; }
+  .sheet-header { padding:20px 24px 16px; border-bottom:1px solid var(--linen); display:flex; align-items:center; justify-content:space-between; }
+  .sheet-title { font-family:'Playfair Display',serif; font-size:20px; font-weight:500; color:var(--ink); }
+  .sheet-close { width:32px; height:32px; border-radius:50%; border:none; background:rgba(140,123,107,0.12); cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--driftwood); }
+  .sheet-close svg { width:16px; height:16px; }
+
+  /* Steps */
+  .receipt-step { display:none; }
+  .receipt-step.active { display:block; }
+
+  /* Step 1 — Camera */
+  .step-body { padding:20px 24px 32px; }
+  .camera-area { background:var(--ink); border-radius:16px; height:220px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; margin-bottom:16px; cursor:pointer; position:relative; overflow:hidden; border:2px dashed rgba(122,140,110,0.4); }
+  .camera-icon { font-size:36px; }
+  .camera-lbl  { font-size:14px; color:rgba(255,255,255,0.75); font-weight:400; }
+  .camera-sub  { font-size:12px; color:rgba(255,255,255,0.4); font-weight:300; }
+  /* Viewfinder corners */
+  .vf { position:absolute; width:22px; height:22px; border-color:rgba(122,140,110,0.7); border-style:solid; border-width:0; }
+  .vf.tl { top:14px; left:14px; border-top-width:2px; border-left-width:2px; border-radius:3px 0 0 0; }
+  .vf.tr { top:14px; right:14px; border-top-width:2px; border-right-width:2px; border-radius:0 3px 0 0; }
+  .vf.bl { bottom:14px; left:14px; border-bottom-width:2px; border-left-width:2px; border-radius:0 0 0 3px; }
+  .vf.br { bottom:14px; right:14px; border-bottom-width:2px; border-right-width:2px; border-radius:0 0 3px 0; }
+  .upload-row { display:flex; gap:10px; margin-bottom:16px; }
+  .btn-upload { flex:1; padding:12px 8px; border-radius:12px; border:1.5px solid var(--linen); background:white; font-size:12px; font-weight:500; color:var(--ink); cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px; transition:background 0.15s; }
+  .btn-upload:active { background:var(--linen); }
+  .btn-upload svg { width:22px; height:22px; color:var(--sage); }
+  .btn-skip-sheet { width:100%; padding:12px; border-radius:10px; background:none; color:var(--driftwood); font-size:13px; border:1px solid var(--linen); cursor:pointer; }
+
+  /* Step 2 — Processing */
+  .processing-wrap { padding:36px 24px 40px; text-align:center; }
+  .receipt-mock { width:130px; height:170px; margin:0 auto 24px; background:white; border-radius:3px; box-shadow:0 4px 20px rgba(60,40,20,0.14); position:relative; overflow:hidden; display:flex; flex-direction:column; padding:14px 12px; gap:7px; }
+  .r-line { height:6px; border-radius:3px; background:var(--linen); animation:rScan 1.8s ease-in-out infinite; }
+  .r-line:nth-child(1){width:65%; animation-delay:0s;}
+  .r-line:nth-child(2){width:50%; animation-delay:0.12s;}
+  .r-line:nth-child(3){width:78%; animation-delay:0.22s;}
+  .r-line:nth-child(4){width:43%; animation-delay:0.32s;}
+  .r-line:nth-child(5){width:60%; animation-delay:0.42s;}
+  .r-line:nth-child(6){width:72%; animation-delay:0.52s;}
+  .r-line:nth-child(7){width:38%; animation-delay:0.62s;}
+  @keyframes rScan { 0%,100%{background:var(--linen)} 50%{background:rgba(122,140,110,0.28)} }
+  .scan-bar { position:absolute; left:0; right:0; height:2px; background:linear-gradient(90deg, transparent, rgba(122,140,110,0.8), transparent); animation:scanMove 1.8s ease-in-out infinite; }
+  @keyframes scanMove { 0%{top:0;opacity:0} 8%{opacity:1} 92%{opacity:1} 100%{top:100%;opacity:0} }
+  .processing-title { font-family:'Playfair Display',serif; font-size:20px; color:var(--ink); margin-bottom:6px; }
+  .processing-sub   { font-size:13px; color:var(--driftwood); font-weight:300; line-height:1.5; }
+  .dots { display:flex; gap:7px; justify-content:center; margin-top:18px; }
+  .dot  { width:6px; height:6px; border-radius:50%; background:var(--sage); animation:dotBounce 1.2s ease-in-out infinite; }
+  .dot:nth-child(2){animation-delay:0.2s;} .dot:nth-child(3){animation-delay:0.4s;}
+  @keyframes dotBounce { 0%,100%{transform:translateY(0);opacity:0.4} 50%{transform:translateY(-5px);opacity:1} }
+
+  /* Step 3 — Confirm */
+  .confirm-body { padding:16px 24px 32px; }
+  .confirm-intro-title { font-family:'Playfair Display',serif; font-size:19px; color:var(--ink); margin-bottom:4px; }
+  .confirm-intro-sub   { font-size:13px; color:var(--driftwood); font-weight:300; line-height:1.5; margin-bottom:16px; }
+  .match-section-lbl { font-size:9px; font-weight:500; letter-spacing:2.5px; text-transform:uppercase; color:var(--sage); margin:16px 0 8px; }
+  .match-item { display:flex; align-items:center; gap:11px; padding:11px 14px; background:white; border-radius:10px; margin-bottom:6px; border:1px solid rgba(200,185,160,0.4); }
+  .conf-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .conf-high { background:var(--sage); }
+  .conf-med  { background:var(--honey); }
+  .match-body { flex:1; min-width:0; }
+  .match-name   { font-size:13px; font-weight:400; color:var(--ink); }
+  .match-detail { font-size:11px; color:var(--driftwood); font-weight:300; margin-top:1px; }
+  .match-price  { font-family:'Playfair Display',serif; font-size:15px; color:var(--ink); flex-shrink:0; }
+  .match-cb { width:26px; height:26px; border-radius:6px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.15s; flex-shrink:0; }
+  .match-cb.yes { background:var(--forest); }
+  .match-cb.ask { background:rgba(196,154,60,0.12); border:1px solid rgba(196,154,60,0.3); }
+  .match-cb svg { width:13px; height:13px; }
+  .confirm-actions { display:flex; gap:10px; margin-top:20px; }
+  .btn-confirm-all { flex:1; padding:13px; border-radius:12px; background:var(--forest); color:white; font-size:13px; font-weight:500; border:none; cursor:pointer; transition:background 0.15s; }
+  .btn-confirm-all:active { background:var(--forest-dark); }
+  .btn-confirm-skip { padding:13px 18px; border-radius:12px; background:none; color:var(--driftwood); font-size:13px; border:1px solid var(--linen); cursor:pointer; }
+
+  /* Step 4 — Summary */
+  .summary-body { padding:16px 24px 32px; }
+  .summary-hero { background:white; border:1px solid rgba(61,107,79,0.18); border-radius:14px; padding:22px 20px; text-align:center; margin-bottom:16px; box-shadow:0 2px 12px rgba(61,107,79,0.08); }
+  .summary-title { font-family:'Playfair Display',serif; font-size:22px; color:var(--ink); margin-bottom:5px; }
+  .summary-sub   { font-size:14px; color:var(--driftwood); font-weight:300; line-height:1.6; margin-bottom:18px; }
+  .summary-sub strong { color:var(--forest); font-weight:500; }
+  .summary-nums  { display:flex; border:1px solid var(--linen); border-radius:10px; overflow:hidden; }
+  .snum { flex:1; padding:12px 8px; text-align:center; }
+  .snum + .snum  { border-left:1px solid var(--linen); }
+  .snum-lbl { font-size:9px; font-weight:500; letter-spacing:1.5px; text-transform:uppercase; color:var(--driftwood); margin-bottom:4px; }
+  .snum-val { font-family:'Playfair Display',serif; font-size:18px; color:var(--ink); }
+  .snum-val.forest { color:var(--forest); }
+  .item-list { background:white; border:1px solid rgba(200,185,160,0.4); border-radius:14px; overflow:hidden; margin-bottom:16px; }
+  .item-row { display:flex; align-items:center; justify-content:space-between; padding:11px 16px; border-bottom:1px solid rgba(200,185,160,0.12); font-size:13px; }
+  .item-row:last-child { border-bottom:none; }
+  .item-row-name  { color:var(--ink); font-weight:400; }
+  .item-row-price { font-family:'Playfair Display',serif; font-size:14px; color:var(--driftwood); }
+  .btn-finish { width:100%; padding:14px; border-radius:12px; background:var(--forest); color:white; font-size:14px; font-weight:500; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 3px 10px rgba(30,55,35,0.2); transition:background 0.15s; }
+  .btn-finish:active { background:var(--forest-dark); }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes checkDraw { from{stroke-dashoffset:20} to{stroke-dashoffset:0} }
+  .list-section:nth-child(1){animation-delay:0.08s}
+  .list-section:nth-child(2){animation-delay:0.11s}
+  .list-section:nth-child(3){animation-delay:0.14s}
+</style>
+</head>
+<body>
+
+<!-- WATERMARK -->
+<div id="wm-layer">
+  <svg class="wm-object" id="wm-1" style="top:78px;right:-4px;width:130px;height:130px;" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="30" width="18" height="40" rx="3"/><rect x="42" y="22" width="18" height="48" rx="3"/><rect x="66" y="28" width="18" height="42" rx="3"/><line x1="18" y1="40" x2="36" y2="40"/><line x1="42" y1="34" x2="60" y2="34"/><line x1="66" y1="38" x2="84" y2="38"/><rect x="20" y="26" width="14" height="6" rx="2"/><rect x="44" y="18" width="14" height="6" rx="2"/><rect x="68" y="24" width="14" height="6" rx="2"/></svg>
+  <svg class="wm-object" id="wm-2" style="top:42%;left:-8px;width:110px;height:130px;" viewBox="0 0 100 120" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="50" y1="90" x2="50" y2="40"/><path d="M50,70 C40,60 28,62 30,50 C32,38 45,42 50,55"/><path d="M50,58 C60,48 72,50 70,38 C68,26 55,30 50,43"/><path d="M50,46 C44,36 44,24 50,20 C56,24 56,36 50,46"/><path d="M42,90 C42,96 58,96 58,90" fill="none"/><rect x="38" y="90" width="24" height="28" rx="4"/></svg>
+  <svg class="wm-object" id="wm-3" style="bottom:88px;right:-4px;width:120px;height:100px;" viewBox="0 0 100 80" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="20" width="80" height="55" rx="4"/><path d="M10,34 L90,34"/><path d="M30,20 L30,10 Q50,4 70,10 L70,20"/><line x1="24" y1="46" x2="76" y2="46"/><line x1="24" y1="56" x2="76" y2="56"/><line x1="24" y1="66" x2="58" y2="66"/></svg>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">R<em>oux</em></div>
+  <div class="topbar-right">
+    <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></button>
+    <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="10" y2="18"/></svg></button>
+    <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="list-header">
+  <div class="list-header-top">
+    <div>
+      <div class="list-week-label">Shopping List</div>
+      <div class="list-title">Week of March 10</div>
+    </div>
+    <div class="list-status-pill pill-building" id="status-pill">Building</div>
+  </div>
+</div>
+
+<!-- ACTION BAR -->
+<div class="start-shopping-bar">
+  <button class="btn-start-shopping" id="btn-start" onclick="startShopping()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+    Start Shopping
+  </button>
+  <button class="btn-done-shopping" id="btn-done" onclick="doneShopping()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+    Done Shopping
+  </button>
+</div>
+
+<!-- BUDGET -->
+<div class="budget-strip">
+  <div class="budget-col"><div class="budget-label">Estimated</div><div class="budget-value muted">$247</div></div>
+  <div class="budget-col"><div class="budget-label">In Cart</div><div class="budget-value forest" id="in-cart-val">$0</div></div>
+  <div class="budget-col"><div class="budget-label">Remaining</div><div class="budget-value forest" id="remaining-val">$247</div></div>
+</div>
+
+<!-- STORE FILTER -->
+<div class="store-filter">
+  <div class="store-pill active">All Stores</div>
+  <div class="store-pill">Kroger</div>
+  <div class="store-pill">Costco</div>
+</div>
+
+<!-- SAGE -->
+<div class="sage-strip" id="sage-strip">
+  <div class="sage-strip-inner">
+    <div class="sage-dot"></div>
+    <div class="sage-text">
+      <strong>You're missing olive oil</strong> — used in 3 recipes this week. Also combined flour from enchiladas + French bread into 6 cups.
+      <div class="sage-actions">
+        <button class="sage-btn sage-btn-add" onclick="dismissSage()">Add olive oil</button>
+        <button class="sage-btn sage-btn-dismiss" onclick="dismissSage()">Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COMPLETE CARD -->
+<div class="complete-card" id="complete-card">
+  <div class="complete-icon">🛒</div>
+  <div class="complete-title">All done, Lauren.</div>
+  <div class="complete-summary">$231 spent this week — <strong>$16 under estimate.</strong> Nice work.</div>
+  <div class="complete-receipt-prompt">
+    <div class="receipt-cta-label">Lock in the numbers</div>
+    <button class="btn-photograph" onclick="openReceipt()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      Photograph my receipt
+    </button>
+    <button class="btn-skip-receipt" onclick="this.closest('.complete-card').style.opacity='0.55'">I'll do this later</button>
+    <div class="receipt-hint">Sage reads your receipt and matches each item automatically. Takes about 10 seconds.</div>
+  </div>
+</div>
+
+<!-- PRODUCE -->
+<div class="section-header" style="animation:fadeUp 0.35s ease 0.08s both;position:relative;z-index:1;">
+  <div class="section-title"><span>🥦</span> Produce</div><div class="section-count">5 items</div>
+</div>
+<div class="list-section" id="sec-produce">
+  <div class="list-item" data-price="5.00"><div class="item-main" onclick="tapItem(this)"><div class="cb"><svg viewBox="0 0 14 11" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M1 5.5L5 9.5L13 1.5"/></svg></div><div class="item-body"><div class="item-name">Avocados</div><div class="item-meta"><span class="item-recipe">Taco Tuesday</span><span class="item-note">buy Thursday</span></div></div><div class="item-right"><div class="item-qty">4</div><div class="item-price">~$5.00</div></div></div><div class="item-actions"><button class="btn-got-it" onclick="gotIt(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Got it</button><button class="btn-already-have" onclick="alreadyHave(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Already have</button></div></div>
+  <div class="list-item" data-price="3.20"><div class="item-main" onclick="tapItem(this)"><div class="cb"><svg viewBox="0 0 14 11" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M1 5.5L5 9.5L13 1.5"/></svg></div><div class="item-body"><div class="item-name">Roma tomatoes</div><div class="item-meta"><span class="item-recipe">Enchiladas, Tacos</span></div></div><div class="item-right"><div class="item-qty">6</div><div class="item-price">~$3.20</div></div></div><div class="item-actions"><button class="btn-got-it" onclick="gotIt(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Got it</button><button class="btn-already-have" onclick="alreadyHave(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Already have</button></div></div>
+  <div class="list-item" data-price="3.50"><div class="item-main" onclick="tapItem(this)"><div class="cb"><svg viewBox="0 0 14 11" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M1 5.5L5 9.5L13 1.5"/></svg></div><div class="item-body"><div class="item-name">Baby spinach</div><div class="item-meta"><span class="item-recipe">Sheet Pan Chicken</span></div></div><div class="item-right"><div class="item-qty">5 oz bag</div><div class="item-price">~$3.50</div></div></div><div class="item-actions"><button class="btn-got-it" onclick="gotIt(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Got it</button><button class="btn-already-have" onclick="alreadyHave(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Already have</button></div></div>
+  <div class="list-item" data-price="1.80"><div class="item-main" onclick="tapItem(this)"><div class="cb"><svg viewBox="0 0 14 11" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M1 5.5L5 9.5L13 1.5"/></svg></div><div class="item-body"><div class="item-name">Yellow onions</div><div class="item-meta"><span class="item-recipe">multiple recipes</span><span class="item-tag tag-pantry">in pantry</span></div></div><div class="item-right"><div class="item-qty">3</div><div class="item-price">~$1.80</div></div></div><div class="item-actions"><button class="btn-got-it" onclick="gotIt(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Got it</button><button class="btn-already-have" onclick="alreadyHave(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Already have</button></div></div>
+  <div class="list-item" data-price="0.80"><div class="item-main" onclick="tapItem(this)"><div class="cb"><svg viewBox="0 0 14 11" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M1 5.5L5 9.5L13 1.5"/></svg></div><div class="item-body"><div class="item-name">Garlic</div><div class="item-meta"><span class="item-recipe">multiple recipes</span><span class="item-recurring">↻</span></div></div><div class="item-right"><div class="item-qty">1 head</div><div class="item-price">~$0.80</div></div></div><div class="item-actions"><button class="btn-got-it" onclick="gotIt(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Got it</button><button class="btn-already-have" onclick="alreadyHave(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Already have</button></div></div>
+</div>
+
+<!-- MEAT -->
+<div class="section-header" style="animation:fadeUp 0.35s ease 0.11s both;position:relative;z-index:1;">
+  <div class="section-title"><span>🥩</span> Meat &amp; Seafood</div><div class="section-count">3 items</div>
+</div>
+<div class="list-section">
+  <div class="list-item" data-price="9.80"><div class="item-main" onclick="tapItem(this)"><div class="cb"><svg viewBox="0 0 14 11" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M1 5.5L5 9.5L13 1.5"/></svg></div><div class="item-body"><div class="item-name">Ground beef, 80/20</div><div class="item-meta"><span class="item-recipe">Enchiladas</span></div></div><div class="item-right"><div class="item-qty">2 lbs</div><div class="item-price">~$9.80</div></div></div><div class="item-actions"><button class="btn-got-it" onclick="gotIt(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Got it</button><button class="btn-already-have" onclick="alreadyHave(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Already have</button></div></div>
+  <div class="list-item" data-price="8.40"><div class="item-main" onclick="tapItem(this)"><div class="cb"><svg viewBox="0 0 14 11" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M1 5.5L5 9.5L13 1.5"/></svg></div><div class="item-body"><div class="item-name">Chicken thighs, bone-in</div><div class="item-meta"><span class="item-recipe">Sheet Pan Chicken</span><span class="item-recurring">↻</span></div></div><div class="item-right"><div class="item-qty">3 lbs</div><div class="item-price">~$8.40</div></div></div><div class="item-actions"><button class="btn-got-it" onclick="gotIt(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Got it</button><button class="btn-already-have" onclick="alreadyHave(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Already have</button></div></div>
+  <div class="list-item" data-price="6.50"><div class="item-main" onclick="tapItem(this)"><div class="cb"><svg viewBox="0 0 14 11" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M1 5.5L5 9.5L13 1.5"/></svg></div><div class="item-body"><div class="item-name">Bacon</div><div class="item-meta"><span class="item-recipe">Carbonara</span></div></div><div class="item-right"><div class="item-qty">1 pkg</div><div class="item-price">~$6.50</div></div></div><div class="item-actions"><button class="btn-got-it" onclick="gotIt(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Got it</button><button class="btn-already-have" onclick="alreadyHave(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Already have</button></div></div>
+</div>
+
+<!-- DAIRY -->
+<div class="section-header" style="animation:fadeUp 0.35s ease 0.14s both;position:relative;z-index:1;">
+  <div class="section-title"><span>🥛</span> Dairy &amp; Eggs</div><div class="section-count">3 items</div>
+</div>
+<div class="list-section">
+  <div class="list-item" data-price="4.20"><div class="item-main" onclick="tapItem(this)"><div class="cb"><svg viewBox="0 0 14 11" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M1 5.5L5 9.5L13 1.5"/></svg></div><div class="item-body"><div class="item-name">Eggs, large</div><div class="item-meta"><span class="item-recipe">Carbonara, baking</span><span class="item-recurring">↻</span></div></div><div class="item-right"><div class="item-qty">1 doz</div><div class="item-price">~$4.20</div></div></div><div class="item-actions"><button class="btn-got-it" onclick="gotIt(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Got it</button><button class="btn-already-have" onclick="alreadyHave(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Already have</button></div></div>
+  <div class="list-item" data-price="5.80"><div class="item-main" onclick="tapItem(this)"><div class="cb"><svg viewBox="0 0 14 11" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M1 5.5L5 9.5L13 1.5"/></svg></div><div class="item-body"><div class="item-name">Parmesan, block</div><div class="item-meta"><span class="item-recipe">Carbonara</span><span class="item-note">low-sodium block</span></div></div><div class="item-right"><div class="item-qty">4 oz</div><div class="item-price">~$5.80</div></div></div><div class="item-actions"><button class="btn-got-it" onclick="gotIt(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Got it</button><button class="btn-already-have" onclick="alreadyHave(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2"/></svg>Already have</button></div></div>
+  <div class="list-item" data-price="3.10"><div class="item-main" onclick="tapItem(this)"><div class="cb"><svg viewBox="0 0 14 11" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M1 5.5L5 9.5L13 1.5"/></svg></div><div class="item-body"><div class="item-name">Whole milk</div><div class="item-meta"><span class="item-recurring">↻</span></div></div><div class="item-right"><div class="item-qty">½ gal</div><div class="item-price">~$3.10</div></div></div><div class="item-actions"><button class="btn-got-it" onclick="gotIt(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Got it</button><button class="btn-already-have" onclick="alreadyHave(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2"/></svg>Already have</button></div></div>
+</div>
+
+<!-- GOT IT SECTION -->
+<div class="got-it-header" id="got-it-header">
+  <div class="got-it-left">
+    <div class="got-it-label">Got It</div>
+    <div class="got-it-count" id="got-it-count"></div>
+  </div>
+</div>
+<div class="list-section got-it-section" id="got-it-section" style="display:none;"></div>
+<div id="more-chip-wrap" style="margin:0 24px 4px;display:none;">
+  <div class="more-chip" onclick="expandGotIt()" id="more-chip"></div>
+</div>
+
+<!-- FAB -->
+<button class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><span class="nav-label">Home</span></div>
+  <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg><span class="nav-label">Recipes</span></div>
+  <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span class="nav-label">This Week</span></div>
+  <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg><span class="nav-label">Shopping</span><div class="nav-dot"></div></div>
+</nav>
+
+<!-- ══════════════════════
+     RECEIPT CAPTURE OVERLAY
+══════════════════════ -->
+<div class="overlay" id="overlay" onclick="overlayTap(event)">
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+
+  <!-- STEP 1: Camera -->
+  <div class="receipt-step active" id="step-1">
+    <div class="sheet-header">
+      <div class="sheet-title">Add your receipt</div>
+      <button class="sheet-close" onclick="closeReceipt()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="step-body">
+      <div class="camera-area" onclick="goStep(2)">
+        <div class="vf tl"></div><div class="vf tr"></div><div class="vf bl"></div><div class="vf br"></div>
+        <div class="camera-icon">📷</div>
+        <div class="camera-lbl">Tap to open camera</div>
+        <div class="camera-sub">Point at your receipt and tap</div>
+      </div>
+      <div class="upload-row">
+        <button class="btn-upload" onclick="goStep(2)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Photo library
+        </button>
+        <button class="btn-upload" onclick="goStep(2)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Upload file
+        </button>
+      </div>
+      <button class="btn-skip-sheet" onclick="closeReceipt()">I'll do this later</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: Processing -->
+  <div class="receipt-step" id="step-2">
+    <div class="sheet-header"><div class="sheet-title">Reading your receipt</div><div></div></div>
+    <div class="processing-wrap">
+      <div class="receipt-mock">
+        <div class="scan-bar"></div>
+        <div class="r-line"></div><div class="r-line"></div><div class="r-line"></div>
+        <div class="r-line"></div><div class="r-line"></div><div class="r-line"></div>
+        <div class="r-line"></div>
+      </div>
+      <div class="processing-title">Sage is on it</div>
+      <div class="processing-sub">Matching each item to your list.<br>Usually takes about 10 seconds.</div>
+      <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    </div>
+  </div>
+
+  <!-- STEP 3: Confirm uncertain items -->
+  <div class="receipt-step" id="step-3">
+    <div class="sheet-header">
+      <div class="sheet-title">Just two to confirm</div>
+      <button class="sheet-close" onclick="closeReceipt()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="confirm-body">
+      <div class="confirm-intro-title">9 of 11 items matched.</div>
+      <div class="confirm-intro-sub">Sage is confident on most. These two need a quick look from you.</div>
+
+      <div class="match-section-lbl">Needs your confirmation</div>
+      <div class="match-item">
+        <div class="conf-dot conf-med"></div>
+        <div class="match-body"><div class="match-name">KRGR GRND BEEF 80/20</div><div class="match-detail">2.14 lb · matches "Ground beef, 80/20"?</div></div>
+        <div class="match-price">$10.24</div>
+        <button class="match-cb ask" onclick="confirmMatch(this)"><svg viewBox="0 0 14 11" fill="none" stroke="#C49A3C" stroke-width="2.2" stroke-linecap="round"><path d="M1 5.5L5 9.5L13 1.5"/></svg></button>
+      </div>
+      <div class="match-item">
+        <div class="conf-dot conf-med"></div>
+        <div class="match-body"><div class="match-name">ORG SPINACH 5OZ</div><div class="match-detail">$4.29 · matches "Baby spinach, 5 oz bag"?</div></div>
+        <div class="match-price">$4.29</div>
+        <button class="match-cb ask" onclick="confirmMatch(this)"><svg viewBox="0 0 14 11" fill="none" stroke="#C49A3C" stroke-width="2.2" stroke-linecap="round"><path d="M1 5.5L5 9.5L13 1.5"/></svg></button>
+      </div>
+
+      <div class="match-section-lbl" style="margin-top:20px;">Matched automatically</div>
+      <div class="match-item" style="opacity:0.55;"><div class="conf-dot conf-high"></div><div class="match-body"><div class="match-name">Avocados (4)</div><div class="match-detail">High confidence</div></div><div class="match-price">$4.96</div><button class="match-cb yes"><svg viewBox="0 0 14 11" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><path d="M1 5.5L5 9.5L13 1.5"/></svg></button></div>
+      <div class="match-item" style="opacity:0.55;"><div class="conf-dot conf-high"></div><div class="match-body"><div class="match-name">Roma Tomatoes</div><div class="match-detail">High confidence</div></div><div class="match-price">$3.12</div><button class="match-cb yes"><svg viewBox="0 0 14 11" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><path d="M1 5.5L5 9.5L13 1.5"/></svg></button></div>
+      <div class="match-item" style="opacity:0.55;"><div class="conf-dot conf-high"></div><div class="match-body"><div class="match-name">Chicken Thighs 3 lb</div><div class="match-detail">High confidence</div></div><div class="match-price">$8.97</div><button class="match-cb yes"><svg viewBox="0 0 14 11" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><path d="M1 5.5L5 9.5L13 1.5"/></svg></button></div>
+
+      <div class="confirm-actions">
+        <button class="btn-confirm-all" onclick="goStep(4)">Confirm all &amp; continue</button>
+        <button class="btn-confirm-skip" onclick="goStep(4)">Skip</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: Summary -->
+  <div class="receipt-step" id="step-4">
+    <div class="sheet-header">
+      <div class="sheet-title">Week wrapped up ✓</div>
+      <button class="sheet-close" onclick="closeReceipt()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="summary-body">
+      <div class="summary-hero">
+        <div class="summary-title">Nice week, Lauren. 🌿</div>
+        <div class="summary-sub">You spent <strong>$231</strong> — that's <strong>$16 under estimate.</strong><br>Sage has updated your price history.</div>
+        <div class="summary-nums">
+          <div class="snum"><div class="snum-lbl">Estimated</div><div class="snum-val">$247</div></div>
+          <div class="snum"><div class="snum-lbl">Actual</div><div class="snum-val forest">$231</div></div>
+          <div class="snum"><div class="snum-lbl">Saved</div><div class="snum-val forest">$16</div></div>
+        </div>
+      </div>
+      <div class="item-list">
+        <div class="item-row"><span class="item-row-name">Ground beef, 80/20</span><span class="item-row-price">$10.24</span></div>
+        <div class="item-row"><span class="item-row-name">Chicken thighs</span><span class="item-row-price">$8.97</span></div>
+        <div class="item-row"><span class="item-row-name">Avocados (4)</span><span class="item-row-price">$4.96</span></div>
+        <div class="item-row"><span class="item-row-name">Organic spinach</span><span class="item-row-price">$4.29</span></div>
+        <div class="item-row"><span class="item-row-name">Parmesan block</span><span class="item-row-price">$5.62</span></div>
+        <div class="item-row" style="opacity:0.45;font-style:italic;"><span class="item-row-name">+ 6 more items</span><span class="item-row-price">$196.92</span></div>
+      </div>
+      <button class="btn-finish" onclick="closeReceipt()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Done
+      </button>
+    </div>
+  </div>
+
+</div><!-- /sheet -->
+</div><!-- /overlay -->
+
+<script>
+  // WATERMARKS
+  const wm=[{el:document.getElementById('wm-1'),rate:0.10},{el:document.getElementById('wm-2'),rate:0.15},{el:document.getElementById('wm-3'),rate:0.20}];
+  wm.forEach((w,i)=>setTimeout(()=>{w.el.style.transition='opacity 1.4s ease';w.el.style.opacity='0.07';},600+i*200));
+  let ticking=false;
+  window.addEventListener('scroll',()=>{if(!ticking){requestAnimationFrame(()=>{const sy=window.scrollY;wm.forEach(w=>{w.el.style.transform=`translateY(${sy*w.rate}px)`;});ticking=false;});ticking=true;}});
+
+  // BUDGET
+  let inCart=0;
+  function updateBudget(delta){
+    inCart=Math.max(0,inCart+delta);
+    const rem=247-inCart;
+    const cv=document.getElementById('in-cart-val');
+    const rv=document.getElementById('remaining-val');
+    cv.textContent='$'+inCart.toFixed(0);
+    rv.textContent='$'+Math.abs(rem).toFixed(0);
+    rv.className='budget-value '+(rem<30?'amber':'forest');
+    [cv,rv].forEach(el=>{el.classList.add('pulse');setTimeout(()=>el.classList.remove('pulse'),180);});
+  }
+
+  // ITEM TAP — reveal Got It / Already Have
+  function tapItem(main){
+    const item=main.closest('.list-item');
+    const cb=main.querySelector('.cb');
+    const icon=cb.querySelector('svg');
+    const name=main.querySelector('.item-name');
+    const actions=item.querySelector('.item-actions');
+    const open=actions.classList.contains('visible');
+    // Close others
+    document.querySelectorAll('.item-actions.visible').forEach(a=>{
+      if(a!==actions){a.classList.remove('visible');const o=a.closest('.list-item');o.querySelector('.cb').classList.remove('checked-state');o.querySelector('.item-name').classList.remove('struck');o.querySelector('svg').style.display='none';}
+    });
+    if(!open){cb.classList.add('checked-state');icon.style.display='block';icon.style.animation='checkDraw 0.2s ease forwards';name.classList.add('struck');actions.classList.add('visible');}
+    else{cb.classList.remove('checked-state');icon.style.display='none';name.classList.remove('struck');actions.classList.remove('visible');}
+  }
+
+  // GOT IT
+  let gitCount=0;
+  function gotIt(btn){
+    const item=btn.closest('.list-item');
+    const price=parseFloat(item.dataset.price||0);
+    gitCount++;
+    updateBudget(price);
+    const gs=document.getElementById('got-it-section');
+    const gh=document.getElementById('got-it-header');
+    const gc=document.getElementById('got-it-count');
+    const mw=document.getElementById('more-chip-wrap');
+    const mc=document.getElementById('more-chip');
+    // Clone
+    const clone=item.cloneNode(true);
+    clone.querySelector('.item-actions').remove();
+    clone.style.cssText='opacity:1';
+    clone.querySelector('.item-main').onclick=null;
+    gs.appendChild(clone);
+    gs.style.display='block';
+    gh.style.display='flex';
+    gc.textContent=gitCount+' item'+(gitCount===1?'':'s');
+    // Hide original
+    item.style.opacity='0';
+    setTimeout(()=>item.style.display='none',250);
+    // Collapse chip if >3
+    if(gitCount>3){mw.style.display='block';mc.textContent='Show all '+gitCount+' got-it items ↓';}
+  }
+
+  // ALREADY HAVE
+  function alreadyHave(btn){
+    const item=btn.closest('.list-item');
+    item.style.transition='opacity 0.25s';
+    item.style.opacity='0';
+    setTimeout(()=>item.style.display='none',250);
+  }
+
+  // EXPAND / COLLAPSE GOT IT
+  let gitExpanded=false;
+  function expandGotIt(){
+    const gs=document.getElementById('got-it-section');
+    const mc=document.getElementById('more-chip');
+    gitExpanded=!gitExpanded;
+    if(gitExpanded){
+      gs.classList.add('expanded');
+      mc.textContent='Show less ↑';
+    } else {
+      gs.classList.remove('expanded');
+      mc.textContent='Show all '+gitCount+' got-it items ↓';
+    }
+  }
+
+  // STORE PILLS
+  document.querySelectorAll('.store-pill').forEach(p=>p.addEventListener('click',()=>{document.querySelectorAll('.store-pill').forEach(x=>x.classList.remove('active'));p.classList.add('active');}));
+
+  // SAGE
+  function dismissSage(){const s=document.getElementById('sage-strip');s.style.opacity='0';setTimeout(()=>s.style.display='none',200);}
+
+  // STATE
+  function startShopping(){
+    document.getElementById('status-pill').className='list-status-pill pill-shopping';
+    document.getElementById('status-pill').textContent='Shopping';
+    dismissSage();
+    document.getElementById('btn-start').style.display='none';
+    document.getElementById('btn-done').style.display='flex';
+    document.body.className='state-shopping';
+  }
+  function doneShopping(){
+    document.getElementById('status-pill').className='list-status-pill pill-complete';
+    document.getElementById('status-pill').textContent='Complete';
+    document.getElementById('btn-done').style.display='none';
+    const c=document.getElementById('complete-card');
+    c.style.display='block';c.style.animation='fadeUp 0.35s ease both';
+    document.body.className='state-complete';
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  // RECEIPT FLOW
+  function openReceipt(){document.getElementById('overlay').classList.add('active');showStep(1);}
+  function closeReceipt(){document.getElementById('overlay').classList.remove('active');}
+  function overlayTap(e){if(e.target===document.getElementById('overlay'))closeReceipt();}
+  function showStep(n){document.querySelectorAll('.receipt-step').forEach(s=>s.classList.remove('active'));document.getElementById('step-'+n).classList.add('active');}
+  function goStep(n){if(n===2){showStep(2);setTimeout(()=>showStep(3),3000);}else showStep(n);}
+  function confirmMatch(btn){btn.classList.remove('ask');btn.classList.add('yes');btn.innerHTML='<svg viewBox="0 0 14 11" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><path d="M1 5.5L5 9.5L13 1.5"/></svg>';btn.closest('.match-item').style.opacity='0.55';}
+</script>
+</body>
+</html>

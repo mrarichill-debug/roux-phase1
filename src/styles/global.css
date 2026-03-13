@@ -2,15 +2,250 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Global base styles — UI_REFERENCE.md will expand this */
+/* ── Design System Tokens ─────────────────────────────────────────────────── */
 :root {
-  font-family: 'DM Sans', sans-serif;
+  --forest:     #3D6B4F;
+  --forest-dk:  #2E5038;
+  --sage:       #7A8C6E;
+  --honey:      #C49A3C;
+  --cream:      #FAF7F2;
+  --ink:        #2C2417;
+  --driftwood:  #8C7B6B;
+  --linen:      #E8E0D0;
+  --walnut:     #8B6F52;
+  --red:        #A03030;
+
+  --day-school:   #5B8DD9;
+  --day-weekend:  #7A8C6E;
+  --day-noschool: #D4874A;
+  --day-summer:   #C49A3C;
+
+  font-family: 'Jost', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   margin: 0;
-  background: #faf9f7;
-  color: #1a1a1a;
+  background: var(--cream);
+  color: var(--ink);
+}
+
+/* ── Animation Keyframes ──────────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+@keyframes logoIn {
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes taglineIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes illustIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 0.65; transform: translateY(0); }
+}
+
+@keyframes btnIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes decorFade {
+  to { opacity: 0.055; }
+}
+
+@keyframes iconPop {
+  from { transform: scale(0.7); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes forgotSlide {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes errorSlide {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+/* Combined tonight card entrance: fadeUp then scale-settle */
+@keyframes tonightEntrance {
+  0%   { opacity: 0; transform: translateY(10px) scale(1.012); }
+  55%  { opacity: 1; transform: translateY(0)    scale(1.012); }
+  100% { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+@keyframes sgpulse {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 0.14; }
+}
+
+@keyframes pipIn {
+  from { opacity: 0; transform: scale(0.4); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Hide scrollbar (horizontal scroll pills) ─────────────────────────────── */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* ── Recipe Card animations ───────────────────────────────────────────────── */
+@keyframes panelFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes checkPulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+
+@keyframes ctaSettle {
+  0%   { transform: scale(1.012); }
+  100% { transform: scale(1); }
+}
+
+/* ── Recipe Library topbar search input ──────────────────────────────────── */
+.library-search::placeholder { color: rgba(210,230,200,0.55); }
+.library-search:focus {
+  background: rgba(255,255,255,0.18) !important;
+  border-color: rgba(255,255,255,0.32) !important;
+}
+
+/* ── Shimmer utility ──────────────────────────────────────────────────────── */
+.shimmer-block {
+  border-radius: 16px;
+  background: linear-gradient(90deg, #f0ede8 25%, #e8e4dc 50%, #f0ede8 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease infinite;
+}
+
+/* ── Sage pulse dot ───────────────────────────────────────────────────────── */
+.sage-pulse-dot {
+  animation: sgpulse 2.5s infinite;
+}
+
+/* ── Meal card entrance (scale 0.92→1 + fade, 220ms) ─────────────────────── */
+@keyframes mealEntrance {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Publish banner pulse (scale 1.02→1, 150ms) ──────────────────────────── */
+@keyframes publishPulse {
+  0%   { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+/* ── Bottom sheet rise (shopping prompt) ──────────────────────────────────── */
+@keyframes sheetRise {
+  from { transform: translateX(-50%) translateY(100%); }
+  to   { transform: translateX(-50%) translateY(0); }
+}
+
+/* ── Shopping list — In Cart number pulse ─────────────────────────────────── */
+@keyframes inCartPulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+/* ── Shopping list — Got It item entrance ─────────────────────────────────── */
+@keyframes gotItEntrance {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Cutting board Tonight card ───────────────────────────────────────────── */
+.tonight-board {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+
+  background:
+    repeating-linear-gradient(
+      1.2deg,
+      transparent, transparent 4px,
+      rgba(80,38,8,0.06) 4px, rgba(80,38,8,0.06) 5px
+    ),
+    repeating-linear-gradient(
+      -0.6deg,
+      transparent, transparent 11px,
+      rgba(100,48,10,0.07) 11px, rgba(100,48,10,0.07) 12px
+    ),
+    repeating-linear-gradient(
+      0.9deg,
+      rgba(155,85,30,0.05) 0px,
+      rgba(155,85,30,0.05) 22px,
+      rgba(115,58,16,0.05) 22px,
+      rgba(115,58,16,0.05) 44px
+    ),
+    linear-gradient(162deg,
+      #E8C49A 0%,
+      #DEBA8E 30%,
+      #D4AE84 60%,
+      #DEBA8E 85%,
+      #E8C49A 100%
+    );
+
+  box-shadow:
+    0 3px 6px rgba(70,32,8,0.24),
+    0 8px 22px rgba(70,32,8,0.18),
+    0 20px 48px rgba(70,32,8,0.10),
+    0 1px 0px rgba(225,170,105,0.20) inset;
+
+  animation: tonightEntrance 0.75s cubic-bezier(0.22,1,0.36,1) 0.05s both;
+}
+
+.tonight-board:active {
+  box-shadow: 0 2px 6px rgba(70,32,8,0.18), 0 6px 16px rgba(70,32,8,0.14);
+}
+
+/* Juice channel */
+.tonight-board::before {
+  content: '';
+  position: absolute;
+  inset: 9px;
+  border-radius: 13px;
+  pointer-events: none;
+  z-index: 0;
+  border: 1.5px solid rgba(55,22,4,0.20);
+  box-shadow:
+    inset 0 1px 3px rgba(55,22,4,0.15),
+    inset 0 -1px 2px rgba(55,22,4,0.09),
+    0 1px 0 rgba(215,160,90,0.28);
+}
+
+/* Light catch top-left */
+.tonight-board::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  background: radial-gradient(ellipse at 20% 12%, rgba(230,178,112,0.18) 0%, transparent 54%);
+  pointer-events: none;
+  z-index: 0;
 }

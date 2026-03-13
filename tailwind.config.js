@@ -7,9 +7,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans:        ['DM Sans', 'sans-serif'],
-        display:     ['Fraunces', 'serif'],
-        handwriting: ['Caveat', 'cursive'],
+        sans:        ["'Jost'", 'sans-serif'],
+        display:     ["'Playfair Display'", 'serif'],
+        handwriting: ["'Caveat'", 'cursive'],
       },
     },
   },

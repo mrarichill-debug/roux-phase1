@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Roux — This Week</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sage:#7A8C6E; --forest:#3D6B4F; --forest-dark:#2E5038;
+    --ink:#2C2417; --driftwood:#8C7B6B; --linen:#E8E0D0;
+    --cream:#FAF7F2; --honey:#C49A3C; --walnut:#8B6F52;
+    /* Day type colors */
+    --day-school:#5B8DD9;
+    --day-weekend:#7A8C6E;
+    --day-noschool:#D4874A;
+    --day-summer:#C49A3C;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body {
+    background:var(--cream); color:var(--ink);
+    font-family:'Jost',sans-serif; font-weight:300;
+    min-height:100vh; max-width:430px; margin:0 auto;
+    padding-bottom:140px; position:relative; overflow-x:hidden;
+  }
+
+  /* ── WATERMARK LAYER ── */
+  #wm-layer {
+    position:fixed; top:0; left:50%; transform:translateX(-50%);
+    width:100%; max-width:430px; height:100%;
+    pointer-events:none; z-index:0; overflow:hidden;
+  }
+  .wm-object { position:absolute; pointer-events:none; opacity:0; color:rgba(60,42,22,1); }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    position:sticky; top:0; z-index:100;
+    height:68px; display:flex; align-items:center; justify-content:space-between;
+    padding:0 24px;
+    background:var(--forest);
+    box-shadow:
+      0 2px  0px rgba(20,40,25,0.55),
+      0 4px  8px rgba(20,40,25,0.40),
+      0 8px 24px rgba(30,55,35,0.28),
+      0 16px 40px rgba(30,55,35,0.14),
+      0 1px  0px rgba(255,255,255,0.06) inset;
+  }
+  .logo { font-family:'Playfair Display',serif; font-size:26px; font-weight:600; color:rgba(250,247,242,0.95); }
+  .logo em { font-style:italic; color:rgba(188,218,178,0.82); }
+  .topbar-right { display:flex; align-items:center; gap:4px; }
+  .icon-btn {
+    width:38px; height:38px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    border:none; background:none; cursor:pointer;
+    color:rgba(210,230,200,0.7); transition:color 0.15s;
+  }
+  .icon-btn:active { color:white; }
+  .icon-btn svg { width:20px; height:20px; }
+
+  /* ── WEEK HEADER ── */
+  .week-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 24px 10px;
+    position:relative; z-index:1;
+    animation:fadeUp 0.35s ease both;
+  }
+  .week-nav-btn {
+    width:34px; height:34px; border-radius:50%;
+    border:1px solid rgba(200,185,160,0.6);
+    background:white; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--driftwood); box-shadow:0 1px 4px rgba(80,60,30,0.07);
+    transition:all 0.15s; flex-shrink:0;
+  }
+  .week-nav-btn:active { background:var(--linen); }
+  .week-nav-btn svg { width:16px; height:16px; }
+  .week-title-block { text-align:center; }
+  .week-label { font-size:10px; font-weight:500; letter-spacing:2px; text-transform:uppercase; color:var(--sage); margin-bottom:2px; }
+  .week-range { font-family:'Playfair Display',serif; font-size:18px; color:var(--ink); font-weight:500; }
+
+  /* ── PLAN STATUS BANNER ── */
+  .status-banner {
+    margin:0 24px 16px;
+    background:rgba(196,154,60,0.08); border:1px solid rgba(196,154,60,0.25);
+    border-radius:10px; padding:10px 14px;
+    display:flex; align-items:center; justify-content:space-between;
+    animation:fadeUp 0.35s ease 0.04s both;
+    position:relative; z-index:1;
+  }
+  .status-banner.published {
+    background:rgba(61,107,79,0.08); border-color:rgba(61,107,79,0.22);
+  }
+  .status-left { display:flex; align-items:center; gap:8px; }
+  .status-dot { width:7px; height:7px; border-radius:50%; background:var(--honey); flex-shrink:0; }
+  .status-banner.published .status-dot { background:var(--sage); }
+  .status-text { font-size:12px; font-weight:500; color:var(--ink); }
+  .status-sub { font-size:11px; color:var(--driftwood); font-weight:300; }
+  .status-action {
+    font-size:11px; color:var(--forest); font-weight:500;
+    background:none; border:none; cursor:pointer; padding:4px 8px;
+    border-radius:6px; transition:background 0.15s;
+  }
+  .status-action:active { background:rgba(61,107,79,0.1); }
+
+  /* ── PROTEIN ROSTER ── */
+  .protein-banner {
+    margin:0 24px 16px;
+    background:white; border:1px solid rgba(200,185,160,0.55);
+    border-radius:12px; overflow:hidden;
+    box-shadow:0 1px 4px rgba(80,60,30,0.06);
+    animation:fadeUp 0.35s ease 0.06s both;
+    position:relative; z-index:1;
+  }
+  .protein-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:11px 14px; cursor:pointer;
+  }
+  .protein-header-left { display:flex; align-items:center; gap:8px; }
+  .protein-icon { font-size:14px; }
+  .protein-title { font-size:11px; font-weight:500; color:var(--ink); letter-spacing:0.3px; }
+  .protein-count { font-size:10px; color:var(--driftwood); }
+  .protein-chevron { width:14px; height:14px; color:var(--driftwood); transition:transform 0.25s; }
+  .protein-banner.open .protein-chevron { transform:rotate(180deg); }
+  .protein-body { max-height:0; overflow:hidden; transition:max-height 0.3s ease; }
+  .protein-banner.open .protein-body { max-height:200px; }
+  .protein-list { padding:0 14px 12px; display:flex; flex-direction:column; gap:6px; }
+  .protein-item {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 10px; background:var(--cream); border-radius:8px;
+    border:1px solid rgba(200,185,160,0.4);
+  }
+  .protein-name { font-size:13px; color:var(--ink); }
+  .protein-meta { display:flex; align-items:center; gap:8px; }
+  .protein-store { font-size:11px; color:var(--driftwood); }
+  .protein-sale { font-size:10px; font-weight:500; color:var(--forest); background:rgba(61,107,79,0.08); border:1px solid rgba(61,107,79,0.15); padding:2px 7px; border-radius:4px; }
+  .protein-add { font-size:11px; color:var(--driftwood); background:none; border:1px dashed rgba(200,185,160,0.7); border-radius:8px; padding:8px 10px; cursor:pointer; text-align:center; transition:all 0.15s; }
+  .protein-add:active { background:var(--linen); }
+
+  /* ── DAY ROWS ── */
+  .days-list { padding:0 24px; display:flex; flex-direction:column; gap:12px; position:relative; z-index:1; }
+
+  .day-row {
+    background:white; border:1px solid rgba(200,185,160,0.55);
+    border-radius:16px; overflow:hidden;
+    box-shadow:0 1px 4px rgba(80,60,30,0.06), 0 3px 10px rgba(80,60,30,0.04);
+    animation:fadeUp 0.35s ease both;
+  }
+  .day-row.today {
+    border-color:var(--forest);
+    box-shadow:
+      0 2px 4px rgba(30,65,42,0.22),
+      0 6px 16px rgba(30,65,42,0.16),
+      0 14px 28px rgba(30,65,42,0.10);
+  }
+
+  /* Day row header */
+  .day-header {
+    display:flex; align-items:flex-start; justify-content:space-between;
+    padding:11px 14px 10px;
+    border-bottom:1px solid rgba(200,185,160,0.35);
+  }
+  .day-row.today .day-header { background:var(--forest); border-bottom-color:rgba(255,255,255,0.12); }
+  .day-header-left { display:flex; flex-direction:column; gap:4px; }
+  .day-name-label {
+    font-size:10px; font-weight:500; letter-spacing:2px;
+    text-transform:uppercase; color:var(--driftwood);
+  }
+  .day-row.today .day-name-label { color:rgba(255,255,255,0.65); }
+  .day-date-label {
+    font-family:'Playfair Display',serif; font-size:17px;
+    font-weight:500; color:var(--ink); line-height:1;
+  }
+  .day-row.today .day-date-label { color:white; }
+  .tradition-badge {
+    font-size:9px; font-weight:500; padding:3px 7px; border-radius:4px;
+    background:rgba(139,111,82,0.10); color:var(--walnut);
+    display:inline-flex; align-items:center; gap:3px;
+    align-self:flex-start;
+  }
+  .day-row.today .tradition-badge { background:rgba(255,255,255,0.15); color:rgba(255,255,255,0.85); }
+  .day-badges { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+  .day-type-badge {
+    font-size:9px; font-weight:500; letter-spacing:0.8px;
+    text-transform:uppercase; padding:3px 7px; border-radius:4px;
+    display:flex; align-items:center; gap:4px;
+  }
+  .badge-school { background:rgba(91,141,217,0.12); color:#3A6CB5; }
+  .badge-weekend { background:rgba(122,140,110,0.12); color:var(--forest); }
+  .badge-noschool { background:rgba(212,135,74,0.12); color:#B5622A; }
+  .badge-summer { background:rgba(196,154,60,0.12); color:#8A6820; }
+  .day-row.today .day-type-badge { background:rgba(255,255,255,0.15); color:rgba(255,255,255,0.85); }
+
+  /* Day row body */
+  .day-body { padding:12px 14px; display:flex; flex-direction:column; gap:8px; }
+
+  /* Dinner slot — hero */
+  .dinner-slot { }
+  .slot-label {
+    font-size:9px; font-weight:500; letter-spacing:1.8px;
+    text-transform:uppercase; color:var(--driftwood); margin-bottom:6px;
+  }
+
+  /* Filled meal card */
+  .meal-card {
+    background:var(--cream); border:1px solid rgba(200,185,160,0.5);
+    border-radius:10px; padding:11px 12px;
+    display:flex; align-items:flex-start; justify-content:space-between;
+    cursor:pointer; transition:background 0.15s;
+    gap:8px;
+  }
+  .meal-card:active { background:var(--linen); }
+  .meal-card-left { flex:1; min-width:0; }
+  .meal-card-name {
+    font-family:'Playfair Display',serif; font-size:15px;
+    color:var(--ink); font-weight:500; line-height:1.25; margin-bottom:4px;
+  }
+  .meal-card-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .meal-cook { font-size:11px; color:var(--driftwood); display:flex; align-items:center; gap:4px; }
+  .meal-cook svg { width:11px; height:11px; opacity:0.6; }
+  .meal-note-dot {
+    width:6px; height:6px; border-radius:50%;
+    background:var(--honey); flex-shrink:0; margin-top:1px;
+    title:"Has notes";
+  }
+  .meal-status-chip {
+    font-size:9px; font-weight:500; letter-spacing:0.8px;
+    text-transform:uppercase; padding:2px 6px; border-radius:4px;
+  }
+  .chip-confirmed { background:rgba(61,107,79,0.10); color:var(--forest); }
+  .chip-planned { background:rgba(200,185,160,0.3); color:var(--driftwood); }
+  .chip-skipped { background:rgba(200,60,60,0.08); color:#A03030; text-decoration:line-through; }
+  .meal-card-right { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+  .meal-swap-btn {
+    width:34px; height:34px; border-radius:50%;
+    border:1px solid rgba(200,185,160,0.6); background:white;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:var(--driftwood); transition:all 0.15s;
+    flex-shrink:0;
+  }
+  .meal-swap-btn:active { background:var(--linen); }
+  .meal-swap-btn svg { width:15px; height:15px; }
+
+  /* Empty dinner slot — full tap target */
+  .dinner-empty {
+    border:1.5px dashed rgba(200,185,160,0.65);
+    border-radius:10px; padding:16px 14px;
+    display:flex; align-items:center; justify-content:space-between;
+    cursor:pointer; transition:all 0.15s; background:rgba(250,247,242,0.5);
+    gap:10px;
+  }
+  .dinner-empty:active { background:rgba(232,224,208,0.5); border-color:rgba(122,140,110,0.5); }
+  .dinner-empty-text {
+    font-family:'Playfair Display',serif; font-size:15px;
+    font-style:italic; color:rgba(140,123,107,0.65); line-height:1.3;
+  }
+  .dinner-empty-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .sage-nudge {
+    display:flex; align-items:center; gap:4px;
+    font-size:10px; color:var(--sage); font-weight:500;
+    background:rgba(122,140,110,0.08); border:1px solid rgba(122,140,110,0.18);
+    border-radius:6px; padding:5px 9px; cursor:pointer; transition:all 0.15s;
+  }
+  .sage-nudge:active { background:rgba(122,140,110,0.16); }
+  .sage-nudge svg { width:11px; height:11px; }
+  .add-circle {
+    width:32px; height:32px; border-radius:50%;
+    background:var(--forest); color:white;
+    display:flex; align-items:center; justify-content:center;
+    font-size:18px; font-weight:300; flex-shrink:0;
+    box-shadow:0 2px 6px rgba(61,107,79,0.22);
+  }
+
+  /* Open day state */
+  .open-day-slot {
+    background:rgba(122,140,110,0.06); border:1px solid rgba(122,140,110,0.18);
+    border-radius:10px; padding:11px 14px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .open-day-label { font-size:13px; color:var(--sage); font-weight:400; display:flex; align-items:center; gap:6px; }
+  .open-day-label svg { width:14px; height:14px; }
+  .open-day-undo { font-size:11px; color:var(--driftwood); background:none; border:none; cursor:pointer; }
+
+  /* Light meal slots (breakfast / lunch) */
+  .light-slots { display:flex; gap:7px; }
+  .light-slot {
+    flex:1; border-radius:8px; padding:8px 10px;
+    border:1px dashed rgba(200,185,160,0.55);
+    background:rgba(250,247,242,0.4);
+    cursor:pointer; transition:all 0.15s; min-width:0;
+  }
+  .light-slot:active { background:rgba(232,224,208,0.5); }
+  .light-slot.filled {
+    background:var(--cream); border-style:solid;
+    border-color:rgba(200,185,160,0.5);
+  }
+  .light-slot-label { font-size:9px; font-weight:500; letter-spacing:1.5px; text-transform:uppercase; color:var(--driftwood); margin-bottom:4px; }
+  .light-slot-name { font-size:12px; color:var(--ink); line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .light-slot-empty { font-size:12px; color:rgba(140,123,107,0.45); font-style:italic; }
+
+  /* ── BOTTOM PUBLISH CTA ── */
+  .publish-bar {
+    position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+    width:100%; max-width:430px;
+    padding:10px 24px 12px;
+    background:var(--cream); border-top:1px solid var(--linen);
+    box-shadow:0 -2px 16px rgba(80,60,30,0.10);
+    z-index:90;
+    animation:slideUp 0.4s ease both;
+  }
+  .publish-btn {
+    width:100%; background:var(--forest); color:white; border:none;
+    border-radius:12px; padding:15px;
+    font-family:'Jost',sans-serif; font-size:14px; font-weight:500;
+    letter-spacing:0.5px; cursor:pointer;
+    box-shadow:0 2px 10px rgba(61,107,79,0.28);
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    transition:background 0.15s;
+  }
+  .publish-btn:active { background:var(--forest-dark); }
+  .publish-btn svg { width:16px; height:16px; }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+    width:100%; max-width:430px; height:80px; padding:10px 0 22px;
+    display:grid; grid-template-columns:repeat(4,1fr);
+    z-index:100; background:var(--cream);
+    border-top:1px solid var(--linen);
+    box-shadow:0 -2px 12px rgba(80,60,30,0.08);
+  }
+  .nav-item {
+    display:flex; flex-direction:column; align-items:center; gap:5px;
+    cursor:pointer; padding:4px 0; text-decoration:none;
+    color:var(--driftwood); transition:color 0.15s; position:relative;
+  }
+  .nav-item svg { width:22px; height:22px; }
+  .nav-label { font-size:10px; font-weight:400; letter-spacing:0.3px; }
+  .nav-item.active { color:var(--forest); }
+  .nav-item.active .nav-label { font-weight:600; }
+  .nav-dot { width:4px; height:4px; border-radius:50%; background:var(--forest); }
+
+  /* ── BOTTOM SHEET ── */
+  .sheet-overlay {
+    position:fixed; inset:0; background:rgba(44,36,23,0.45);
+    z-index:200; opacity:0; pointer-events:none;
+    transition:opacity 0.25s ease;
+  }
+  .sheet-overlay.open { opacity:1; pointer-events:all; }
+  .bottom-sheet {
+    position:fixed; bottom:0; left:50%; transform:translateX(-50%) translateY(100%);
+    width:100%; max-width:430px;
+    background:white; border-radius:20px 20px 0 0;
+    padding:0 0 40px;
+    z-index:201;
+    transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);
+    box-shadow:0 -4px 32px rgba(44,36,23,0.18);
+  }
+  .bottom-sheet.open { transform:translateX(-50%) translateY(0); }
+  .sheet-handle {
+    width:36px; height:4px; border-radius:2px;
+    background:rgba(200,185,160,0.6); margin:12px auto 0;
+  }
+  .sheet-title-row {
+    padding:16px 22px 14px;
+    border-bottom:1px solid var(--linen);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .sheet-day-context { }
+  .sheet-day-name { font-size:10px; font-weight:500; letter-spacing:2px; text-transform:uppercase; color:var(--driftwood); margin-bottom:2px; }
+  .sheet-slot-name { font-family:'Playfair Display',serif; font-size:20px; color:var(--ink); font-weight:500; }
+  .sheet-close {
+    width:32px; height:32px; border-radius:50%;
+    border:1px solid rgba(200,185,160,0.6); background:var(--cream);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:var(--driftwood); flex-shrink:0;
+  }
+  .sheet-close svg { width:14px; height:14px; }
+  .sheet-options { padding:14px 22px; display:flex; flex-direction:column; gap:10px; }
+  .sheet-option {
+    display:flex; align-items:center; gap:14px;
+    padding:14px 16px; border-radius:12px;
+    border:1px solid rgba(200,185,160,0.55);
+    background:var(--cream); cursor:pointer;
+    transition:all 0.15s;
+  }
+  .sheet-option:active { background:var(--linen); }
+  .sheet-option.primary {
+    background:var(--forest); border-color:var(--forest);
+  }
+  .sheet-option-icon {
+    width:38px; height:38px; border-radius:10px;
+    background:rgba(200,185,160,0.3);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .sheet-option.primary .sheet-option-icon { background:rgba(255,255,255,0.15); }
+  .sheet-option-icon svg { width:18px; height:18px; color:var(--forest); }
+  .sheet-option.primary .sheet-option-icon svg { color:white; }
+  .sheet-option-text { flex:1; }
+  .sheet-option-title { font-size:14px; font-weight:500; color:var(--ink); margin-bottom:2px; }
+  .sheet-option.primary .sheet-option-title { color:white; }
+  .sheet-option-sub { font-size:12px; color:var(--driftwood); font-weight:300; }
+  .sheet-option.primary .sheet-option-sub { color:rgba(255,255,255,0.7); }
+  .sheet-divider {
+    display:flex; align-items:center; gap:10px;
+    padding:0 22px; font-size:10px; letter-spacing:1.5px;
+    text-transform:uppercase; color:var(--driftwood);
+  }
+  .sheet-divider-line { flex:1; height:1px; background:var(--linen); }
+  .sheet-open-day {
+    margin:0 22px; padding:13px 16px;
+    border:1px dashed rgba(200,185,160,0.7); border-radius:12px;
+    cursor:pointer; text-align:center; transition:all 0.15s;
+  }
+  .sheet-open-day:active { background:var(--linen); }
+  .sheet-open-day-text { font-size:13px; color:var(--driftwood); }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes slideUp { from{opacity:0;transform:translateX(-50%) translateY(8px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+</style>
+</head>
+<body>
+
+<div id="wm-layer"></div>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="logo">Ro<em>ux</em></div>
+  <div class="topbar-right">
+    <button class="icon-btn" title="History">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+    </button>
+    <button class="icon-btn" title="Templates">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- WEEK NAVIGATION -->
+<div class="week-header">
+  <button class="week-nav-btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+  </button>
+  <div class="week-title-block">
+    <div class="week-label">This Week</div>
+    <div class="week-range">Mar 10 — Mar 16</div>
+  </div>
+  <button class="week-nav-btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+  </button>
+</div>
+
+<!-- PLAN STATUS BANNER -->
+<div class="status-banner" id="status-banner">
+  <div class="status-left">
+    <div class="status-dot"></div>
+    <div>
+      <div class="status-text">Draft</div>
+      <div class="status-sub">Only you can see this plan</div>
+    </div>
+  </div>
+  <button class="status-action" onclick="publishPlan()">Ready to share →</button>
+</div>
+
+<!-- PROTEIN ROSTER -->
+<div class="protein-banner" id="protein-banner">
+  <div class="protein-header" onclick="toggleProtein()">
+    <div class="protein-header-left">
+      <div class="protein-icon">🥩</div>
+      <div class="protein-title">This Week's Proteins</div>
+      <div class="protein-count">3 on hand</div>
+    </div>
+    <svg class="protein-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </div>
+  <div class="protein-body">
+    <div class="protein-list">
+      <div class="protein-item">
+        <span class="protein-name">Chicken thighs</span>
+        <div class="protein-meta"><span class="protein-store">Costco</span><span class="protein-sale">On sale</span></div>
+      </div>
+      <div class="protein-item">
+        <span class="protein-name">Ground beef</span>
+        <div class="protein-meta"><span class="protein-store">HEB</span></div>
+      </div>
+      <div class="protein-item">
+        <span class="protein-name">Salmon fillets</span>
+        <div class="protein-meta"><span class="protein-store">HEB</span><span class="protein-sale">On sale</span></div>
+      </div>
+      <button class="protein-add">+ Add protein</button>
+    </div>
+  </div>
+</div>
+
+<!-- DAYS LIST -->
+<div class="days-list">
+
+  <!-- MONDAY -->
+  <div class="day-row" style="animation-delay:0.06s">
+    <div class="day-header">
+      <div class="day-header-left">
+        <div class="day-name-label">Monday</div>
+        <div class="day-date-label">10</div>
+      </div>
+      <div class="day-badges">
+        <div class="day-type-badge badge-school">🔵 School</div>
+      </div>
+    </div>
+    <div class="day-body">
+      <div class="slot-label">Dinner</div>
+      <div class="meal-card">
+        <div class="meal-card-left">
+          <div class="meal-card-name">Lemon Herb Roast Chicken</div>
+          <div class="meal-card-meta">
+            <span class="meal-cook"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Lauren</span>
+            <span class="meal-status-chip chip-confirmed">Confirmed</span>
+            <span class="meal-note-dot"></span>
+          </div>
+        </div>
+        <div class="meal-card-right">
+          <button class="meal-swap-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0"/><path d="M12 8v4l3 3"/></svg></button>
+        </div>
+      </div>
+      <div class="light-slots">
+        <div class="light-slot filled">
+          <div class="light-slot-label">Breakfast</div>
+          <div class="light-slot-name">Avocado toast</div>
+        </div>
+        <div class="light-slot" onclick="openSheet('Monday', 'Lunch')">
+          <div class="light-slot-label">Lunch</div>
+          <div class="light-slot-empty">+ add</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TUESDAY — TODAY -->
+  <div class="day-row today" style="animation-delay:0.09s">
+    <div class="day-header">
+      <div class="day-header-left">
+        <div class="day-name-label">Today</div>
+        <div class="day-date-label">11</div>
+        <div class="tradition-badge">🌮 Taco Tuesday</div>
+      </div>
+      <div class="day-badges">
+        <div class="day-type-badge badge-school">🔵 School</div>
+      </div>
+    </div>
+    <div class="day-body">
+      <div class="slot-label" style="color:rgba(255,255,255,0.5)">Dinner</div>
+      <div class="meal-card">
+        <div class="meal-card-left">
+          <div class="meal-card-name">Taco Night</div>
+          <div class="meal-card-meta">
+            <span class="meal-cook"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Aric</span>
+            <span class="meal-status-chip chip-confirmed">Confirmed</span>
+          </div>
+        </div>
+        <div class="meal-card-right">
+          <button class="meal-swap-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0"/><path d="M12 8v4l3 3"/></svg></button>
+        </div>
+      </div>
+      <div class="light-slots">
+        <div class="light-slot" onclick="openSheet('Tuesday', 'Breakfast')">
+          <div class="light-slot-label">Breakfast</div>
+          <div class="light-slot-empty">+ add</div>
+        </div>
+        <div class="light-slot" onclick="openSheet('Tuesday', 'Lunch')">
+          <div class="light-slot-label">Lunch</div>
+          <div class="light-slot-empty">+ add</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEDNESDAY -->
+  <div class="day-row" style="animation-delay:0.12s">
+    <div class="day-header">
+      <div class="day-header-left">
+        <div class="day-name-label">Wednesday</div>
+        <div class="day-date-label">12</div>
+      </div>
+      <div class="day-badges">
+        <div class="day-type-badge badge-school">🔵 School</div>
+      </div>
+    </div>
+    <div class="day-body">
+      <div class="slot-label">Dinner</div>
+      <div class="dinner-empty" onclick="openSheet('Wednesday', 'Dinner')">
+        <div class="dinner-empty-text">What's for dinner?</div>
+        <div class="dinner-empty-right">
+          <div class="sage-nudge" onclick="event.stopPropagation(); openSheet('Wednesday','Dinner','sage')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+            Ask Sage
+          </div>
+          <div class="add-circle">+</div>
+        </div>
+      </div>
+      <div class="light-slots">
+        <div class="light-slot" onclick="openSheet('Wednesday','Breakfast')">
+          <div class="light-slot-label">Breakfast</div>
+          <div class="light-slot-empty">+ add</div>
+        </div>
+        <div class="light-slot" onclick="openSheet('Wednesday','Lunch')">
+          <div class="light-slot-label">Lunch</div>
+          <div class="light-slot-empty">+ add</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THURSDAY -->
+  <div class="day-row" style="animation-delay:0.15s">
+    <div class="day-header">
+      <div class="day-header-left">
+        <div class="day-name-label">Thursday</div>
+        <div class="day-date-label">13</div>
+      </div>
+      <div class="day-badges">
+        <div class="day-type-badge badge-school">🔵 School</div>
+      </div>
+    </div>
+    <div class="day-body">
+      <div class="slot-label">Dinner</div>
+      <div class="dinner-empty" onclick="openSheet('Thursday','Dinner')">
+        <div class="dinner-empty-text">What's for dinner?</div>
+        <div class="dinner-empty-right">
+          <div class="sage-nudge" onclick="event.stopPropagation(); openSheet('Thursday','Dinner','sage')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+            Ask Sage
+          </div>
+          <div class="add-circle">+</div>
+        </div>
+      </div>
+      <div class="light-slots">
+        <div class="light-slot" onclick="openSheet('Thursday','Breakfast')">
+          <div class="light-slot-label">Breakfast</div>
+          <div class="light-slot-empty">+ add</div>
+        </div>
+        <div class="light-slot" onclick="openSheet('Thursday','Lunch')">
+          <div class="light-slot-label">Lunch</div>
+          <div class="light-slot-empty">+ add</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FRIDAY — Movie Night tradition -->
+  <div class="day-row" style="animation-delay:0.18s">
+    <div class="day-header">
+      <div class="day-header-left">
+        <div class="day-name-label">Friday</div>
+        <div class="day-date-label">14</div>
+        <div class="tradition-badge">🎬 Movie Night</div>
+      </div>
+      <div class="day-badges">
+        <div class="day-type-badge badge-school">🔵 School</div>
+      </div>
+    </div>
+    <div class="day-body">
+      <div class="slot-label">Dinner</div>
+      <div class="meal-card">
+        <div class="meal-card-left">
+          <div class="meal-card-name">Homemade Pizza Night</div>
+          <div class="meal-card-meta">
+            <span class="meal-cook"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Everyone</span>
+            <span class="meal-status-chip chip-planned">Planned</span>
+          </div>
+        </div>
+        <div class="meal-card-right">
+          <button class="meal-swap-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0"/><path d="M12 8v4l3 3"/></svg></button>
+        </div>
+      </div>
+      <div class="light-slots">
+        <div class="light-slot" onclick="openSheet('Friday','Breakfast')">
+          <div class="light-slot-label">Breakfast</div>
+          <div class="light-slot-empty">+ add</div>
+        </div>
+        <div class="light-slot" onclick="openSheet('Friday','Lunch')">
+          <div class="light-slot-label">Lunch</div>
+          <div class="light-slot-empty">+ add</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SATURDAY — intentional open day -->
+  <div class="day-row" style="animation-delay:0.21s">
+    <div class="day-header">
+      <div class="day-header-left">
+        <div class="day-name-label">Saturday</div>
+        <div class="day-date-label">15</div>
+      </div>
+      <div class="day-badges">
+        <div class="day-type-badge badge-weekend">🟢 Weekend</div>
+      </div>
+    </div>
+    <div class="day-body">
+      <div class="slot-label">Dinner</div>
+      <div class="open-day-slot">
+        <div class="open-day-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+          Open evening — no plan needed
+        </div>
+        <button class="open-day-undo" onclick="openSheet('Saturday','Dinner')">Add meal</button>
+      </div>
+      <div class="light-slots">
+        <div class="light-slot" onclick="openSheet('Saturday','Breakfast')">
+          <div class="light-slot-label">Breakfast</div>
+          <div class="light-slot-empty">+ add</div>
+        </div>
+        <div class="light-slot" onclick="openSheet('Saturday','Lunch')">
+          <div class="light-slot-label">Lunch</div>
+          <div class="light-slot-empty">+ add</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUNDAY -->
+  <div class="day-row" style="animation-delay:0.24s">
+    <div class="day-header">
+      <div class="day-header-left">
+        <div class="day-name-label">Sunday</div>
+        <div class="day-date-label">16</div>
+      </div>
+      <div class="day-badges">
+        <div class="day-type-badge badge-weekend">🟢 Weekend</div>
+      </div>
+    </div>
+    <div class="day-body">
+      <div class="slot-label">Dinner</div>
+      <div class="meal-card">
+        <div class="meal-card-left">
+          <div class="meal-card-name">Miso-Glazed Salmon</div>
+          <div class="meal-card-meta">
+            <span class="meal-cook"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Lauren</span>
+            <span class="meal-status-chip chip-planned">Planned</span>
+            <span class="meal-note-dot"></span>
+          </div>
+        </div>
+        <div class="meal-card-right">
+          <button class="meal-swap-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0"/><path d="M12 8v4l3 3"/></svg></button>
+        </div>
+      </div>
+      <div class="light-slots">
+        <div class="light-slot filled">
+          <div class="light-slot-label">Breakfast</div>
+          <div class="light-slot-name">Pancakes</div>
+        </div>
+        <div class="light-slot" onclick="openSheet('Sunday','Lunch')">
+          <div class="light-slot-label">Lunch</div>
+          <div class="light-slot-empty">+ add</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end days-list -->
+
+<!-- PUBLISH BAR -->
+<div class="publish-bar" id="publish-bar">
+  <button class="publish-btn" onclick="publishPlan()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+    Share this week with the family
+  </button>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <a class="nav-item" href="roux-dashboard-style1-objects.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-label">Home</span></a>
+  <a class="nav-item" href="roux-library-style1-objects.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span class="nav-label">Recipes</span></a>
+  <a class="nav-item active" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg><span class="nav-label">This Week</span><div class="nav-dot"></div></a>
+  <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" x2="21" y1="6" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><span class="nav-label">Shopping</span></a>
+</nav>
+
+<!-- BOTTOM SHEET -->
+<div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+<div class="bottom-sheet" id="bottom-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title-row">
+    <div class="sheet-day-context">
+      <div class="sheet-day-name" id="sheet-day-name">Wednesday</div>
+      <div class="sheet-slot-name" id="sheet-slot-name">Dinner</div>
+    </div>
+    <div class="sheet-close" onclick="closeSheet()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </div>
+  </div>
+  <div class="sheet-options">
+    <!-- Sage option — primary when triggered from Ask Sage, secondary otherwise -->
+    <div class="sheet-option primary" id="sage-option">
+      <div class="sheet-option-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+      </div>
+      <div class="sheet-option-text">
+        <div class="sheet-option-title">Let Sage suggest</div>
+        <div class="sheet-option-sub">Based on your proteins, day type & preferences</div>
+      </div>
+    </div>
+    <div class="sheet-option" onclick="closeSheet()">
+      <div class="sheet-option-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      </div>
+      <div class="sheet-option-text">
+        <div class="sheet-option-title">Browse the library</div>
+        <div class="sheet-option-sub">Search or filter your recipe collection</div>
+      </div>
+    </div>
+    <div class="sheet-option" onclick="closeSheet()">
+      <div class="sheet-option-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      </div>
+      <div class="sheet-option-text">
+        <div class="sheet-option-title">Enter manually</div>
+        <div class="sheet-option-sub">Type a meal name without a full recipe</div>
+      </div>
+    </div>
+  </div>
+  <div class="sheet-divider"><div class="sheet-divider-line"></div>or<div class="sheet-divider-line"></div></div>
+  <div class="sheet-open-day" onclick="closeSheet()" style="margin-top:10px;">
+    <div class="sheet-open-day-text">Mark this evening as open — no meal needed</div>
+  </div>
+</div>
+
+<script>
+// ── BOTTOM SHEET ─────────────────────────────────────────────
+function openSheet(day, slot, trigger) {
+  document.getElementById('sheet-day-name').textContent = day;
+  document.getElementById('sheet-slot-name').textContent = slot;
+  // Sage is primary when triggered from Ask Sage button
+  const sageOpt = document.getElementById('sage-option');
+  if (trigger === 'sage') {
+    sageOpt.classList.add('primary');
+  } else {
+    sageOpt.classList.remove('primary');
+  }
+  document.getElementById('sheet-overlay').classList.add('open');
+  document.getElementById('bottom-sheet').classList.add('open');
+}
+function closeSheet() {
+  document.getElementById('sheet-overlay').classList.remove('open');
+  document.getElementById('bottom-sheet').classList.remove('open');
+}
+
+// ── PROTEIN ROSTER ───────────────────────────────────────────
+function toggleProtein() {
+  document.getElementById('protein-banner').classList.toggle('open');
+}
+
+// ── PUBLISH ──────────────────────────────────────────────────
+function publishPlan() {
+  const banner = document.getElementById('status-banner');
+  const bar = document.getElementById('publish-bar');
+  // Animate status change
+  banner.classList.add('published');
+  banner.querySelector('.status-text').textContent = 'Published';
+  banner.querySelector('.status-sub').textContent = 'Family can see this plan';
+  banner.querySelector('.status-action').textContent = 'Edit plan';
+  // Pulse the banner
+  banner.style.transform = 'scale(1.02)';
+  setTimeout(() => { banner.style.transform = 'scale(1)'; banner.style.transition = 'transform 0.2s ease'; }, 150);
+  // Hide the publish bar
+  bar.style.opacity = '0';
+  bar.style.transition = 'opacity 0.3s ease';
+  setTimeout(() => { bar.style.display = 'none'; }, 300);
+}
+
+// ── WATERMARK OBJECTS ────────────────────────────────────────
+const OBJ = {
+  recipeBox: (s=1) => `<svg width="${Math.round(160*s)}" height="${Math.round(140*s)}" viewBox="0 0 160 140" fill="none"><rect x="10" y="62" width="140" height="72" rx="6" stroke="currentColor" stroke-width="2"/><rect x="4" y="38" width="152" height="28" rx="6" stroke="currentColor" stroke-width="2"/><rect x="4" y="30" width="152" height="10" rx="3" stroke="currentColor" stroke-width="1.5"/><rect x="62" y="72" width="36" height="18" rx="4" stroke="currentColor" stroke-width="1.8"/><rect x="70" y="78" width="20" height="8" rx="2" stroke="currentColor" stroke-width="1.2"/><text x="80" y="53" text-anchor="middle" font-family="Jost,sans-serif" font-size="9" font-weight="500" letter-spacing="4" fill="currentColor">RECIPES</text><rect x="28" y="16" width="38" height="16" rx="3" stroke="currentColor" stroke-width="1.5" transform="rotate(-5 47 24)"/><rect x="60" y="10" width="40" height="16" rx="3" stroke="currentColor" stroke-width="1.5"/><rect x="96" y="15" width="36" height="16" rx="3" stroke="currentColor" stroke-width="1.5" transform="rotate(4 114 23)"/><line x1="10" y1="90" x2="150" y2="90" stroke="currentColor" stroke-width="0.8" stroke-dasharray="4 6"/><line x1="10" y1="110" x2="150" y2="110" stroke="currentColor" stroke-width="0.8" stroke-dasharray="4 6"/></svg>`,
+  herbs: (s=1) => `<svg width="${Math.round(110*s)}" height="${Math.round(140*s)}" viewBox="0 0 110 140" fill="none"><line x1="55" y1="138" x2="38" y2="44" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="55" y1="138" x2="55" y2="36" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="55" y1="138" x2="72" y2="44" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="55" y1="138" x2="22" y2="68" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="55" y1="138" x2="88" y2="68" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><ellipse cx="32" cy="58" rx="9" ry="4.5" stroke="currentColor" stroke-width="1.4" transform="rotate(-30 32 58)"/><ellipse cx="26" cy="76" rx="8" ry="4" stroke="currentColor" stroke-width="1.2" transform="rotate(-28 26 76)"/><ellipse cx="40" cy="42" rx="9" ry="4.5" stroke="currentColor" stroke-width="1.4" transform="rotate(-32 40 42)"/><ellipse cx="50" cy="52" rx="10" ry="4.5" stroke="currentColor" stroke-width="1.4" transform="rotate(5 50 52)"/><ellipse cx="55" cy="32" rx="10" ry="5" stroke="currentColor" stroke-width="1.5"/><ellipse cx="78" cy="58" rx="9" ry="4.5" stroke="currentColor" stroke-width="1.4" transform="rotate(30 78 58)"/><ellipse cx="84" cy="76" rx="8" ry="4" stroke="currentColor" stroke-width="1.2" transform="rotate(28 84 76)"/><path d="M36 118 Q55 110 74 118" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/><path d="M40 126 Q55 120 70 126" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>`,
+  castIron: (s=1) => `<svg width="${Math.round(160*s)}" height="${Math.round(120*s)}" viewBox="0 0 160 120" fill="none"><ellipse cx="76" cy="76" rx="56" ry="40" stroke="currentColor" stroke-width="2.2"/><ellipse cx="76" cy="76" rx="44" ry="30" stroke="currentColor" stroke-width="1.4"/><ellipse cx="72" cy="68" rx="14" ry="9" stroke="currentColor" stroke-width="1" transform="rotate(-15 72 68)"/><rect x="128" y="70" width="30" height="14" rx="7" stroke="currentColor" stroke-width="2"/><rect x="130" y="73" width="24" height="8" rx="4" stroke="currentColor" stroke-width="1.3"/><path d="M24 76 Q12 76 9 68 Q7 60 13 60 L22 60" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" fill="none"/></svg>`,
+  spiceJars: (s=1) => `<svg width="${Math.round(140*s)}" height="${Math.round(150*s)}" viewBox="0 0 140 150" fill="none"><rect x="6" y="24" width="54" height="14" rx="4" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="31" r="2" stroke="currentColor" stroke-width="1.2"/><circle cx="30" cy="31" r="2" stroke="currentColor" stroke-width="1.2"/><circle cx="42" cy="31" r="2" stroke="currentColor" stroke-width="1.2"/><rect x="14" y="37" width="38" height="7" rx="2" stroke="currentColor" stroke-width="1.5"/><rect x="4" y="43" width="58" height="86" rx="8" stroke="currentColor" stroke-width="2"/><rect x="12" y="62" width="42" height="34" rx="3" stroke="currentColor" stroke-width="1.3"/><line x1="16" y1="74" x2="50" y2="74" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 5"/><line x1="16" y1="84" x2="46" y2="84" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 5"/><rect x="82" y="34" width="52" height="13" rx="4" stroke="currentColor" stroke-width="1.8"/><circle cx="94" cy="40.5" r="2" stroke="currentColor" stroke-width="1.2"/><circle cx="108" cy="40.5" r="2" stroke="currentColor" stroke-width="1.2"/><rect x="90" y="46" width="36" height="7" rx="2" stroke="currentColor" stroke-width="1.5"/><rect x="80" y="52" width="58" height="76" rx="8" stroke="currentColor" stroke-width="2"/><rect x="88" y="70" width="42" height="30" rx="3" stroke="currentColor" stroke-width="1.3"/><line x1="92" y1="80" x2="126" y2="80" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 5"/><line x1="92" y1="90" x2="122" y2="90" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 5"/></svg>`,
+};
+
+const SEASONS = {
+  spring: [
+    { slot:'top-right', key:'recipeBox', scale:0.72, opacity:0.06, delay:500 },
+    { slot:'mid-left',  key:'herbs',     scale:0.62, opacity:0.06, delay:700 },
+    { slot:'bot-right', key:'spiceJars', scale:0.60, opacity:0.06, delay:900 },
+  ],
+  summer: [
+    { slot:'top-right', key:'herbs',     scale:0.68, opacity:0.06, delay:500 },
+    { slot:'mid-left',  key:'spiceJars', scale:0.60, opacity:0.06, delay:700 },
+    { slot:'bot-right', key:'castIron',  scale:0.62, opacity:0.06, delay:900 },
+  ],
+  fall: [
+    { slot:'top-right', key:'castIron',  scale:0.65, opacity:0.06, delay:500 },
+    { slot:'mid-left',  key:'herbs',     scale:0.62, opacity:0.06, delay:700 },
+    { slot:'bot-right', key:'spiceJars', scale:0.60, opacity:0.06, delay:900 },
+  ],
+  winter: [
+    { slot:'top-right', key:'castIron',  scale:0.68, opacity:0.06, delay:500 },
+    { slot:'mid-left',  key:'spiceJars', scale:0.60, opacity:0.06, delay:700 },
+    { slot:'bot-right', key:'herbs',     scale:0.62, opacity:0.06, delay:900 },
+  ],
+};
+
+const SLOTS = {
+  'top-right': { top:'78px',    right:'-4px',  bottom:'auto', left:'auto' },
+  'mid-left':  { top:'42%',     left:'-8px',   bottom:'auto', right:'auto' },
+  'bot-right': { bottom:'68px', right:'-4px',  top:'auto',    left:'auto' },
+};
+const PARALLAX_RATE = { 'top-right':0.10, 'mid-left':0.15, 'bot-right':0.20 };
+
+function getSeason() {
+  const m = new Date().getMonth();
+  if (m>=2&&m<=4) return 'spring';
+  if (m>=5&&m<=7) return 'summer';
+  if (m>=8&&m<=10) return 'fall';
+  return 'winter';
+}
+
+function injectWatermarks(seasonKey) {
+  const layer = document.getElementById('wm-layer');
+  if (!layer) return;
+  const injected = [];
+  SEASONS[seasonKey].forEach(({ slot, key, scale, opacity, delay }) => {
+    const pos = SLOTS[slot];
+    const wrap = document.createElement('div');
+    wrap.className = 'wm-object';
+    wrap.style.top = pos.top; wrap.style.right = pos.right;
+    wrap.style.bottom = pos.bottom; wrap.style.left = pos.left;
+    wrap.style.willChange = 'transform, opacity';
+    wrap.innerHTML = OBJ[key] ? OBJ[key](scale) : '';
+    layer.appendChild(wrap);
+    injected.push({ el:wrap, slot });
+    setTimeout(() => { wrap.style.transition='opacity 1.4s ease'; wrap.style.opacity=String(opacity); }, delay+50);
+  });
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        const scrollY = window.scrollY;
+        injected.forEach(({ el, slot }) => {
+          el.style.transform = `translateY(${-(scrollY*(PARALLAX_RATE[slot]||0.15)).toFixed(2)}px)`;
+        });
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive:true });
+}
+
+window.addEventListener('load', () => injectWatermarks(getSeason()));
+if (document.readyState === 'complete') injectWatermarks(getSeason());
+</script>
+</body>
+</html>
