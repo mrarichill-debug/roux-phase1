@@ -41,11 +41,9 @@ export default function App() {
   const [appUser, setAppUser] = useState(null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (session) fetchAppUser(session.user.id)
-    })
-
+    // onAuthStateChange fires INITIAL_SESSION immediately in Supabase v2 —
+    // no separate getSession() needed. Using both causes a race condition where
+    // fetchAppUser runs twice concurrently and can overwrite state with null.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       if (session) {
@@ -61,9 +59,16 @@ export default function App() {
   async function fetchAppUser(authUserId) {
     try {
       const user = await loadAppUser(authUserId)
+      if (!user) {
+        // No user record found — RLS may be blocking or trigger didn't fire.
+        // Sign out so the app routes to the welcome flow instead of hanging on splash.
+        console.error('[Roux] No user record found for auth ID:', authUserId, '— signing out')
+        await supabase.auth.signOut()
+        return
+      }
       setAppUser(user)
       // Sync browser timezone to household record (fire-and-forget)
-      if (user?.household_id) {
+      if (user.household_id) {
         const browserTz = getBrowserTimezone()
         if (browserTz && browserTz !== user.timezone) {
           supabase
@@ -71,12 +76,14 @@ export default function App() {
             .update({ timezone: browserTz })
             .eq('id', user.household_id)
             .then(({ error }) => {
-              if (error) console.warn('Could not sync timezone:', error.message)
+              if (error) console.warn('[Roux] Could not sync timezone:', error.message)
             })
         }
       }
     } catch (err) {
-      console.error('Failed to load app user:', err)
+      console.error('[Roux] Failed to load app user:', err)
+      // Sign out on error — recover to welcome flow rather than infinite splash
+      await supabase.auth.signOut()
     }
   }
 
