@@ -10,19 +10,20 @@ import { supabase } from './supabase'
  * record creation is needed.
  */
 export async function loadAppUser(authUserId) {
+  // No households join — inner join causes the entire query to return null if
+  // the households RLS policy blocks the row. Fetch user row alone; timezone
+  // is defaulted here and synced separately in App.jsx.
   const { data, error } = await supabase
     .from('users')
-    .select('id, name, email, role, household_id, avatar_url, households(timezone)')
+    .select('id, name, email, role, household_id, avatar_url')
     .eq('auth_id', authUserId)
     .maybeSingle()
 
   if (error) throw new Error(`Failed to load user: ${error.message}`)
   if (!data)  return null
 
-  // Flatten household timezone onto the user object
   return {
     ...data,
-    timezone: data.households?.timezone ?? 'America/Chicago',
-    households: undefined,
+    timezone: 'America/Chicago',
   }
 }
