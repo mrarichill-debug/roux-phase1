@@ -146,6 +146,7 @@ export default function ThisWeek({ appUser }) {
 
   async function loadWeekData() {
     setLoading(true)
+    setProteins([])
     try {
       const hid       = appUser.household_id
       const weekStart = getWeekStartTZ(tz, weekOffset)
