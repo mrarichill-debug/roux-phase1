@@ -103,6 +103,7 @@ The store filter pills (All / Kroger / Costco) in the Building state topbar are 
 - [ ] **`notifications` table** — notification system not yet built. Required before archival confirmation flow and Sage nudge delivery system.
 - [ ] **`day_types` table normalization** — currently day types stored as JSON strings in `meal_plans.notes`. Normalize to proper FK relationship with `day_types` table when schema cleanup sprint happens.
 - [ ] **`meal_tags`, `meal_plan_rules` tables** — returned query errors during audit. Investigate and either build out or remove from schema if no longer needed.
+- [ ] **`family_members.role` stored in `notes` field as workaround** — add a proper `role TEXT` column to `family_members` table in a future schema cleanup sprint. When added, migrate existing role data from `notes` to the new column.
 
 ---
 
