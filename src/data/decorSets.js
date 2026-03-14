@@ -5,9 +5,9 @@
 
 export const SEASONS = {
   spring: [
-    { slot: 'top-right', key: 'recipeBox',  scale: 0.72, opacity: 0.07, delay: 500 },
-    { slot: 'mid-left',  key: 'herbs',      scale: 0.62, opacity: 0.07, delay: 700 },
-    { slot: 'bot-right', key: 'spiceJars',  scale: 0.60, opacity: 0.07, delay: 900 },
+    { slot: 'top-right', key: 'recipeBox',  scale: 0.60, opacity: 0.05, delay: 500 },
+    { slot: 'mid-left',  key: 'herbs',      scale: 0.55, opacity: 0.05, delay: 700 },
+    { slot: 'bot-right', key: 'spiceJars',  scale: 0.52, opacity: 0.05, delay: 900 },
   ],
   summer: [
     { slot: 'top-right', key: 'lemon',    scale: 0.78, opacity: 0.08, delay: 500 },
@@ -27,9 +27,9 @@ export const SEASONS = {
 }
 
 export const SLOT_POS = {
-  'top-right': { top: '78px',    right: '-4px',  bottom: 'auto', left: 'auto' },
-  'mid-left':  { top: '44%',     left:  '-8px',  bottom: 'auto', right: 'auto' },
-  'bot-right': { bottom: '68px', right: '-4px',  top:    'auto', left: 'auto' },
+  'top-right': { top: '220px',   right: '-18px', bottom: 'auto', left: 'auto' },
+  'mid-left':  { top: '52%',     left:  '-20px', bottom: 'auto', right: 'auto' },
+  'bot-right': { bottom: '96px', right: '-18px', top:    'auto', left: 'auto' },
 }
 
 // Parallax scroll rate per slot (fraction of scrollY to translate upward)
