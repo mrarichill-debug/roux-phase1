@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { loadAppUser } from './lib/auth'
@@ -18,6 +18,7 @@ import RecipeCard     from './pages/RecipeCard'
 import SaveRecipe     from './pages/SaveRecipe'
 import ShoppingList from './pages/ShoppingList'
 import WeekSettings from './pages/WeekSettings'
+import ProfileSheet from './components/ProfileSheet'
 import { Shell } from './components/AppShell'
 
 export default function App() {
@@ -99,17 +100,62 @@ export default function App() {
         <div style={{ minHeight: '100vh', background: '#FAF7F2' }} />
       ) : (
         // ── Authenticated app ─────────────────────────────────────────────
-        <Routes>
-          <Route path="/"            element={<Dashboard     appUser={appUser} />} />
-          <Route path="/thisweek"   element={<ThisWeek      appUser={appUser} />} />
-          <Route path="/recipes"    element={<RecipeLibrary appUser={appUser} />} />
-          <Route path="/recipe/:id" element={<RecipeCard    appUser={appUser} />} />
-          <Route path="/save-recipe" element={<SaveRecipe    appUser={appUser} />} />
-          <Route path="/shopping"      element={<ShoppingList  appUser={appUser} />} />
-          <Route path="/week-settings" element={<WeekSettings  appUser={appUser} />} />
-          <Route path="/*"             element={<Shell          appUser={appUser} />} />
-        </Routes>
+        <AuthenticatedApp appUser={appUser} />
       )}
     </BrowserRouter>
+  )
+}
+
+// ── Authenticated shell — global avatar + ProfileSheet ──────────────────────
+function AuthenticatedApp({ appUser }) {
+  const [profileOpen, setProfileOpen] = useState(false)
+  const firstName = appUser?.name?.split(' ')[0] ?? ''
+
+  return (
+    <>
+      <Routes>
+        <Route path="/"              element={<Dashboard     appUser={appUser} />} />
+        <Route path="/thisweek"     element={<ThisWeek      appUser={appUser} />} />
+        <Route path="/recipes"      element={<RecipeLibrary appUser={appUser} />} />
+        <Route path="/recipe/:id"   element={<RecipeCard    appUser={appUser} />} />
+        <Route path="/save-recipe"  element={<SaveRecipe    appUser={appUser} />} />
+        <Route path="/shopping"      element={<ShoppingList  appUser={appUser} />} />
+        <Route path="/week-settings" element={<WeekSettings  appUser={appUser} />} />
+        <Route path="/*"             element={<Shell          appUser={appUser} />} />
+      </Routes>
+
+      {/* ── Global avatar button — fixed in topbar area on every screen ── */}
+      <div style={{
+        position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)',
+        width: '100%', maxWidth: '430px', height: '68px',
+        display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+        padding: '0 12px',
+        zIndex: 150, pointerEvents: 'none',
+      }}>
+        <button
+          onClick={() => setProfileOpen(true)}
+          aria-label="Profile"
+          style={{
+            pointerEvents: 'auto',
+            width: '34px', height: '34px', borderRadius: '50%',
+            background: 'rgba(255,255,255,0.18)',
+            color: 'rgba(250,247,242,0.95)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+            border: '1.5px solid rgba(255,255,255,0.25)',
+            userSelect: 'none', fontFamily: "'Jost', sans-serif",
+          }}
+        >
+          {firstName.charAt(0).toUpperCase() || '?'}
+        </button>
+      </div>
+
+      {/* ── Global ProfileSheet ──────────────────────────────────────────── */}
+      <ProfileSheet
+        appUser={appUser}
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+      />
+    </>
   )
 }
