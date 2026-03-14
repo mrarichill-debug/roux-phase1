@@ -78,6 +78,8 @@ export default function ShoppingList({ appUser }) {
   const [sageNudgeIdx,     setSageNudgeIdx]     = useState(0)
   const [activeStoreFilter, setActiveStoreFilter] = useState('all')
   const [stores,           setStores]           = useState([])
+  const [addingStore,      setAddingStore]      = useState(false)
+  const [newStoreName,     setNewStoreName]     = useState('')
   const [startBtnPressed,  setStartBtnPressed]  = useState(false)
   const [inCartPulsing,    setInCartPulsing]    = useState(false)
   const [completeVisible,  setCompleteVisible]  = useState(false)
@@ -271,6 +273,22 @@ export default function ShoppingList({ appUser }) {
   }
 
   // ── State transitions ────────────────────────────────────────────────────────
+  async function saveNewStore() {
+    if (!newStoreName.trim()) return
+    try {
+      const { data, error } = await supabase.from('grocery_stores').insert({
+        household_id: appUser.household_id,
+        name: newStoreName.trim(),
+      }).select('id, name').single()
+      if (error) throw error
+      setStores(prev => [...prev, data])
+      setNewStoreName('')
+      setAddingStore(false)
+    } catch (err) {
+      console.error('[Roux] saveNewStore error:', err)
+    }
+  }
+
   async function startShopping() {
     setStartBtnPressed(true)
     setTimeout(() => setStartBtnPressed(false), 150)
@@ -404,8 +422,8 @@ export default function ShoppingList({ appUser }) {
           </button>
 
           {/* Store filter pills */}
-          {stores.length > 0 && shoppingState === 'building' && (
-            <div className="no-scrollbar" style={{ display: 'flex', gap: '6px', overflowX: 'auto', marginTop: '10px' }}>
+          {shoppingState === 'building' && (
+            <div className="no-scrollbar" style={{ display: 'flex', gap: '6px', overflowX: 'auto', marginTop: '10px', alignItems: 'center' }}>
               {[{ id: 'all', name: 'All Stores' }, ...stores].map(store => {
                 const isActive = activeStoreFilter === (store.id === 'all' ? 'all' : store.id)
                 return (
@@ -426,6 +444,49 @@ export default function ShoppingList({ appUser }) {
                   </button>
                 )
               })}
+              {addingStore ? (
+                <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
+                  <input
+                    type="text"
+                    value={newStoreName}
+                    onChange={e => setNewStoreName(e.target.value)}
+                    placeholder="Store name"
+                    autoFocus
+                    onKeyDown={e => { if (e.key === 'Enter') saveNewStore() }}
+                    style={{
+                      padding: '5px 10px', fontSize: '11px', width: '110px',
+                      border: `1px solid ${C.sage}`, borderRadius: '20px',
+                      fontFamily: "'Jost', sans-serif", color: C.ink,
+                      outline: 'none', background: 'white',
+                    }}
+                  />
+                  <button
+                    onClick={saveNewStore}
+                    disabled={!newStoreName.trim()}
+                    style={{
+                      padding: '5px 10px', fontSize: '10px', fontWeight: 500,
+                      borderRadius: '20px', cursor: newStoreName.trim() ? 'pointer' : 'default',
+                      border: 'none', background: C.forest, color: 'white',
+                      fontFamily: "'Jost', sans-serif", flexShrink: 0,
+                    }}
+                  >
+                    Add
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { setAddingStore(true); setNewStoreName('') }}
+                  style={{
+                    fontSize: '11px', fontWeight: 400, padding: '6px 14px',
+                    borderRadius: '20px', whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0,
+                    border: '1px dashed rgba(200,185,160,0.6)',
+                    background: 'transparent', color: C.driftwood,
+                    fontFamily: "'Jost', sans-serif",
+                  }}
+                >
+                  + Add store
+                </button>
+              )}
             </div>
           )}
         </div>

@@ -127,6 +127,8 @@ export default function ThisWeek({ appUser }) {
   const [proteinOnSale,     setProteinOnSale]     = useState(false)
   const [proteinPrice,      setProteinPrice]      = useState('')
   const [savingProtein,     setSavingProtein]     = useState(false)
+  const [addingStore,       setAddingStore]       = useState(false)
+  const [newStoreName,      setNewStoreName]      = useState('')
 
   const overlayRef = useRef(null)
   const tz         = appUser?.timezone ?? 'America/Chicago'
@@ -478,6 +480,23 @@ export default function ThisWeek({ appUser }) {
       .then(({ error }) => { if (error) console.error('[Roux] deleteProtein error:', error.message) })
   }
 
+  async function saveNewStore() {
+    if (!newStoreName.trim()) return
+    try {
+      const { data, error } = await supabase.from('grocery_stores').insert({
+        household_id: appUser.household_id,
+        name: newStoreName.trim(),
+      }).select('id, name').single()
+      if (error) throw error
+      setGroceryStores(prev => [...prev, data])
+      setProteinStoreId(data.id)
+      setNewStoreName('')
+      setAddingStore(false)
+    } catch (err) {
+      console.error('[Roux] saveNewStore error:', err)
+    }
+  }
+
   async function publishPlan() {
     if (!plan || publishing) return
     setPublishing(true)
@@ -723,30 +742,69 @@ export default function ThisWeek({ appUser }) {
               />
 
               {/* Store selector */}
-              {groceryStores.length > 0 && (
-                <>
-                  <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Store</div>
-                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
-                    {groceryStores.map(store => (
-                      <button
-                        key={store.id}
-                        onClick={() => setProteinStoreId(store.id)}
-                        style={{
-                          padding: '6px 14px', fontSize: '12px',
-                          fontFamily: "'Jost', sans-serif", fontWeight: proteinStoreId === store.id ? 500 : 400,
-                          borderRadius: '14px', cursor: 'pointer',
-                          border: `1.5px solid ${proteinStoreId === store.id ? C.forest : C.linen}`,
-                          background: proteinStoreId === store.id ? C.forest : 'transparent',
-                          color: proteinStoreId === store.id ? 'white' : C.ink,
-                          transition: 'all 0.15s',
-                        }}
-                      >
-                        {store.name}
-                      </button>
-                    ))}
+              <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Store</div>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                {groceryStores.map(store => (
+                  <button
+                    key={store.id}
+                    onClick={() => setProteinStoreId(store.id)}
+                    style={{
+                      padding: '6px 14px', fontSize: '12px',
+                      fontFamily: "'Jost', sans-serif", fontWeight: proteinStoreId === store.id ? 500 : 400,
+                      borderRadius: '14px', cursor: 'pointer',
+                      border: `1.5px solid ${proteinStoreId === store.id ? C.forest : C.linen}`,
+                      background: proteinStoreId === store.id ? C.forest : 'transparent',
+                      color: proteinStoreId === store.id ? 'white' : C.ink,
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {store.name}
+                  </button>
+                ))}
+                {addingStore ? (
+                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      value={newStoreName}
+                      onChange={e => setNewStoreName(e.target.value)}
+                      placeholder="Store name"
+                      autoFocus
+                      onKeyDown={e => { if (e.key === 'Enter') saveNewStore() }}
+                      style={{
+                        padding: '5px 10px', fontSize: '12px', width: '120px',
+                        border: `1.5px solid ${C.forest}`, borderRadius: '14px',
+                        fontFamily: "'Jost', sans-serif", color: C.ink,
+                        outline: 'none', background: C.cream,
+                      }}
+                    />
+                    <button
+                      onClick={saveNewStore}
+                      disabled={!newStoreName.trim()}
+                      style={{
+                        padding: '5px 10px', fontSize: '11px', fontWeight: 500,
+                        borderRadius: '14px', cursor: newStoreName.trim() ? 'pointer' : 'default',
+                        border: 'none', background: C.forest, color: 'white',
+                        fontFamily: "'Jost', sans-serif",
+                      }}
+                    >
+                      Add
+                    </button>
                   </div>
-                </>
-              )}
+                ) : (
+                  <button
+                    onClick={() => { setAddingStore(true); setNewStoreName('') }}
+                    style={{
+                      padding: '6px 14px', fontSize: '12px',
+                      fontFamily: "'Jost', sans-serif", fontWeight: 400,
+                      borderRadius: '14px', cursor: 'pointer',
+                      border: `1.5px dashed rgba(200,185,160,0.6)`,
+                      background: 'transparent', color: C.driftwood,
+                    }}
+                  >
+                    + Add store
+                  </button>
+                )}
+              </div>
 
               {/* On sale toggle */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>

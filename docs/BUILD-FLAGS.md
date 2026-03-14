@@ -111,7 +111,10 @@ The store filter pills (All / Kroger / Costco) in the Building state topbar are 
 - ~~**Shopping list screen**~~ — ✅ Built. Three-state flow (Building/Shopping/Complete), budget strip with inCartPulse animation, Got It / Already Have actions, aisle sections, Sage nudge strip, Complete card with receipt CTA, bottom nav. See schema gaps in items 12–14 above.
 - **"By Ingredient" search flow** — full screen design required before this can be built.
 - **Template picker / Repeat this week flow** — high-retention feature, post-MVP.
-- **Profile / Settings screen** — needed for: haptics toggle, home management, invite code generation.
+- **Settings screen** — splits into two sections:
+  - **My Account** (personal): name, email, password, notification preferences, haptics toggle
+  - **Our Kitchen** (household): family members, grocery stores, traditions, dietary preferences, invite code generation, decoration set selection
+  - Grocery store management: inline store addition from any store dropdown is built (protein roster, shopping list). Full store list management (edit, delete, set primary) lives in Our Kitchen section.
 - **Related recipes on recipe card** — "Goes Well With" section. Invest properly, not a placeholder row.
 - **Avery (child) dashboard** — scoped view-only experience. Must be designed before onboarding ships.
 - **Serves adjuster with quantity scaling** — affects the data model. Plan this early in the recipe card build.
