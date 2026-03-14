@@ -128,6 +128,7 @@ export default function ThisWeek({ appUser }) {
   const [proteinPrice,      setProteinPrice]      = useState('')
   const [savingProtein,     setSavingProtein]     = useState(false)
   const [proteinUnit,       setProteinUnit]       = useState('lb')
+  const [editingProteinId,  setEditingProteinId]  = useState(null)
   const [addingStore,       setAddingStore]       = useState(false)
   const [newStoreName,      setNewStoreName]      = useState('')
   const [proteinTab,        setProteinTab]        = useState('usuals') // 'usuals' | 'new'
@@ -447,12 +448,27 @@ export default function ThisWeek({ appUser }) {
       .then(({ error }) => { if (error) console.error('[Roux] swapMeal delete error:', error.message) })
   }
 
+  function editProtein(p) {
+    setProteinName(p.protein_name)
+    setProteinStoreId(p.store_id || null)
+    setProteinOnSale(p.is_on_sale || false)
+    setProteinPrice(p.sale_price ? String(p.sale_price) : '')
+    setProteinUnit(p.unit || 'lb')
+    setEditingProteinId(p.id)
+    setSaveToUsuals(false)
+    setProteinTab('new')
+    setEditingFavorites(false)
+    setAddingStore(false)
+    setAddProteinOpen(true)
+  }
+
   function openAddProtein() {
     setProteinName('')
     setProteinStoreId(groceryStores[0]?.id || null)
     setProteinOnSale(false)
     setProteinPrice('')
     setProteinUnit('lb')
+    setEditingProteinId(null)
     setSaveToUsuals(true)
     setProteinTab('usuals')
     setEditingFavorites(false)
@@ -474,19 +490,37 @@ export default function ThisWeek({ appUser }) {
     if (!proteinName.trim() || savingProtein) return
     setSavingProtein(true)
     try {
-      const activePlan = await ensurePlan()
-      if (!activePlan) return
-      const { data, error } = await supabase.from('weekly_proteins').insert({
-        household_id: appUser.household_id,
-        meal_plan_id: activePlan.id,
+      const payload = {
         protein_name: proteinName.trim(),
         store_id: proteinStoreId || null,
         is_on_sale: proteinOnSale,
         sale_price: proteinOnSale && proteinPrice ? parseFloat(proteinPrice) : null,
         unit: proteinPrice ? proteinUnit : null,
-      }).select('*, grocery_stores(name)').single()
-      if (error) throw error
-      setProteins(prev => [...prev, data])
+      }
+
+      let data
+      if (editingProteinId) {
+        // UPDATE existing record
+        const { data: updated, error } = await supabase.from('weekly_proteins')
+          .update(payload)
+          .eq('id', editingProteinId)
+          .select('*, grocery_stores(name)')
+          .single()
+        if (error) throw error
+        data = updated
+        setProteins(prev => prev.map(p => p.id === editingProteinId ? data : p))
+      } else {
+        // INSERT new record
+        const activePlan = await ensurePlan()
+        if (!activePlan) return
+        const { data: inserted, error } = await supabase.from('weekly_proteins')
+          .insert({ ...payload, household_id: appUser.household_id, meal_plan_id: activePlan.id })
+          .select('*, grocery_stores(name)')
+          .single()
+        if (error) throw error
+        data = inserted
+        setProteins(prev => [...prev, data])
+      }
 
       // Also save to favorites if toggle is on (name only — no store/price)
       if (saveToUsuals && proteinTab === 'new') {
@@ -655,6 +689,7 @@ export default function ThisWeek({ appUser }) {
         open={proteinOpen}
         onToggle={() => setProteinOpen(v => !v)}
         onAdd={openAddProtein}
+        onEdit={editProtein}
         onDelete={deleteProtein}
       />
 
@@ -753,11 +788,11 @@ export default function ThisWeek({ appUser }) {
             <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
             <div style={{ padding: '16px 22px 0' }}>
               <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '12px' }}>
-                Add a Protein
+                {editingProteinId ? 'Edit Protein' : 'Add a Protein'}
               </div>
 
-              {/* Tabs */}
-              {proteinTab !== 'confirm' && (
+              {/* Tabs (hidden in edit mode) */}
+              {proteinTab !== 'confirm' && !editingProteinId && (
                 <div style={{ display: 'flex', gap: '0', marginBottom: '16px', borderBottom: `1px solid ${C.linen}` }}>
                   {[{ key: 'usuals', label: 'Your Usuals' }, { key: 'new', label: 'Something New' }].map(tab => (
                     <button
@@ -972,7 +1007,8 @@ export default function ThisWeek({ appUser }) {
                     </div>
                   )}
 
-                  {/* Save to usuals toggle */}
+                  {/* Save to usuals toggle (hidden in edit mode) */}
+                  {!editingProteinId && (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                     <span style={{ fontSize: '13px', color: C.ink }}>Save to your usuals</span>
                     <button onClick={() => setSaveToUsuals(v => !v)} style={{
@@ -982,13 +1018,14 @@ export default function ThisWeek({ appUser }) {
                       <span style={{ position: 'absolute', top: '2px', left: saveToUsuals ? '22px' : '2px', width: '20px', height: '20px', borderRadius: '50%', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.15)', transition: 'left 0.25s' }} />
                     </button>
                   </div>
+                  )}
 
                   <button onClick={saveProtein} disabled={!proteinName.trim() || savingProtein} style={{
                     width: '100%', padding: '14px', borderRadius: '12px', background: proteinName.trim() ? C.forest : C.linen,
                     color: proteinName.trim() ? 'white' : C.driftwood, border: 'none', fontFamily: "'Jost', sans-serif",
                     fontSize: '14px', fontWeight: 500, cursor: proteinName.trim() ? 'pointer' : 'default', marginBottom: '8px',
                   }}>
-                    {savingProtein ? 'Adding…' : 'Add Protein'}
+                    {savingProtein ? (editingProteinId ? 'Saving…' : 'Adding…') : (editingProteinId ? 'Save Changes' : 'Add Protein')}
                   </button>
                   <button onClick={() => setAddProteinOpen(false)} style={{
                     width: '100%', background: 'none', border: 'none', color: C.driftwood,
@@ -1094,7 +1131,7 @@ function PlanStatusBanner({ plan, loading, isPublished, pulsing, onPublish }) {
 }
 
 // ── Protein Roster ─────────────────────────────────────────────────────────────
-function ProteinRoster({ proteins, open, onToggle, onAdd, onDelete }) {
+function ProteinRoster({ proteins, open, onToggle, onAdd, onEdit, onDelete }) {
   const iconColor = open ? C.forest : C.driftwood
 
   return (
@@ -1147,10 +1184,10 @@ function ProteinRoster({ proteins, open, onToggle, onAdd, onDelete }) {
               No proteins added yet.
             </div>
           ) : proteins.map(p => (
-            <div key={p.id} style={{
+            <div key={p.id} onClick={() => onEdit(p)} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '8px 10px', background: C.cream, borderRadius: '8px',
-              border: '1px solid rgba(200,185,160,0.4)',
+              border: '1px solid rgba(200,185,160,0.4)', cursor: 'pointer',
             }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ fontSize: '13px', color: C.ink }}>{p.protein_name}</span>
