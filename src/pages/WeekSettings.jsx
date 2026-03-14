@@ -90,6 +90,10 @@ export default function WeekSettings({ appUser }) {
   const [newTradDay, setNewTradDay] = useState('tuesday')
   const [newTradType, setNewTradType] = useState('weekly')
   const [savingTrad, setSavingTrad] = useState(false)
+  const [hasChanges, setHasChanges] = useState(false)
+  const [savingWeek, setSavingWeek] = useState(false)
+  const [toastMsg, setToastMsg] = useState('')
+  const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false)
 
   useEffect(() => {
     if (appUser?.household_id) loadData()
@@ -118,13 +122,28 @@ export default function WeekSettings({ appUser }) {
 
       if (tradRes.data) {
         setTraditions(tradRes.data)
+        // Default all traditions to on
         const toggles = {}
         tradRes.data.forEach(t => { toggles[t.id] = true })
         setTraditionToggles(toggles)
       }
       if (templatesRes.data) setSavedTemplates(templatesRes.data)
 
-      setPlan(planRes.data)
+      const activePlan = planRes.data
+      setPlan(activePlan)
+
+      // Restore saved week settings from meal_plans.notes if available
+      if (activePlan?.notes) {
+        try {
+          const config = JSON.parse(activePlan.notes)
+          if (config.day_types) setDayTypes(config.day_types)
+          if (config.active_traditions && tradRes.data) {
+            const toggles = {}
+            tradRes.data.forEach(t => { toggles[t.id] = config.active_traditions.includes(t.id) })
+            setTraditionToggles(toggles)
+          }
+        } catch { /* notes is plain text, not JSON — ignore */ }
+      }
     } catch (err) {
       console.error('WeekSettings load error:', err)
     } finally {
@@ -178,15 +197,71 @@ export default function WeekSettings({ appUser }) {
       traditions.forEach(t => { toggles[t.id] = config.traditions.includes(t.id) })
       setTraditionToggles(toggles)
     }
+    setHasChanges(true)
     setApplySheetOpen(false)
+  }
+
+  function showToast(msg) {
+    setToastMsg(msg)
+    setTimeout(() => setToastMsg(''), 2500)
+  }
+
+  function handleBack() {
+    if (hasChanges) {
+      setConfirmLeaveOpen(true)
+    } else {
+      navigate('/thisweek')
+    }
+  }
+
+  async function saveWeekSettings() {
+    if (savingWeek) return
+    setSavingWeek(true)
+    try {
+      // Ensure a plan exists
+      let activePlan = plan
+      if (!activePlan) {
+        const hid = appUser.household_id
+        const weekStart = getWeekStartTZ(tz, 0)
+        const { data: newPlan, error } = await supabase.from('meal_plans').insert({
+          household_id: hid, created_by: appUser.id,
+          week_start_date: weekStart, week_end_date: toLocalDateStr(weekDates[6]),
+          status: 'draft',
+        }).select('id, status, week_start_date, week_end_date, notes').single()
+        if (error) throw error
+        activePlan = newPlan
+        setPlan(activePlan)
+      }
+
+      const activeTraditions = Object.entries(traditionToggles)
+        .filter(([, on]) => on)
+        .map(([id]) => id)
+
+      // Save day types + active traditions to meal_plans.notes as JSON
+      const weekConfig = { day_types: dayTypes, active_traditions: activeTraditions }
+      const { error } = await supabase.from('meal_plans')
+        .update({ notes: JSON.stringify(weekConfig) })
+        .eq('id', activePlan.id)
+      if (error) throw error
+
+      setHasChanges(false)
+      showToast('Week settings saved')
+      setTimeout(() => navigate('/thisweek'), 800)
+    } catch (err) {
+      console.error('[Roux] saveWeekSettings error:', err)
+    } finally {
+      setSavingWeek(false)
+    }
   }
 
   function setDayType(dowKey, type) {
     setDayTypes(prev => ({ ...prev, [dowKey]: type }))
+    setHasChanges(true)
   }
 
   function toggleTradition(id) {
     setTraditionToggles(prev => ({ ...prev, [id]: !prev[id] }))
+    setHasChanges(true)
   }
 
   function openAddTradSheet() {
@@ -237,11 +312,20 @@ export default function WeekSettings({ appUser }) {
         padding: '0 20px', background: C.forest,
         boxShadow: '0 2px 0px rgba(20,40,25,0.55), 0 4px 8px rgba(20,40,25,0.40), 0 8px 24px rgba(30,55,35,0.28), 0 16px 40px rgba(30,55,35,0.14), 0 1px 0px rgba(255,255,255,0.06) inset',
       }}>
-        <button onClick={() => navigate('/thisweek')} style={backBtnStyle} aria-label="Back">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
-            <path d="m15 18-6-6 6-6"/>
-          </svg>
-        </button>
+        <div style={{ position: 'relative', display: 'inline-flex' }}>
+          <button onClick={handleBack} style={backBtnStyle} aria-label="Back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+          </button>
+          {hasChanges && (
+            <span style={{
+              position: 'absolute', top: '2px', right: '2px',
+              width: '8px', height: '8px', borderRadius: '50%',
+              background: C.honey, border: `1.5px solid ${C.forest}`,
+            }} />
+          )}
+        </div>
         <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 600, color: 'rgba(250,247,242,0.95)', userSelect: 'none' }}>
           Ro<em style={{ fontStyle: 'italic', color: 'rgba(188,218,178,0.82)' }}>ux</em>
         </div>
@@ -418,6 +502,90 @@ export default function WeekSettings({ appUser }) {
               Templates save your day types and traditions for quick reuse.
             </div>
           </div>
+          {/* ── Save Week Settings CTA ──────────────────────────────────── */}
+          <div style={{ padding: '6px 22px 0', animation: 'fadeUp 0.35s ease 0.24s both' }}>
+            <button
+              onClick={saveWeekSettings}
+              disabled={savingWeek}
+              style={{
+                width: '100%', background: C.forest, color: 'white', border: 'none',
+                borderRadius: '12px', padding: '15px',
+                fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
+                letterSpacing: '0.5px', cursor: savingWeek ? 'default' : 'pointer',
+                boxShadow: '0 2px 10px rgba(61,107,79,0.28)',
+                opacity: savingWeek ? 0.7 : 1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              }}
+            >
+              {savingWeek ? 'Saving…' : 'Save Week Settings'}
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* ── Toast ──────────────────────────────────────────────────────────── */}
+      {toastMsg && (
+        <div style={{
+          position: 'fixed', bottom: '100px', left: '50%', transform: 'translateX(-50%)',
+          background: C.forest, color: 'white', padding: '10px 20px',
+          borderRadius: '10px', fontSize: '13px', fontWeight: 500,
+          fontFamily: "'Jost', sans-serif", zIndex: 500,
+          boxShadow: '0 4px 16px rgba(30,55,35,0.30)',
+          animation: 'fadeUp 0.25s ease both',
+        }}>
+          {toastMsg}
+        </div>
+      )}
+
+      {/* ── Confirm Leave Dialog ───────────────────────────────────────────── */}
+      {confirmLeaveOpen && (
+        <>
+          <div
+            onClick={() => setConfirmLeaveOpen(false)}
+            style={{
+              position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)',
+              zIndex: 300, animation: 'fadeIn 0.2s ease',
+            }}
+          />
+          <div style={{
+            position: 'fixed', top: '50%', left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 'calc(100% - 64px)', maxWidth: '340px',
+            background: 'white', borderRadius: '20px',
+            padding: '24px', zIndex: 301,
+            boxShadow: '0 8px 32px rgba(44,36,23,0.18)',
+          }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '8px' }}>
+              Unsaved changes
+            </div>
+            <div style={{ fontSize: '14px', color: C.driftwood, fontWeight: 300, lineHeight: 1.5, marginBottom: '20px' }}>
+              You have unsaved changes. Save before leaving?
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => { setConfirmLeaveOpen(false); navigate('/thisweek') }}
+                style={{
+                  flex: 1, padding: '12px', borderRadius: '10px',
+                  border: `1px solid ${C.linen}`, background: 'none',
+                  fontFamily: "'Jost', sans-serif", fontSize: '13px',
+                  fontWeight: 500, color: C.driftwood, cursor: 'pointer',
+                }}
+              >
+                Discard
+              </button>
+              <button
+                onClick={() => { setConfirmLeaveOpen(false); saveWeekSettings() }}
+                style={{
+                  flex: 1, padding: '12px', borderRadius: '10px',
+                  border: 'none', background: C.forest, color: 'white',
+                  fontFamily: "'Jost', sans-serif", fontSize: '13px',
+                  fontWeight: 500, cursor: 'pointer',
+                }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
         </>
       )}
 
@@ -552,6 +720,7 @@ export default function WeekSettings({ appUser }) {
             type="text"
             value={templateName}
             onChange={e => setTemplateName(e.target.value)}
+            onFocus={e => e.target.select()}
             autoFocus={saveSheetOpen}
             style={{
               width: '100%', padding: '14px 16px',
