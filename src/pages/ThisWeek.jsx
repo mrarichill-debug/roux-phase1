@@ -117,6 +117,8 @@ export default function ThisWeek({ appUser }) {
   const [overlayVisible,    setOverlayVisible]    = useState(false)
   const [shoppingPrompt,    setShoppingPrompt]    = useState(false)
   const [savedDayTypes,     setSavedDayTypes]     = useState(null) // from meal_plans.notes
+  const [repeatPrompt,      setRepeatPrompt]      = useState(null) // { mealName, mealType, slotType, recipeId, note, savedDow }
+  const [repeatSelected,    setRepeatSelected]    = useState(new Set())
 
   const overlayRef = useRef(null)
   const tz         = appUser?.timezone ?? 'America/Chicago'
@@ -274,9 +276,12 @@ export default function ThisWeek({ appUser }) {
         slot_type: 'recipe', recipe_id: pick.id, status: 'planned', sage_suggested: true,
       })
       if (error) throw error
+      const savedMealType = sheetSlot.toLowerCase()
+      const savedDow = sheetDow
       closeSheet()
       showToast(`Sage suggested ${pick.name}`)
-      loadWeekData()
+      await loadWeekData()
+      maybeShowRepeatPrompt(pick.name, savedMealType, 'recipe', pick.id, null, savedDow)
     } catch (err) {
       console.error('[Roux] sageSuggest error:', err)
     }
@@ -294,9 +299,13 @@ export default function ThisWeek({ appUser }) {
         slot_type: 'note', note: manualInput.trim(), status: 'planned',
       })
       if (error) throw error
+      const savedName = manualInput.trim()
+      const savedMealType = sheetSlot.toLowerCase()
+      const savedDow = sheetDow
       closeSheet()
-      showToast(`Added ${manualInput.trim()}`)
-      loadWeekData()
+      showToast(`Added ${savedName}`)
+      await loadWeekData()
+      maybeShowRepeatPrompt(savedName, savedMealType, 'note', null, savedName, savedDow)
     } catch (err) {
       console.error('[Roux] saveManualMeal error:', err)
     }
@@ -331,6 +340,58 @@ export default function ThisWeek({ appUser }) {
     } catch (err) {
       console.error('[Roux] removeMeal error:', err)
     }
+  }
+
+  // Check if repeat prompt should fire for breakfast/lunch saves
+  function maybeShowRepeatPrompt(mealName, mealType, slotType, recipeId, note, savedDow) {
+    if (mealType === 'dinner') return
+    // Find empty days for this meal type (excluding the just-saved day)
+    const emptyDays = DOW_KEYS.filter(dow => {
+      if (dow === savedDow) return false
+      return !planMeals.some(m => m.day_of_week === dow && m.meal_type === mealType)
+    })
+    if (emptyDays.length === 0) return
+    setTimeout(() => {
+      setRepeatPrompt({ mealName, mealType, slotType, recipeId, note, savedDow })
+      setRepeatSelected(new Set())
+    }, 400)
+  }
+
+  async function confirmRepeat() {
+    if (!repeatPrompt || repeatSelected.size === 0) return
+    const activePlan = plan
+    if (!activePlan) return
+    const { mealType, slotType, recipeId, note } = repeatPrompt
+    const daysToWrite = [...repeatSelected]
+
+    // Re-check which slots are still empty
+    const { data: currentMeals } = await supabase
+      .from('planned_meals')
+      .select('day_of_week')
+      .eq('meal_plan_id', activePlan.id)
+      .eq('meal_type', mealType)
+    const filledDows = new Set((currentMeals ?? []).map(m => m.day_of_week))
+
+    const inserts = daysToWrite
+      .filter(dow => !filledDows.has(dow))
+      .map(dow => ({
+        meal_plan_id: activePlan.id,
+        household_id: appUser.household_id,
+        day_of_week: dow,
+        meal_type: mealType,
+        slot_type: slotType,
+        recipe_id: recipeId || null,
+        note: note || null,
+        status: 'planned',
+      }))
+
+    if (inserts.length > 0) {
+      const { error } = await supabase.from('planned_meals').insert(inserts)
+      if (error) console.error('[Roux] confirmRepeat error:', error)
+    }
+
+    setRepeatPrompt(null)
+    loadWeekData()
   }
 
   // Swap — remove existing then open add sheet
@@ -524,6 +585,32 @@ export default function ThisWeek({ appUser }) {
         onSetMode={setSheetMode}
         navigate={navigate}
       />
+
+      {/* ── Repeat Prompt (breakfast/lunch) ──────────────────────────────── */}
+      {repeatPrompt && (
+        <>
+          <div
+            onClick={() => setRepeatPrompt(null)}
+            style={{
+              position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)',
+              zIndex: 200, animation: 'fadeIn 0.2s ease',
+            }}
+          />
+          <RepeatPromptSheet
+            prompt={repeatPrompt}
+            planMeals={planMeals}
+            selected={repeatSelected}
+            onToggleDay={dow => setRepeatSelected(prev => {
+              const next = new Set(prev)
+              next.has(dow) ? next.delete(dow) : next.add(dow)
+              return next
+            })}
+            onSelectAll={emptyDays => setRepeatSelected(new Set(emptyDays))}
+            onConfirm={confirmRepeat}
+            onSkip={() => setRepeatPrompt(null)}
+          />
+        </>
+      )}
 
       {/* ── Toast ──────────────────────────────────────────────────────────── */}
       {toastMsg && (
@@ -1273,6 +1360,108 @@ function SheetOption({ primary, icon, title, sub, onClick }) {
         <div style={{ fontSize: '12px', color: primary ? 'rgba(255,255,255,0.7)' : C.driftwood, fontWeight: 300 }}>
           {sub}
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Repeat Prompt Sheet (breakfast/lunch) ─────────────────────────────────────
+function RepeatPromptSheet({ prompt, planMeals, selected, onToggleDay, onSelectAll, onConfirm, onSkip }) {
+  const { mealName, mealType, savedDow } = prompt
+  const slotLabel = mealType.charAt(0).toUpperCase() + mealType.slice(1)
+  const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+  // Determine which days are empty/filled for this meal type
+  const filledDows = new Set(planMeals.filter(m => m.meal_type === mealType).map(m => m.day_of_week))
+  const emptyDays = DOW_KEYS.filter(dow => dow !== savedDow && !filledDows.has(dow))
+
+  return (
+    <div style={{
+      position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+      width: '100%', maxWidth: '430px',
+      background: 'white', borderRadius: '20px 20px 0 0',
+      padding: '0 0 40px', zIndex: 201,
+      boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
+      animation: 'sheetRise 0.32s cubic-bezier(0.32,0.72,0,1) both',
+    }}>
+      <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+      <div style={{ padding: '20px 22px 0' }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '4px' }}>
+          Add to other days this week?
+        </div>
+        <div style={{ fontSize: '13px', color: C.driftwood, marginBottom: '16px' }}>
+          {mealName} · {slotLabel}
+        </div>
+
+        {/* Select all link */}
+        <button
+          onClick={() => onSelectAll(emptyDays)}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: '12px', color: C.forest, fontWeight: 500,
+            fontFamily: "'Jost', sans-serif", padding: '0 0 8px',
+          }}
+        >
+          Select all empty days
+        </button>
+
+        {/* Day chips */}
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '18px' }}>
+          {DOW_KEYS.map((dow, i) => {
+            if (dow === savedDow) return null
+            const isFilled = filledDows.has(dow)
+            const isSelected = selected.has(dow)
+            return (
+              <button
+                key={dow}
+                onClick={isFilled ? undefined : () => onToggleDay(dow)}
+                disabled={isFilled}
+                style={{
+                  width: '42px', height: '42px', borderRadius: '10px',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  gap: '2px', cursor: isFilled ? 'default' : 'pointer',
+                  fontFamily: "'Jost', sans-serif", fontSize: '11px', fontWeight: 500,
+                  border: isSelected ? `1.5px solid ${C.forest}` : '1.5px solid rgba(200,185,160,0.55)',
+                  background: isSelected ? C.forest : isFilled ? 'rgba(200,185,160,0.15)' : 'white',
+                  color: isSelected ? 'white' : isFilled ? 'rgba(200,185,160,0.6)' : C.ink,
+                  transition: 'all 0.15s',
+                  opacity: isFilled ? 0.5 : 1,
+                }}
+              >
+                {DAY_LABELS[i]}
+                {isFilled && (
+                  <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'rgba(200,185,160,0.5)' }} />
+                )}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Buttons */}
+        <button
+          onClick={onConfirm}
+          disabled={selected.size === 0}
+          style={{
+            width: '100%', padding: '14px', borderRadius: '12px',
+            background: selected.size > 0 ? C.forest : C.linen,
+            color: selected.size > 0 ? 'white' : C.driftwood,
+            border: 'none', fontFamily: "'Jost', sans-serif",
+            fontSize: '14px', fontWeight: 500, cursor: selected.size > 0 ? 'pointer' : 'default',
+            marginBottom: '8px',
+          }}
+        >
+          Add to {selected.size > 0 ? `${selected.size} day${selected.size > 1 ? 's' : ''}` : 'selected days'}
+        </button>
+        <button
+          onClick={onSkip}
+          style={{
+            width: '100%', background: 'none', border: 'none',
+            color: C.driftwood, fontFamily: "'Jost', sans-serif",
+            fontSize: '13px', fontWeight: 300, padding: '10px', cursor: 'pointer',
+          }}
+        >
+          Skip
+        </button>
       </div>
     </div>
   )
