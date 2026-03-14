@@ -120,6 +120,13 @@ export default function ThisWeek({ appUser }) {
   const [activeTemplateName, setActiveTemplateName] = useState(null)
   const [repeatPrompt,      setRepeatPrompt]      = useState(null) // { mealName, mealType, slotType, recipeId, note, savedDow }
   const [repeatSelected,    setRepeatSelected]    = useState(new Set())
+  const [addProteinOpen,    setAddProteinOpen]    = useState(false)
+  const [groceryStores,     setGroceryStores]     = useState([])
+  const [proteinName,       setProteinName]       = useState('')
+  const [proteinStoreId,    setProteinStoreId]    = useState(null)
+  const [proteinOnSale,     setProteinOnSale]     = useState(false)
+  const [proteinPrice,      setProteinPrice]      = useState('')
+  const [savingProtein,     setSavingProtein]     = useState(false)
 
   const overlayRef = useRef(null)
   const tz         = appUser?.timezone ?? 'America/Chicago'
@@ -129,7 +136,12 @@ export default function ThisWeek({ appUser }) {
   const isPastWeek = weekOffset < 0
 
   useEffect(() => {
-    if (appUser?.household_id) loadWeekData()
+    if (appUser?.household_id) {
+      loadWeekData()
+      // Load grocery stores once
+      supabase.from('grocery_stores').select('id, name').eq('household_id', appUser.household_id)
+        .then(({ data }) => { if (data) setGroceryStores(data) })
+    }
   }, [appUser?.household_id, weekOffset, location.key])
 
   async function loadWeekData() {
@@ -425,6 +437,46 @@ export default function ThisWeek({ appUser }) {
       .then(({ error }) => { if (error) console.error('[Roux] swapMeal delete error:', error.message) })
   }
 
+  function openAddProtein() {
+    setProteinName('')
+    setProteinStoreId(groceryStores[0]?.id || null)
+    setProteinOnSale(false)
+    setProteinPrice('')
+    setAddProteinOpen(true)
+  }
+
+  async function saveProtein() {
+    if (!proteinName.trim() || savingProtein) return
+    setSavingProtein(true)
+    try {
+      const activePlan = await ensurePlan()
+      if (!activePlan) return
+      const { data, error } = await supabase.from('weekly_proteins').insert({
+        household_id: appUser.household_id,
+        meal_plan_id: activePlan.id,
+        protein_name: proteinName.trim(),
+        store_id: proteinStoreId || null,
+        is_on_sale: proteinOnSale,
+        sale_price: proteinOnSale && proteinPrice ? parseFloat(proteinPrice) : null,
+      }).select('*, grocery_stores(name)').single()
+      if (error) throw error
+      setProteins(prev => [...prev, data])
+      setAddProteinOpen(false)
+      showToast('Protein added')
+    } catch (err) {
+      console.error('[Roux] saveProtein error:', err)
+    } finally {
+      setSavingProtein(false)
+    }
+  }
+
+  async function deleteProtein(proteinId) {
+    setProteins(prev => prev.filter(p => p.id !== proteinId))
+    showToast('Protein removed')
+    supabase.from('weekly_proteins').delete().eq('id', proteinId)
+      .then(({ error }) => { if (error) console.error('[Roux] deleteProtein error:', error.message) })
+  }
+
   async function publishPlan() {
     if (!plan || publishing) return
     setPublishing(true)
@@ -542,6 +594,8 @@ export default function ThisWeek({ appUser }) {
         proteins={proteins}
         open={proteinOpen}
         onToggle={() => setProteinOpen(v => !v)}
+        onAdd={openAddProtein}
+        onDelete={deleteProtein}
       />
 
       {/* ── Day Rows ─────────────────────────────────────────────────────── */}
@@ -625,6 +679,145 @@ export default function ThisWeek({ appUser }) {
         onSetMode={setSheetMode}
         navigate={navigate}
       />
+
+      {/* ── Add Protein Sheet ──────────────────────────────────────────── */}
+      {addProteinOpen && (
+        <>
+          <div
+            onClick={() => setAddProteinOpen(false)}
+            style={{
+              position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)',
+              zIndex: 200, animation: 'fadeIn 0.2s ease',
+            }}
+          />
+          <div onClick={e => e.stopPropagation()} style={{
+            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+            width: '100%', maxWidth: '430px',
+            background: 'white', borderRadius: '20px 20px 0 0',
+            padding: '0 0 40px', zIndex: 201,
+            boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
+            animation: 'sheetRise 0.32s cubic-bezier(0.32,0.72,0,1) both',
+          }}>
+            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+            <div style={{ padding: '20px 22px 0' }}>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '16px' }}>
+                Add a Protein
+              </div>
+
+              {/* Name */}
+              <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Name</div>
+              <input
+                type="text"
+                value={proteinName}
+                onChange={e => setProteinName(e.target.value)}
+                placeholder="e.g. Chicken thighs, Ground beef"
+                autoFocus
+                style={{
+                  width: '100%', padding: '12px 14px',
+                  border: `1px solid ${C.linen}`, borderRadius: '10px',
+                  fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300,
+                  color: C.ink, outline: 'none', background: C.cream,
+                  boxSizing: 'border-box', marginBottom: '14px',
+                }}
+              />
+
+              {/* Store selector */}
+              {groceryStores.length > 0 && (
+                <>
+                  <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Store</div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                    {groceryStores.map(store => (
+                      <button
+                        key={store.id}
+                        onClick={() => setProteinStoreId(store.id)}
+                        style={{
+                          padding: '6px 14px', fontSize: '12px',
+                          fontFamily: "'Jost', sans-serif", fontWeight: proteinStoreId === store.id ? 500 : 400,
+                          borderRadius: '14px', cursor: 'pointer',
+                          border: `1.5px solid ${proteinStoreId === store.id ? C.forest : C.linen}`,
+                          background: proteinStoreId === store.id ? C.forest : 'transparent',
+                          color: proteinStoreId === store.id ? 'white' : C.ink,
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        {store.name}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* On sale toggle */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <span style={{ fontSize: '13px', color: C.ink }}>On sale this week</span>
+                <button
+                  onClick={() => setProteinOnSale(v => !v)}
+                  style={{
+                    width: '44px', height: '24px', borderRadius: '12px',
+                    border: proteinOnSale ? 'none' : `1.5px solid ${C.linen}`,
+                    background: proteinOnSale ? C.honey : C.cream,
+                    cursor: 'pointer', position: 'relative',
+                    transition: 'background 0.25s', padding: 0, flexShrink: 0,
+                  }}
+                >
+                  <span style={{
+                    position: 'absolute', top: '2px',
+                    left: proteinOnSale ? '22px' : '2px',
+                    width: '20px', height: '20px', borderRadius: '50%',
+                    background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                    transition: 'left 0.25s',
+                  }} />
+                </button>
+              </div>
+
+              {/* Price (visible when on sale) */}
+              {proteinOnSale && (
+                <input
+                  type="number"
+                  value={proteinPrice}
+                  onChange={e => setProteinPrice(e.target.value)}
+                  placeholder="$0.00"
+                  step="0.01"
+                  style={{
+                    width: '100%', padding: '12px 14px',
+                    border: `1px solid ${C.linen}`, borderRadius: '10px',
+                    fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300,
+                    color: C.ink, outline: 'none', background: C.cream,
+                    boxSizing: 'border-box', marginBottom: '14px',
+                  }}
+                />
+              )}
+
+              {/* Buttons */}
+              <button
+                onClick={saveProtein}
+                disabled={!proteinName.trim() || savingProtein}
+                style={{
+                  width: '100%', padding: '14px', borderRadius: '12px',
+                  background: proteinName.trim() ? C.forest : C.linen,
+                  color: proteinName.trim() ? 'white' : C.driftwood,
+                  border: 'none', fontFamily: "'Jost', sans-serif",
+                  fontSize: '14px', fontWeight: 500,
+                  cursor: proteinName.trim() ? 'pointer' : 'default',
+                  marginBottom: '8px',
+                }}
+              >
+                {savingProtein ? 'Adding…' : 'Add Protein'}
+              </button>
+              <button
+                onClick={() => setAddProteinOpen(false)}
+                style={{
+                  width: '100%', background: 'none', border: 'none',
+                  color: C.driftwood, fontFamily: "'Jost', sans-serif",
+                  fontSize: '13px', fontWeight: 300, padding: '10px', cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ── Repeat Prompt (breakfast/lunch) ──────────────────────────────── */}
       {repeatPrompt && (
@@ -719,7 +912,7 @@ function PlanStatusBanner({ plan, loading, isPublished, pulsing, onPublish }) {
 }
 
 // ── Protein Roster ─────────────────────────────────────────────────────────────
-function ProteinRoster({ proteins, open, onToggle }) {
+function ProteinRoster({ proteins, open, onToggle, onAdd, onDelete }) {
   const iconColor = open ? C.forest : C.driftwood
 
   return (
@@ -762,7 +955,7 @@ function ProteinRoster({ proteins, open, onToggle }) {
 
       {/* Body */}
       <div style={{
-        maxHeight: open ? '220px' : '0',
+        maxHeight: open ? '400px' : '0',
         overflow: 'hidden',
         transition: 'max-height 0.3s ease',
       }}>
@@ -777,28 +970,50 @@ function ProteinRoster({ proteins, open, onToggle }) {
               padding: '8px 10px', background: C.cream, borderRadius: '8px',
               border: '1px solid rgba(200,185,160,0.4)',
             }}>
-              <span style={{ fontSize: '13px', color: C.ink }}>{p.protein_name}</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ fontSize: '13px', color: C.ink }}>{p.protein_name}</span>
+                {p.sale_price && (
+                  <span style={{ fontSize: '11px', color: C.honey, marginLeft: '6px' }}>
+                    ${parseFloat(p.sale_price).toFixed(2)}
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                 {p.grocery_stores?.name && (
                   <span style={{ fontSize: '11px', color: C.driftwood }}>{p.grocery_stores.name}</span>
                 )}
                 {p.is_on_sale && (
                   <span style={{
-                    fontSize: '10px', fontWeight: 500, color: C.forest,
-                    background: 'rgba(61,107,79,0.08)', border: '1px solid rgba(61,107,79,0.15)',
-                    padding: '2px 7px', borderRadius: '4px',
+                    fontSize: '9px', fontWeight: 500, color: C.honey,
+                    background: 'rgba(196,154,60,0.10)', border: '1px solid rgba(196,154,60,0.25)',
+                    padding: '2px 6px', borderRadius: '4px',
                   }}>
-                    On sale
+                    Sale
                   </span>
                 )}
+                <button
+                  onClick={e => { e.stopPropagation(); onDelete(p.id) }}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: 'rgba(160,48,48,0.4)', padding: '2px', display: 'flex',
+                  }}
+                  aria-label="Remove protein"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13 }}>
+                    <path d="M18 6 6 18M6 6l12 12"/>
+                  </svg>
+                </button>
               </div>
             </div>
           ))}
-          <button style={{
-            fontSize: '11px', color: C.driftwood, background: 'none',
-            border: '1px dashed rgba(200,185,160,0.7)', borderRadius: '8px',
-            padding: '8px 10px', cursor: 'pointer', textAlign: 'center', fontFamily: "'Jost', sans-serif",
-          }}>
+          <button
+            onClick={e => { e.stopPropagation(); onAdd() }}
+            style={{
+              fontSize: '11px', color: C.driftwood, background: 'none',
+              border: '1px dashed rgba(200,185,160,0.7)', borderRadius: '8px',
+              padding: '8px 10px', cursor: 'pointer', textAlign: 'center', fontFamily: "'Jost', sans-serif",
+            }}
+          >
             + Add protein
           </button>
         </div>
@@ -1215,7 +1430,7 @@ function BottomSheet({ open, dayName, slotName, dateStr, sagePrimary, mode, manu
   const sheetTitle = mode === 'filled' ? slotName : mode === 'manual' ? 'Enter meal name' : slotName
 
   return (
-    <div style={{
+    <div onClick={e => e.stopPropagation()} style={{
       position: 'fixed', bottom: 0, left: '50%',
       transform: open ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
       width: '100%', maxWidth: '430px',
@@ -1377,7 +1592,7 @@ function BottomSheet({ open, dayName, slotName, dateStr, sagePrimary, mode, manu
 function SheetOption({ primary, icon, title, sub, onClick }) {
   return (
     <div
-      onClick={onClick}
+      onClick={e => { e.stopPropagation(); onClick?.() }}
       style={{
         display: 'flex', alignItems: 'center', gap: '14px',
         padding: '14px 16px', borderRadius: '12px',
