@@ -85,7 +85,9 @@ export default function WeekSettings({ appUser }) {
   const [templateName, setTemplateName] = useState('')
   const [saving, setSaving] = useState(false)
   const [savedTemplates, setSavedTemplates] = useState([])
-  const [applySheetOpen, setApplySheetOpen] = useState(false)
+  const [activeTemplateId, setActiveTemplateId] = useState(null)
+  const [prevDayTypes, setPrevDayTypes] = useState(null)
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null)
   const [addTradSheetOpen, setAddTradSheetOpen] = useState(false)
   const [newTradName, setNewTradName] = useState('')
   const [newTradDay, setNewTradDay] = useState('tuesday')
@@ -201,18 +203,6 @@ export default function WeekSettings({ appUser }) {
     }
   }
 
-  function applyTemplate(template) {
-    const config = template.source_plan_ids
-    if (config?.day_types) setDayTypes(config.day_types)
-    if (config?.traditions) {
-      const toggles = {}
-      traditions.forEach(t => { toggles[t.id] = config.traditions.includes(t.id) })
-      setTraditionToggles(toggles)
-    }
-    setHasChanges(true)
-    setApplySheetOpen(false)
-  }
-
   function showToast(msg) {
     setToastMsg(msg)
     setTimeout(() => setToastMsg(''), 2500)
@@ -266,8 +256,49 @@ export default function WeekSettings({ appUser }) {
     }
   }
 
+  function toggleTemplate(templateId) {
+    if (activeTemplateId === templateId) {
+      // Turning off — revert to previous manual selections
+      if (prevDayTypes) setDayTypes(prevDayTypes)
+      setActiveTemplateId(null)
+      setPrevDayTypes(null)
+    } else {
+      // Turning on — save current day types, apply template's
+      const template = savedTemplates.find(t => t.id === templateId)
+      if (!template) return
+      setPrevDayTypes({ ...dayTypes })
+      setActiveTemplateId(templateId)
+      const config = template.source_plan_ids
+      if (config?.day_types) setDayTypes(config.day_types)
+      if (config?.traditions) {
+        const toggles = {}
+        traditions.forEach(t => { toggles[t.id] = config.traditions.includes(t.id) })
+        setTraditionToggles(toggles)
+      }
+    }
+    setHasChanges(true)
+  }
+
+  async function deleteTemplate(templateId) {
+    try {
+      await supabase.from('meal_plan_templates').delete().eq('id', templateId)
+      setSavedTemplates(prev => prev.filter(t => t.id !== templateId))
+      if (activeTemplateId === templateId) {
+        if (prevDayTypes) setDayTypes(prevDayTypes)
+        setActiveTemplateId(null)
+        setPrevDayTypes(null)
+      }
+      setDeleteConfirmId(null)
+      showToast('Template removed')
+    } catch (err) {
+      console.error('[Roux] deleteTemplate error:', err)
+    }
+  }
+
   function setDayType(dowKey, type) {
     setDayTypes(prev => ({ ...prev, [dowKey]: type }))
+    // Manual change breaks any active template
+    if (activeTemplateId) { setActiveTemplateId(null); setPrevDayTypes(null) }
     setHasChanges(true)
   }
 
@@ -480,33 +511,105 @@ export default function WeekSettings({ appUser }) {
           {/* ── Section 5: Templates ──────────────────────────────────────── */}
           <div style={{ ...cardStyle, animation: 'fadeUp 0.35s ease 0.20s both' }}>
             <div style={sectionHeaderStyle}>Templates</div>
-            <button
-              onClick={() => setApplySheetOpen(true)}
-              style={{
-                width: '100%', padding: '12px', marginBottom: '8px',
-                fontSize: '14px', fontFamily: "'Jost', sans-serif", fontWeight: 500,
-                color: C.forest, background: 'transparent',
-                border: `1.5px solid rgba(61,107,79,0.4)`, borderRadius: '10px',
-                cursor: 'pointer', textAlign: 'center', transition: 'background 0.15s',
-              }}
-            >
-              Apply a template
-            </button>
+            {savedTemplates.length === 0 ? (
+              <div style={{ fontSize: '13px', fontStyle: 'italic', color: C.driftwood, marginBottom: '12px' }}>
+                No templates saved yet.
+              </div>
+            ) : (
+              savedTemplates.map(t => (
+                <div key={t.id} style={{ position: 'relative' }}>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '10px 0',
+                    borderBottom: `1px solid rgba(200,185,160,0.2)`,
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ fontSize: '14px', color: C.ink }}>{t.name}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                      {/* Delete */}
+                      <button
+                        onClick={() => setDeleteConfirmId(t.id)}
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          color: 'rgba(160,48,48,0.5)', padding: '4px', display: 'flex',
+                        }}
+                        aria-label="Delete template"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 15, height: 15 }}>
+                          <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                        </svg>
+                      </button>
+                      {/* Toggle */}
+                      <button
+                        onClick={() => toggleTemplate(t.id)}
+                        style={{
+                          width: '44px', height: '24px', borderRadius: '12px',
+                          border: activeTemplateId === t.id ? 'none' : `1.5px solid ${C.linen}`,
+                          background: activeTemplateId === t.id ? C.forest : C.cream,
+                          cursor: 'pointer', position: 'relative',
+                          transition: 'background 0.25s, border-color 0.25s',
+                          padding: 0, flexShrink: 0,
+                        }}
+                        aria-label={`Apply ${t.name}`}
+                      >
+                        <span style={{
+                          position: 'absolute', top: '2px',
+                          left: activeTemplateId === t.id ? '22px' : '2px',
+                          width: '20px', height: '20px', borderRadius: '50%',
+                          background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                          transition: 'left 0.25s',
+                        }} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Delete confirmation */}
+                  {deleteConfirmId === t.id && (
+                    <div style={{
+                      padding: '10px 0', display: 'flex', alignItems: 'center',
+                      justifyContent: 'space-between', gap: '8px',
+                    }}>
+                      <span style={{ fontSize: '12px', color: '#A03030' }}>Remove this template?</span>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          onClick={() => setDeleteConfirmId(null)}
+                          style={{
+                            fontSize: '11px', fontFamily: "'Jost', sans-serif", fontWeight: 500,
+                            color: C.driftwood, background: 'none', border: `1px solid ${C.linen}`,
+                            borderRadius: '6px', padding: '4px 10px', cursor: 'pointer',
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => deleteTemplate(t.id)}
+                          style={{
+                            fontSize: '11px', fontFamily: "'Jost', sans-serif", fontWeight: 500,
+                            color: 'white', background: '#A03030', border: 'none',
+                            borderRadius: '6px', padding: '4px 10px', cursor: 'pointer',
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
             <button
               onClick={openSaveSheet}
               style={{
-                width: '100%', padding: '12px', marginBottom: '10px',
-                fontSize: '14px', fontFamily: "'Jost', sans-serif", fontWeight: 500,
+                width: '100%', padding: '12px', marginTop: '8px',
+                fontSize: '13px', fontFamily: "'Jost', sans-serif", fontWeight: 500,
                 color: C.forest, background: 'transparent',
-                border: `1.5px solid rgba(61,107,79,0.4)`, borderRadius: '10px',
+                border: `1.5px dashed rgba(61,107,79,0.4)`, borderRadius: '10px',
                 cursor: 'pointer', textAlign: 'center', transition: 'background 0.15s',
               }}
             >
-              Save this week as template
+              + Save this week as template
             </button>
-            <div style={{ fontSize: '12px', fontStyle: 'italic', color: C.driftwood, lineHeight: 1.4 }}>
-              Templates save your day types and traditions for quick reuse.
-            </div>
           </div>
           {/* ── Save Week Settings CTA ──────────────────────────────────── */}
           <div style={{ padding: '6px 22px 0', animation: 'fadeUp 0.35s ease 0.24s both' }}>
@@ -764,69 +867,7 @@ export default function WeekSettings({ appUser }) {
         </div>
       </div>
 
-      {/* ── Apply Template Sheet overlay ───────────────────────────────── */}
-      <div
-        onClick={() => setApplySheetOpen(false)}
-        style={{
-          position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)',
-          zIndex: 200, opacity: applySheetOpen ? 1 : 0,
-          pointerEvents: applySheetOpen ? 'all' : 'none',
-          transition: 'opacity 0.25s ease',
-        }}
-      />
-
-      {/* ── Apply Template Sheet ───────────────────────────────────────── */}
-      <div style={{
-        position: 'fixed', bottom: 0, left: '50%',
-        transform: applySheetOpen ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
-        width: '100%', maxWidth: '430px',
-        background: 'white', borderRadius: '20px 20px 0 0',
-        padding: '0 0 40px', zIndex: 201,
-        transition: 'transform 0.32s cubic-bezier(0.32,0.72,0,1)',
-        boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-      }}>
-        <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-        <div style={{ padding: '20px 22px 0' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '16px' }}>
-            Apply a template
-          </div>
-          {savedTemplates.length === 0 ? (
-            <div style={{ fontSize: '13px', fontStyle: 'italic', color: C.driftwood, padding: '16px 0' }}>
-              No saved templates yet. Save your current setup as a template first.
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
-              {savedTemplates.map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => applyTemplate(t)}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '14px 16px', borderRadius: '12px',
-                    border: '1px solid rgba(200,185,160,0.55)',
-                    background: C.cream, cursor: 'pointer',
-                    fontFamily: "'Jost', sans-serif", fontSize: '14px',
-                    color: C.ink, fontWeight: 400, textAlign: 'left',
-                  }}
-                >
-                  <span>{t.name}</span>
-                  <span style={{ fontSize: '11px', color: C.sage, fontWeight: 500 }}>Apply →</span>
-                </button>
-              ))}
-            </div>
-          )}
-          <button
-            onClick={() => setApplySheetOpen(false)}
-            style={{
-              width: '100%', background: 'none', border: 'none', color: C.driftwood,
-              fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300,
-              padding: '10px', cursor: 'pointer',
-            }}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
+      {/* Apply Template Sheet removed — templates are now inline toggles */}
     </div>
   )
 }
