@@ -607,6 +607,7 @@ export default function ThisWeek({ appUser }) {
           <RepeatPromptSheet
             prompt={repeatPrompt}
             planMeals={planMeals}
+            weekDates={weekDates}
             selected={repeatSelected}
             onToggleDay={dow => setRepeatSelected(prev => {
               const next = new Set(prev)
@@ -1374,15 +1375,17 @@ function SheetOption({ primary, icon, title, sub, onClick }) {
 }
 
 // ── Repeat Prompt Sheet (breakfast/lunch) ─────────────────────────────────────
-function RepeatPromptSheet({ prompt, planMeals, selected, onToggleDay, onSelectAll, onConfirm, onSkip }) {
+function RepeatPromptSheet({ prompt, planMeals, weekDates, selected, onToggleDay, onSelectAll, onConfirm, onSkip }) {
   const { mealName, mealType, savedDow } = prompt
   const slotLabel = mealType.charAt(0).toUpperCase() + mealType.slice(1)
-  // DOW_KEYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday']
   const DAY_LABELS_MAP = { sunday: 'Sun', monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu', friday: 'Fri', saturday: 'Sat' }
+
+  // Derive day order from weekDates (respects user's week start — Mon-Sun or Sun-Sat)
+  const orderedDows = weekDates.map(d => DOW_KEYS[d.getDay()])
 
   // Determine which days are empty/filled for this meal type
   const filledDows = new Set(planMeals.filter(m => m.meal_type === mealType).map(m => m.day_of_week))
-  const emptyDays = DOW_KEYS.filter(dow => dow !== savedDow && !filledDows.has(dow))
+  const emptyDays = orderedDows.filter(dow => dow !== savedDow && !filledDows.has(dow))
 
   return (
     <div style={{
@@ -1416,7 +1419,7 @@ function RepeatPromptSheet({ prompt, planMeals, selected, onToggleDay, onSelectA
 
         {/* Day chips */}
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '18px' }}>
-          {DOW_KEYS.map(dow => {
+          {orderedDows.map(dow => {
             if (dow === savedDow) return null
             const isFilled = filledDows.has(dow)
             const isSelected = selected.has(dow)
