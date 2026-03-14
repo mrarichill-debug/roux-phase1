@@ -129,6 +129,10 @@ export default function ThisWeek({ appUser }) {
   const [savingProtein,     setSavingProtein]     = useState(false)
   const [addingStore,       setAddingStore]       = useState(false)
   const [newStoreName,      setNewStoreName]      = useState('')
+  const [proteinTab,        setProteinTab]        = useState('usuals') // 'usuals' | 'new'
+  const [proteinFavorites,  setProteinFavorites]  = useState([])
+  const [saveToUsuals,      setSaveToUsuals]      = useState(true)
+  const [editingFavorites,  setEditingFavorites]  = useState(false)
 
   const overlayRef = useRef(null)
   const tz         = appUser?.timezone ?? 'America/Chicago'
@@ -140,9 +144,11 @@ export default function ThisWeek({ appUser }) {
   useEffect(() => {
     if (appUser?.household_id) {
       loadWeekData()
-      // Load grocery stores once
+      // Load grocery stores + protein favorites once
       supabase.from('grocery_stores').select('id, name').eq('household_id', appUser.household_id)
         .then(({ data }) => { if (data) setGroceryStores(data) })
+      supabase.from('protein_favorites').select('*, grocery_stores(name)').eq('household_id', appUser.household_id).order('sort_order')
+        .then(({ data, error }) => { if (data) setProteinFavorites(data); if (error) console.log('[Roux] protein_favorites not available:', error.message) })
     }
   }, [appUser?.household_id, weekOffset, location.key])
 
@@ -445,7 +451,20 @@ export default function ThisWeek({ appUser }) {
     setProteinStoreId(groceryStores[0]?.id || null)
     setProteinOnSale(false)
     setProteinPrice('')
+    setSaveToUsuals(true)
+    setProteinTab('usuals')
+    setEditingFavorites(false)
+    setAddingStore(false)
     setAddProteinOpen(true)
+  }
+
+  function selectFavorite(fav) {
+    setProteinName(fav.name)
+    setProteinStoreId(fav.preferred_store_id || groceryStores[0]?.id || null)
+    setProteinPrice(fav.typical_price ? String(fav.typical_price) : '')
+    setProteinOnSale(false)
+    setSaveToUsuals(false) // already a favorite
+    setProteinTab('confirm')
   }
 
   async function saveProtein() {
@@ -464,6 +483,19 @@ export default function ThisWeek({ appUser }) {
       }).select('*, grocery_stores(name)').single()
       if (error) throw error
       setProteins(prev => [...prev, data])
+
+      // Also save to favorites if toggle is on
+      if (saveToUsuals && proteinTab === 'new') {
+        const { data: favData } = await supabase.from('protein_favorites').insert({
+          household_id: appUser.household_id,
+          name: proteinName.trim(),
+          preferred_store_id: proteinStoreId || null,
+          typical_price: proteinPrice ? parseFloat(proteinPrice) : null,
+          sort_order: proteinFavorites.length + 1,
+        }).select('*, grocery_stores(name)').single()
+        if (favData) setProteinFavorites(prev => [...prev, favData])
+      }
+
       setAddProteinOpen(false)
       showToast('Protein added')
     } catch (err) {
@@ -478,6 +510,12 @@ export default function ThisWeek({ appUser }) {
     showToast('Protein removed')
     supabase.from('weekly_proteins').delete().eq('id', proteinId)
       .then(({ error }) => { if (error) console.error('[Roux] deleteProtein error:', error.message) })
+  }
+
+  async function deleteFavorite(favId) {
+    setProteinFavorites(prev => prev.filter(f => f.id !== favId))
+    supabase.from('protein_favorites').delete().eq('id', favId)
+      .then(({ error }) => { if (error) console.error('[Roux] deleteFavorite error:', error.message) })
   }
 
   async function saveNewStore() {
@@ -703,176 +741,222 @@ export default function ThisWeek({ appUser }) {
       {/* ── Add Protein Sheet ──────────────────────────────────────────── */}
       {addProteinOpen && (
         <>
-          <div
-            onClick={() => setAddProteinOpen(false)}
-            style={{
-              position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)',
-              zIndex: 200, animation: 'fadeIn 0.2s ease',
-            }}
-          />
+          <div onClick={() => setAddProteinOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200, animation: 'fadeIn 0.2s ease' }} />
           <div onClick={e => e.stopPropagation()} style={{
             position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px',
-            background: 'white', borderRadius: '20px 20px 0 0',
-            padding: '0 0 40px', zIndex: 201,
-            boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
+            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
+            padding: '0 0 40px', zIndex: 201, boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
             animation: 'sheetRise 0.32s cubic-bezier(0.32,0.72,0,1) both',
           }}>
             <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-            <div style={{ padding: '20px 22px 0' }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '16px' }}>
+            <div style={{ padding: '16px 22px 0' }}>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '12px' }}>
                 Add a Protein
               </div>
 
-              {/* Name */}
-              <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Name</div>
-              <input
-                type="text"
-                value={proteinName}
-                onChange={e => setProteinName(e.target.value)}
-                placeholder="e.g. Chicken thighs, Ground beef"
-                autoFocus
-                style={{
-                  width: '100%', padding: '12px 14px',
-                  border: `1px solid ${C.linen}`, borderRadius: '10px',
-                  fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300,
-                  color: C.ink, outline: 'none', background: C.cream,
-                  boxSizing: 'border-box', marginBottom: '14px',
-                }}
-              />
-
-              {/* Store selector */}
-              <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Store</div>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
-                {groceryStores.map(store => (
-                  <button
-                    key={store.id}
-                    onClick={() => setProteinStoreId(store.id)}
-                    style={{
-                      padding: '6px 14px', fontSize: '12px',
-                      fontFamily: "'Jost', sans-serif", fontWeight: proteinStoreId === store.id ? 500 : 400,
-                      borderRadius: '14px', cursor: 'pointer',
-                      border: `1.5px solid ${proteinStoreId === store.id ? C.forest : C.linen}`,
-                      background: proteinStoreId === store.id ? C.forest : 'transparent',
-                      color: proteinStoreId === store.id ? 'white' : C.ink,
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    {store.name}
-                  </button>
-                ))}
-                {addingStore ? (
-                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                    <input
-                      type="text"
-                      value={newStoreName}
-                      onChange={e => setNewStoreName(e.target.value)}
-                      placeholder="Store name"
-                      autoFocus
-                      onKeyDown={e => { if (e.key === 'Enter') saveNewStore() }}
-                      style={{
-                        padding: '5px 10px', fontSize: '12px', width: '120px',
-                        border: `1.5px solid ${C.forest}`, borderRadius: '14px',
-                        fontFamily: "'Jost', sans-serif", color: C.ink,
-                        outline: 'none', background: C.cream,
-                      }}
-                    />
+              {/* Tabs */}
+              {proteinTab !== 'confirm' && (
+                <div style={{ display: 'flex', gap: '0', marginBottom: '16px', borderBottom: `1px solid ${C.linen}` }}>
+                  {[{ key: 'usuals', label: 'Your Usuals' }, { key: 'new', label: 'Something New' }].map(tab => (
                     <button
-                      onClick={saveNewStore}
-                      disabled={!newStoreName.trim()}
+                      key={tab.key}
+                      onClick={() => { setProteinTab(tab.key); setEditingFavorites(false) }}
                       style={{
-                        padding: '5px 10px', fontSize: '11px', fontWeight: 500,
-                        borderRadius: '14px', cursor: newStoreName.trim() ? 'pointer' : 'default',
-                        border: 'none', background: C.forest, color: 'white',
-                        fontFamily: "'Jost', sans-serif",
+                        flex: 1, padding: '10px', textAlign: 'center',
+                        fontFamily: "'Jost', sans-serif", fontSize: '12px', fontWeight: 500,
+                        letterSpacing: '0.5px', color: proteinTab === tab.key ? C.forest : C.driftwood,
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        borderBottom: proteinTab === tab.key ? `2px solid ${C.forest}` : '2px solid transparent',
+                        transition: 'all 0.15s',
                       }}
                     >
-                      Add
+                      {tab.label}
                     </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => { setAddingStore(true); setNewStoreName('') }}
-                    style={{
-                      padding: '6px 14px', fontSize: '12px',
-                      fontFamily: "'Jost', sans-serif", fontWeight: 400,
-                      borderRadius: '14px', cursor: 'pointer',
-                      border: `1.5px dashed rgba(200,185,160,0.6)`,
-                      background: 'transparent', color: C.driftwood,
-                    }}
-                  >
-                    + Add store
-                  </button>
-                )}
-              </div>
-
-              {/* On sale toggle */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                <span style={{ fontSize: '13px', color: C.ink }}>On sale this week</span>
-                <button
-                  onClick={() => setProteinOnSale(v => !v)}
-                  style={{
-                    width: '44px', height: '24px', borderRadius: '12px',
-                    border: proteinOnSale ? 'none' : `1.5px solid ${C.linen}`,
-                    background: proteinOnSale ? C.honey : C.cream,
-                    cursor: 'pointer', position: 'relative',
-                    transition: 'background 0.25s', padding: 0, flexShrink: 0,
-                  }}
-                >
-                  <span style={{
-                    position: 'absolute', top: '2px',
-                    left: proteinOnSale ? '22px' : '2px',
-                    width: '20px', height: '20px', borderRadius: '50%',
-                    background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
-                    transition: 'left 0.25s',
-                  }} />
-                </button>
-              </div>
-
-              {/* Price (visible when on sale) */}
-              {proteinOnSale && (
-                <input
-                  type="number"
-                  value={proteinPrice}
-                  onChange={e => setProteinPrice(e.target.value)}
-                  placeholder="$0.00"
-                  step="0.01"
-                  style={{
-                    width: '100%', padding: '12px 14px',
-                    border: `1px solid ${C.linen}`, borderRadius: '10px',
-                    fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300,
-                    color: C.ink, outline: 'none', background: C.cream,
-                    boxSizing: 'border-box', marginBottom: '14px',
-                  }}
-                />
+                  ))}
+                </div>
               )}
 
-              {/* Buttons */}
-              <button
-                onClick={saveProtein}
-                disabled={!proteinName.trim() || savingProtein}
-                style={{
-                  width: '100%', padding: '14px', borderRadius: '12px',
-                  background: proteinName.trim() ? C.forest : C.linen,
-                  color: proteinName.trim() ? 'white' : C.driftwood,
-                  border: 'none', fontFamily: "'Jost', sans-serif",
-                  fontSize: '14px', fontWeight: 500,
-                  cursor: proteinName.trim() ? 'pointer' : 'default',
-                  marginBottom: '8px',
-                }}
-              >
-                {savingProtein ? 'Adding…' : 'Add Protein'}
-              </button>
-              <button
-                onClick={() => setAddProteinOpen(false)}
-                style={{
-                  width: '100%', background: 'none', border: 'none',
-                  color: C.driftwood, fontFamily: "'Jost', sans-serif",
-                  fontSize: '13px', fontWeight: 300, padding: '10px', cursor: 'pointer',
-                }}
-              >
-                Cancel
-              </button>
+              {/* ── Your Usuals tab ────────────────────────────────── */}
+              {proteinTab === 'usuals' && (
+                <div>
+                  {proteinFavorites.length > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+                      <button onClick={() => setEditingFavorites(v => !v)} style={{
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        fontSize: '11px', color: editingFavorites ? C.forest : C.driftwood, fontWeight: 500,
+                        fontFamily: "'Jost', sans-serif",
+                      }}>
+                        {editingFavorites ? 'Done' : 'Edit list'}
+                      </button>
+                    </div>
+                  )}
+                  {proteinFavorites.length === 0 ? (
+                    <div style={{ fontSize: '13px', fontStyle: 'italic', color: C.driftwood, padding: '20px 0', textAlign: 'center', lineHeight: 1.5 }}>
+                      No usuals saved yet — add something new and save it to your list.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                      {proteinFavorites.map(fav => (
+                        <div
+                          key={fav.id}
+                          onClick={editingFavorites ? undefined : () => selectFavorite(fav)}
+                          style={{
+                            padding: '10px 14px', borderRadius: '12px',
+                            border: '1px solid rgba(200,185,160,0.55)',
+                            background: C.cream, cursor: editingFavorites ? 'default' : 'pointer',
+                            position: 'relative', minWidth: '80px', transition: 'all 0.15s',
+                          }}
+                        >
+                          <div style={{ fontSize: '13px', fontWeight: 500, color: C.ink }}>{fav.name}</div>
+                          {fav.grocery_stores?.name && (
+                            <div style={{ fontSize: '10px', color: C.driftwood, marginTop: '2px' }}>{fav.grocery_stores.name}</div>
+                          )}
+                          {editingFavorites && (
+                            <button
+                              onClick={e => { e.stopPropagation(); deleteFavorite(fav.id) }}
+                              style={{
+                                position: 'absolute', top: '-6px', right: '-6px',
+                                width: '20px', height: '20px', borderRadius: '50%',
+                                background: '#A03030', color: 'white', border: 'none',
+                                fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              }}
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <button onClick={() => setAddProteinOpen(false)} style={{
+                    width: '100%', background: 'none', border: 'none', color: C.driftwood,
+                    fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300,
+                    padding: '10px', cursor: 'pointer',
+                  }}>
+                    Cancel
+                  </button>
+                </div>
+              )}
+
+              {/* ── Quick confirm (after tapping a favorite) ───────── */}
+              {proteinTab === 'confirm' && (
+                <div>
+                  <div style={{ fontSize: '14px', color: C.ink, fontWeight: 500, marginBottom: '4px' }}>{proteinName}</div>
+                  <div style={{ fontSize: '12px', color: C.driftwood, marginBottom: '14px' }}>
+                    {groceryStores.find(s => s.id === proteinStoreId)?.name || 'No store selected'}
+                  </div>
+                  {/* On sale toggle */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                    <span style={{ fontSize: '13px', color: C.ink }}>On sale this week</span>
+                    <button onClick={() => setProteinOnSale(v => !v)} style={{
+                      width: '44px', height: '24px', borderRadius: '12px',
+                      border: proteinOnSale ? 'none' : `1.5px solid ${C.linen}`,
+                      background: proteinOnSale ? C.honey : C.cream,
+                      cursor: 'pointer', position: 'relative', transition: 'background 0.25s', padding: 0, flexShrink: 0,
+                    }}>
+                      <span style={{ position: 'absolute', top: '2px', left: proteinOnSale ? '22px' : '2px', width: '20px', height: '20px', borderRadius: '50%', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.15)', transition: 'left 0.25s' }} />
+                    </button>
+                  </div>
+                  {proteinOnSale && (
+                    <input type="number" value={proteinPrice} onChange={e => setProteinPrice(e.target.value)} placeholder="$0.00" step="0.01" style={{
+                      width: '100%', padding: '12px 14px', border: `1px solid ${C.linen}`, borderRadius: '10px',
+                      fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300, color: C.ink, outline: 'none', background: C.cream, boxSizing: 'border-box', marginBottom: '14px',
+                    }} />
+                  )}
+                  <button onClick={saveProtein} disabled={savingProtein} style={{
+                    width: '100%', padding: '14px', borderRadius: '12px', background: C.forest, color: 'white',
+                    border: 'none', fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500, cursor: 'pointer', marginBottom: '8px',
+                  }}>
+                    {savingProtein ? 'Adding…' : 'Add to this week'}
+                  </button>
+                  <button onClick={() => setProteinTab('usuals')} style={{
+                    width: '100%', background: 'none', border: 'none', color: C.driftwood,
+                    fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300, padding: '10px', cursor: 'pointer',
+                  }}>
+                    ← Back
+                  </button>
+                </div>
+              )}
+
+              {/* ── Something New tab ──────────────────────────────── */}
+              {proteinTab === 'new' && (
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Name</div>
+                  <input type="text" value={proteinName} onChange={e => setProteinName(e.target.value)} placeholder="e.g. Chicken thighs, Ground beef" autoFocus style={{
+                    width: '100%', padding: '12px 14px', border: `1px solid ${C.linen}`, borderRadius: '10px',
+                    fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300, color: C.ink, outline: 'none', background: C.cream, boxSizing: 'border-box', marginBottom: '14px',
+                  }} />
+
+                  <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Store</div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                    {groceryStores.map(store => (
+                      <button key={store.id} onClick={() => setProteinStoreId(store.id)} style={{
+                        padding: '6px 14px', fontSize: '12px', fontFamily: "'Jost', sans-serif", fontWeight: proteinStoreId === store.id ? 500 : 400,
+                        borderRadius: '14px', cursor: 'pointer', border: `1.5px solid ${proteinStoreId === store.id ? C.forest : C.linen}`,
+                        background: proteinStoreId === store.id ? C.forest : 'transparent', color: proteinStoreId === store.id ? 'white' : C.ink, transition: 'all 0.15s',
+                      }}>
+                        {store.name}
+                      </button>
+                    ))}
+                    {addingStore ? (
+                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                        <input type="text" value={newStoreName} onChange={e => setNewStoreName(e.target.value)} placeholder="Store name" autoFocus
+                          onKeyDown={e => { if (e.key === 'Enter') saveNewStore() }}
+                          style={{ padding: '5px 10px', fontSize: '12px', width: '120px', border: `1.5px solid ${C.forest}`, borderRadius: '14px', fontFamily: "'Jost', sans-serif", color: C.ink, outline: 'none', background: C.cream }} />
+                        <button onClick={saveNewStore} disabled={!newStoreName.trim()} style={{
+                          padding: '5px 10px', fontSize: '11px', fontWeight: 500, borderRadius: '14px', cursor: newStoreName.trim() ? 'pointer' : 'default',
+                          border: 'none', background: C.forest, color: 'white', fontFamily: "'Jost', sans-serif",
+                        }}>Add</button>
+                      </div>
+                    ) : (
+                      <button onClick={() => { setAddingStore(true); setNewStoreName('') }} style={{
+                        padding: '6px 14px', fontSize: '12px', fontFamily: "'Jost', sans-serif", fontWeight: 400,
+                        borderRadius: '14px', cursor: 'pointer', border: `1.5px dashed rgba(200,185,160,0.6)`, background: 'transparent', color: C.driftwood,
+                      }}>+ Add store</button>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                    <span style={{ fontSize: '13px', color: C.ink }}>On sale this week</span>
+                    <button onClick={() => setProteinOnSale(v => !v)} style={{
+                      width: '44px', height: '24px', borderRadius: '12px', border: proteinOnSale ? 'none' : `1.5px solid ${C.linen}`,
+                      background: proteinOnSale ? C.honey : C.cream, cursor: 'pointer', position: 'relative', transition: 'background 0.25s', padding: 0, flexShrink: 0,
+                    }}>
+                      <span style={{ position: 'absolute', top: '2px', left: proteinOnSale ? '22px' : '2px', width: '20px', height: '20px', borderRadius: '50%', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.15)', transition: 'left 0.25s' }} />
+                    </button>
+                  </div>
+                  {proteinOnSale && (
+                    <input type="number" value={proteinPrice} onChange={e => setProteinPrice(e.target.value)} placeholder="$0.00" step="0.01" style={{
+                      width: '100%', padding: '12px 14px', border: `1px solid ${C.linen}`, borderRadius: '10px',
+                      fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300, color: C.ink, outline: 'none', background: C.cream, boxSizing: 'border-box', marginBottom: '14px',
+                    }} />
+                  )}
+
+                  {/* Save to usuals toggle */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                    <span style={{ fontSize: '13px', color: C.ink }}>Save to your usuals</span>
+                    <button onClick={() => setSaveToUsuals(v => !v)} style={{
+                      width: '44px', height: '24px', borderRadius: '12px', border: saveToUsuals ? 'none' : `1.5px solid ${C.linen}`,
+                      background: saveToUsuals ? C.forest : C.cream, cursor: 'pointer', position: 'relative', transition: 'background 0.25s', padding: 0, flexShrink: 0,
+                    }}>
+                      <span style={{ position: 'absolute', top: '2px', left: saveToUsuals ? '22px' : '2px', width: '20px', height: '20px', borderRadius: '50%', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.15)', transition: 'left 0.25s' }} />
+                    </button>
+                  </div>
+
+                  <button onClick={saveProtein} disabled={!proteinName.trim() || savingProtein} style={{
+                    width: '100%', padding: '14px', borderRadius: '12px', background: proteinName.trim() ? C.forest : C.linen,
+                    color: proteinName.trim() ? 'white' : C.driftwood, border: 'none', fontFamily: "'Jost', sans-serif",
+                    fontSize: '14px', fontWeight: 500, cursor: proteinName.trim() ? 'pointer' : 'default', marginBottom: '8px',
+                  }}>
+                    {savingProtein ? 'Adding…' : 'Add Protein'}
+                  </button>
+                  <button onClick={() => setAddProteinOpen(false)} style={{
+                    width: '100%', background: 'none', border: 'none', color: C.driftwood,
+                    fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300, padding: '10px', cursor: 'pointer',
+                  }}>Cancel</button>
+                </div>
+              )}
             </div>
           </div>
         </>
