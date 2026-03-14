@@ -155,7 +155,7 @@ export default function WelcomeScreen3a() {
               <FormField label="First name">
                 <input
                   ref={firstInputRef}
-                  type="text" value={firstName} placeholder="Lauren"
+                  type="text" value={firstName} placeholder="First name"
                   autoComplete="given-name"
                   style={fieldInput('first', firstName)}
                   onChange={e => setFirstName(e.target.value)}
@@ -165,7 +165,7 @@ export default function WelcomeScreen3a() {
               </FormField>
               <FormField label="Last name" hint="Used to suggest a name for your home.">
                 <input
-                  type="text" value={lastName} placeholder="Hill"
+                  type="text" value={lastName} placeholder="Last name"
                   autoComplete="family-name"
                   style={fieldInput('last', lastName)}
                   onChange={e => setLastName(e.target.value)}
@@ -190,7 +190,7 @@ export default function WelcomeScreen3a() {
               <FormField label="Email" error={email && !emailValid ? 'Please enter a valid email address.' : ''}>
                 <input
                   ref={firstInputRef}
-                  type="email" value={email} placeholder="lauren@example.com"
+                  type="email" value={email} placeholder="you@example.com"
                   autoComplete="email"
                   style={fieldInput('email', email, { hasError: !!(email && !emailValid) })}
                   onChange={e => setEmail(e.target.value)}
@@ -242,7 +242,7 @@ export default function WelcomeScreen3a() {
                 <input
                   ref={firstInputRef}
                   type="text" value={homeName}
-                  placeholder="The Hill Family Kitchen"
+                  placeholder="Our Family Kitchen"
                   style={fieldInput('home', homeName)}
                   onChange={e => setHomeName(e.target.value)}
                   onFocus={() => setFocusedField('home')}

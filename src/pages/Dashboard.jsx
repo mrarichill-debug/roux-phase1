@@ -852,9 +852,7 @@ function SpendingSnapshot({ shoppingList, usedPct, loading }) {
           <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
         </svg>
         <span style={{ fontSize: '11.5px', color: C.driftwood, fontWeight: 300, lineHeight: 1.4 }}>
-          Weeks with 5+ planned meals save an average of{' '}
-          <span style={{ color: C.forest, fontWeight: 500 }}>$34</span>
-          {' '}— you're on track.
+          Weeks with 5+ planned meals tend to save on groceries — you're on track.
         </span>
       </div>
     </div>

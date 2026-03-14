@@ -52,9 +52,9 @@ function formatPrice(n) {
 
 // ── Sage nudge copy (static for now) ──────────────────────────────────────────
 const SAGE_NUDGES = [
-  "Check your pantry for olive oil — it's used in 3 recipes this week.",
+  "Check your pantry for olive oil — it shows up in several recipes this week.",
   "You might want to grab an extra dozen eggs. Baking days are coming.",
-  "Costco run? Chicken thighs are cheaper there this time of year.",
+  "Buying in bulk? Chicken thighs are usually cheaper at warehouse stores.",
 ]
 
 // ── Main component ─────────────────────────────────────────────────────────────
@@ -398,7 +398,7 @@ export default function ShoppingList({ appUser }) {
         }}>
           <div style={{ fontSize: '40px', marginBottom: '12px' }}>🛒</div>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 500, color: C.ink, marginBottom: '8px' }}>
-            All done, {appUser?.first_name || 'Lauren'}.
+            All done{appUser?.name ? `, ${appUser.name.split(' ')[0]}` : ''}.
           </div>
           <div style={{ fontSize: '14px', color: C.driftwood, fontWeight: 300, lineHeight: 1.6, marginBottom: '20px' }}>
             {formatPrice(inCartTotal)} spent this week
@@ -804,8 +804,7 @@ function Topbar({
         >
           {[
             { id: 'all', label: 'All Stores' },
-            { id: 'kroger', label: 'Kroger' },
-            { id: 'costco', label: 'Costco' },
+            // TODO: pull store names from grocery_stores table for this household
           ].map(store => (
             <button
               key={store.id}

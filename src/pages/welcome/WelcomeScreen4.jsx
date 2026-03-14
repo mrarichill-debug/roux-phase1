@@ -131,7 +131,7 @@ export default function WelcomeScreen4() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, paddingLeft: '2px' }}>Email</div>
             <input
-              type="email" value={email} placeholder="lauren@example.com"
+              type="email" value={email} placeholder="you@example.com"
               autoComplete="email"
               style={fieldStyle('email', email, !!(error))}
               onChange={e => { setEmail(e.target.value); clearError() }}

@@ -336,7 +336,7 @@ export default function WelcomeScreen3b() {
               <FormField label="Your name">
                 <input
                   ref={firstInputRef}
-                  type="text" value={joinName} placeholder="Aric"
+                  type="text" value={joinName} placeholder="Your name"
                   autoComplete="given-name"
                   style={fieldInput('name', joinName)}
                   onChange={e => setJoinName(e.target.value)}
@@ -347,7 +347,7 @@ export default function WelcomeScreen3b() {
 
               <FormField label="Email">
                 <input
-                  type="email" value={email} placeholder="aric@example.com"
+                  type="email" value={email} placeholder="you@example.com"
                   autoComplete="email"
                   style={fieldInput('email', email)}
                   onChange={e => setEmail(e.target.value)}
