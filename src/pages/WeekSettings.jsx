@@ -76,13 +76,17 @@ export default function WeekSettings({ appUser }) {
   const weekDates = getWeekDatesTZ(tz, 0)
 
   const [plan, setPlan] = useState(null)
-  const [weekLabel, setWeekLabel] = useState('')
   const [dayTypes, setDayTypes] = useState({ ...DEFAULT_DAY_TYPES })
   const [traditions, setTraditions] = useState([])
   const [traditionToggles, setTraditionToggles] = useState({})
   const [proteins, setProteins] = useState([])
   const [stores, setStores] = useState([])
   const [loading, setLoading] = useState(true)
+  const [saveSheetOpen, setSaveSheetOpen] = useState(false)
+  const [templateName, setTemplateName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [savedTemplates, setSavedTemplates] = useState([])
+  const [applySheetOpen, setApplySheetOpen] = useState(false)
 
   useEffect(() => {
     if (appUser?.household_id) loadData()
@@ -94,7 +98,7 @@ export default function WeekSettings({ appUser }) {
       const hid = appUser.household_id
       const weekStart = getWeekStartTZ(tz, 0)
 
-      const [planRes, tradRes, storeRes] = await Promise.all([
+      const [planRes, tradRes, storeRes, templatesRes] = await Promise.all([
         supabase.from('meal_plans')
           .select('id, status, week_start_date, week_end_date, notes')
           .eq('household_id', hid)
@@ -106,6 +110,10 @@ export default function WeekSettings({ appUser }) {
         supabase.from('grocery_stores')
           .select('id, name')
           .eq('household_id', hid),
+        supabase.from('meal_plan_templates')
+          .select('id, name, source_plan_ids')
+          .eq('household_id', hid)
+          .order('created_at', { ascending: false }),
       ])
 
       if (tradRes.data) {
@@ -115,16 +123,10 @@ export default function WeekSettings({ appUser }) {
         setTraditionToggles(toggles)
       }
       if (storeRes.data) setStores(storeRes.data)
+      if (templatesRes.data) setSavedTemplates(templatesRes.data)
 
       const activePlan = planRes.data
       setPlan(activePlan)
-
-      // Pre-fill week label
-      if (activePlan?.notes) {
-        setWeekLabel(activePlan.notes)
-      } else {
-        setWeekLabel(formatWeekRange(weekDates))
-      }
 
       // Load proteins if plan exists
       if (activePlan) {
@@ -141,12 +143,53 @@ export default function WeekSettings({ appUser }) {
     }
   }
 
-  function handleLabelBlur() {
-    if (!plan) return
-    supabase.from('meal_plans')
-      .update({ notes: weekLabel })
-      .eq('id', plan.id)
-      .then(() => {})
+  // Smart template name suggestion based on day type pattern
+  function suggestTemplateName() {
+    const vals = Object.values(dayTypes)
+    if (vals.every(v => v === 'summer'))    return 'Summer Week'
+    if (vals.some(v => v === 'no_school'))  return 'No School Week'
+    if (vals.filter(v => v === 'school').length >= 5) return 'School Week'
+    return 'My Week Template'
+  }
+
+  function openSaveSheet() {
+    setTemplateName(suggestTemplateName())
+    setSaveSheetOpen(true)
+  }
+
+  async function saveTemplate() {
+    if (!templateName.trim() || saving) return
+    setSaving(true)
+    try {
+      const activeTraditions = Object.entries(traditionToggles)
+        .filter(([, on]) => on)
+        .map(([id]) => id)
+
+      const { data, error } = await supabase.from('meal_plan_templates').insert({
+        household_id: appUser.household_id,
+        name: templateName.trim(),
+        source_plan_ids: { day_types: dayTypes, traditions: activeTraditions },
+      }).select('id, name, source_plan_ids').single()
+
+      if (error) throw error
+      setSavedTemplates(prev => [data, ...prev])
+      setSaveSheetOpen(false)
+    } catch (err) {
+      console.error('[Roux] saveTemplate error:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function applyTemplate(template) {
+    const config = template.source_plan_ids
+    if (config?.day_types) setDayTypes(config.day_types)
+    if (config?.traditions) {
+      const toggles = {}
+      traditions.forEach(t => { toggles[t.id] = config.traditions.includes(t.id) })
+      setTraditionToggles(toggles)
+    }
+    setApplySheetOpen(false)
   }
 
   function setDayType(dowKey, type) {
@@ -211,43 +254,7 @@ export default function WeekSettings({ appUser }) {
         </div>
       ) : (
         <>
-          {/* ── Section 1: Week Label ─────────────────────────────────────── */}
-          <div style={{ ...cardStyle, animation: 'fadeUp 0.35s ease 0.04s both' }}>
-            <div style={sectionHeaderStyle}>Week Label</div>
-            <input
-              type="text"
-              value={weekLabel}
-              onChange={e => setWeekLabel(e.target.value)}
-              onBlur={handleLabelBlur}
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                fontSize: '15px',
-                fontFamily: "'Jost', sans-serif",
-                fontWeight: 400,
-                color: C.ink,
-                border: `1px solid ${C.linen}`,
-                borderRadius: '10px',
-                background: C.cream,
-                outline: 'none',
-                boxSizing: 'border-box',
-                transition: 'border-color 0.2s',
-              }}
-              onFocus={e => { e.target.style.borderColor = C.sage }}
-              onBlurCapture={e => { e.target.style.borderColor = C.linen }}
-            />
-            <div style={{
-              fontSize: '12px',
-              color: C.driftwood,
-              fontStyle: 'italic',
-              marginTop: '8px',
-              lineHeight: 1.4,
-            }}>
-              Name this week — 'Spring Break', 'Track Season'
-            </div>
-          </div>
-
-          {/* ── Section 2: Day Types ──────────────────────────────────────── */}
+          {/* ── Section 1: Day Types ──────────────────────────────────────── */}
           <div style={{ ...cardStyle, animation: 'fadeUp 0.35s ease 0.08s both' }}>
             <div style={sectionHeaderStyle}>Day Types</div>
             {DAYS.map((day, i) => {
@@ -414,53 +421,30 @@ export default function WeekSettings({ appUser }) {
           <div style={{ ...cardStyle, animation: 'fadeUp 0.35s ease 0.20s both' }}>
             <div style={sectionHeaderStyle}>Templates</div>
             <button
+              onClick={() => setApplySheetOpen(true)}
               style={{
-                width: '100%',
-                padding: '12px',
-                marginBottom: '8px',
-                fontSize: '14px',
-                fontFamily: "'Jost', sans-serif",
-                fontWeight: 500,
-                color: C.forest,
-                background: 'transparent',
-                border: `1.5px solid rgba(61,107,79,0.4)`,
-                borderRadius: '10px',
-                cursor: 'pointer',
-                textAlign: 'center',
-                transition: 'background 0.15s',
+                width: '100%', padding: '12px', marginBottom: '8px',
+                fontSize: '14px', fontFamily: "'Jost', sans-serif", fontWeight: 500,
+                color: C.forest, background: 'transparent',
+                border: `1.5px solid rgba(61,107,79,0.4)`, borderRadius: '10px',
+                cursor: 'pointer', textAlign: 'center', transition: 'background 0.15s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(61,107,79,0.04)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
             >
               Apply a template
             </button>
             <button
+              onClick={openSaveSheet}
               style={{
-                width: '100%',
-                padding: '12px',
-                marginBottom: '10px',
-                fontSize: '14px',
-                fontFamily: "'Jost', sans-serif",
-                fontWeight: 500,
-                color: C.forest,
-                background: 'transparent',
-                border: `1.5px solid rgba(61,107,79,0.4)`,
-                borderRadius: '10px',
-                cursor: 'pointer',
-                textAlign: 'center',
-                transition: 'background 0.15s',
+                width: '100%', padding: '12px', marginBottom: '10px',
+                fontSize: '14px', fontFamily: "'Jost', sans-serif", fontWeight: 500,
+                color: C.forest, background: 'transparent',
+                border: `1.5px solid rgba(61,107,79,0.4)`, borderRadius: '10px',
+                cursor: 'pointer', textAlign: 'center', transition: 'background 0.15s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(61,107,79,0.04)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
             >
               Save this week as template
             </button>
-            <div style={{
-              fontSize: '12px',
-              fontStyle: 'italic',
-              color: C.driftwood,
-              lineHeight: 1.4,
-            }}>
+            <div style={{ fontSize: '12px', fontStyle: 'italic', color: C.driftwood, lineHeight: 1.4 }}>
               Templates save your day types and traditions for quick reuse.
             </div>
           </div>
@@ -469,6 +453,137 @@ export default function WeekSettings({ appUser }) {
 
       {/* ── Bottom Nav ────────────────────────────────────────────────────── */}
       <BottomNav navigate={navigate} />
+
+      {/* ── Save Template Sheet overlay ────────────────────────────────── */}
+      <div
+        onClick={() => setSaveSheetOpen(false)}
+        style={{
+          position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)',
+          zIndex: 200, opacity: saveSheetOpen ? 1 : 0,
+          pointerEvents: saveSheetOpen ? 'all' : 'none',
+          transition: 'opacity 0.25s ease',
+        }}
+      />
+
+      {/* ── Save Template Sheet ────────────────────────────────────────── */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: '50%',
+        transform: saveSheetOpen ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
+        width: '100%', maxWidth: '430px',
+        background: 'white', borderRadius: '20px 20px 0 0',
+        padding: '0 0 40px', zIndex: 201,
+        transition: 'transform 0.32s cubic-bezier(0.32,0.72,0,1)',
+        boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
+      }}>
+        <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+        <div style={{ padding: '20px 22px 0' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '16px' }}>
+            Name this template
+          </div>
+          <input
+            type="text"
+            value={templateName}
+            onChange={e => setTemplateName(e.target.value)}
+            autoFocus={saveSheetOpen}
+            style={{
+              width: '100%', padding: '14px 16px',
+              border: `1px solid ${C.linen}`, borderRadius: '12px',
+              fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300,
+              color: C.ink, outline: 'none', background: C.cream,
+              boxSizing: 'border-box', marginBottom: '16px',
+            }}
+            onKeyDown={e => { if (e.key === 'Enter') saveTemplate() }}
+          />
+          <button
+            onClick={saveTemplate}
+            disabled={!templateName.trim() || saving}
+            style={{
+              width: '100%', background: templateName.trim() ? C.forest : C.linen,
+              color: templateName.trim() ? 'white' : C.driftwood,
+              border: 'none', borderRadius: '12px', padding: '14px',
+              fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
+              cursor: templateName.trim() ? 'pointer' : 'default',
+              marginBottom: '8px',
+            }}
+          >
+            {saving ? 'Saving…' : 'Save template'}
+          </button>
+          <button
+            onClick={() => setSaveSheetOpen(false)}
+            style={{
+              width: '100%', background: 'none', border: 'none', color: C.driftwood,
+              fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300,
+              padding: '10px', cursor: 'pointer',
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      {/* ── Apply Template Sheet overlay ───────────────────────────────── */}
+      <div
+        onClick={() => setApplySheetOpen(false)}
+        style={{
+          position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)',
+          zIndex: 200, opacity: applySheetOpen ? 1 : 0,
+          pointerEvents: applySheetOpen ? 'all' : 'none',
+          transition: 'opacity 0.25s ease',
+        }}
+      />
+
+      {/* ── Apply Template Sheet ───────────────────────────────────────── */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: '50%',
+        transform: applySheetOpen ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
+        width: '100%', maxWidth: '430px',
+        background: 'white', borderRadius: '20px 20px 0 0',
+        padding: '0 0 40px', zIndex: 201,
+        transition: 'transform 0.32s cubic-bezier(0.32,0.72,0,1)',
+        boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
+      }}>
+        <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+        <div style={{ padding: '20px 22px 0' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '16px' }}>
+            Apply a template
+          </div>
+          {savedTemplates.length === 0 ? (
+            <div style={{ fontSize: '13px', fontStyle: 'italic', color: C.driftwood, padding: '16px 0' }}>
+              No saved templates yet. Save your current setup as a template first.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
+              {savedTemplates.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => applyTemplate(t)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '14px 16px', borderRadius: '12px',
+                    border: '1px solid rgba(200,185,160,0.55)',
+                    background: C.cream, cursor: 'pointer',
+                    fontFamily: "'Jost', sans-serif", fontSize: '14px',
+                    color: C.ink, fontWeight: 400, textAlign: 'left',
+                  }}
+                >
+                  <span>{t.name}</span>
+                  <span style={{ fontSize: '11px', color: C.sage, fontWeight: 500 }}>Apply →</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            onClick={() => setApplySheetOpen(false)}
+            style={{
+              width: '100%', background: 'none', border: 'none', color: C.driftwood,
+              fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300,
+              padding: '10px', cursor: 'pointer',
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
