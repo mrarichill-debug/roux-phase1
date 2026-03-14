@@ -338,11 +338,23 @@ export default function ThisWeek({ appUser }) {
 
   // Remove a planned meal
   async function removeMeal() {
-    if (!sheetMealId) return
+    if (!sheetMealId) { console.warn('[Roux] removeMeal: no sheetMealId'); return }
+    console.log('[Roux] removeMeal: deleting', sheetMealId)
     try {
-      await supabase.from('planned_meals').delete().eq('id', sheetMealId)
+      const { error, status, statusText } = await supabase
+        .from('planned_meals')
+        .delete()
+        .eq('id', sheetMealId)
+      console.log('[Roux] removeMeal response:', { error, status, statusText })
+      if (error) {
+        console.error('[Roux] removeMeal Supabase error:', error.message, error.code)
+        throw error
+      }
+      // Immediately remove from local state so the slot returns to empty
+      setPlanMeals(prev => prev.filter(m => m.id !== sheetMealId))
       closeSheet()
       showToast('Meal removed')
+      // Also refresh from DB to stay in sync
       loadWeekData()
     } catch (err) {
       console.error('[Roux] removeMeal error:', err)
@@ -407,7 +419,9 @@ export default function ThisWeek({ appUser }) {
   // Swap — remove existing then open add sheet
   async function swapMeal() {
     if (!sheetMealId) return
-    await supabase.from('planned_meals').delete().eq('id', sheetMealId)
+    const { error } = await supabase.from('planned_meals').delete().eq('id', sheetMealId)
+    if (error) console.error('[Roux] swapMeal delete error:', error.message)
+    setPlanMeals(prev => prev.filter(m => m.id !== sheetMealId))
     setSheetMode('add')
     setSheetMealId(null)
     loadWeekData()
