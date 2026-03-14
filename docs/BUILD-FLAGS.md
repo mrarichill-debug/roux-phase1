@@ -119,6 +119,9 @@ The store filter pills (All / Kroger / Costco) in the Building state topbar are 
   - Grocery store management: inline store addition from any store dropdown is built (protein roster, shopping list). Full store list management (edit, delete, set primary) lives in Our Kitchen section.
 - **Related recipes on recipe card** — "Goes Well With" section. Invest properly, not a placeholder row.
 - **Avery (child) dashboard** — scoped view-only experience. Must be designed before onboarding ships.
+- **Profile photos** — users should be able to add a profile photo that appears in the avatar circle instead of their initial. Applies to all household members. Photos stored in Supabase Storage. Avatar displays photo if available, initial as fallback. Build when Profile screen gets its second design pass.
+- **Notifications screen** — full notification center at `/notifications`. Bell icon in topbar routes here. Two tabs: Action Required and Informational. Notification types: meal plan archived (needs confirmation), new member joined via invite code, week published (family members notified), Sage observations and nudges, birthday reminders. `notifications` table exists in schema but nothing is writing to it yet — wire `activity_log` and notification writes together in same sprint.
+- **Sage search/chat screen** — the search icon in the topbar should route to a dedicated Sage interaction screen at `/sage`. This is Lauren's direct line to Sage — she can ask questions, get suggestions, search recipes by ingredient or occasion, and have a conversation. Not a traditional search bar. Sage responds conversationally. This is a Premium feature. Design required before build.
 - **Serves adjuster with quantity scaling** — affects the data model. Plan this early in the recipe card build.
 
 ---
