@@ -1210,16 +1210,31 @@ function ProteinRoster({ proteins, open, onToggle, onAdd, onEdit, onDelete }) {
                     ${parseFloat(p.sale_price).toFixed(2)}{p.unit === 'lb' ? ' / lb' : p.unit === 'pkg' ? ' / pkg' : p.unit === 'total' ? ' total' : ''}
                   </span>
                 )}
+                {/* Edit */}
+                <button
+                  onClick={e => { e.stopPropagation(); onEdit(p) }}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: 'rgba(140,123,107,0.55)', padding: '3px', display: 'flex',
+                  }}
+                  aria-label="Edit protein"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13 }}>
+                    <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                    <path d="m15 5 4 4"/>
+                  </svg>
+                </button>
+                {/* Delete */}
                 <button
                   onClick={e => { e.stopPropagation(); onDelete(p.id) }}
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'rgba(160,48,48,0.4)', padding: '2px', display: 'flex',
+                    color: 'rgba(140,123,107,0.55)', padding: '3px', display: 'flex',
                   }}
                   aria-label="Remove protein"
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13 }}>
-                    <path d="M18 6 6 18M6 6l12 12"/>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13 }}>
+                    <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
                   </svg>
                 </button>
               </div>

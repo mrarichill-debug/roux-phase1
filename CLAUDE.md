@@ -58,7 +58,7 @@ Full checklist with flags → `docs/BUILD-FLAGS.md`
 
 ---
 
-## Top 6 Rules — Never Forget
+## Top 7 Rules — Never Forget
 
 1. **Prototypes are law.** `/prototypes/` files are the visual source of truth. Match them exactly. Do not improvise design.
 
@@ -71,6 +71,8 @@ Full checklist with flags → `docs/BUILD-FLAGS.md`
 5. **Lauren makes deliberate decisions. The system handles state automatically.** She publishes plans. She finalizes shopping lists. Everything else advances on its own.
 
 6. **Sage is a helper, not a planner.** Lauren plans meals. Sage observes, nudges, and suggests when asked. Sage never acts unilaterally or removes options without Lauren's input.
+
+7. **Never use swipe gestures as the only way to access an action.** All destructive actions (delete, remove) must be accessible via a visible UI element — inline edit/trash icons or a three-dot menu. Swipe gestures may be added as a shortcut enhancement on top of visible controls but never as the sole mechanism.
 
 ---
 
