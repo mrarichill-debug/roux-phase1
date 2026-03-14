@@ -8,7 +8,7 @@ import { useEffect, useState, useRef, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import WatermarkLayer from '../components/WatermarkLayer'
-import { toLocalDateStr } from '../lib/dateUtils'
+import { toLocalDateStr, getWeekStartTZ, getWeekDatesTZ } from '../lib/dateUtils'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -81,24 +81,48 @@ export default function RecipeLibrary({ appUser }) {
 
   async function selectRecipe(recipe) {
     if (!targetDay) return
-    const d      = new Date(targetDay + 'T00:00:00')
-    const jsDay  = d.getDay()
-    const diff   = jsDay === 0 ? -6 : 1 - jsDay
-    const mon    = new Date(d)
+    const tz       = appUser?.timezone ?? 'America/Chicago'
+    const d        = new Date(targetDay + 'T00:00:00')
+    const jsDay    = d.getDay()
+    const DOW_MAP  = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday']
+    const dowKey   = DOW_MAP[jsDay]
+
+    // Use the same week-start logic as ThisWeek (Monday-based via getWeekStartTZ)
+    const diff      = jsDay === 0 ? -6 : 1 - jsDay
+    const mon       = new Date(d)
     mon.setDate(d.getDate() + diff)
     const weekStart = toLocalDateStr(mon)
-    const DOW_MAP   = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday']
-    const dowKey    = DOW_MAP[jsDay]
+    const sun       = new Date(mon)
+    sun.setDate(mon.getDate() + 6)
+    const weekEnd   = toLocalDateStr(sun)
 
-    const { data: plan } = await supabase
-      .from('meal_plans')
-      .select('id')
-      .eq('household_id', appUser.household_id)
-      .eq('week_start_date', weekStart)
-      .maybeSingle()
+    try {
+      // Find existing plan for this week
+      let { data: plan } = await supabase
+        .from('meal_plans')
+        .select('id')
+        .eq('household_id', appUser.household_id)
+        .eq('week_start_date', weekStart)
+        .maybeSingle()
 
-    if (plan) {
-      await supabase.from('planned_meals').insert({
+      // If no plan exists, create a draft — same as ThisWeek does on first visit
+      if (!plan) {
+        const { data: newPlan, error: planErr } = await supabase
+          .from('meal_plans')
+          .insert({
+            household_id:    appUser.household_id,
+            created_by:      appUser.id,
+            week_start_date: weekStart,
+            week_end_date:   weekEnd,
+            status:          'draft',
+          })
+          .select('id')
+          .single()
+        if (planErr) throw planErr
+        plan = newPlan
+      }
+
+      const { error: mealErr } = await supabase.from('planned_meals').insert({
         meal_plan_id: plan.id,
         household_id: appUser.household_id,
         day_of_week:  dowKey,
@@ -107,6 +131,9 @@ export default function RecipeLibrary({ appUser }) {
         recipe_id:    recipe.id,
         status:       'planned',
       })
+      if (mealErr) throw mealErr
+    } catch (err) {
+      console.error('[Roux] selectRecipe error:', err)
     }
 
     navigate('/thisweek')

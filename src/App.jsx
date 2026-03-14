@@ -44,11 +44,17 @@ export default function App() {
     // onAuthStateChange fires INITIAL_SESSION immediately in Supabase v2 —
     // no separate getSession() needed. Using both causes a race condition where
     // fetchAppUser runs twice concurrently and can overwrite state with null.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      if (session) {
-        fetchAppUser(session.user.id)
+    //
+    // IMPORTANT: Do not call setSession() before fetchAppUser completes.
+    // Setting session immediately while appUser is still null causes a splash
+    // screen flash after login (the !appUser branch renders <SplashScreen/>).
+    // Instead, keep session at its previous value until the user record loads,
+    // then set both atomically so the UI transitions directly.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sess) => {
+      if (sess) {
+        fetchAppUser(sess.user.id, sess)
       } else {
+        setSession(null)
         setAppUser(null)
       }
     })
@@ -56,7 +62,7 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
-  async function fetchAppUser(authUserId) {
+  async function fetchAppUser(authUserId, sess) {
     try {
       const user = await loadAppUser(authUserId)
       if (!user) {
@@ -66,7 +72,9 @@ export default function App() {
         await supabase.auth.signOut()
         return
       }
+      // Set both atomically — prevents splash flash between session and appUser
       setAppUser(user)
+      setSession(sess)
       // Sync browser timezone to household record (fire-and-forget)
       if (user.household_id) {
         const browserTz = getBrowserTimezone()
