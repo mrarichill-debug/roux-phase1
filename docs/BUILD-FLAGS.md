@@ -1,5 +1,5 @@
 # BUILD FLAGS & PROGRESS TRACKER
-*Roux Phase 2 — Last updated March 12, 2026*
+*Roux Phase 2 — Last updated March 13, 2026*
 
 ---
 
@@ -91,6 +91,15 @@ The store filter pills (All / Kroger / Costco) in the Building state topbar are 
 - **Related recipes on recipe card** — "Goes Well With" section. Invest properly, not a placeholder row.
 - **Avery (child) dashboard** — scoped view-only experience. Must be designed before onboarding ships.
 - **Serves adjuster with quantity scaling** — affects the data model. Plan this early in the recipe card build.
+
+---
+
+## ⚑ Roadmap — Post-MVP Features
+
+- **Multiple shopping lists per week** — one-to-many relationship between `meal_plans` and `shopping_lists`. Each list has its own receipt capture. Budget and utilization aggregate across all lists for the week.
+- **Week header shopping badge** — updated to show list count and total spent across all trips. Tappable to show all trips for the current week.
+- **Sage observational nudge after 3 skips** — when the same meal is skipped 3 times, Sage surfaces a nudge: *"Hey Lauren — [meal] has been skipped three times now. Worth keeping on the rotation?"* Requires skip tracking on `planned_meals` with `recipe_id` aggregation.
+- **Sage full week planning** — unlocks after 50 archived meals. Sage proposes a complete week plan based on learned family preferences. Introduced as *"I think I know your family well enough now to try something"* — not a feature announcement. Lauren reviews and approves; Sage never auto-publishes.
 
 ---
 
