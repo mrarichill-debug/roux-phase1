@@ -117,6 +117,7 @@ export default function ThisWeek({ appUser }) {
   const [overlayVisible,    setOverlayVisible]    = useState(false)
   const [shoppingPrompt,    setShoppingPrompt]    = useState(false)
   const [savedDayTypes,     setSavedDayTypes]     = useState(null) // from meal_plans.notes
+  const [activeTemplateName, setActiveTemplateName] = useState(null)
   const [repeatPrompt,      setRepeatPrompt]      = useState(null) // { mealName, mealType, slotType, recipeId, note, savedDow }
   const [repeatSelected,    setRepeatSelected]    = useState(new Set())
 
@@ -173,15 +174,16 @@ export default function ThisWeek({ appUser }) {
 
       setPlan(activePlan)
 
-      // Parse saved day types from meal_plans.notes (set by Week Settings)
+      // Parse saved day types + template name from meal_plans.notes (set by Week Settings)
       if (activePlan?.notes) {
         try {
           const config = JSON.parse(activePlan.notes)
-          if (config.day_types) setSavedDayTypes(config.day_types)
-          else setSavedDayTypes(null)
-        } catch { setSavedDayTypes(null) }
+          setSavedDayTypes(config.day_types || null)
+          setActiveTemplateName(config.active_template_name || null)
+        } catch { setSavedDayTypes(null); setActiveTemplateName(null) }
       } else {
         setSavedDayTypes(null)
+        setActiveTemplateName(null)
       }
 
       const isPublished = activePlan?.status === 'published' || activePlan?.status === 'active'
@@ -480,6 +482,24 @@ export default function ThisWeek({ appUser }) {
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.ink, fontWeight: 500 }}>
             {formatWeekRange(weekDates)}
           </div>
+          {activeTemplateName && (
+            <button
+              onClick={() => navigate('/week-settings')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                marginTop: '4px', padding: '3px 9px', borderRadius: '12px',
+                background: 'rgba(196,154,60,0.12)', border: '1px solid rgba(196,154,60,0.30)',
+                color: C.honey, fontSize: '11px', fontWeight: 500,
+                fontFamily: "'Jost', sans-serif", cursor: 'pointer',
+              }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 10, height: 10 }}>
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                <line x1="7" y1="7" x2="7.01" y2="7"/>
+              </svg>
+              {activeTemplateName}
+            </button>
+          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button onClick={() => setWeekOffset(w => w + 1)} style={weekNavBtnStyle} aria-label="Next week">

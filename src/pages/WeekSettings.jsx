@@ -240,8 +240,14 @@ export default function WeekSettings({ appUser }) {
         .filter(([, on]) => on)
         .map(([id]) => id)
 
-      // Save day types + active traditions to meal_plans.notes as JSON
-      const weekConfig = { day_types: dayTypes, active_traditions: activeTraditions }
+      // Save day types + active traditions + active template to meal_plans.notes as JSON
+      const activeTemplate = activeTemplateId ? savedTemplates.find(t => t.id === activeTemplateId) : null
+      const weekConfig = {
+        day_types: dayTypes,
+        active_traditions: activeTraditions,
+        active_template_id: activeTemplateId || null,
+        active_template_name: activeTemplate?.name || null,
+      }
       const { error } = await supabase.from('meal_plans')
         .update({ notes: JSON.stringify(weekConfig) })
         .eq('id', activePlan.id)

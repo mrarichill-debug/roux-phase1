@@ -63,6 +63,7 @@ export default function Dashboard({ appUser }) {
   const [shoppingList, setShoppingList]     = useState(null)
   const [spendUsedPct, setSpendUsedPct]     = useState(null)
   const [shopTile, setShopTile]             = useState({ state: 'none', listCount: 0, totalSpent: 0, remaining: 0 })
+  const [activeTemplateName, setActiveTemplateName] = useState(null)
   const [loading, setLoading]               = useState(true)
   const [sageOpen, setSageOpen]             = useState(false)
 
@@ -87,7 +88,7 @@ export default function Dashboard({ appUser }) {
 
       const [planRes] = await Promise.all([
         supabase.from('meal_plans')
-          .select('id, status, week_start_date, week_end_date')
+          .select('id, status, week_start_date, week_end_date, notes')
           .eq('household_id', hid)
           .eq('week_start_date', weekStart)
           .maybeSingle(),
@@ -95,6 +96,16 @@ export default function Dashboard({ appUser }) {
 
       const plan = planRes.data
       setActivePlan(plan)
+
+      // Parse active template name from plan notes
+      if (plan?.notes) {
+        try {
+          const config = JSON.parse(plan.notes)
+          setActiveTemplateName(config.active_template_name || null)
+        } catch { setActiveTemplateName(null) }
+      } else {
+        setActiveTemplateName(null)
+      }
 
       if (plan) {
         const [tonightRes, weekRes, shoppingRes] = await Promise.all([
@@ -269,6 +280,12 @@ export default function Dashboard({ appUser }) {
               display: 'flex', alignItems: 'center', gap: '10px',
             }}>
               <span>{plannedCount} of 7 nights planned</span>
+              {activeTemplateName && (
+                <>
+                  <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: C.linen, flexShrink: 0 }} />
+                  <span>{activeTemplateName}</span>
+                </>
+              )}
               <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: C.linen, flexShrink: 0 }} />
               <span>{planStatusText}</span>
             </div>
