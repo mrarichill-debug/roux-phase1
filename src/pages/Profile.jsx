@@ -45,6 +45,7 @@ export default function Profile({ appUser }) {
 
   // Add/edit member sheet
   const [addMemberOpen, setAddMemberOpen] = useState(false)
+  const [editMemberId, setEditMemberId] = useState(null)
   const [newMemberName, setNewMemberName] = useState('')
   const [newMemberDob, setNewMemberDob] = useState('')
   const [newMemberRole, setNewMemberRole] = useState('family_member')
@@ -55,6 +56,9 @@ export default function Profile({ appUser }) {
 
   // Invite code confirmation
   const [newCodeConfirmOpen, setNewCodeConfirmOpen] = useState(false)
+
+  // Admin transfer
+  const [transferOpen, setTransferOpen] = useState(false)
 
   // Add store
   const [addStoreOpen, setAddStoreOpen] = useState(false)
@@ -144,11 +148,50 @@ export default function Profile({ appUser }) {
     showToast('Home name updated')
   }
 
+  function openEditMember(m) {
+    setEditMemberId(m.id)
+    setNewMemberName(m.name)
+    setNewMemberDob(m.date_of_birth || '')
+    const raw = m.notes || 'family_member'
+    const roleKey = raw === 'Admin' ? 'admin' : raw === 'Co-admin' || raw === 'co_admin' ? 'co_admin' : raw === 'View only' || raw === 'Just browsing' || raw === 'view_only' ? 'view_only' : 'family_member'
+    setNewMemberRole(roleKey)
+    setAddMemberOpen(true)
+  }
+
+  function openAddMember() {
+    setEditMemberId(null)
+    setNewMemberName('')
+    setNewMemberDob('')
+    setNewMemberRole('family_member')
+    setAddMemberOpen(true)
+  }
+
+  async function saveMemberEdit() {
+    if (!newMemberName.trim() || savingMember) return
+    setSavingMember(true)
+    try {
+      const roleLabel = newMemberRole === 'admin' ? 'Admin' : newMemberRole === 'co_admin' ? 'Co-admin' : newMemberRole === 'view_only' ? 'View only' : 'Family member'
+      const { error } = await supabase.from('family_members').update({
+        name: newMemberName.trim(),
+        date_of_birth: newMemberDob || null,
+        notes: roleLabel,
+      }).eq('id', editMemberId)
+      if (error) throw error
+      setMembers(prev => prev.map(m => m.id === editMemberId ? { ...m, name: newMemberName.trim(), date_of_birth: newMemberDob || null, notes: roleLabel } : m))
+      setAddMemberOpen(false)
+      showToast('Member updated')
+    } catch (err) {
+      console.error('[Roux] saveMemberEdit error:', err)
+    } finally {
+      setSavingMember(false)
+    }
+  }
+
   async function addMember() {
     if (!newMemberName.trim() || savingMember) return
     setSavingMember(true)
     try {
-      const roleLabel = newMemberRole === 'co_admin' ? 'Co-admin' : newMemberRole === 'viewer' ? 'Just browsing' : 'Family member'
+      const roleLabel = newMemberRole === 'admin' ? 'Admin' : newMemberRole === 'co_admin' ? 'Co-admin' : newMemberRole === 'view_only' ? 'View only' : 'Family member'
       const { data, error } = await supabase.from('family_members').insert({
         household_id: appUser.household_id,
         name: newMemberName.trim(),
@@ -202,15 +245,36 @@ export default function Profile({ appUser }) {
       .then(({ error }) => { if (error) console.error('[Roux] deleteStore error:', error.message) })
   }
 
+  async function transferAdmin(targetMemberId) {
+    // Find current admin member (by matching appUser name)
+    const currentAdmin = members.find(m => m.name === displayName || m.notes === 'Admin')
+    if (!currentAdmin) return
+    // Update target to Admin, current to Co-admin
+    await Promise.all([
+      supabase.from('family_members').update({ notes: 'Admin' }).eq('id', targetMemberId),
+      supabase.from('family_members').update({ notes: 'Co-admin' }).eq('id', currentAdmin.id),
+    ])
+    setMembers(prev => prev.map(m => {
+      if (m.id === targetMemberId) return { ...m, notes: 'Admin' }
+      if (m.id === currentAdmin.id) return { ...m, notes: 'Co-admin' }
+      return m
+    }))
+    setTransferOpen(false)
+    setAddMemberOpen(false)
+    showToast('Admin transferred')
+  }
+
   async function handleSignOut() {
     await supabase.auth.signOut()
   }
 
   function generateInviteCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-    let code = ''
-    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)]
-    return code
+    // Household prefix: first 4 letters, uppercase, letters only
+    const prefix = (household?.name || 'ROUX').replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 4)
+    let suffix = ''
+    for (let i = 0; i < 4; i++) suffix += chars[Math.floor(Math.random() * chars.length)]
+    return `${prefix}-${suffix}`
   }
 
   async function confirmAndRefreshCode() {
@@ -246,11 +310,18 @@ export default function Profile({ appUser }) {
     return age
   }
 
+  const ROLE_LABELS = { admin: 'Admin', co_admin: 'Co-admin', 'Co-admin': 'Co-admin', family_member: 'Family member', 'Family member': 'Family member', view_only: 'View only', 'View only': 'View only', 'Just browsing': 'View only' }
+
+  function getMemberRole(m) {
+    return m.notes || 'Family member'
+  }
+
   function getMemberLabel(m) {
     const age = getAge(m.date_of_birth)
-    const role = m.notes || 'Family member'
+    const rawRole = getMemberRole(m)
+    const roleLabel = ROLE_LABELS[rawRole] || rawRole
     if (age !== null && age < 18) return `Age ${age}`
-    return role
+    return roleLabel
   }
 
   return (
@@ -370,12 +441,13 @@ export default function Profile({ appUser }) {
           <div style={{ ...cardStyle, animation: 'fadeUp 0.35s ease 0.12s both' }}>
             <div style={sectionHeader}>Family Members</div>
             {members.map(m => {
+              const isAdmin = getMemberRole(m) === 'Admin'
               return (
                 <div key={m.id} style={rowStyle}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '14px', color: C.ink }}>
                       {m.name}
-                      <span style={{ fontSize: '11px', color: C.driftwood, marginLeft: '8px' }}>
+                      <span style={{ fontSize: '11px', color: isAdmin ? C.forest : C.driftwood, fontWeight: isAdmin ? 500 : 400, marginLeft: '8px' }}>
                         {getMemberLabel(m)}
                       </span>
                     </div>
@@ -387,16 +459,25 @@ export default function Profile({ appUser }) {
                       <button onClick={() => setDeleteConfirmId(null)} style={{ fontSize: '11px', color: C.driftwood, background: 'none', border: `1px solid ${C.linen}`, borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>No</button>
                     </div>
                   ) : (
-                    <button onClick={() => setDeleteConfirmId(m.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(140,123,107,0.55)', padding: '3px', display: 'flex' }} aria-label="Remove member">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
-                        <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-                      </svg>
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <button onClick={() => openEditMember(m)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(140,123,107,0.55)', padding: '3px', display: 'flex' }} aria-label="Edit member">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+                          <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>
+                        </svg>
+                      </button>
+                      {!isAdmin && (
+                        <button onClick={() => setDeleteConfirmId(m.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(140,123,107,0.55)', padding: '3px', display: 'flex' }} aria-label="Remove member">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+                            <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               )
             })}
-            <button onClick={() => { setNewMemberName(''); setNewMemberDob(''); setAddMemberOpen(true) }} style={{
+            <button onClick={openAddMember} style={{
               width: '100%', padding: '12px', marginTop: '8px', fontSize: '13px',
               fontFamily: "'Jost', sans-serif", fontWeight: 500, color: C.forest,
               background: 'transparent', border: `1.5px dashed rgba(61,107,79,0.4)`,
@@ -502,7 +583,7 @@ export default function Profile({ appUser }) {
             <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
             <div style={{ padding: '20px 22px 0' }}>
               <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '16px' }}>
-                Add a family member
+                {editMemberId ? 'Edit family member' : 'Add a family member'}
               </div>
               <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Name</div>
               <input type="text" value={newMemberName} onChange={e => setNewMemberName(e.target.value)} placeholder="First and last name" autoFocus style={{
@@ -519,31 +600,43 @@ export default function Profile({ appUser }) {
               </div>
 
               <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Role</div>
-              <div style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>
-                {[
-                  { key: 'co_admin', label: 'Co-admin' },
-                  { key: 'family_member', label: 'Family member' },
-                  { key: 'viewer', label: 'Just browsing' },
-                ].map(r => (
-                  <button key={r.key} onClick={() => setNewMemberRole(r.key)} style={{
-                    flex: 1, padding: '8px 6px', fontSize: '11px', fontFamily: "'Jost', sans-serif",
-                    fontWeight: newMemberRole === r.key ? 500 : 400, borderRadius: '10px', cursor: 'pointer',
-                    border: `1.5px solid ${newMemberRole === r.key ? C.forest : C.linen}`,
-                    background: newMemberRole === r.key ? C.forest : 'transparent',
-                    color: newMemberRole === r.key ? 'white' : C.ink, transition: 'all 0.15s',
-                    textAlign: 'center',
+              {editMemberId && newMemberRole === 'admin' ? (
+                <div style={{ marginBottom: '14px' }}>
+                  <div style={{ fontSize: '13px', color: C.forest, fontWeight: 500, marginBottom: '8px' }}>Admin (locked)</div>
+                  <button onClick={() => setTransferOpen(true)} style={{
+                    fontSize: '12px', color: C.forest, fontWeight: 500, background: 'none',
+                    border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif", padding: 0,
                   }}>
-                    {r.label}
+                    Transfer Admin to someone else →
                   </button>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>
+                  {[
+                    { key: 'co_admin', label: 'Co-admin' },
+                    { key: 'family_member', label: 'Family member' },
+                    { key: 'view_only', label: 'View only' },
+                  ].map(r => (
+                    <button key={r.key} onClick={() => setNewMemberRole(r.key)} style={{
+                      flex: 1, padding: '8px 6px', fontSize: '11px', fontFamily: "'Jost', sans-serif",
+                      fontWeight: newMemberRole === r.key ? 500 : 400, borderRadius: '10px', cursor: 'pointer',
+                      border: `1.5px solid ${newMemberRole === r.key ? C.forest : C.linen}`,
+                      background: newMemberRole === r.key ? C.forest : 'transparent',
+                      color: newMemberRole === r.key ? 'white' : C.ink, transition: 'all 0.15s',
+                      textAlign: 'center',
+                    }}>
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-              <button onClick={addMember} disabled={!newMemberName.trim() || savingMember} style={{
+              <button onClick={editMemberId ? saveMemberEdit : addMember} disabled={!newMemberName.trim() || savingMember} style={{
                 width: '100%', padding: '14px', borderRadius: '12px', background: newMemberName.trim() ? C.forest : C.linen,
                 color: newMemberName.trim() ? 'white' : C.driftwood, border: 'none', fontFamily: "'Jost', sans-serif",
                 fontSize: '14px', fontWeight: 500, cursor: newMemberName.trim() ? 'pointer' : 'default', marginBottom: '8px',
               }}>
-                {savingMember ? 'Adding…' : 'Add Member'}
+                {savingMember ? 'Saving…' : (editMemberId ? 'Save Changes' : 'Add Member')}
               </button>
               <button onClick={() => setAddMemberOpen(false)} style={{
                 width: '100%', background: 'none', border: 'none', color: C.driftwood,
@@ -583,6 +676,56 @@ export default function Profile({ appUser }) {
               <button onClick={() => setAddStoreOpen(false)} style={{
                 width: '100%', background: 'none', border: 'none', color: C.driftwood,
                 fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300, padding: '10px', cursor: 'pointer',
+              }}>Cancel</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Admin Transfer Sheet ─────────────────────────────────────── */}
+      {transferOpen && (
+        <>
+          <div onClick={() => setTransferOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 300, animation: 'fadeIn 0.2s ease' }} />
+          <div onClick={e => e.stopPropagation()} style={{
+            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
+            padding: '0 0 40px', zIndex: 301, boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
+            animation: 'sheetRise 0.32s cubic-bezier(0.32,0.72,0,1) both',
+          }}>
+            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+            <div style={{ padding: '20px 22px 0' }}>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '10px' }}>
+                Transfer Admin
+              </div>
+              <div style={{ fontSize: '13px', color: C.driftwood, lineHeight: 1.5, marginBottom: '16px' }}>
+                Select a Co-admin to become the new Admin. You will become Co-admin.
+              </div>
+              {members.filter(m => getMemberRole(m) === 'Co-admin').length === 0 ? (
+                <div style={{ fontSize: '13px', fontStyle: 'italic', color: C.driftwood, padding: '16px 0' }}>
+                  No Co-admins available. Promote someone to Co-admin first.
+                </div>
+              ) : (
+                members.filter(m => getMemberRole(m) === 'Co-admin').map(m => (
+                  <button key={m.id} onClick={() => {
+                    if (confirm(`Transfer Admin to ${m.name}? They will become the new Admin and you will become Co-admin. This requires their cooperation to undo.`)) {
+                      transferAdmin(m.id)
+                    }
+                  }} style={{
+                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '14px 16px', borderRadius: '12px', marginBottom: '8px',
+                    border: '1px solid rgba(200,185,160,0.55)', background: C.cream,
+                    cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontSize: '14px', color: C.ink,
+                    textAlign: 'left',
+                  }}>
+                    <span>{m.name}</span>
+                    <span style={{ fontSize: '11px', color: C.forest, fontWeight: 500 }}>Transfer →</span>
+                  </button>
+                ))
+              )}
+              <button onClick={() => setTransferOpen(false)} style={{
+                width: '100%', background: 'none', border: 'none', color: C.driftwood,
+                fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300,
+                padding: '10px', cursor: 'pointer',
               }}>Cancel</button>
             </div>
           </div>
