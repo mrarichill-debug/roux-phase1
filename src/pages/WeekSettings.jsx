@@ -88,6 +88,7 @@ export default function WeekSettings({ appUser }) {
   const [activeTemplateId, setActiveTemplateId] = useState(null)
   const [prevDayTypes, setPrevDayTypes] = useState(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState(null)
+  const [applyConfirmId, setApplyConfirmId] = useState(null)
   const [addTradSheetOpen, setAddTradSheetOpen] = useState(false)
   const [newTradName, setNewTradName] = useState('')
   const [newTradDay, setNewTradDay] = useState('tuesday')
@@ -256,27 +257,41 @@ export default function WeekSettings({ appUser }) {
     }
   }
 
+  function isDefaultDayTypes() {
+    return DOW_KEYS.every((dow, i) => dayTypes[dow] === DEFAULT_DAY_TYPES[dow])
+  }
+
   function toggleTemplate(templateId) {
     if (activeTemplateId === templateId) {
       // Turning off — revert to previous manual selections
       if (prevDayTypes) setDayTypes(prevDayTypes)
       setActiveTemplateId(null)
       setPrevDayTypes(null)
+      setHasChanges(true)
+      return
+    }
+    // Turning on — check if we need confirmation
+    if (isDefaultDayTypes()) {
+      applyTemplateById(templateId)
     } else {
-      // Turning on — save current day types, apply template's
-      const template = savedTemplates.find(t => t.id === templateId)
-      if (!template) return
-      setPrevDayTypes({ ...dayTypes })
-      setActiveTemplateId(templateId)
-      const config = template.source_plan_ids
-      if (config?.day_types) setDayTypes(config.day_types)
-      if (config?.traditions) {
-        const toggles = {}
-        traditions.forEach(t => { toggles[t.id] = config.traditions.includes(t.id) })
-        setTraditionToggles(toggles)
-      }
+      setApplyConfirmId(templateId)
+    }
+  }
+
+  function applyTemplateById(templateId) {
+    const template = savedTemplates.find(t => t.id === templateId)
+    if (!template) return
+    setPrevDayTypes({ ...dayTypes })
+    setActiveTemplateId(templateId)
+    const config = template.source_plan_ids
+    if (config?.day_types) setDayTypes(config.day_types)
+    if (config?.traditions) {
+      const toggles = {}
+      traditions.forEach(t => { toggles[t.id] = config.traditions.includes(t.id) })
+      setTraditionToggles(toggles)
     }
     setHasChanges(true)
+    setApplyConfirmId(null)
   }
 
   async function deleteTemplate(templateId) {
@@ -867,7 +882,61 @@ export default function WeekSettings({ appUser }) {
         </div>
       </div>
 
-      {/* Apply Template Sheet removed — templates are now inline toggles */}
+      {/* ── Apply Template Confirmation Sheet ───────────────────────────── */}
+      {applyConfirmId && (() => {
+        const tpl = savedTemplates.find(t => t.id === applyConfirmId)
+        return (
+          <>
+            <div
+              onClick={() => setApplyConfirmId(null)}
+              style={{
+                position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)',
+                zIndex: 200, animation: 'fadeIn 0.2s ease',
+              }}
+            />
+            <div style={{
+              position: 'fixed', bottom: 0, left: '50%',
+              transform: 'translateX(-50%)',
+              width: '100%', maxWidth: '430px',
+              background: 'white', borderRadius: '20px 20px 0 0',
+              padding: '0 0 40px', zIndex: 201,
+              boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
+              animation: 'sheetRise 0.32s cubic-bezier(0.32,0.72,0,1) both',
+            }}>
+              <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+              <div style={{ padding: '20px 22px 0' }}>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '10px' }}>
+                  Apply this template?
+                </div>
+                <div style={{ fontSize: '14px', color: C.driftwood, fontWeight: 300, lineHeight: 1.6, marginBottom: '22px' }}>
+                  {tpl?.name} will update your day types for this week. You can still adjust individual days after applying.
+                </div>
+                <button
+                  onClick={() => applyTemplateById(applyConfirmId)}
+                  style={{
+                    width: '100%', background: C.forest, color: 'white', border: 'none',
+                    borderRadius: '12px', padding: '14px',
+                    fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
+                    cursor: 'pointer', marginBottom: '8px',
+                  }}
+                >
+                  Apply
+                </button>
+                <button
+                  onClick={() => setApplyConfirmId(null)}
+                  style={{
+                    width: '100%', background: 'none', border: 'none', color: C.driftwood,
+                    fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300,
+                    padding: '10px', cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </>
+        )
+      })()}
     </div>
   )
 }
