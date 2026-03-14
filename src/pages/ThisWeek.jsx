@@ -98,7 +98,12 @@ export default function ThisWeek({ appUser }) {
   const [sheetDay,          setSheetDay]          = useState('')
   const [sheetSlot,         setSheetSlot]         = useState('')
   const [sheetDate,         setSheetDate]         = useState('')
+  const [sheetDow,          setSheetDow]          = useState('')
   const [sheetSagePrimary,  setSheetSagePrimary]  = useState(false)
+  const [sheetMode,         setSheetMode]         = useState('add') // 'add' | 'filled' | 'manual'
+  const [sheetMealId,       setSheetMealId]       = useState(null)  // planned_meals.id for filled sheet
+  const [manualInput,       setManualInput]       = useState('')
+  const [toastMsg,          setToastMsg]          = useState('')
   const [overlayVisible,    setOverlayVisible]    = useState(false)
   const [shoppingPrompt,    setShoppingPrompt]    = useState(false)
 
@@ -180,13 +185,20 @@ export default function ThisWeek({ appUser }) {
     return planMeals.filter(m => m.day_of_week === dowKey && m.meal_type === mealType)
   }
 
-  function openSheet(dayName, slotName, dateStr = '', fromSage = false) {
+  function openSheet(dayName, slotName, dateStr = '', fromSage = false, existingMealId = null) {
     setSheetDay(dayName)
     setSheetSlot(slotName)
     setSheetDate(dateStr)
     setSheetSagePrimary(fromSage)
+    setSheetMode(existingMealId ? 'filled' : 'add')
+    setSheetMealId(existingMealId)
+    setManualInput('')
+    // Compute dowKey from dateStr
+    if (dateStr) {
+      const d = new Date(dateStr + 'T00:00:00')
+      setSheetDow(DOW_KEYS[d.getDay()])
+    }
     setSheetOpen(true)
-    // Overlay darkens 40ms behind sheet rise
     overlayRef.current = setTimeout(() => setOverlayVisible(true), 40)
   }
 
@@ -194,6 +206,117 @@ export default function ThisWeek({ appUser }) {
     clearTimeout(overlayRef.current)
     setOverlayVisible(false)
     setSheetOpen(false)
+  }
+
+  function showToast(msg) {
+    setToastMsg(msg)
+    setTimeout(() => setToastMsg(''), 2500)
+  }
+
+  // Ensure a plan exists for the current week, creating a draft if needed
+  async function ensurePlan() {
+    if (plan) return plan
+    const hid = appUser.household_id
+    const weekStart = getWeekStartTZ(tz, weekOffset)
+    const { data: newPlan, error } = await supabase
+      .from('meal_plans')
+      .insert({
+        household_id: hid, created_by: appUser.id,
+        week_start_date: weekStart, week_end_date: toLocalDateStr(weekDates[6]),
+        status: 'draft',
+      })
+      .select('id, status, week_start_date, week_end_date, published_at')
+      .single()
+    if (error) { console.error('[Roux] ensurePlan error:', error); return null }
+    setPlan(newPlan)
+    return newPlan
+  }
+
+  // "Let Sage suggest" — pick a random recipe not already planned this week
+  async function sageSuggest() {
+    try {
+      const activePlan = await ensurePlan()
+      if (!activePlan) return
+      const { data: recipes } = await supabase
+        .from('recipes')
+        .select('id, name')
+        .eq('household_id', appUser.household_id)
+      if (!recipes || recipes.length === 0) { showToast('No recipes in your library yet'); closeSheet(); return }
+      const plannedIds = new Set(planMeals.filter(m => m.recipe_id).map(m => m.recipe_id))
+      const available = recipes.filter(r => !plannedIds.has(r.id))
+      const pick = available.length > 0 ? available[Math.floor(Math.random() * available.length)] : recipes[Math.floor(Math.random() * recipes.length)]
+      const { error } = await supabase.from('planned_meals').insert({
+        meal_plan_id: activePlan.id, household_id: appUser.household_id,
+        day_of_week: sheetDow, meal_type: sheetSlot.toLowerCase(),
+        slot_type: 'recipe', recipe_id: pick.id, status: 'planned', sage_suggested: true,
+      })
+      if (error) throw error
+      closeSheet()
+      showToast(`Sage suggested ${pick.name}`)
+      loadWeekData()
+    } catch (err) {
+      console.error('[Roux] sageSuggest error:', err)
+    }
+  }
+
+  // "Enter manually" — save typed meal name as a note
+  async function saveManualMeal() {
+    if (!manualInput.trim()) return
+    try {
+      const activePlan = await ensurePlan()
+      if (!activePlan) return
+      const { error } = await supabase.from('planned_meals').insert({
+        meal_plan_id: activePlan.id, household_id: appUser.household_id,
+        day_of_week: sheetDow, meal_type: sheetSlot.toLowerCase(),
+        slot_type: 'note', note: manualInput.trim(), status: 'planned',
+      })
+      if (error) throw error
+      closeSheet()
+      showToast(`Added ${manualInput.trim()}`)
+      loadWeekData()
+    } catch (err) {
+      console.error('[Roux] saveManualMeal error:', err)
+    }
+  }
+
+  // "Mark as open evening"
+  async function markOpenEvening() {
+    try {
+      const activePlan = await ensurePlan()
+      if (!activePlan) return
+      const { error } = await supabase.from('planned_meals').insert({
+        meal_plan_id: activePlan.id, household_id: appUser.household_id,
+        day_of_week: sheetDow, meal_type: sheetSlot.toLowerCase(),
+        slot_type: 'note', note: 'open_evening', status: 'planned',
+      })
+      if (error) throw error
+      closeSheet()
+      loadWeekData()
+    } catch (err) {
+      console.error('[Roux] markOpenEvening error:', err)
+    }
+  }
+
+  // Remove a planned meal
+  async function removeMeal() {
+    if (!sheetMealId) return
+    try {
+      await supabase.from('planned_meals').delete().eq('id', sheetMealId)
+      closeSheet()
+      showToast('Meal removed')
+      loadWeekData()
+    } catch (err) {
+      console.error('[Roux] removeMeal error:', err)
+    }
+  }
+
+  // Swap — remove existing then open add sheet
+  async function swapMeal() {
+    if (!sheetMealId) return
+    await supabase.from('planned_meals').delete().eq('id', sheetMealId)
+    setSheetMode('add')
+    setSheetMealId(null)
+    loadWeekData()
   }
 
   async function publishPlan() {
@@ -305,11 +428,19 @@ export default function ThisWeek({ appUser }) {
             {formatWeekRange(weekDates)}
           </div>
         </div>
-        <button onClick={() => setWeekOffset(w => w + 1)} style={weekNavBtnStyle} aria-label="Next week">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
-            <path d="m9 18 6-6-6-6"/>
-          </svg>
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button onClick={() => setWeekOffset(w => w + 1)} style={weekNavBtnStyle} aria-label="Next week">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
+              <path d="m9 18 6-6-6-6"/>
+            </svg>
+          </button>
+          <button onClick={() => navigate('/week-settings')} style={weekNavBtnStyle} aria-label="Week settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 15, height: 15 }}>
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* ── Plan Status Banner ───────────────────────────────────────────── */}
@@ -396,9 +527,32 @@ export default function ThisWeek({ appUser }) {
         slotName={sheetSlot}
         dateStr={sheetDate}
         sagePrimary={sheetSagePrimary}
+        mode={sheetMode}
+        manualInput={manualInput}
+        onManualChange={setManualInput}
         onClose={closeSheet}
+        onSageSuggest={sageSuggest}
+        onManualSave={saveManualMeal}
+        onOpenEvening={markOpenEvening}
+        onRemove={removeMeal}
+        onSwap={swapMeal}
+        onSetMode={setSheetMode}
         navigate={navigate}
       />
+
+      {/* ── Toast ──────────────────────────────────────────────────────────── */}
+      {toastMsg && (
+        <div style={{
+          position: 'fixed', bottom: '100px', left: '50%', transform: 'translateX(-50%)',
+          background: C.forest, color: 'white', padding: '10px 20px',
+          borderRadius: '10px', fontSize: '13px', fontWeight: 500,
+          fontFamily: "'Jost', sans-serif", zIndex: 500,
+          boxShadow: '0 4px 16px rgba(30,55,35,0.30)',
+          animation: 'fadeUp 0.25s ease both',
+        }}>
+          {toastMsg}
+        </div>
+      )}
 
     </div>
   )
@@ -616,7 +770,7 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, t
         {isOpenEv ? (
           <OpenDaySlot onAdd={() => onOpenSheet(dayName, 'Dinner', toDateStr(date))} />
         ) : hasDinner ? (
-          <FilledMealCard meal={dinner} onSwap={() => onOpenSheet(dayName, 'Dinner', toDateStr(date))} />
+          <FilledMealCard meal={dinner} onSwap={() => onOpenSheet(dayName, 'Dinner', toDateStr(date), false, dinner.id)} />
         ) : (
           <EmptyDinnerSlot
             onTap={()      => onOpenSheet(dayName, 'Dinner', toDateStr(date))}
@@ -644,9 +798,10 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, t
 
 // ── Filled Meal Card ───────────────────────────────────────────────────────────
 function FilledMealCard({ meal, onSwap }) {
-  const name   = getMealName(meal)
-  const chip   = getStatusChip(meal.status)
-  const hasNote= meal.note && meal.note !== 'open_evening'
+  const name    = getMealName(meal)
+  const chip    = getStatusChip(meal.status)
+  const hasNote = meal.note && meal.note !== 'open_evening' && meal.slot_type !== 'note'
+  const isCustom= meal.slot_type === 'note' && meal.note !== 'open_evening'
 
   return (
     <div style={{
@@ -672,6 +827,15 @@ function FilledMealCard({ meal, onSwap }) {
           }}>
             {chip.label}
           </span>
+          {isCustom && (
+            <span style={{
+              fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px', textTransform: 'uppercase',
+              padding: '2px 6px', borderRadius: '4px',
+              background: 'rgba(139,111,82,0.08)', color: C.walnut,
+            }}>
+              Custom
+            </span>
+          )}
           {hasNote && (
             <span style={{
               width: '6px', height: '6px', borderRadius: '50%',
@@ -930,7 +1094,9 @@ function ShoppingPrompt({ onGo, onDismiss }) {
 }
 
 // ── Bottom Sheet ───────────────────────────────────────────────────────────────
-function BottomSheet({ open, dayName, slotName, dateStr, sagePrimary, onClose, navigate }) {
+function BottomSheet({ open, dayName, slotName, dateStr, sagePrimary, mode, manualInput, onManualChange, onClose, onSageSuggest, onManualSave, onOpenEvening, onRemove, onSwap, onSetMode, navigate }) {
+  const sheetTitle = mode === 'filled' ? slotName : mode === 'manual' ? 'Enter meal name' : slotName
+
   return (
     <div style={{
       position: 'fixed', bottom: 0, left: '50%',
@@ -956,88 +1122,137 @@ function BottomSheet({ open, dayName, slotName, dateStr, sagePrimary, onClose, n
             {dayName}
           </div>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', color: C.ink, fontWeight: 500 }}>
-            {slotName}
+            {sheetTitle}
           </div>
         </div>
-        <button
-          onClick={onClose}
-          style={{
-            width: '32px', height: '32px', borderRadius: '50%',
-            border: '1px solid rgba(200,185,160,0.6)', background: C.cream,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', color: C.driftwood, flexShrink: 0,
-          }}
-        >
+        <button onClick={onClose} style={{
+          width: '32px', height: '32px', borderRadius: '50%',
+          border: '1px solid rgba(200,185,160,0.6)', background: C.cream,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', color: C.driftwood, flexShrink: 0,
+        }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
             <path d="M18 6 6 18M6 6l12 12"/>
           </svg>
         </button>
       </div>
 
-      {/* Options */}
-      <div style={{ padding: '14px 22px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-
-        {/* Sage — primary when from Ask Sage */}
-        <SheetOption
-          primary={sagePrimary}
-          icon={
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
-              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-            </svg>
-          }
-          title="Let Sage suggest"
-          sub="Based on your proteins, day type & preferences"
-          onClick={onClose}
-        />
-
-        <SheetOption
-          icon={
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-            </svg>
-          }
-          title="Browse the library"
-          sub="Search or filter your recipe collection"
-          onClick={() => {
-            onClose()
-            navigate('/recipes', { state: { selectMode: true, targetDay: dateStr, targetSlot: slotName.toLowerCase() } })
-          }}
-        />
-
-        <SheetOption
-          icon={
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
-              <path d="M12 5v14M5 12h14"/>
-            </svg>
-          }
-          title="Enter manually"
-          sub="Type a meal name without a full recipe"
-          onClick={onClose}
-        />
-      </div>
-
-      {/* Divider */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 22px' }}>
-        <div style={{ flex: 1, height: '1px', background: C.linen }} />
-        <span style={{ fontSize: '10px', letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood }}>or</span>
-        <div style={{ flex: 1, height: '1px', background: C.linen }} />
-      </div>
-
-      {/* Open evening option */}
-      <div
-        onClick={onClose}
-        style={{
-          margin: '10px 22px 0',
-          padding: '13px 16px',
-          border: '1px dashed rgba(200,185,160,0.7)',
-          borderRadius: '12px', cursor: 'pointer', textAlign: 'center',
-        }}
-      >
-        <div style={{ fontSize: '13px', color: C.driftwood }}>
-          Mark this evening as open — no meal needed
+      {/* ── Mode: filled slot (swap / remove / keep) ────────────────────── */}
+      {mode === 'filled' && (
+        <div style={{ padding: '14px 22px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <SheetOption
+            icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0"/><path d="M12 8v4l3 3"/></svg>}
+            title="Swap meal"
+            sub="Replace with a different recipe or meal"
+            onClick={onSwap}
+          />
+          <SheetOption
+            icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>}
+            title="Remove meal"
+            sub="Clear this slot — you can always add it back"
+            onClick={onRemove}
+          />
+          <SheetOption
+            icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>}
+            title="Keep it"
+            sub="No change needed"
+            onClick={onClose}
+          />
         </div>
-      </div>
+      )}
+
+      {/* ── Mode: manual text input ─────────────────────────────────────── */}
+      {mode === 'manual' && (
+        <div style={{ padding: '14px 22px' }}>
+          <input
+            type="text"
+            value={manualInput}
+            onChange={e => onManualChange(e.target.value)}
+            placeholder="e.g. Tacos, Leftover soup, Eating out"
+            autoFocus
+            style={{
+              width: '100%', padding: '14px 16px',
+              border: `1px solid ${C.linen}`, borderRadius: '12px',
+              fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300,
+              color: C.ink, outline: 'none', background: C.cream,
+              marginBottom: '14px',
+            }}
+            onKeyDown={e => { if (e.key === 'Enter') onManualSave() }}
+          />
+          <button
+            onClick={onManualSave}
+            disabled={!manualInput.trim()}
+            style={{
+              width: '100%', background: manualInput.trim() ? C.forest : C.linen,
+              color: manualInput.trim() ? 'white' : C.driftwood,
+              border: 'none', borderRadius: '12px', padding: '14px',
+              fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
+              cursor: manualInput.trim() ? 'pointer' : 'default',
+              transition: 'background 0.15s',
+            }}
+          >
+            Add to plan
+          </button>
+          <button
+            onClick={() => onSetMode('add')}
+            style={{
+              width: '100%', background: 'none', border: 'none', color: C.driftwood,
+              fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300,
+              padding: '10px', cursor: 'pointer', marginTop: '4px',
+            }}
+          >
+            ← Back to options
+          </button>
+        </div>
+      )}
+
+      {/* ── Mode: add (empty slot — Sage / Browse / Manual / Open) ───── */}
+      {mode === 'add' && (
+        <>
+          <div style={{ padding: '14px 22px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <SheetOption
+              primary={sagePrimary}
+              icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>}
+              title="Let Sage suggest"
+              sub="Based on your proteins, day type & preferences"
+              onClick={onSageSuggest}
+            />
+            <SheetOption
+              icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>}
+              title="Browse the library"
+              sub="Search or filter your recipe collection"
+              onClick={() => {
+                onClose()
+                navigate('/recipes', { state: { selectMode: true, targetDay: dateStr, targetSlot: slotName.toLowerCase() } })
+              }}
+            />
+            <SheetOption
+              icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><path d="M12 5v14M5 12h14"/></svg>}
+              title="Enter manually"
+              sub="Type a meal name without a full recipe"
+              onClick={() => onSetMode('manual')}
+            />
+          </div>
+
+          {/* Divider */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 22px' }}>
+            <div style={{ flex: 1, height: '1px', background: C.linen }} />
+            <span style={{ fontSize: '10px', letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood }}>or</span>
+            <div style={{ flex: 1, height: '1px', background: C.linen }} />
+          </div>
+
+          {/* Open evening */}
+          <div onClick={onOpenEvening} style={{
+            margin: '10px 22px 0', padding: '13px 16px',
+            border: '1px dashed rgba(200,185,160,0.7)',
+            borderRadius: '12px', cursor: 'pointer', textAlign: 'center',
+          }}>
+            <div style={{ fontSize: '13px', color: C.driftwood }}>
+              Mark this evening as open — no meal needed
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

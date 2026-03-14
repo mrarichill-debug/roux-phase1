@@ -17,6 +17,7 @@ import RecipeLibrary  from './pages/RecipeLibrary'
 import RecipeCard     from './pages/RecipeCard'
 import SaveRecipe     from './pages/SaveRecipe'
 import ShoppingList from './pages/ShoppingList'
+import WeekSettings from './pages/WeekSettings'
 import { Shell } from './components/AppShell'
 
 export default function App() {
@@ -104,8 +105,9 @@ export default function App() {
           <Route path="/recipes"    element={<RecipeLibrary appUser={appUser} />} />
           <Route path="/recipe/:id" element={<RecipeCard    appUser={appUser} />} />
           <Route path="/save-recipe" element={<SaveRecipe    appUser={appUser} />} />
-          <Route path="/shopping"   element={<ShoppingList  appUser={appUser} />} />
-          <Route path="/*"          element={<Shell          appUser={appUser} />} />
+          <Route path="/shopping"      element={<ShoppingList  appUser={appUser} />} />
+          <Route path="/week-settings" element={<WeekSettings  appUser={appUser} />} />
+          <Route path="/*"             element={<Shell          appUser={appUser} />} />
         </Routes>
       )}
     </BrowserRouter>
