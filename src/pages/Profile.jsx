@@ -43,11 +43,18 @@ export default function Profile({ appUser }) {
   const [editingHome, setEditingHome] = useState(false)
   const [homeValue, setHomeValue] = useState('')
 
-  // Add member sheet
+  // Add/edit member sheet
   const [addMemberOpen, setAddMemberOpen] = useState(false)
   const [newMemberName, setNewMemberName] = useState('')
   const [newMemberDob, setNewMemberDob] = useState('')
+  const [newMemberRole, setNewMemberRole] = useState('family_member')
   const [savingMember, setSavingMember] = useState(false)
+
+  // Display name (local copy for optimistic update)
+  const [displayName, setDisplayName] = useState(appUser?.name || '')
+
+  // Invite code confirmation
+  const [newCodeConfirmOpen, setNewCodeConfirmOpen] = useState(false)
 
   // Add store
   const [addStoreOpen, setAddStoreOpen] = useState(false)
@@ -101,6 +108,7 @@ export default function Profile({ appUser }) {
   async function saveName() {
     if (!nameValue.trim()) return
     await supabase.from('users').update({ name: nameValue.trim() }).eq('id', appUser.id)
+    setDisplayName(nameValue.trim())
     setEditingName(false)
     showToast('Name updated')
   }
@@ -140,16 +148,19 @@ export default function Profile({ appUser }) {
     if (!newMemberName.trim() || savingMember) return
     setSavingMember(true)
     try {
+      const roleLabel = newMemberRole === 'co_admin' ? 'Co-admin' : newMemberRole === 'viewer' ? 'Just browsing' : 'Family member'
       const { data, error } = await supabase.from('family_members').insert({
         household_id: appUser.household_id,
         name: newMemberName.trim(),
         date_of_birth: newMemberDob || null,
+        notes: roleLabel,
       }).select('id, name, date_of_birth, is_pet, notes').single()
       if (error) throw error
       setMembers(prev => [...prev, data])
       setAddMemberOpen(false)
       setNewMemberName('')
       setNewMemberDob('')
+      setNewMemberRole('family_member')
       showToast('Family member added')
     } catch (err) {
       console.error('[Roux] addMember error:', err)
@@ -202,11 +213,12 @@ export default function Profile({ appUser }) {
     return code
   }
 
-  async function refreshInviteCode() {
+  async function confirmAndRefreshCode() {
     const code = generateInviteCode()
     const { error } = await supabase.from('households').update({ invite_code: code }).eq('id', household.id)
     if (error) { showToast('Could not generate new code'); return }
     setHousehold(prev => ({ ...prev, invite_code: code }))
+    setNewCodeConfirmOpen(false)
     showToast('New invite code generated')
   }
 
@@ -232,6 +244,13 @@ export default function Profile({ appUser }) {
     let age = today.getFullYear() - birth.getFullYear()
     if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--
     return age
+  }
+
+  function getMemberLabel(m) {
+    const age = getAge(m.date_of_birth)
+    const role = m.notes || 'Family member'
+    if (age !== null && age < 18) return `Age ${age}`
+    return role
   }
 
   return (
@@ -271,7 +290,7 @@ export default function Profile({ appUser }) {
               ) : (
                 <>
                   <div>
-                    <div style={{ fontSize: '14px', color: C.ink }}>{appUser.name}</div>
+                    <div style={{ fontSize: '14px', color: C.ink }}>{displayName}</div>
                     <div style={{ fontSize: '11px', color: C.driftwood }}>Name</div>
                   </div>
                   <button onClick={() => setEditingName(true)} style={{ fontSize: '12px', color: C.forest, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Edit</button>
@@ -351,13 +370,14 @@ export default function Profile({ appUser }) {
           <div style={{ ...cardStyle, animation: 'fadeUp 0.35s ease 0.12s both' }}>
             <div style={sectionHeader}>Family Members</div>
             {members.map(m => {
-              const age = getAge(m.date_of_birth)
               return (
                 <div key={m.id} style={rowStyle}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '14px', color: C.ink }}>{m.name}</div>
-                    <div style={{ fontSize: '11px', color: C.driftwood }}>
-                      {age !== null ? `${age} years old` : ''}
+                    <div style={{ fontSize: '14px', color: C.ink }}>
+                      {m.name}
+                      <span style={{ fontSize: '11px', color: C.driftwood, marginLeft: '8px' }}>
+                        {getMemberLabel(m)}
+                      </span>
                     </div>
                   </div>
                   {deleteConfirmId === m.id ? (
@@ -433,7 +453,7 @@ export default function Profile({ appUser }) {
                 {household?.invite_code || '------'}
               </div>
               <div style={{ fontSize: '11px', color: C.driftwood }}>
-                Share this code with family members
+                Active — share with family to join your kitchen
               </div>
             </div>
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
@@ -447,7 +467,7 @@ export default function Profile({ appUser }) {
                 fontFamily: "'Jost', sans-serif", cursor: 'pointer',
                 background: 'none', color: C.forest, border: `1.5px solid rgba(61,107,79,0.4)`,
               }}>Copy</button>
-              <button onClick={refreshInviteCode} style={{
+              <button onClick={() => setNewCodeConfirmOpen(true)} style={{
                 flex: 1, padding: '10px', borderRadius: '10px', fontSize: '12px', fontWeight: 500,
                 fontFamily: "'Jost', sans-serif", cursor: 'pointer',
                 background: 'none', color: C.driftwood, border: `1px solid ${C.linen}`,
@@ -492,8 +512,32 @@ export default function Profile({ appUser }) {
               <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Date of birth (optional)</div>
               <input type="date" value={newMemberDob} onChange={e => setNewMemberDob(e.target.value)} style={{
                 width: '100%', padding: '12px 14px', border: `1px solid ${C.linen}`, borderRadius: '10px',
-                fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300, color: C.ink, outline: 'none', background: C.cream, boxSizing: 'border-box', marginBottom: '14px',
+                fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300, color: C.ink, outline: 'none', background: C.cream, boxSizing: 'border-box', marginBottom: '6px',
               }} />
+              <div style={{ fontSize: '11px', fontStyle: 'italic', color: C.driftwood, marginBottom: '14px', lineHeight: 1.4 }}>
+                Used for birthday reminders and to help Sage make better suggestions. Never shared outside your kitchen.
+              </div>
+
+              <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Role</div>
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>
+                {[
+                  { key: 'co_admin', label: 'Co-admin' },
+                  { key: 'family_member', label: 'Family member' },
+                  { key: 'viewer', label: 'Just browsing' },
+                ].map(r => (
+                  <button key={r.key} onClick={() => setNewMemberRole(r.key)} style={{
+                    flex: 1, padding: '8px 6px', fontSize: '11px', fontFamily: "'Jost', sans-serif",
+                    fontWeight: newMemberRole === r.key ? 500 : 400, borderRadius: '10px', cursor: 'pointer',
+                    border: `1.5px solid ${newMemberRole === r.key ? C.forest : C.linen}`,
+                    background: newMemberRole === r.key ? C.forest : 'transparent',
+                    color: newMemberRole === r.key ? 'white' : C.ink, transition: 'all 0.15s',
+                    textAlign: 'center',
+                  }}>
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+
               <button onClick={addMember} disabled={!newMemberName.trim() || savingMember} style={{
                 width: '100%', padding: '14px', borderRadius: '12px', background: newMemberName.trim() ? C.forest : C.linen,
                 color: newMemberName.trim() ? 'white' : C.driftwood, border: 'none', fontFamily: "'Jost', sans-serif",
@@ -540,6 +584,43 @@ export default function Profile({ appUser }) {
                 width: '100%', background: 'none', border: 'none', color: C.driftwood,
                 fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300, padding: '10px', cursor: 'pointer',
               }}>Cancel</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── New Code Confirmation ────────────────────────────────────── */}
+      {newCodeConfirmOpen && (
+        <>
+          <div onClick={() => setNewCodeConfirmOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200, animation: 'fadeIn 0.2s ease' }} />
+          <div onClick={e => e.stopPropagation()} style={{
+            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
+            padding: '0 0 40px', zIndex: 201, boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
+            animation: 'sheetRise 0.32s cubic-bezier(0.32,0.72,0,1) both',
+          }}>
+            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+            <div style={{ padding: '20px 22px 0' }}>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '10px' }}>
+                Generate new code?
+              </div>
+              <div style={{ fontSize: '14px', color: C.driftwood, fontWeight: 300, lineHeight: 1.6, marginBottom: '20px' }}>
+                This will invalidate your current code. Anyone with the old code won't be able to use it.
+              </div>
+              <button onClick={confirmAndRefreshCode} style={{
+                width: '100%', background: C.forest, color: 'white', border: 'none',
+                borderRadius: '12px', padding: '14px', fontFamily: "'Jost', sans-serif",
+                fontSize: '14px', fontWeight: 500, cursor: 'pointer', marginBottom: '8px',
+              }}>
+                Generate New Code
+              </button>
+              <button onClick={() => setNewCodeConfirmOpen(false)} style={{
+                width: '100%', background: 'none', border: 'none', color: C.driftwood,
+                fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300,
+                padding: '10px', cursor: 'pointer',
+              }}>
+                Cancel
+              </button>
             </div>
           </div>
         </>
