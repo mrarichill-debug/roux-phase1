@@ -868,12 +868,12 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, t
           <LightSlot
             label="Breakfast"
             meal={breakfast}
-            onTap={() => onOpenSheet(dayName, 'Breakfast', toDateStr(date))}
+            onTap={() => onOpenSheet(dayName, 'Breakfast', toDateStr(date), false, breakfast?.id || null)}
           />
           <LightSlot
             label="Lunch"
             meal={lunch}
-            onTap={() => onOpenSheet(dayName, 'Lunch', toDateStr(date))}
+            onTap={() => onOpenSheet(dayName, 'Lunch', toDateStr(date), false, lunch?.id || null)}
           />
         </div>
       </div>
