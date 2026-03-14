@@ -57,9 +57,9 @@ export default function Profile({ appUser }) {
   const [deleteConfirmId, setDeleteConfirmId] = useState(null)
   const [deleteStoreId, setDeleteStoreId] = useState(null)
 
-  // Toggles (localStorage since no prefs table)
-  const [haptics, setHaptics] = useState(() => localStorage.getItem('roux_haptics') === 'true')
-  const [notifications, setNotifications] = useState(() => localStorage.getItem('roux_notifications') !== 'false')
+  // Toggles (persisted on users table)
+  const [haptics, setHaptics] = useState(false)
+  const [notifications, setNotifications] = useState(true)
 
   // Toast + password reset
   const [toastMsg, setToastMsg] = useState('')
@@ -74,14 +74,19 @@ export default function Profile({ appUser }) {
   async function loadProfile() {
     setLoading(true)
     try {
-      const [householdRes, membersRes, storesRes] = await Promise.all([
+      const [householdRes, membersRes, storesRes, userPrefsRes] = await Promise.all([
         supabase.from('households').select('id, name, invite_code').eq('id', appUser.household_id).single(),
         supabase.from('family_members').select('id, name, date_of_birth, is_pet, notes').eq('household_id', appUser.household_id).order('created_at'),
         supabase.from('grocery_stores').select('id, name, is_primary').eq('household_id', appUser.household_id).order('name'),
+        supabase.from('users').select('haptic_feedback_enabled, notifications_enabled').eq('id', appUser.id).single(),
       ])
       if (householdRes.data) { setHousehold(householdRes.data); setHomeValue(householdRes.data.name) }
       if (membersRes.data) setMembers(membersRes.data)
       if (storesRes.data) setStores(storesRes.data)
+      if (userPrefsRes.data) {
+        setHaptics(userPrefsRes.data.haptic_feedback_enabled ?? false)
+        setNotifications(userPrefsRes.data.notifications_enabled ?? true)
+      }
       setNameValue(appUser.name || '')
     } catch (err) {
       console.error('[Roux] loadProfile error:', err)
@@ -111,13 +116,15 @@ export default function Profile({ appUser }) {
   function toggleHaptics() {
     const next = !haptics
     setHaptics(next)
-    localStorage.setItem('roux_haptics', String(next))
+    supabase.from('users').update({ haptic_feedback_enabled: next }).eq('id', appUser.id)
+      .then(({ error }) => { if (error) console.error('[Roux] toggleHaptics error:', error.message) })
   }
 
   function toggleNotifications() {
     const next = !notifications
     setNotifications(next)
-    localStorage.setItem('roux_notifications', String(next))
+    supabase.from('users').update({ notifications_enabled: next }).eq('id', appUser.id)
+      .then(({ error }) => { if (error) console.error('[Roux] toggleNotifications error:', error.message) })
   }
 
   // ── Our Kitchen actions ─────────────────────────────────────────────
