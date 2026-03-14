@@ -103,6 +103,93 @@ The store filter pills (All / Kroger / Costco) in the Building state topbar are 
 
 ---
 
+## Subscription Tiers — Roadmap
+
+*To be enforced before opening app beyond Hill family household. Build `useSubscription()` hook as a focused sprint at that time.*
+
+### Tier Definitions (Locked)
+
+**Free**
+- Recipe library — up to 25 recipes
+- Basic weekly meal planning — dinner slot only
+- Manual shopping list — no auto-generation
+- One household member
+- No Sage AI
+- No budget tracking
+
+**Plus**
+- Unlimited recipes
+- Full weekly planning — all meal slots, day types, traditions
+- Shopping list auto-generation from meal plan
+- Basic spending tracking — estimated vs spent
+- Up to 5 household members
+- Sage reactive suggestions — on demand only
+- No receipt capture
+- No utilization tracking
+
+**Premium**
+- Everything in Plus
+- Unlimited household members
+- Sage AI nudges, observational notes, and proactive suggestions
+- Full budget intelligence — estimated vs spent vs utilization
+- Receipt capture and price history
+- Multiple shopping lists per week
+- Week templates — save and apply
+- Spending trend analysis — unlocks after 4 weeks
+- Sage full week planning — unlocks after 50 archived meals
+- Seasonal decoration sets — custom selection
+- Sage skip pattern detection — flags meals skipped 3+ times
+
+### Implementation Plan (When Ready)
+
+**Step 1 — `useSubscription()` hook**
+- Lives in `src/hooks/useSubscription.js`
+- Reads `subscription_tier` from `users` table for current logged-in user
+- Returns: `tier` string, `isPremium()`, `isPlus()`, `isFree()`, `canUse(featureName)`
+- `canUse()` checks a feature map object — single source of truth for what each tier can access
+- Must be lightweight — reads from `appUser` already in context, no extra DB call
+
+**Step 2 — Gated component pattern**
+- Premium-only features render with a soft lock overlay when tier doesn't match
+- Never hide features entirely — show them locked with upgrade prompt
+- Upgrade prompt copy: *"This is a Premium feature. Upgrade to unlock Sage's full intelligence."*
+- Warm, never pushy — one tap to learn more, easy to dismiss
+
+**Step 3 — Enforcement touchpoints**
+
+Apply `useSubscription()` check to these specific components:
+- Sage nudges and suggestions — Premium only
+- Spending snapshot utilization % — Premium only
+- Receipt capture flow — Premium only
+- Multiple shopping lists — Premium only
+- Week templates — Premium only
+- Sage full week planning — Premium only + 50 meal threshold
+- Spending trend analysis — Premium only + 4 week threshold
+- Recipe library beyond 25 — Plus and above
+- Shopping list auto-generation — Plus and above
+- Sage reactive suggestions — Plus and above
+
+**Step 4 — Stripe integration**
+- Not planned for Phase 1
+- Lauren is permanently Premium — hardcoded in her user record
+- Payment infrastructure to be designed as a separate sprint
+- For now: tier is set manually in Supabase `users` table
+
+### Current Status
+
+- `subscription_tier` field exists on users/households table ✓
+- Lauren Hill set to Premium permanently ✓
+- `useSubscription()` hook — **NOT YET BUILT**
+- Enforcement layer — **NOT YET BUILT**
+- Upgrade prompt UI — **NOT YET DESIGNED**
+- Stripe integration — **NOT PLANNED YET**
+
+### Trigger to Build
+
+Build the enforcement layer as a focused sprint immediately before inviting any non-Hill-family users to the app.
+
+---
+
 ## Architecture Decisions (Locked)
 
 - **Cutting board Tonight card** — confirmed default. Forest green Tonight card variant is retired.
