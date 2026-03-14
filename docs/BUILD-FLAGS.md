@@ -130,6 +130,40 @@ The store filter pills (All / Kroger / Costco) in the Building state topbar are 
 
 ---
 
+## Sage Cost Estimation & Spending Snapshot
+
+### Dashboard Integration
+
+The spending snapshot section on the Dashboard (Estimated / Spent / Used %) is the primary surface where cost estimation activates. These are not separate features — they are the same feature in two states:
+
+**State 1 — Pre-activation (fewer than 6 receipted shopping trips):**
+- Spending snapshot shows a warm empty state
+- Copy: *"I'm learning your family's shopping patterns. [X] of 6 shopping trips tracked — almost there."*
+- Subtle progress indicator showing trips captured vs 6 trip threshold
+- Spent figure can still show actual receipt totals even before full activation
+- Estimated and Used % remain blank until threshold is met
+
+**State 2 — Active (6+ receipted shopping trips, Premium tier):**
+- Estimated: auto-populated by Sage from planned meals × price history
+- Spent: pulled from captured receipts as before
+- Used %: utilization calculation from planned vs purchased ingredients
+- Variance chip activates: green when under estimate, amber when approaching, never red
+- Sage insight line below the three figures: trend observations after sufficient history
+- Example: *"You're averaging $247/week, down $18 from last month"*
+
+### Progression of Sage Insight Line Over Time
+
+- **Weeks 6–8:** *"Nice work tracking your spending — I'm building your price history"*
+- **Weeks 8–12:** Basic estimated vs actual comparison
+- **Month 3+:** Trend observations and pattern insights
+- **Month 6+:** Predictive suggestions — *"Weeks with 5+ planned meals average $34 less in spending"*
+
+### Design Principle
+
+The spending snapshot is the single most powerful retention feature in the app — it gets more valuable every week Lauren uses Roux. Every design and build decision around it should protect that compounding value.
+
+---
+
 ## Subscription Tiers — Roadmap
 
 *To be enforced before opening app beyond Hill family household. Build `useSubscription()` hook as a focused sprint at that time.*
