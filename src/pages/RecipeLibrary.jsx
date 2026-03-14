@@ -140,6 +140,7 @@ export default function RecipeLibrary({ appUser }) {
   }
 
   const [recipes,         setRecipes]         = useState([])
+  const [plannedIds,      setPlannedIds]      = useState(new Set())
   const [loading,         setLoading]         = useState(true)
   const [search,          setSearch]          = useState('')
   const [activeCategory,  setActiveCategory]  = useState('All')
@@ -159,16 +160,41 @@ export default function RecipeLibrary({ appUser }) {
 
   async function loadRecipes() {
     setLoading(true)
-    const { data } = await supabase
-      .from('recipes')
-      .select(`
-        id, name, category, personal_notes, credited_to_name,
-        prep_time_minutes, cook_time_minutes, total_time_minutes,
-        servings, is_family_favorite, diet, created_at
-      `)
-      .eq('household_id', appUser.household_id)
-      .order('name')
-    setRecipes(data ?? [])
+    const tz = appUser?.timezone ?? 'America/Chicago'
+    const weekStart = getWeekStartTZ(tz)
+
+    const [recipesRes, planRes] = await Promise.all([
+      supabase
+        .from('recipes')
+        .select(`
+          id, name, category, personal_notes, credited_to_name,
+          prep_time_minutes, cook_time_minutes, total_time_minutes,
+          servings, is_family_favorite, diet, created_at
+        `)
+        .eq('household_id', appUser.household_id)
+        .order('name'),
+      supabase
+        .from('meal_plans')
+        .select('id')
+        .eq('household_id', appUser.household_id)
+        .eq('week_start_date', weekStart)
+        .maybeSingle(),
+    ])
+
+    setRecipes(recipesRes.data ?? [])
+
+    // Fetch recipe_ids already planned this week
+    if (planRes.data) {
+      const { data: meals } = await supabase
+        .from('planned_meals')
+        .select('recipe_id')
+        .eq('meal_plan_id', planRes.data.id)
+        .not('recipe_id', 'is', null)
+      setPlannedIds(new Set((meals ?? []).map(m => m.recipe_id)))
+    } else {
+      setPlannedIds(new Set())
+    }
+
     setLoading(false)
   }
 
@@ -456,6 +482,7 @@ export default function RecipeLibrary({ appUser }) {
             recipe={recipe}
             index={i}
             selectMode={selectMode}
+            isPlanned={plannedIds.has(recipe.id)}
             onTap={selectMode ? () => selectRecipe(recipe) : () => navigate(`/recipe/${recipe.id}`)}
             onAddToWeek={selectMode ? () => selectRecipe(recipe) : () => openWeekPicker(recipe)}
           />
@@ -512,7 +539,7 @@ export default function RecipeLibrary({ appUser }) {
 }
 
 // ── Recipe Grid Card ───────────────────────────────────────────────────────────
-function RecipeGridCard({ recipe, index, selectMode, onTap, onAddToWeek }) {
+function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWeek }) {
   const [weekTapping, setWeekTapping] = useState(false)
 
   const total    = getTotalMinutes(recipe)
@@ -604,17 +631,30 @@ function RecipeGridCard({ recipe, index, selectMode, onTap, onAddToWeek }) {
             {hasVeg && <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: C.sage }} />}
             {hasDF && <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: C.walnut }} />}
           </div>
-          <button
-            onClick={handleWeekTap}
-            style={{
-              fontSize: '10px', color: C.sage, fontWeight: 500,
-              letterSpacing: '0.3px', background: 'none', border: 'none',
-              cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-              padding: '2px 0',
-            }}
-          >
-            {selectMode ? 'Select' : '+ Week'}
-          </button>
+          {isPlanned && !selectMode ? (
+            <span style={{
+              fontSize: '10px', color: C.forest, fontWeight: 500,
+              letterSpacing: '0.3px', fontFamily: "'Jost', sans-serif",
+              display: 'flex', alignItems: 'center', gap: '3px',
+            }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 10, height: 10 }}>
+                <path d="m9 11 3 3L22 4"/>
+              </svg>
+              Planned
+            </span>
+          ) : (
+            <button
+              onClick={handleWeekTap}
+              style={{
+                fontSize: '10px', color: C.sage, fontWeight: 500,
+                letterSpacing: '0.3px', background: 'none', border: 'none',
+                cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+                padding: '2px 0',
+              }}
+            >
+              {selectMode ? 'Select' : '+ Week'}
+            </button>
+          )}
         </div>
 
       </div>

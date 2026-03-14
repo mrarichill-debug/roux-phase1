@@ -8,7 +8,7 @@ import { useEffect, useState, useRef, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import WatermarkLayer from '../components/WatermarkLayer'
-import { toLocalDateStr } from '../lib/dateUtils'
+import { toLocalDateStr, getWeekStartTZ } from '../lib/dateUtils'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -116,6 +116,7 @@ export default function RecipeCard({ appUser }) {
   const [sageExpanded, setSageExpanded] = useState(false)
   const [favActive,    setFavActive]    = useState(false)
 
+  const [plannedThisWeek,   setPlannedThisWeek]   = useState(false)
   const [weekPickerOpen,    setWeekPickerOpen]    = useState(false)
   const [weekPickerOverlay, setWeekPickerOverlay] = useState(false)
   const overlayTimer = useRef(null)
@@ -161,6 +162,27 @@ export default function RecipeCard({ appUser }) {
 
     setIngredients(ingRes.data ?? [])
     setInstructions(insRes.data ?? [])
+
+    // Check if this recipe is already planned for the current week
+    if (rec?.household_id) {
+      const tz = appUser?.timezone ?? 'America/Chicago'
+      const weekStart = getWeekStartTZ(tz)
+      const { data: plan } = await supabase
+        .from('meal_plans')
+        .select('id')
+        .eq('household_id', rec.household_id)
+        .eq('week_start_date', weekStart)
+        .maybeSingle()
+      if (plan) {
+        const { count } = await supabase
+          .from('planned_meals')
+          .select('id', { count: 'exact', head: true })
+          .eq('meal_plan_id', plan.id)
+          .eq('recipe_id', id)
+        setPlannedThisWeek((count ?? 0) > 0)
+      }
+    }
+
     setLoading(false)
   }
 
@@ -694,20 +716,40 @@ export default function RecipeCard({ appUser }) {
         background: C.cream, borderTop: `1px solid ${C.linen}`,
         boxShadow: '0 -2px 12px rgba(80,60,30,0.08)',
       }}>
-        <button
-          onClick={openWeekPicker}
-          style={{
-            width: '100%', background: C.forest, color: 'white', border: 'none',
-            borderRadius: '12px', padding: '14px',
-            fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
-            letterSpacing: '0.5px', cursor: 'pointer',
-            boxShadow: '0 2px 10px rgba(61,107,79,0.28)',
-            transition: 'background 0.15s',
-            animation: 'ctaSettle 0.35s ease-out 0.3s both',
-          }}
-        >
-          + Add to This Week's Plan
-        </button>
+        {plannedThisWeek ? (
+          <div
+            style={{
+              width: '100%', background: 'rgba(61,107,79,0.10)', color: C.forest,
+              border: `1px solid rgba(61,107,79,0.25)`,
+              borderRadius: '12px', padding: '14px',
+              fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
+              letterSpacing: '0.5px', textAlign: 'center',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+              animation: 'ctaSettle 0.35s ease-out 0.3s both',
+            }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <path d="m9 11 3 3L22 4"/>
+            </svg>
+            Planned this week
+          </div>
+        ) : (
+          <button
+            onClick={openWeekPicker}
+            style={{
+              width: '100%', background: C.forest, color: 'white', border: 'none',
+              borderRadius: '12px', padding: '14px',
+              fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
+              letterSpacing: '0.5px', cursor: 'pointer',
+              boxShadow: '0 2px 10px rgba(61,107,79,0.28)',
+              transition: 'background 0.15s',
+              animation: 'ctaSettle 0.35s ease-out 0.3s both',
+            }}
+          >
+            + Add to This Week's Plan
+          </button>
+        )}
       </div>
 
       {/* ── Week Day Picker Sheet ────────────────────────────────────────────── */}
