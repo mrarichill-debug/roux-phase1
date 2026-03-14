@@ -9,6 +9,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import WatermarkLayer from '../components/WatermarkLayer'
 import { toLocalDateStr, getWeekStartTZ } from '../lib/dateUtils'
+import TopBar from '../components/TopBar'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -258,20 +259,7 @@ export default function RecipeCard({ appUser }) {
   if (loading) {
     return (
       <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
-        <header style={{
-          position: 'sticky', top: 0, zIndex: 100,
-          height: '58px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 20px', background: C.forest,
-          boxShadow: '0 2px 0px rgba(20,40,25,0.55), 0 4px 8px rgba(20,40,25,0.40), 0 8px 24px rgba(30,55,35,0.28), 0 16px 40px rgba(30,55,35,0.14)',
-        }}>
-          <button onClick={() => navigate(backTo)} style={STYLES.backBtn}>
-            <BackArrow />
-          </button>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 600, color: 'rgba(250,247,242,0.95)' }}>
-            Ro<em style={{ fontStyle: 'italic', color: 'rgba(188,218,178,0.82)' }}>ux</em>
-          </div>
-          <div style={{ width: 36 }} />
-        </header>
+        <TopBar slim leftAction={{ onClick: () => navigate(backTo), label: 'Back' }} />
         <div style={{ padding: '20px 22px' }}>
           <div className="shimmer-block" style={{ height: '220px', borderRadius: '16px', marginBottom: '12px' }} />
           <div className="shimmer-block" style={{ height: '160px', borderRadius: '16px', marginBottom: '12px' }} />
@@ -299,30 +287,15 @@ export default function RecipeCard({ appUser }) {
 
       <WatermarkLayer />
 
-      {/* ── Slim Topbar ─────────────────────────────────────────────────────── */}
-      <header style={{
-        position: 'sticky', top: 0, zIndex: 100,
-        height: '58px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 20px', background: C.forest,
-        boxShadow: '0 2px 0px rgba(20,40,25,0.55), 0 4px 8px rgba(20,40,25,0.40), 0 8px 24px rgba(30,55,35,0.28), 0 16px 40px rgba(30,55,35,0.14), 0 1px 0px rgba(255,255,255,0.06) inset',
-      }}>
-        <button onClick={() => navigate(backTo)} style={STYLES.backBtn}>
-          <BackArrow />
-        </button>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 600, color: 'rgba(250,247,242,0.95)', userSelect: 'none' }}>
-          Ro<em style={{ fontStyle: 'italic', color: 'rgba(188,218,178,0.82)' }}>ux</em>
-        </div>
-        <button
-          onClick={toggleFav}
-          style={{
-            ...STYLES.iconBtn,
-            color: favActive ? C.honey : 'rgba(210,230,200,0.55)',
-            fontSize: '18px',
-          }}
-        >
-          {favActive ? '★' : '☆'}
-        </button>
-      </header>
+      <TopBar
+        slim
+        leftAction={{ onClick: () => navigate(backTo), label: 'Back' }}
+        rightActions={[{
+          label: favActive ? 'Unfavorite' : 'Favorite',
+          onClick: toggleFav,
+          icon: <span style={{ fontSize: '18px', color: favActive ? C.honey : 'rgba(210,230,200,0.55)' }}>{favActive ? '★' : '☆'}</span>,
+        }]}
+      />
 
       {/* ── Hero ─────────────────────────────────────────────────────────────── */}
       <div style={{

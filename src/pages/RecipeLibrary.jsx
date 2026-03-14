@@ -9,6 +9,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import WatermarkLayer from '../components/WatermarkLayer'
 import { toLocalDateStr, getWeekStartTZ, getWeekDatesTZ } from '../lib/dateUtils'
+import TopBar from '../components/TopBar'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -284,54 +285,16 @@ export default function RecipeLibrary({ appUser }) {
 
       <WatermarkLayer />
 
-      {/* ── Topbar ─────────────────────────────────────────────────────────── */}
-      <header style={{
-        position:   'sticky', top: 0, zIndex: 100,
-        padding:    '14px 22px 12px',
-        background: C.forest,
-        boxShadow:  `
-          0 2px  0px rgba(20,40,25,0.55),
-          0 4px  8px rgba(20,40,25,0.40),
-          0 8px 24px rgba(30,55,35,0.28),
-          0 16px 40px rgba(30,55,35,0.14),
-          0 1px  0px rgba(255,255,255,0.06) inset
-        `,
-      }}>
-
-        {/* Row 1: Logo + Save a Recipe */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <div style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: '26px', fontWeight: 600,
-            color: 'rgba(250,247,242,0.95)', userSelect: 'none',
-          }}>
-            Ro<em style={{ fontStyle: 'italic', color: 'rgba(188,218,178,0.82)' }}>ux</em>
-          </div>
-          <button
-            onClick={() => navigate('/save-recipe')}
-            onMouseDown={() => setSaveBtnActive(true)}
-            onMouseUp={() => setSaveBtnActive(false)}
-            onMouseLeave={() => setSaveBtnActive(false)}
-            onTouchStart={() => setSaveBtnActive(true)}
-            onTouchEnd={() => setSaveBtnActive(false)}
-            style={{
-              background: saveBtnActive ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.14)',
-              color: 'rgba(250,247,242,0.92)',
-              border: '1px solid rgba(255,255,255,0.22)',
-              borderRadius: '8px', padding: '8px 14px',
-              fontFamily: "'Jost', sans-serif",
-              fontSize: '12px', fontWeight: 500, cursor: 'pointer',
-              transition: 'background 0.15s',
-            }}
-          >
-            Save a Recipe
-          </button>
-        </div>
-
-        {/* Search */}
-        <div style={{ position: 'relative', marginBottom: '11px' }}>
+      {/* ── Green zone: Row 1 (topbar 66px) + Row 2 (search 48px) ─────────── */}
+      <TopBar rightActions={[{
+        label: 'Search',
+        onClick: () => document.querySelector('.library-search')?.focus(),
+        icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>,
+      }]}>
+        {/* Row 2: Search input — unified green zone */}
+        <div style={{ padding: '0 22px 10px', position: 'relative' }}>
           <span style={{
-            position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)',
+            position: 'absolute', left: '35px', top: '50%', transform: 'translateY(calc(-50% - 5px))',
             color: 'rgba(210,230,200,0.6)', display: 'flex', alignItems: 'center',
           }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ width: 15, height: 15 }}>
@@ -354,43 +317,46 @@ export default function RecipeLibrary({ appUser }) {
               fontSize: '14px', fontWeight: 300,
               color: 'rgba(250,247,242,0.92)', outline: 'none',
               transition: 'background 0.15s, border-color 0.15s',
+              boxSizing: 'border-box',
             }}
           />
         </div>
+      </TopBar>
 
-        {/* Browse by label */}
-        <div style={{
-          fontSize: '9px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase',
-          color: 'rgba(210,230,200,0.55)', marginBottom: '6px',
-        }}>
-          Browse by
-        </div>
-
-        {/* Category pills — horizontally scrollable */}
-        <div className="no-scrollbar" style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
-          {CAT_PILLS.map(pill => {
-            const isActive = activeCategory === pill
-            return (
-              <button
-                key={pill}
-                onClick={() => setActiveCategory(pill)}
-                style={{
-                  background:   isActive ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.10)',
-                  border:       isActive ? '1px solid rgba(255,255,255,0.40)' : '1px solid rgba(255,255,255,0.18)',
-                  borderRadius: '20px', padding: '6px 13px',
-                  fontSize: '12px', fontWeight: isActive ? 500 : 400,
-                  color:        isActive ? 'white' : 'rgba(210,230,200,0.8)',
-                  cursor: 'pointer', whiteSpace: 'nowrap',
-                  fontFamily: "'Jost', sans-serif",
-                  transition: 'all 0.15s',
-                }}
-              >
-                {pill}
-              </button>
-            )
-          })}
-        </div>
-      </header>
+      {/* ── Browse By pills (cream body) ───────────────────────────────────── */}
+      <div style={{
+        fontSize: '9px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase',
+        color: C.driftwood, padding: '14px 22px 6px', position: 'relative', zIndex: 1,
+      }}>
+        Browse by
+      </div>
+      <div className="no-scrollbar" style={{
+        display: 'flex', gap: '6px', overflowX: 'auto',
+        padding: '0 22px', position: 'relative', zIndex: 1,
+      }}>
+        {CAT_PILLS.map(pill => {
+          const isActive = activeCategory === pill
+          return (
+            <button
+              key={pill}
+              onClick={() => setActiveCategory(pill)}
+              style={{
+                background:   isActive ? 'rgba(122,140,110,0.10)' : 'white',
+                border:       isActive ? `1px solid ${C.sage}` : '1px solid rgba(200,185,160,0.55)',
+                borderRadius: '20px', padding: '6px 13px',
+                fontSize: '12px', fontWeight: isActive ? 500 : 400,
+                color:        isActive ? C.forest : C.driftwood,
+                cursor: 'pointer', whiteSpace: 'nowrap',
+                fontFamily: "'Jost', sans-serif",
+                transition: 'all 0.15s',
+                boxShadow: '0 1px 3px rgba(80,60,30,0.06)',
+              }}
+            >
+              {pill}
+            </button>
+          )
+        })}
+      </div>
 
       {/* ── Filter row ───────────────────────────────────────────────────────── */}
       <div style={{
@@ -426,6 +392,26 @@ export default function RecipeLibrary({ appUser }) {
           )
         })}
       </div>
+
+      {/* ── Save a Recipe button (cream body) ───────────────────────────────── */}
+      {!selectMode && (
+        <div style={{ padding: '12px 22px 0', position: 'relative', zIndex: 1 }}>
+          <button
+            onClick={() => navigate('/save-recipe')}
+            style={{
+              width: '100%', padding: '12px',
+              fontSize: '13px', fontFamily: "'Jost', sans-serif", fontWeight: 500,
+              color: C.forest, background: 'white',
+              border: `1.5px solid rgba(61,107,79,0.35)`, borderRadius: '10px',
+              cursor: 'pointer', textAlign: 'center',
+              boxShadow: '0 1px 4px rgba(80,60,30,0.06)',
+              transition: 'background 0.15s',
+            }}
+          >
+            Save a Recipe
+          </button>
+        </div>
+      )}
 
       {/* ── Select mode banner ──────────────────────────────────────────────── */}
       {selectMode && (

@@ -8,6 +8,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { getWeekDatesTZ, getWeekStartTZ, getDayOfWeekTZ, getTodayStr, toLocalDateStr } from '../lib/dateUtils'
+import TopBar from '../components/TopBar'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -389,46 +390,7 @@ export default function ThisWeek({ appUser }) {
     }}>
 
       {/* ── Topbar ──────────────────────────────────────────────────────── */}
-      <header style={{
-        position: 'sticky', top: 0, zIndex: 100,
-        height: '68px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 24px',
-        background: C.forest,
-        boxShadow: `
-          0 2px  0px rgba(20,40,25,0.55),
-          0 4px  8px rgba(20,40,25,0.40),
-          0 8px 24px rgba(30,55,35,0.28),
-          0 16px 40px rgba(30,55,35,0.14),
-          0 1px  0px rgba(255,255,255,0.06) inset
-        `,
-        flexShrink: 0,
-      }}>
-        <div style={{
-          fontFamily: "'Playfair Display', serif",
-          fontSize: '26px', fontWeight: 600,
-          color: 'rgba(250,247,242,0.95)', userSelect: 'none',
-        }}>
-          Ro<em style={{ fontStyle: 'italic', color: 'rgba(188,218,178,0.82)' }}>ux</em>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <button style={iconBtnStyle} aria-label="History">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-              <path d="M3 3v5h5"/>
-              <path d="M12 7v5l4 2"/>
-            </svg>
-          </button>
-          <button style={iconBtnStyle} aria-label="Templates">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
-              <rect width="7" height="7" x="3" y="3" rx="1"/>
-              <rect width="7" height="7" x="14" y="3" rx="1"/>
-              <rect width="7" height="7" x="3" y="14" rx="1"/>
-              <rect width="7" height="7" x="14" y="14" rx="1"/>
-            </svg>
-          </button>
-        </div>
-      </header>
+      <TopBar />
 
       {/* ── Week Navigation ──────────────────────────────────────────────── */}
       <div style={{

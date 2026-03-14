@@ -8,6 +8,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import TopBar from '../components/TopBar'
 import WatermarkLayer from '../components/WatermarkLayer'
 import { getWeekStartTZ } from '../lib/dateUtils'
 
@@ -313,7 +314,7 @@ export default function ShoppingList({ appUser }) {
   if (loading) {
     return (
       <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
-        <Topbar shoppingState="building" estimatedTotal={null} inCartTotal={0} activeStoreFilter="all" onStoreFilter={() => {}} onStartShopping={() => {}} onDoneShopping={() => {}} startBtnPressed={false} loading />
+        <ShoppingTopbar shoppingState="building" />
         <div style={{ padding: '20px 24px' }}>
           <div className="shimmer-block" style={{ height: '72px', borderRadius: '12px', marginBottom: '12px' }} />
           <div className="shimmer-block" style={{ height: '44px', borderRadius: '10px', marginBottom: '20px' }} />
@@ -331,7 +332,7 @@ export default function ShoppingList({ appUser }) {
     return (
       <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif", paddingBottom: '96px' }}>
         <WatermarkLayer />
-        <Topbar shoppingState="building" estimatedTotal={null} inCartTotal={0} activeStoreFilter="all" onStoreFilter={() => {}} onStartShopping={() => {}} onDoneShopping={() => {}} startBtnPressed={false} />
+        <ShoppingTopbar shoppingState="building" />
         <div style={{ padding: '48px 32px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{ fontSize: '48px', marginBottom: '20px' }}>🛒</div>
           <div style={{
@@ -374,17 +375,26 @@ export default function ShoppingList({ appUser }) {
       <WatermarkLayer />
 
       {/* ── Topbar ──────────────────────────────────────────────────────────── */}
-      <Topbar
-        shoppingState={shoppingState}
-        estimatedTotal={estimatedTotal}
-        inCartTotal={inCartTotal}
-        weekStart={weekStart}
-        activeStoreFilter={activeStoreFilter}
-        onStoreFilter={setActiveStoreFilter}
-        onStartShopping={startShopping}
-        onDoneShopping={doneShopping}
-        startBtnPressed={startBtnPressed}
-      />
+      <ShoppingTopbar shoppingState={shoppingState} />
+
+      {/* ── Start/Done Shopping CTA (cream body, before budget strip) ──────── */}
+      {shoppingState !== 'complete' && (
+        <div style={{ padding: '14px 24px 0', position: 'relative', zIndex: 1, animation: 'fadeUp 0.3s ease both' }}>
+          <button
+            onClick={shoppingState === 'building' ? startShopping : doneShopping}
+            style={{
+              width: '100%', padding: '14px', borderRadius: '12px',
+              background: C.forest, color: 'white', border: 'none',
+              fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
+              cursor: 'pointer', letterSpacing: '0.3px',
+              boxShadow: '0 2px 10px rgba(61,107,79,0.28)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
+            }}
+          >
+            {shoppingState === 'building' ? <><CartIcon size={17} /> Start Shopping</> : <><CheckIcon size={17} /> Done Shopping</>}
+          </button>
+        </div>
+      )}
 
       {/* ── Complete card ────────────────────────────────────────────────────── */}
       {completeVisible && shoppingState === 'complete' && (
@@ -741,12 +751,7 @@ export default function ShoppingList({ appUser }) {
 }
 
 // ── Topbar component ───────────────────────────────────────────────────────────
-function Topbar({
-  shoppingState, estimatedTotal, inCartTotal, weekStart,
-  activeStoreFilter, onStoreFilter,
-  onStartShopping, onDoneShopping,
-  startBtnPressed, loading,
-}) {
+function ShoppingTopbar({ shoppingState }) {
   const pillStyle = shoppingState === 'complete'
     ? { background: 'rgba(122,140,110,0.12)', color: '#7A8C6E', border: '1px solid rgba(122,140,110,0.28)' }
     : shoppingState === 'shopping'
@@ -758,116 +763,16 @@ function Topbar({
     : 'Building'
 
   return (
-    <header style={{
-      position: 'sticky', top: 0, zIndex: 100,
-      background: '#3D6B4F',
-      boxShadow: '0 2px 0px rgba(20,40,25,0.55), 0 4px 8px rgba(20,40,25,0.40), 0 8px 24px rgba(30,55,35,0.28), 0 16px 40px rgba(30,55,35,0.14), 0 1px 0px rgba(255,255,255,0.06) inset',
-    }}>
-      {/* Row 1: logo / status pill / estimated total */}
+    <TopBar centerContent={
       <div style={{
-        height: '68px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 20px',
+        ...pillStyle,
+        fontSize: '10px', fontWeight: 500, letterSpacing: '1px',
+        textTransform: 'uppercase', padding: '5px 11px', borderRadius: '20px',
+        transition: 'all 0.3s',
       }}>
-        <div style={{
-          fontFamily: "'Playfair Display', serif", fontSize: '26px', fontWeight: 600,
-          color: 'rgba(250,247,242,0.95)', userSelect: 'none',
-        }}>
-          R<em style={{ fontStyle: 'italic', color: 'rgba(188,218,178,0.82)' }}>oux</em>
-        </div>
-
-        {/* Status pill */}
-        <div style={{
-          ...pillStyle,
-          fontSize: '10px', fontWeight: 500, letterSpacing: '1px',
-          textTransform: 'uppercase', padding: '5px 11px', borderRadius: '20px',
-          transition: 'all 0.3s',
-        }}>
-          {pillLabel}
-        </div>
-
-        {/* Estimated total */}
-        <div style={{
-          fontSize: '13px', color: 'rgba(210,230,200,0.75)', fontWeight: 300,
-          textAlign: 'right', minWidth: '48px',
-        }}>
-          {!loading && estimatedTotal ? `$${estimatedTotal.toFixed(0)} est` : ''}
-        </div>
+        {pillLabel}
       </div>
-
-      {/* Row 2: store filter pills (Building state only) */}
-      {shoppingState === 'building' && (
-        <div style={{
-          display: 'flex', gap: '8px', padding: '0 20px 10px',
-          overflowX: 'auto', scrollbarWidth: 'none',
-        }}
-          className="no-scrollbar"
-        >
-          {[
-            { id: 'all', label: 'All Stores' },
-            // TODO: pull store names from grocery_stores table for this household
-          ].map(store => (
-            <button
-              key={store.id}
-              onClick={() => onStoreFilter(store.id)}
-              style={{
-                fontSize: '11px', fontWeight: 500, padding: '6px 14px',
-                borderRadius: '20px', whiteSpace: 'nowrap', cursor: 'pointer',
-                flexShrink: 0,
-                background: activeStoreFilter === store.id ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.10)',
-                border: activeStoreFilter === store.id ? '1.5px solid rgba(255,255,255,0.35)' : '1.5px solid rgba(255,255,255,0.15)',
-                color: activeStoreFilter === store.id ? 'white' : 'rgba(210,230,200,0.7)',
-                transition: 'all 0.15s',
-              }}
-            >
-              {store.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Row 3: Start/Done Shopping CTA (Building or Shopping state) */}
-      {shoppingState !== 'complete' && (
-        <div style={{ padding: '0 20px 14px' }}>
-          {shoppingState === 'building' ? (
-            <button
-              onClick={onStartShopping}
-              style={{
-                width: '100%', padding: '13px 20px', borderRadius: '11px',
-                background: startBtnPressed ? '#2E5038' : 'rgba(255,255,255,0.18)',
-                color: 'white',
-                fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
-                border: '1.5px solid rgba(255,255,255,0.25)',
-                cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
-                transition: 'background 0.15s',
-                transform: startBtnPressed ? 'scale(0.97)' : 'scale(1)',
-                letterSpacing: '0.3px',
-              }}
-            >
-              <CartIcon size={17} />
-              Start Shopping
-            </button>
-          ) : (
-            <button
-              onClick={onDoneShopping}
-              style={{
-                width: '100%', padding: '13px 20px', borderRadius: '11px',
-                background: 'rgba(255,255,255,0.18)', color: 'white',
-                fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
-                border: '1.5px solid rgba(255,255,255,0.25)',
-                cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
-                transition: 'background 0.15s',
-                letterSpacing: '0.3px',
-              }}
-            >
-              <CheckIcon size={17} />
-              Done Shopping
-            </button>
-          )}
-        </div>
-      )}
-    </header>
+    } />
   )
 }
 

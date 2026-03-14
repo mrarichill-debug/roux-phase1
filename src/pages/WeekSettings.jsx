@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { getWeekDatesTZ, getWeekStartTZ, toLocalDateStr } from '../lib/dateUtils'
+import TopBar from '../components/TopBar'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -316,33 +317,27 @@ export default function WeekSettings({ appUser }) {
       overflowX: 'hidden',
     }}>
 
-      {/* ── Slim Topbar ───────────────────────────────────────────────────── */}
-      <header style={{
-        position: 'sticky', top: 0, zIndex: 100,
-        height: '58px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 20px', background: C.forest,
-        boxShadow: '0 2px 0px rgba(20,40,25,0.55), 0 4px 8px rgba(20,40,25,0.40), 0 8px 24px rgba(30,55,35,0.28), 0 16px 40px rgba(30,55,35,0.14), 0 1px 0px rgba(255,255,255,0.06) inset',
-      }}>
-        <div style={{ position: 'relative', display: 'inline-flex' }}>
-          <button onClick={handleBack} style={backBtnStyle} aria-label="Back">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
-              <path d="m15 18-6-6 6-6"/>
-            </svg>
-          </button>
-          {hasChanges && (
-            <span style={{
-              position: 'absolute', top: '2px', right: '2px',
-              width: '8px', height: '8px', borderRadius: '50%',
-              background: C.honey, border: `1.5px solid ${C.forest}`,
-            }} />
-          )}
-        </div>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 600, color: 'rgba(250,247,242,0.95)', userSelect: 'none' }}>
-          Ro<em style={{ fontStyle: 'italic', color: 'rgba(188,218,178,0.82)' }}>ux</em>
-        </div>
-        {/* Spacer to balance back button */}
-        <div style={{ width: '36px' }} />
-      </header>
+      <TopBar
+        slim
+        leftAction={{
+          onClick: handleBack,
+          icon: (
+            <div style={{ position: 'relative' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+                <path d="m15 18-6-6 6-6"/>
+              </svg>
+              {hasChanges && (
+                <span style={{
+                  position: 'absolute', top: '-6px', right: '-6px',
+                  width: '8px', height: '8px', borderRadius: '50%',
+                  background: C.honey, border: `1.5px solid ${C.forest}`,
+                }} />
+              )}
+            </div>
+          ),
+          label: 'Back',
+        }}
+      />
 
       {/* ── Screen Title ──────────────────────────────────────────────────── */}
       <div style={{

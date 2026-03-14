@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import WatermarkLayer from '../components/WatermarkLayer'
-// ProfileSheet is now global in App.jsx
+import TopBar from '../components/TopBar'
 import { getWeekDatesTZ, getWeekStartTZ, getDayOfWeekTZ, getTodayStr, timeGreetingTZ, toLocalDateStr } from '../lib/dateUtils'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
@@ -218,58 +218,18 @@ export default function Dashboard({ appUser }) {
 
       <WatermarkLayer />
 
-      {/* ── Topbar ──────────────────────────────────────────────────────── */}
-      <header style={{
-        position: 'sticky', top: 0, zIndex: 100,
-        height: '66px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 22px',
-        background: C.forest,
-        boxShadow: `
-          0 2px 0px rgba(20,40,25,0.55),
-          0 4px 8px rgba(20,40,25,0.40),
-          0 8px 24px rgba(30,55,35,0.28),
-          0 16px 40px rgba(30,55,35,0.14),
-          0 1px 0px rgba(255,255,255,0.06) inset
-        `,
-        flexShrink: 0,
-      }}>
-        <div style={{
-          fontFamily: "'Playfair Display', serif",
-          fontSize: '26px', fontWeight: 600,
-          color: 'rgba(250,247,242,0.95)',
-          userSelect: 'none', letterSpacing: '-0.3px',
-        }}>
-          Ro<em style={{ fontStyle: 'italic', color: 'rgba(188,218,178,0.82)' }}>ux</em>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-          {/* Bell */}
-          <button style={iconBtnStyle} aria-label="Notifications">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            </svg>
-            {/* Notification dot */}
-            <span style={{
-              position: 'absolute', top: '7px', right: '7px',
-              width: '7px', height: '7px', borderRadius: '50%',
-              background: C.honey, border: `1.5px solid ${C.forest}`,
-            }} />
-          </button>
-
-          {/* Search */}
-          <button style={iconBtnStyle} aria-label="Search">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
-              <circle cx="11" cy="11" r="8"/>
-              <path d="m21 21-4.35-4.35"/>
-            </svg>
-          </button>
-
-          {/* Avatar is now global — rendered in App.jsx */}
-          <div style={{ width: '34px' }} />
-        </div>
-      </header>
+      <TopBar rightActions={[
+        {
+          label: 'Notifications',
+          onClick: () => {},
+          icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+        },
+        {
+          label: 'Search',
+          onClick: () => {},
+          icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>,
+        },
+      ]} />
 
       {/* ── Scrollable content ────────────────────────────────────────────── */}
       <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
