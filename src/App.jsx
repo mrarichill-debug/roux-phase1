@@ -19,23 +19,6 @@ import SaveRecipe     from './pages/SaveRecipe'
 import ShoppingList from './pages/ShoppingList'
 import { Shell } from './components/AppShell'
 
-function SplashScreen() {
-  return (
-    <div style={{
-      background: '#FAF7F2', minHeight: '100vh',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <div style={{
-        fontFamily: "'Playfair Display', serif",
-        fontSize: '42px', fontWeight: 600, color: '#2C2417',
-        letterSpacing: '-0.5px',
-      }}>
-        Ro<em style={{ fontStyle: 'italic', color: '#3D6B4F' }}>ux</em>
-      </div>
-    </div>
-  )
-}
-
 export default function App() {
   const [session, setSession] = useState(undefined) // undefined = still loading
   const [appUser, setAppUser] = useState(null)
@@ -95,8 +78,8 @@ export default function App() {
     }
   }
 
-  // Still determining auth state — show splash
-  if (session === undefined) return <SplashScreen />
+  // Still determining auth state — plain cream background, no logo or text
+  if (session === undefined) return <div style={{ minHeight: '100vh', background: '#FAF7F2' }} />
 
   return (
     <BrowserRouter>
@@ -112,7 +95,7 @@ export default function App() {
         </Routes>
       ) : !appUser ? (
         // ── Session loaded, waiting on user record ────────────────────────
-        <SplashScreen />
+        <div style={{ minHeight: '100vh', background: '#FAF7F2' }} />
       ) : (
         // ── Authenticated app ─────────────────────────────────────────────
         <Routes>

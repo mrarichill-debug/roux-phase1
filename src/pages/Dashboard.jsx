@@ -445,48 +445,59 @@ function TonightFilled({ meal, onView }) {
   )
 }
 
-// ── Tonight Card — empty state ─────────────────────────────────────────────────
+// ── Tonight Card — empty state (cutting board with dashed groove) ──────────────
 function TonightEmpty({ onPlan }) {
   return (
     <div
-      style={{
-        margin: '0 22px 14px', borderRadius: '20px',
-        border: `1.5px dashed rgba(61,107,79,0.3)`,
-        padding: '22px 20px', cursor: 'pointer',
-        position: 'relative', zIndex: 1,
-        animation: 'fadeUp 0.4s ease 0.05s both',
-        transition: 'all 0.15s',
-      }}
+      className="tonight-board"
+      style={{ margin: '0 22px 14px' }}
       onClick={onPlan}
     >
-      <div style={{
-        fontSize: '9px', fontWeight: 500, letterSpacing: '2.5px',
-        textTransform: 'uppercase', color: C.sage, marginBottom: '8px',
-      }}>
-        Tonight
+      <div style={{ padding: '20px 20px 18px', position: 'relative', zIndex: 1 }}>
+        {/* Top row */}
+        <div style={{
+          fontSize: '9px', fontWeight: 500, letterSpacing: '2.5px',
+          textTransform: 'uppercase', color: 'rgba(80,38,8,0.52)',
+          display: 'flex', alignItems: 'center', gap: '6px',
+          marginBottom: '11px',
+        }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 10, height: 10 }}>
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+          </svg>
+          Tonight
+        </div>
+
+        {/* Empty state text */}
+        <div style={{
+          fontFamily: "'Playfair Display', serif",
+          fontSize: '27px', fontWeight: 500, fontStyle: 'italic',
+          color: 'rgba(40,18,4,0.45)', lineHeight: 1.2, marginBottom: '16px',
+        }}>
+          What's for dinner?
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: '1px', background: 'rgba(80,38,8,0.14)', marginBottom: '14px' }} />
+
+        {/* Footer */}
+        <button
+          onClick={e => { e.stopPropagation(); onPlan() }}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            background: 'rgba(80,38,8,0.14)', color: 'rgba(40,18,4,0.80)',
+            border: '1px solid rgba(80,38,8,0.20)', borderRadius: '8px',
+            padding: '6px 13px', cursor: 'pointer',
+            fontFamily: "'Jost', sans-serif", fontSize: '11px', fontWeight: 500,
+            letterSpacing: '0.3px',
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Plan tonight's meal
+        </button>
       </div>
-      <div style={{
-        fontFamily: "'Playfair Display', serif",
-        fontSize: '22px', fontStyle: 'italic',
-        color: 'rgba(44,36,23,0.38)', marginBottom: '14px',
-      }}>
-        What's for dinner?
-      </div>
-      <button
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: '6px',
-          background: C.forest, color: 'white', border: 'none',
-          borderRadius: '9px', padding: '9px 16px',
-          fontFamily: "'Jost', sans-serif", fontSize: '12px', fontWeight: 500,
-          cursor: 'pointer', boxShadow: '0 2px 8px rgba(61,107,79,0.22)',
-        }}
-        onClick={e => { e.stopPropagation(); onPlan() }}
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
-        Plan tonight's meal
-      </button>
     </div>
   )
 }
