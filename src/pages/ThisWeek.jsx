@@ -460,10 +460,10 @@ export default function ThisWeek({ appUser }) {
 
   function selectFavorite(fav) {
     setProteinName(fav.name)
-    setProteinStoreId(fav.preferred_store_id || groceryStores[0]?.id || null)
-    setProteinPrice(fav.typical_price ? String(fav.typical_price) : '')
+    setProteinStoreId(null) // fresh choice each week
+    setProteinPrice('')
     setProteinOnSale(false)
-    setSaveToUsuals(false) // already a favorite
+    setSaveToUsuals(false)
     setProteinTab('confirm')
   }
 
@@ -484,15 +484,13 @@ export default function ThisWeek({ appUser }) {
       if (error) throw error
       setProteins(prev => [...prev, data])
 
-      // Also save to favorites if toggle is on
+      // Also save to favorites if toggle is on (name only — no store/price)
       if (saveToUsuals && proteinTab === 'new') {
         const { data: favData } = await supabase.from('protein_favorites').insert({
           household_id: appUser.household_id,
           name: proteinName.trim(),
-          preferred_store_id: proteinStoreId || null,
-          typical_price: proteinPrice ? parseFloat(proteinPrice) : null,
           sort_order: proteinFavorites.length + 1,
-        }).select('*, grocery_stores(name)').single()
+        }).select('id, name, sort_order').single()
         if (favData) setProteinFavorites(prev => [...prev, favData])
       }
 
@@ -808,9 +806,6 @@ export default function ThisWeek({ appUser }) {
                           }}
                         >
                           <div style={{ fontSize: '13px', fontWeight: 500, color: C.ink }}>{fav.name}</div>
-                          {fav.grocery_stores?.name && (
-                            <div style={{ fontSize: '10px', color: C.driftwood, marginTop: '2px' }}>{fav.grocery_stores.name}</div>
-                          )}
                           {editingFavorites && (
                             <button
                               onClick={e => { e.stopPropagation(); deleteFavorite(fav.id) }}
@@ -842,10 +837,24 @@ export default function ThisWeek({ appUser }) {
               {/* ── Quick confirm (after tapping a favorite) ───────── */}
               {proteinTab === 'confirm' && (
                 <div>
-                  <div style={{ fontSize: '14px', color: C.ink, fontWeight: 500, marginBottom: '4px' }}>{proteinName}</div>
-                  <div style={{ fontSize: '12px', color: C.driftwood, marginBottom: '14px' }}>
-                    {groceryStores.find(s => s.id === proteinStoreId)?.name || 'No store selected'}
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.ink, fontWeight: 500, marginBottom: '14px' }}>{proteinName}</div>
+
+                  {/* Store selector */}
+                  <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>
+                    Where are you getting it this week?
                   </div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                    {groceryStores.map(store => (
+                      <button key={store.id} onClick={() => setProteinStoreId(store.id)} style={{
+                        padding: '6px 14px', fontSize: '12px', fontFamily: "'Jost', sans-serif", fontWeight: proteinStoreId === store.id ? 500 : 400,
+                        borderRadius: '14px', cursor: 'pointer', border: `1.5px solid ${proteinStoreId === store.id ? C.forest : C.linen}`,
+                        background: proteinStoreId === store.id ? C.forest : 'transparent', color: proteinStoreId === store.id ? 'white' : C.ink, transition: 'all 0.15s',
+                      }}>
+                        {store.name}
+                      </button>
+                    ))}
+                  </div>
+
                   {/* On sale toggle */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                     <span style={{ fontSize: '13px', color: C.ink }}>On sale this week</span>
