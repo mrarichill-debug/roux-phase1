@@ -77,6 +77,7 @@ export default function ShoppingList({ appUser }) {
   const [sageVisible,      setSageVisible]      = useState(true)
   const [sageNudgeIdx,     setSageNudgeIdx]     = useState(0)
   const [activeStoreFilter, setActiveStoreFilter] = useState('all')
+  const [stores,           setStores]           = useState([])
   const [startBtnPressed,  setStartBtnPressed]  = useState(false)
   const [inCartPulsing,    setInCartPulsing]    = useState(false)
   const [completeVisible,  setCompleteVisible]  = useState(false)
@@ -95,6 +96,14 @@ export default function ShoppingList({ appUser }) {
     const tz = appUser?.timezone ?? 'America/Chicago'
     const ws = getWeekStartTZ(tz)
     setWeekStart(ws)
+
+    // Load grocery stores for filter pills
+    const { data: storeData } = await supabase
+      .from('grocery_stores')
+      .select('id, name, is_primary')
+      .eq('household_id', appUser.household_id)
+      .order('is_primary', { ascending: false })
+    if (storeData) setStores(storeData)
 
     // 1. Find this week's meal plan
     const { data: plan } = await supabase
@@ -393,6 +402,32 @@ export default function ShoppingList({ appUser }) {
           >
             {shoppingState === 'building' ? <><CartIcon size={17} /> Start Shopping</> : <><CheckIcon size={17} /> Done Shopping</>}
           </button>
+
+          {/* Store filter pills */}
+          {stores.length > 0 && shoppingState === 'building' && (
+            <div className="no-scrollbar" style={{ display: 'flex', gap: '6px', overflowX: 'auto', marginTop: '10px' }}>
+              {[{ id: 'all', name: 'All Stores' }, ...stores].map(store => {
+                const isActive = activeStoreFilter === (store.id === 'all' ? 'all' : store.id)
+                return (
+                  <button
+                    key={store.id}
+                    onClick={() => setActiveStoreFilter(store.id === 'all' ? 'all' : store.id)}
+                    style={{
+                      fontSize: '11px', fontWeight: 500, padding: '6px 14px',
+                      borderRadius: '20px', whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0,
+                      background: isActive ? 'rgba(122,140,110,0.10)' : 'white',
+                      border: isActive ? `1px solid ${C.sage}` : '1px solid rgba(200,185,160,0.55)',
+                      color: isActive ? C.forest : C.driftwood,
+                      fontFamily: "'Jost', sans-serif", transition: 'all 0.15s',
+                      boxShadow: '0 1px 3px rgba(80,60,30,0.06)',
+                    }}
+                  >
+                    {store.name}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 
