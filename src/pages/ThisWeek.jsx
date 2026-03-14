@@ -127,6 +127,7 @@ export default function ThisWeek({ appUser }) {
   const [proteinOnSale,     setProteinOnSale]     = useState(false)
   const [proteinPrice,      setProteinPrice]      = useState('')
   const [savingProtein,     setSavingProtein]     = useState(false)
+  const [proteinUnit,       setProteinUnit]       = useState('lb')
   const [addingStore,       setAddingStore]       = useState(false)
   const [newStoreName,      setNewStoreName]      = useState('')
   const [proteinTab,        setProteinTab]        = useState('usuals') // 'usuals' | 'new'
@@ -451,6 +452,7 @@ export default function ThisWeek({ appUser }) {
     setProteinStoreId(groceryStores[0]?.id || null)
     setProteinOnSale(false)
     setProteinPrice('')
+    setProteinUnit('lb')
     setSaveToUsuals(true)
     setProteinTab('usuals')
     setEditingFavorites(false)
@@ -460,8 +462,9 @@ export default function ThisWeek({ appUser }) {
 
   function selectFavorite(fav) {
     setProteinName(fav.name)
-    setProteinStoreId(null) // fresh choice each week
+    setProteinStoreId(null)
     setProteinPrice('')
+    setProteinUnit('lb')
     setProteinOnSale(false)
     setSaveToUsuals(false)
     setProteinTab('confirm')
@@ -480,6 +483,7 @@ export default function ThisWeek({ appUser }) {
         store_id: proteinStoreId || null,
         is_on_sale: proteinOnSale,
         sale_price: proteinOnSale && proteinPrice ? parseFloat(proteinPrice) : null,
+        unit: proteinPrice ? proteinUnit : null,
       }).select('*, grocery_stores(name)').single()
       if (error) throw error
       setProteins(prev => [...prev, data])
@@ -868,10 +872,24 @@ export default function ThisWeek({ appUser }) {
                     </button>
                   </div>
                   {proteinOnSale && (
-                    <input type="number" value={proteinPrice} onChange={e => setProteinPrice(e.target.value)} placeholder="$0.00" step="0.01" style={{
-                      width: '100%', padding: '12px 14px', border: `1px solid ${C.linen}`, borderRadius: '10px',
-                      fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300, color: C.ink, outline: 'none', background: C.cream, boxSizing: 'border-box', marginBottom: '14px',
-                    }} />
+                    <>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '10px' }}>
+                        <input type="number" value={proteinPrice} onChange={e => setProteinPrice(e.target.value)} placeholder="$0.00" step="0.01" style={{
+                          flex: 1, padding: '12px 14px', border: `1px solid ${C.linen}`, borderRadius: '10px',
+                          fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300, color: C.ink, outline: 'none', background: C.cream, boxSizing: 'border-box',
+                        }} />
+                        {['lb', 'pkg', 'total'].map(u => (
+                          <button key={u} onClick={() => setProteinUnit(u)} style={{
+                            padding: '8px 10px', fontSize: '11px', fontFamily: "'Jost', sans-serif", fontWeight: proteinUnit === u ? 500 : 400,
+                            borderRadius: '8px', cursor: 'pointer', border: `1px solid ${proteinUnit === u ? C.forest : C.linen}`,
+                            background: proteinUnit === u ? C.forest : 'transparent', color: proteinUnit === u ? 'white' : C.driftwood,
+                            transition: 'all 0.15s',
+                          }}>
+                            {u === 'lb' ? '/ lb' : u === 'pkg' ? '/ pkg' : 'total'}
+                          </button>
+                        ))}
+                      </div>
+                    </>
                   )}
                   <button onClick={saveProtein} disabled={savingProtein} style={{
                     width: '100%', padding: '14px', borderRadius: '12px', background: C.forest, color: 'white',
@@ -936,10 +954,22 @@ export default function ThisWeek({ appUser }) {
                     </button>
                   </div>
                   {proteinOnSale && (
-                    <input type="number" value={proteinPrice} onChange={e => setProteinPrice(e.target.value)} placeholder="$0.00" step="0.01" style={{
-                      width: '100%', padding: '12px 14px', border: `1px solid ${C.linen}`, borderRadius: '10px',
-                      fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300, color: C.ink, outline: 'none', background: C.cream, boxSizing: 'border-box', marginBottom: '14px',
-                    }} />
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '14px' }}>
+                      <input type="number" value={proteinPrice} onChange={e => setProteinPrice(e.target.value)} placeholder="$0.00" step="0.01" style={{
+                        flex: 1, padding: '12px 14px', border: `1px solid ${C.linen}`, borderRadius: '10px',
+                        fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300, color: C.ink, outline: 'none', background: C.cream, boxSizing: 'border-box',
+                      }} />
+                      {['lb', 'pkg', 'total'].map(u => (
+                        <button key={u} onClick={() => setProteinUnit(u)} style={{
+                          padding: '8px 10px', fontSize: '11px', fontFamily: "'Jost', sans-serif", fontWeight: proteinUnit === u ? 500 : 400,
+                          borderRadius: '8px', cursor: 'pointer', border: `1px solid ${proteinUnit === u ? C.forest : C.linen}`,
+                          background: proteinUnit === u ? C.forest : 'transparent', color: proteinUnit === u ? 'white' : C.driftwood,
+                          transition: 'all 0.15s',
+                        }}>
+                          {u === 'lb' ? '/ lb' : u === 'pkg' ? '/ pkg' : 'total'}
+                        </button>
+                      ))}
+                    </div>
                   )}
 
                   {/* Save to usuals toggle */}
@@ -1124,11 +1154,6 @@ function ProteinRoster({ proteins, open, onToggle, onAdd, onDelete }) {
             }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ fontSize: '13px', color: C.ink }}>{p.protein_name}</span>
-                {p.sale_price && (
-                  <span style={{ fontSize: '11px', color: C.honey, marginLeft: '6px' }}>
-                    ${parseFloat(p.sale_price).toFixed(2)}
-                  </span>
-                )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                 {p.grocery_stores?.name && (
@@ -1141,6 +1166,11 @@ function ProteinRoster({ proteins, open, onToggle, onAdd, onDelete }) {
                     padding: '2px 6px', borderRadius: '4px',
                   }}>
                     Sale
+                  </span>
+                )}
+                {p.sale_price && parseFloat(p.sale_price) > 0 && (
+                  <span style={{ fontSize: '11px', color: C.driftwood, fontWeight: 400 }}>
+                    ${parseFloat(p.sale_price).toFixed(2)}{p.unit === 'lb' ? ' / lb' : p.unit === 'pkg' ? ' / pkg' : p.unit === 'total' ? ' total' : ''}
                   </span>
                 )}
                 <button
