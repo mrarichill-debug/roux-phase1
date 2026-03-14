@@ -149,7 +149,7 @@ function SignupForm({ onSignupComplete }) {
       <Field
         label="Household name"
         type="text"
-        placeholder="e.g. The Smith Family"
+        placeholder="e.g. Your Family Kitchen"
         value={householdName}
         onChange={e => setHouseholdName(e.target.value)}
         required
