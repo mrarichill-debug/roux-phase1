@@ -79,14 +79,17 @@ export default function WeekSettings({ appUser }) {
   const [dayTypes, setDayTypes] = useState({ ...DEFAULT_DAY_TYPES })
   const [traditions, setTraditions] = useState([])
   const [traditionToggles, setTraditionToggles] = useState({})
-  const [proteins, setProteins] = useState([])
-  const [stores, setStores] = useState([])
   const [loading, setLoading] = useState(true)
   const [saveSheetOpen, setSaveSheetOpen] = useState(false)
   const [templateName, setTemplateName] = useState('')
   const [saving, setSaving] = useState(false)
   const [savedTemplates, setSavedTemplates] = useState([])
   const [applySheetOpen, setApplySheetOpen] = useState(false)
+  const [addTradSheetOpen, setAddTradSheetOpen] = useState(false)
+  const [newTradName, setNewTradName] = useState('')
+  const [newTradDay, setNewTradDay] = useState('tuesday')
+  const [newTradType, setNewTradType] = useState('weekly')
+  const [savingTrad, setSavingTrad] = useState(false)
 
   useEffect(() => {
     if (appUser?.household_id) loadData()
@@ -98,7 +101,7 @@ export default function WeekSettings({ appUser }) {
       const hid = appUser.household_id
       const weekStart = getWeekStartTZ(tz, 0)
 
-      const [planRes, tradRes, storeRes, templatesRes] = await Promise.all([
+      const [planRes, tradRes, templatesRes] = await Promise.all([
         supabase.from('meal_plans')
           .select('id, status, week_start_date, week_end_date, notes')
           .eq('household_id', hid)
@@ -106,9 +109,6 @@ export default function WeekSettings({ appUser }) {
           .maybeSingle(),
         supabase.from('household_traditions')
           .select('id, name, day_of_week, tradition_type')
-          .eq('household_id', hid),
-        supabase.from('grocery_stores')
-          .select('id, name')
           .eq('household_id', hid),
         supabase.from('meal_plan_templates')
           .select('id, name, source_plan_ids')
@@ -122,20 +122,9 @@ export default function WeekSettings({ appUser }) {
         tradRes.data.forEach(t => { toggles[t.id] = true })
         setTraditionToggles(toggles)
       }
-      if (storeRes.data) setStores(storeRes.data)
       if (templatesRes.data) setSavedTemplates(templatesRes.data)
 
-      const activePlan = planRes.data
-      setPlan(activePlan)
-
-      // Load proteins if plan exists
-      if (activePlan) {
-        const { data: proteinData } = await supabase
-          .from('weekly_proteins')
-          .select('*, grocery_stores(name)')
-          .eq('meal_plan_id', activePlan.id)
-        if (proteinData) setProteins(proteinData)
-      }
+      setPlan(planRes.data)
     } catch (err) {
       console.error('WeekSettings load error:', err)
     } finally {
@@ -198,6 +187,34 @@ export default function WeekSettings({ appUser }) {
 
   function toggleTradition(id) {
     setTraditionToggles(prev => ({ ...prev, [id]: !prev[id] }))
+  }
+
+  function openAddTradSheet() {
+    setNewTradName('')
+    setNewTradDay('tuesday')
+    setNewTradType('weekly')
+    setAddTradSheetOpen(true)
+  }
+
+  async function saveTradition() {
+    if (!newTradName.trim() || savingTrad) return
+    setSavingTrad(true)
+    try {
+      const { data, error } = await supabase.from('household_traditions').insert({
+        household_id: appUser.household_id,
+        name: newTradName.trim(),
+        day_of_week: newTradDay,
+        tradition_type: newTradType,
+      }).select('id, name, day_of_week, tradition_type').single()
+      if (error) throw error
+      setTraditions(prev => [...prev, data])
+      setTraditionToggles(prev => ({ ...prev, [data.id]: true }))
+      setAddTradSheetOpen(false)
+    } catch (err) {
+      console.error('[Roux] saveTradition error:', err)
+    } finally {
+      setSavingTrad(false)
+    }
   }
 
   return (
@@ -306,7 +323,7 @@ export default function WeekSettings({ appUser }) {
           <div style={{ ...cardStyle, animation: 'fadeUp 0.35s ease 0.12s both' }}>
             <div style={sectionHeaderStyle}>Traditions</div>
             {traditions.length === 0 ? (
-              <div style={{ fontSize: '13px', fontStyle: 'italic', color: C.driftwood }}>
+              <div style={{ fontSize: '13px', fontStyle: 'italic', color: C.driftwood, marginBottom: '12px' }}>
                 No traditions set up yet.
               </div>
             ) : (
@@ -318,7 +335,14 @@ export default function WeekSettings({ appUser }) {
                   padding: '10px 0',
                   borderBottom: `1px solid rgba(200,185,160,0.2)`,
                 }}>
-                  <span style={{ fontSize: '14px', color: C.ink }}>{t.name}</span>
+                  <div>
+                    <span style={{ fontSize: '14px', color: C.ink }}>{t.name}</span>
+                    {t.day_of_week && (
+                      <span style={{ fontSize: '11px', color: C.driftwood, marginLeft: '8px' }}>
+                        {t.day_of_week.charAt(0).toUpperCase() + t.day_of_week.slice(1)}
+                      </span>
+                    )}
+                  </div>
                   <button
                     onClick={() => toggleTradition(t.id)}
                     style={{
@@ -349,71 +373,17 @@ export default function WeekSettings({ appUser }) {
                 </div>
               ))
             )}
-          </div>
-
-          {/* ── Section 4: Protein Roster ─────────────────────────────────── */}
-          <div style={{ ...cardStyle, animation: 'fadeUp 0.35s ease 0.16s both' }}>
-            <div style={sectionHeaderStyle}>Protein Roster</div>
-            {proteins.length === 0 ? (
-              <div style={{ fontSize: '13px', fontStyle: 'italic', color: C.driftwood, marginBottom: '12px' }}>
-                No proteins added yet.
-              </div>
-            ) : (
-              proteins.map(p => (
-                <div key={p.id} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '10px 0',
-                  borderBottom: `1px solid rgba(200,185,160,0.2)`,
-                }}>
-                  <div>
-                    <span style={{ fontSize: '14px', color: C.ink, fontWeight: 400 }}>
-                      {p.protein_name || p.name}
-                    </span>
-                    {p.grocery_stores?.name && (
-                      <span style={{ fontSize: '12px', color: C.driftwood, marginLeft: '8px' }}>
-                        {p.grocery_stores.name}
-                      </span>
-                    )}
-                  </div>
-                  {p.on_sale && (
-                    <span style={{
-                      fontSize: '10px',
-                      fontWeight: 600,
-                      letterSpacing: '0.5px',
-                      color: 'white',
-                      background: C.honey,
-                      borderRadius: '8px',
-                      padding: '2px 8px',
-                      textTransform: 'uppercase',
-                    }}>
-                      Sale
-                    </span>
-                  )}
-                </div>
-              ))
-            )}
             <button
+              onClick={openAddTradSheet}
               style={{
-                width: '100%',
-                padding: '12px',
-                marginTop: '8px',
-                fontSize: '13px',
-                fontFamily: "'Jost', sans-serif",
-                fontWeight: 500,
-                color: C.forest,
-                background: 'transparent',
-                border: `1.5px dashed rgba(61,107,79,0.4)`,
-                borderRadius: '10px',
-                cursor: 'pointer',
-                textAlign: 'center',
-                transition: 'background 0.15s',
+                width: '100%', padding: '12px', marginTop: '8px',
+                fontSize: '13px', fontFamily: "'Jost', sans-serif", fontWeight: 500,
+                color: C.forest, background: 'transparent',
+                border: `1.5px dashed rgba(61,107,79,0.4)`, borderRadius: '10px',
+                cursor: 'pointer', textAlign: 'center', transition: 'background 0.15s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(61,107,79,0.04)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
             >
-              + Add protein
+              + Add tradition
             </button>
           </div>
 
@@ -453,6 +423,104 @@ export default function WeekSettings({ appUser }) {
 
       {/* ── Bottom Nav ────────────────────────────────────────────────────── */}
       <BottomNav navigate={navigate} />
+
+      {/* ── Add Tradition Sheet overlay ──────────────────────────────── */}
+      <div
+        onClick={() => setAddTradSheetOpen(false)}
+        style={{
+          position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)',
+          zIndex: 200, opacity: addTradSheetOpen ? 1 : 0,
+          pointerEvents: addTradSheetOpen ? 'all' : 'none',
+          transition: 'opacity 0.25s ease',
+        }}
+      />
+
+      {/* ── Add Tradition Sheet ────────────────────────────────────────── */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: '50%',
+        transform: addTradSheetOpen ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
+        width: '100%', maxWidth: '430px',
+        background: 'white', borderRadius: '20px 20px 0 0',
+        padding: '0 0 40px', zIndex: 201,
+        transition: 'transform 0.32s cubic-bezier(0.32,0.72,0,1)',
+        boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
+      }}>
+        <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+        <div style={{ padding: '20px 22px 0' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '16px' }}>
+            Add a tradition
+          </div>
+
+          {/* Name */}
+          <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>
+            Name
+          </div>
+          <input
+            type="text"
+            value={newTradName}
+            onChange={e => setNewTradName(e.target.value)}
+            placeholder="e.g. Taco Tuesday, Pizza Friday"
+            autoFocus={addTradSheetOpen}
+            style={{
+              width: '100%', padding: '12px 14px',
+              border: `1px solid ${C.linen}`, borderRadius: '10px',
+              fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300,
+              color: C.ink, outline: 'none', background: C.cream,
+              boxSizing: 'border-box', marginBottom: '16px',
+            }}
+          />
+
+          {/* Day of week */}
+          <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>
+            Day
+          </div>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
+            {DOW_KEYS.map((dow, i) => (
+              <button
+                key={dow}
+                onClick={() => setNewTradDay(dow)}
+                style={{
+                  padding: '6px 12px', fontSize: '12px',
+                  fontFamily: "'Jost', sans-serif", fontWeight: newTradDay === dow ? 500 : 400,
+                  borderRadius: '14px', cursor: 'pointer',
+                  border: `1.5px solid ${newTradDay === dow ? C.forest : C.linen}`,
+                  background: newTradDay === dow ? C.forest : 'transparent',
+                  color: newTradDay === dow ? 'white' : C.ink,
+                  transition: 'all 0.15s',
+                }}
+              >
+                {DAYS[i].slice(0, 3)}
+              </button>
+            ))}
+          </div>
+
+          {/* Save / Cancel */}
+          <button
+            onClick={saveTradition}
+            disabled={!newTradName.trim() || savingTrad}
+            style={{
+              width: '100%', background: newTradName.trim() ? C.forest : C.linen,
+              color: newTradName.trim() ? 'white' : C.driftwood,
+              border: 'none', borderRadius: '12px', padding: '14px',
+              fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
+              cursor: newTradName.trim() ? 'pointer' : 'default',
+              marginBottom: '8px',
+            }}
+          >
+            {savingTrad ? 'Saving…' : 'Save tradition'}
+          </button>
+          <button
+            onClick={() => setAddTradSheetOpen(false)}
+            style={{
+              width: '100%', background: 'none', border: 'none', color: C.driftwood,
+              fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300,
+              padding: '10px', cursor: 'pointer',
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
 
       {/* ── Save Template Sheet overlay ────────────────────────────────── */}
       <div
