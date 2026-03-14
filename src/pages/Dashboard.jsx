@@ -294,7 +294,7 @@ export default function Dashboard({ appUser }) {
         {loading ? (
           <ShimmerCard height="160px" margin="0 22px 14px" />
         ) : tonightMeal ? (
-          <TonightFilled meal={tonightMeal} onView={() => navigate('/thisweek')} />
+          <TonightFilled meal={tonightMeal} onView={() => navigate(tonightMeal.recipe_id ? `/recipe/${tonightMeal.recipe_id}` : '/thisweek')} />
         ) : (
           <TonightEmpty onPlan={() => navigate('/thisweek')} />
         )}
