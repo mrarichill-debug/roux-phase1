@@ -173,13 +173,24 @@ export default function WeekSettings({ appUser }) {
         .filter(([, on]) => on)
         .map(([id]) => id)
 
-      const { data, error } = await supabase.from('meal_plan_templates').insert({
+      const insertPayload = {
         household_id: appUser.household_id,
         name: templateName.trim(),
         source_plan_ids: { day_types: dayTypes, traditions: activeTraditions },
-      }).select('id, name, source_plan_ids').single()
+      }
+      console.log('[Roux] saveTemplate payload:', insertPayload)
 
-      if (error) throw error
+      const { data, error } = await supabase
+        .from('meal_plan_templates')
+        .insert(insertPayload)
+        .select('id, name, source_plan_ids')
+        .single()
+
+      if (error) {
+        console.error('[Roux] saveTemplate Supabase error:', error.message, error.details, error.hint, error.code)
+        throw error
+      }
+      console.log('[Roux] saveTemplate success:', data)
       setSavedTemplates(prev => [data, ...prev])
       setSaveSheetOpen(false)
     } catch (err) {

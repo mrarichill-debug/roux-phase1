@@ -36,9 +36,17 @@ function formatWeekRange(dates) {
   return `${dates[0].toLocaleDateString('en-US', opts)} — ${dates[6].toLocaleDateString('en-US', opts)}`
 }
 
-function getDayType(jsDay) {
-  if (jsDay === 0 || jsDay === 6) return { label: 'Weekend',    emoji: '🟢', color: C.forest,     bg: 'rgba(122,140,110,0.12)' }
-  return                                  { label: 'School',     emoji: '🔵', color: '#3A6CB5',    bg: 'rgba(91,141,217,0.12)'  }
+const DAY_TYPE_MAP = {
+  school:    { label: 'School',    emoji: '🔵', color: '#3A6CB5',    bg: 'rgba(91,141,217,0.12)'  },
+  weekend:   { label: 'Weekend',   emoji: '🟢', color: C.forest,     bg: 'rgba(122,140,110,0.12)' },
+  no_school: { label: 'No School', emoji: '🟠', color: '#D4874A',    bg: 'rgba(212,135,74,0.12)'  },
+  summer:    { label: 'Summer',    emoji: '🟡', color: C.honey,      bg: 'rgba(196,154,60,0.12)'  },
+}
+
+function getDayType(jsDay, savedType) {
+  if (savedType && DAY_TYPE_MAP[savedType]) return DAY_TYPE_MAP[savedType]
+  if (jsDay === 0 || jsDay === 6) return DAY_TYPE_MAP.weekend
+  return DAY_TYPE_MAP.school
 }
 
 function getMealName(meal) {
@@ -82,7 +90,8 @@ const weekNavBtnStyle = {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function ThisWeek({ appUser }) {
-  const navigate = useNavigate()
+  const navigate  = useNavigate()
+  const location  = useLocation()
 
   const [weekOffset,        setWeekOffset]        = useState(0)
   const [plan,              setPlan]              = useState(null)
@@ -106,6 +115,7 @@ export default function ThisWeek({ appUser }) {
   const [toastMsg,          setToastMsg]          = useState('')
   const [overlayVisible,    setOverlayVisible]    = useState(false)
   const [shoppingPrompt,    setShoppingPrompt]    = useState(false)
+  const [savedDayTypes,     setSavedDayTypes]     = useState(null) // from meal_plans.notes
 
   const overlayRef = useRef(null)
   const tz         = appUser?.timezone ?? 'America/Chicago'
@@ -116,7 +126,7 @@ export default function ThisWeek({ appUser }) {
 
   useEffect(() => {
     if (appUser?.household_id) loadWeekData()
-  }, [appUser?.household_id, weekOffset])
+  }, [appUser?.household_id, weekOffset, location.key])
 
   async function loadWeekData() {
     setLoading(true)
@@ -132,7 +142,7 @@ export default function ThisWeek({ appUser }) {
           .select('id, name, day_of_week, tradition_type')
           .eq('household_id', hid),
         supabase.from('meal_plans')
-          .select('id, status, week_start_date, week_end_date, published_at')
+          .select('id, status, week_start_date, week_end_date, published_at, notes')
           .eq('household_id', hid)
           .eq('week_start_date', weekStart)
           .maybeSingle(),
@@ -159,6 +169,18 @@ export default function ThisWeek({ appUser }) {
       }
 
       setPlan(activePlan)
+
+      // Parse saved day types from meal_plans.notes (set by Week Settings)
+      if (activePlan?.notes) {
+        try {
+          const config = JSON.parse(activePlan.notes)
+          if (config.day_types) setSavedDayTypes(config.day_types)
+          else setSavedDayTypes(null)
+        } catch { setSavedDayTypes(null) }
+      } else {
+        setSavedDayTypes(null)
+      }
+
       const isPublished = activePlan?.status === 'published' || activePlan?.status === 'active'
       setPublishBarVisible(!isPublished && activePlan?.status === 'draft')
 
@@ -482,6 +504,7 @@ export default function ThisWeek({ appUser }) {
               breakfast={breakfast}
               lunch={lunch}
               tradition={tradition}
+              savedDayType={savedDayTypes?.[dowKey] ?? null}
               animDelay={`${0.06 + i * 0.05}s`}
               onOpenSheet={openSheet}
             />
@@ -695,8 +718,8 @@ function ProteinRoster({ proteins, open, onToggle }) {
 }
 
 // ── Day Row ────────────────────────────────────────────────────────────────────
-function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, tradition, animDelay, onOpenSheet }) {
-  const dayType  = getDayType(date.getDay())
+function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, tradition, savedDayType, animDelay, onOpenSheet }) {
+  const dayType  = getDayType(date.getDay(), savedDayType)
   const dayName  = isToday ? 'Today' : dowKey.charAt(0).toUpperCase() + dowKey.slice(1)
   const isOpenEv = dinner?.note === 'open_evening'
   const hasDinner= dinner && !isOpenEv
