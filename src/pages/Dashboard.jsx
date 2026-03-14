@@ -57,7 +57,6 @@ function getMealName(meal) {
 export default function Dashboard({ appUser }) {
   const navigate = useNavigate()
 
-  const [householdName, setHouseholdName]   = useState(null)
   const [activePlan, setActivePlan]         = useState(null)
   const [tonightMeal, setTonightMeal]       = useState(null)
   const [weekMeals, setWeekMeals]           = useState([])
@@ -86,16 +85,13 @@ export default function Dashboard({ appUser }) {
       const hid = appUser.household_id
       const weekStart = getWeekStartTZ(tz)
 
-      const [householdRes, planRes] = await Promise.all([
-        supabase.from('households').select('name').eq('id', hid).maybeSingle(),
+      const [planRes] = await Promise.all([
         supabase.from('meal_plans')
           .select('id, status, week_start_date, week_end_date')
           .eq('household_id', hid)
           .eq('week_start_date', weekStart)
           .maybeSingle(),
       ])
-
-      if (householdRes.data) setHouseholdName(householdRes.data.name)
 
       const plan = planRes.data
       setActivePlan(plan)
@@ -263,7 +259,7 @@ export default function Dashboard({ appUser }) {
           }}>
             {timeGreetingTZ(tz)},<br />
             <em style={{ fontStyle: 'italic', color: C.sage }}>
-              {householdName ? `${householdName}.` : (loading ? '…' : `${firstName}.`)}
+              {loading ? '…' : `${firstName}.`}
             </em>
           </h1>
 
