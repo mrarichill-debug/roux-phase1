@@ -29,10 +29,10 @@ export default function App() {
     // fetchAppUser runs twice concurrently and can overwrite state with null.
     //
     // IMPORTANT: Do not call setSession() before fetchAppUser completes.
-    // Setting session immediately while appUser is still null causes a splash
-    // screen flash after login (the !appUser branch renders <SplashScreen/>).
-    // Instead, keep session at its previous value until the user record loads,
-    // then set both atomically so the UI transitions directly.
+    // Setting session immediately while appUser is still null causes a flash
+    // (the !appUser branch renders a loading div). Keep session at its previous
+    // value until the user record loads, then set both atomically so the UI
+    // transitions directly from loading/welcome to the authenticated app.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sess) => {
       if (sess) {
         fetchAppUser(sess.user.id, sess)

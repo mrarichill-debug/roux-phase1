@@ -483,7 +483,7 @@ export default function RecipeLibrary({ appUser }) {
             index={i}
             selectMode={selectMode}
             isPlanned={plannedIds.has(recipe.id)}
-            onTap={selectMode ? () => selectRecipe(recipe) : () => navigate(`/recipe/${recipe.id}`)}
+            onTap={selectMode ? () => selectRecipe(recipe) : () => navigate(`/recipe/${recipe.id}`, { state: { from: '/recipes' } })}
             onAddToWeek={selectMode ? () => selectRecipe(recipe) : () => openWeekPicker(recipe)}
           />
         ))}

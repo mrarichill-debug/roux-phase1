@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useState, useRef, useMemo } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import WatermarkLayer from '../components/WatermarkLayer'
 import { toLocalDateStr, getWeekStartTZ } from '../lib/dateUtils'
@@ -101,6 +101,8 @@ function formatTime(minutes) {
 export default function RecipeCard({ appUser }) {
   const { id }    = useParams()
   const navigate  = useNavigate()
+  const location  = useLocation()
+  const backTo    = location.state?.from || '/recipes'
 
   const [recipe,       setRecipe]       = useState(null)
   const [ingredients,  setIngredients]  = useState([])
@@ -262,7 +264,7 @@ export default function RecipeCard({ appUser }) {
           padding: '0 20px', background: C.forest,
           boxShadow: '0 2px 0px rgba(20,40,25,0.55), 0 4px 8px rgba(20,40,25,0.40), 0 8px 24px rgba(30,55,35,0.28), 0 16px 40px rgba(30,55,35,0.14)',
         }}>
-          <button onClick={() => navigate('/recipes')} style={STYLES.backBtn}>
+          <button onClick={() => navigate(backTo)} style={STYLES.backBtn}>
             <BackArrow />
           </button>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 600, color: 'rgba(250,247,242,0.95)' }}>
@@ -283,7 +285,7 @@ export default function RecipeCard({ appUser }) {
     return (
       <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif", display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', color: C.ink, marginBottom: '8px' }}>Recipe not found</div>
-        <button onClick={() => navigate('/recipes')} style={{ fontSize: '13px', color: C.sage, background: 'none', border: 'none', cursor: 'pointer' }}>← Back to recipes</button>
+        <button onClick={() => navigate(backTo)} style={{ fontSize: '13px', color: C.sage, background: 'none', border: 'none', cursor: 'pointer' }}>← Back</button>
       </div>
     )
   }
@@ -292,7 +294,7 @@ export default function RecipeCard({ appUser }) {
     <div style={{
       background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300,
       minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
-      paddingBottom: '86px', position: 'relative', overflowX: 'hidden',
+      paddingBottom: '170px', position: 'relative', overflowX: 'hidden',
     }}>
 
       <WatermarkLayer />
@@ -304,7 +306,7 @@ export default function RecipeCard({ appUser }) {
         padding: '0 20px', background: C.forest,
         boxShadow: '0 2px 0px rgba(20,40,25,0.55), 0 4px 8px rgba(20,40,25,0.40), 0 8px 24px rgba(30,55,35,0.28), 0 16px 40px rgba(30,55,35,0.14), 0 1px 0px rgba(255,255,255,0.06) inset',
       }}>
-        <button onClick={() => navigate('/recipes')} style={STYLES.backBtn}>
+        <button onClick={() => navigate(backTo)} style={STYLES.backBtn}>
           <BackArrow />
         </button>
         <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 600, color: 'rgba(250,247,242,0.95)', userSelect: 'none' }}>
@@ -663,7 +665,7 @@ export default function RecipeCard({ appUser }) {
                     return (
                       <div
                         key={rel.id}
-                        onClick={() => navigate(`/recipe/${rel.id}`)}
+                        onClick={() => navigate(`/recipe/${rel.id}`, { state: { from: `/recipe/${id}` } })}
                         style={{
                           background: 'white', border: '1px solid rgba(200,185,160,0.55)',
                           borderRadius: '12px', padding: '14px',
@@ -710,9 +712,9 @@ export default function RecipeCard({ appUser }) {
 
       {/* ── Pinned CTA ──────────────────────────────────────────────────────── */}
       <div style={{
-        position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-        width: '100%', maxWidth: '430px', height: '80px',
-        padding: '12px 22px 24px', zIndex: 100,
+        position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
+        width: '100%', maxWidth: '430px',
+        padding: '10px 22px 12px', zIndex: 90,
         background: C.cream, borderTop: `1px solid ${C.linen}`,
         boxShadow: '0 -2px 12px rgba(80,60,30,0.08)',
       }}>
@@ -760,6 +762,9 @@ export default function RecipeCard({ appUser }) {
         appUser={appUser}
         onClose={closeWeekPicker}
       />
+
+      {/* ── Bottom Nav ────────────────────────────────────────────────────── */}
+      <BottomNav navigate={navigate} />
 
     </div>
   )
@@ -1015,6 +1020,84 @@ function getCategoryEmoji(cat) {
     breakfast: '🍳', lunch: '🥪', salad: '🥗', side: '🥦',
   }
   return map[cat] || '🍴'
+}
+
+// ── Bottom Navigation ──────────────────────────────────────────────────────────
+const NAV_TABS = [
+  {
+    key: 'home', label: 'Home', path: '/',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
+        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'recipes', label: 'Recipes', path: '/recipes',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'thisweek', label: 'This Week', path: '/thisweek',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
+        <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+        <line x1="16" x2="16" y1="2" y2="6"/>
+        <line x1="8" x2="8" y1="2" y2="6"/>
+        <line x1="3" x2="21" y1="10" y2="10"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'shopping', label: 'Shopping', path: '/shopping',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
+        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+        <line x1="3" x2="21" y1="6" y2="6"/>
+        <path d="M16 10a4 4 0 0 1-8 0"/>
+      </svg>
+    ),
+  },
+]
+
+function BottomNav({ navigate }) {
+  return (
+    <nav style={{
+      position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+      width: '100%', maxWidth: '430px', height: '80px',
+      padding: '10px 0 22px',
+      display: 'grid', gridTemplateColumns: 'repeat(4,1fr)',
+      zIndex: 100, background: C.cream,
+      borderTop: `1px solid ${C.linen}`,
+      boxShadow: '0 -2px 12px rgba(80,60,30,0.08)',
+    }}>
+      {NAV_TABS.map(tab => (
+        <button
+          key={tab.key}
+          onClick={() => navigate(tab.path)}
+          style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
+            cursor: 'pointer', padding: '4px 0',
+            background: 'none', border: 'none',
+            color: C.driftwood,
+            transition: 'color 0.15s',
+            position: 'relative',
+            fontFamily: "'Jost', sans-serif",
+          }}
+        >
+          {tab.icon}
+          <span style={{ fontSize: '10px', fontWeight: 400, letterSpacing: '0.3px' }}>
+            {tab.label}
+          </span>
+        </button>
+      ))}
+    </nav>
+  )
 }
 
 // ── Shared inline style objects ────────────────────────────────────────────────
