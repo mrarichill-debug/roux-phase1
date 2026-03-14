@@ -5,6 +5,7 @@
  */
 
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 const C = {
@@ -17,6 +18,7 @@ const C = {
 }
 
 export default function ProfileSheet({ appUser, open, onClose }) {
+  const navigate = useNavigate()
   const [signingOut, setSigningOut] = useState(false)
 
   async function handleSignOut() {
@@ -113,40 +115,32 @@ export default function ProfileSheet({ appUser, open, onClose }) {
         {/* Actions */}
         <div style={{ padding: '10px 16px 24px' }}>
 
-          {/* Settings — greyed out, not yet built */}
+          {/* Settings */}
           <button
-            disabled
+            onClick={() => { onClose(); navigate('/profile') }}
             style={{
               width: '100%', display: 'flex', alignItems: 'center', gap: '14px',
               padding: '14px 12px', borderRadius: '12px',
-              background: 'none', border: 'none', cursor: 'not-allowed',
+              background: 'none', border: 'none', cursor: 'pointer',
               textAlign: 'left',
             }}
           >
             <span style={{
               width: '36px', height: '36px', borderRadius: '10px',
-              background: '#F0EDE8',
+              background: 'rgba(122,140,110,0.10)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}>
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B0A898" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={C.forest} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="3"/>
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
               </svg>
             </span>
-            <div>
-              <div style={{
-                fontFamily: "'Jost', sans-serif",
-                fontSize: '15px', fontWeight: 500, color: '#B0A898',
-              }}>
-                Settings
-              </div>
-              <div style={{
-                fontFamily: "'Jost', sans-serif",
-                fontSize: '11px', color: '#C8C0B4', marginTop: '1px',
-              }}>
-                Coming soon
-              </div>
+            <div style={{
+              fontFamily: "'Jost', sans-serif",
+              fontSize: '15px', fontWeight: 500, color: C.forest,
+            }}>
+              Settings
             </div>
           </button>
 
