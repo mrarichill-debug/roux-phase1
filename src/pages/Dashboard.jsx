@@ -63,6 +63,7 @@ export default function Dashboard({ appUser }) {
   const [weekMeals, setWeekMeals]           = useState([])
   const [shoppingList, setShoppingList]     = useState(null)
   const [spendUsedPct, setSpendUsedPct]     = useState(null)
+  const [shopTile, setShopTile]             = useState({ state: 'none', listCount: 0, totalSpent: 0, remaining: 0 })
   const [loading, setLoading]               = useState(true)
   const [sageOpen, setSageOpen]             = useState(false)
   const [profileOpen, setProfileOpen]       = useState(false)
@@ -110,23 +111,26 @@ export default function Dashboard({ appUser }) {
             .maybeSingle(),
 
           supabase.from('planned_meals')
-            .select('day_of_week, status, tradition_id, slot_type, note')
+            .select('day_of_week, status, tradition_id, slot_type, note, created_at, updated_at')
             .eq('meal_plan_id', plan.id)
             .eq('meal_type', 'dinner'),
 
           supabase.from('shopping_lists')
-            .select('id, estimated_cost, actual_cost')
+            .select('id, status, estimated_cost, actual_cost, updated_at')
             .eq('meal_plan_id', plan.id)
-            .maybeSingle(),
+            .order('created_at'),
         ])
 
         if (tonightRes.data) setTonightMeal(tonightRes.data)
         if (weekRes.data)    setWeekMeals(weekRes.data)
 
-        if (shoppingRes.data) {
-          setShoppingList(shoppingRes.data)
-          // Fetch used % from item counts
-          const sid = shoppingRes.data.id
+        const allLists = shoppingRes.data ?? []
+        const primaryList = allLists[0] ?? null
+
+        // SpendingSnapshot uses the primary list (backwards compat)
+        if (primaryList) {
+          setShoppingList(primaryList)
+          const sid = primaryList.id
           const [totalRes, purchasedRes] = await Promise.all([
             supabase.from('shopping_list_items').select('id', { count: 'exact', head: true }).eq('shopping_list_id', sid),
             supabase.from('shopping_list_items').select('id', { count: 'exact', head: true }).eq('shopping_list_id', sid).eq('is_purchased', true),
@@ -134,6 +138,46 @@ export default function Dashboard({ appUser }) {
           const total     = totalRes.count ?? 0
           const purchased = purchasedRes.count ?? 0
           if (total > 0) setSpendUsedPct(Math.round((purchased / total) * 100))
+        }
+
+        // Compute shopping tile state
+        if (allLists.length === 0) {
+          setShopTile({ state: 'none', listCount: 0, totalSpent: 0, remaining: 0 })
+        } else {
+          const completedLists = allLists.filter(l => l.status === 'completed')
+          const activeLists    = allLists.filter(l => l.status !== 'completed')
+          const totalSpent     = allLists.reduce((sum, l) => sum + (parseFloat(l.actual_cost) || 0), 0)
+          const listCount      = allLists.length
+
+          if (activeLists.length > 0) {
+            // State 2: at least one list in building/shopping state
+            // Count remaining unpurchased items across active lists
+            const activeIds = activeLists.map(l => l.id)
+            let remaining = 0
+            for (const lid of activeIds) {
+              const { count } = await supabase
+                .from('shopping_list_items')
+                .select('id', { count: 'exact', head: true })
+                .eq('shopping_list_id', lid)
+                .eq('is_purchased', false)
+              remaining += (count ?? 0)
+            }
+            setShopTile({ state: 'active', listCount, totalSpent, remaining })
+          } else if (completedLists.length > 0) {
+            // All lists completed — check if meals changed since last completion (State 4)
+            const latestComplete = completedLists.reduce((a, b) =>
+              new Date(a.updated_at) > new Date(b.updated_at) ? a : b
+            )
+            const meals = weekRes.data ?? []
+            const mealsChangedAfter = meals.some(m => {
+              const mTime = new Date(m.updated_at || m.created_at)
+              return mTime > new Date(latestComplete.updated_at)
+            })
+            setShopTile({
+              state: mealsChangedAfter ? 'needs-run' : 'complete',
+              listCount, totalSpent, remaining: 0,
+            })
+          }
         }
       }
     } catch (err) {
@@ -327,7 +371,7 @@ export default function Dashboard({ appUser }) {
         />
 
         {/* ── Quick Access ──────────────────────────────────────────────── */}
-        <QuickAccess navigate={navigate} />
+        <QuickAccess navigate={navigate} shopTile={shopTile} />
 
       </div>
 
@@ -842,7 +886,39 @@ function SpendFig({ value, label, quiet, win, alignRight }) {
 }
 
 // ── Quick Access ─────────────────────────────────────────────────────────────
-function QuickAccess({ navigate }) {
+function QuickAccess({ navigate, shopTile }) {
+  // Shopping tile — context-aware label, subtext, and accent
+  let shopLabel   = 'Shopping List'
+  let shopSub     = 'No list yet'
+  let shopAccent  = null  // null = default muted, 'forest' or 'honey'
+  let shopCheck   = false
+
+  const spentStr = shopTile.totalSpent > 0 ? `$${Math.round(shopTile.totalSpent)}` : '$0'
+  const listStr  = `${shopTile.listCount} list${shopTile.listCount !== 1 ? 's' : ''}`
+
+  if (shopTile.state === 'active') {
+    shopLabel  = 'Shopping'
+    shopSub    = `${shopTile.remaining} item${shopTile.remaining !== 1 ? 's' : ''} left`
+    shopAccent = 'forest'
+  } else if (shopTile.state === 'complete') {
+    shopLabel  = 'Main shop done'
+    shopSub    = `${listStr} · ${spentStr} spent`
+    shopAccent = 'forest'
+    shopCheck  = true
+  } else if (shopTile.state === 'needs-run') {
+    shopLabel  = 'Add another run?'
+    shopSub    = `${listStr} · ${spentStr} spent`
+    shopAccent = 'honey'
+  }
+
+  const shopIcon = (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ width: 17, height: 17 }}>
+      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+      <line x1="3" x2="21" y1="6" y2="6"/>
+      <path d="M16 10a4 4 0 0 1-8 0"/>
+    </svg>
+  )
+
   const tiles = [
     {
       label: 'Add a Meal',
@@ -881,18 +957,13 @@ function QuickAccess({ navigate }) {
         </svg>
       ),
     },
-    {
-      label: 'Shopping List',
-      onClick: () => navigate('/shopping'),
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ width: 17, height: 17 }}>
-          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-          <line x1="3" x2="21" y1="6" y2="6"/>
-          <path d="M16 10a4 4 0 0 1-8 0"/>
-        </svg>
-      ),
-    },
   ]
+
+  const iconBg = shopAccent === 'forest' ? 'rgba(61,107,79,0.10)'
+    : shopAccent === 'honey' ? 'rgba(196,154,60,0.10)'
+    : 'rgba(122,140,110,0.08)'
+  const iconColor = shopAccent === 'honey' ? C.honey : C.forest
+  const borderColor = shopAccent === 'honey' ? 'rgba(196,154,60,0.4)' : 'rgba(200,185,160,0.55)'
 
   return (
     <div style={{
@@ -931,6 +1002,52 @@ function QuickAccess({ navigate }) {
           </span>
         </button>
       ))}
+
+      {/* Shopping tile — context-aware */}
+      <button
+        onClick={() => navigate('/shopping')}
+        style={{
+          background: 'white',
+          border: `1px solid ${borderColor}`,
+          borderRadius: '14px',
+          padding: '13px 5px 11px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+          cursor: 'pointer',
+          boxShadow: '0 1px 4px rgba(80,60,30,0.06), 0 3px 8px rgba(80,60,30,0.04)',
+          transition: 'transform 0.12s',
+          fontFamily: "'Jost', sans-serif",
+        }}
+      >
+        <div style={{
+          width: '36px', height: '36px', borderRadius: '10px',
+          background: iconBg,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: iconColor, position: 'relative',
+        }}>
+          {shopIcon}
+          {shopCheck && (
+            <svg viewBox="0 0 24 24" fill="none" stroke={C.forest} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+              style={{ width: 9, height: 9, position: 'absolute', bottom: '-1px', right: '-1px' }}
+            >
+              <path d="m9 11 3 3L22 4"/>
+            </svg>
+          )}
+        </div>
+        <span style={{
+          fontSize: '9px', fontWeight: 500, textAlign: 'center',
+          letterSpacing: '0.2px', lineHeight: 1.35,
+          color: shopAccent === 'honey' ? C.honey : shopAccent === 'forest' ? C.forest : C.driftwood,
+        }}>
+          {shopLabel}
+        </span>
+        <span style={{
+          fontSize: '7px', fontWeight: 400, color: C.driftwood,
+          textAlign: 'center', lineHeight: 1.2,
+          maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {shopSub}
+        </span>
+      </button>
     </div>
   )
 }
