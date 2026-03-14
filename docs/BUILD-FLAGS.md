@@ -82,6 +82,30 @@ The store filter pills (All / Kroger / Costco) in the Building state topbar are 
 
 ---
 
+## Database & Data Gaps
+
+*Identified during full database audit — March 14, 2026.*
+
+### Must Fix Before Inviting Users Outside Hill Household
+
+- [ ] **Add Protein flow** — the "+ Add protein" button on This Week exists but does nothing. Build a bottom sheet with: protein name field, store dropdown (pulls from `grocery_stores` table), on-sale toggle, price field. Writes to `weekly_proteins` table.
+- [ ] **`family_members` management UI** — family members are seeded for the Hill family but there is no UI to add, edit, or remove family members. Needed for: Who's cooking on Tonight card, per-member dietary preferences, child dashboard scoping, assigned cook on planned meals. Build in Profile/Settings screen.
+- [ ] **`activity_log` writes** — zero activity being logged. Sage pattern intelligence depends entirely on this table. Add fire-and-forget INSERT to `activity_log` on these key actions: publish plan, add meal to plan, skip/remove meal, complete shopping, save recipe. Each entry needs: `user_id`, `household_id`, `action_type`, `entity_id`, `entity_type`, `created_at`.
+- [ ] **`invite_codes` table** — returned a query error during audit. Investigate whether table exists with correct schema and RLS policy. Needed before invite flow is built.
+
+### Build After `family_members` UI Is Complete
+
+- [ ] **`family_member_preferences` UI** — per-person food preferences, allergies, dislikes, favorites. Blocked by `family_members` management UI.
+- [ ] **Who's cooking on Tonight card and planned meal cards** — requires `assigned_to` field on `planned_meals` to be wired to `family_members`. Currently flagged as BUILD-FLAGS #7.
+
+### Post-MVP
+
+- [ ] **`notifications` table** — notification system not yet built. Required before archival confirmation flow and Sage nudge delivery system.
+- [ ] **`day_types` table normalization** — currently day types stored as JSON strings in `meal_plans.notes`. Normalize to proper FK relationship with `day_types` table when schema cleanup sprint happens.
+- [ ] **`meal_tags`, `meal_plan_rules` tables** — returned query errors during audit. Investigate and either build out or remove from schema if no longer needed.
+
+---
+
 ## ⚑ Planned But Not Yet Built
 
 - ~~**Shopping list screen**~~ — ✅ Built. Three-state flow (Building/Shopping/Complete), budget strip with inCartPulse animation, Got It / Already Have actions, aisle sections, Sage nudge strip, Complete card with receipt CTA, bottom nav. See schema gaps in items 12–14 above.
