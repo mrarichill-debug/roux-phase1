@@ -43,69 +43,80 @@ export default function TopBar({
   centerContent,
   slim = false,
   children,
+  childrenHeight = 0,
   noShadow = false,
 }) {
+  const barHeight = slim ? 58 : 66
+
   return (
-    <header style={{
-      position: 'sticky', top: 0, zIndex: 100,
-      background: C.forest,
-      boxShadow: noShadow && !children ? 'none' : SHADOW,
-    }}>
-      {/* Main bar */}
-      <div style={{
-        height: slim ? '58px' : '66px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 22px',
+    <>
+      {/* Fixed header */}
+      <header style={{
+        position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)',
+        width: '100%', maxWidth: '430px',
+        zIndex: 100,
+        background: C.forest,
+        boxShadow: noShadow && !children ? 'none' : SHADOW,
       }}>
-        {/* Left */}
-        {leftAction ? (
-          <button onClick={leftAction.onClick} style={backBtnStyle} aria-label={leftAction.label || 'Back'}>
-            {leftAction.icon || (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
-                <path d="m15 18-6-6 6-6"/>
-              </svg>
-            )}
-          </button>
-        ) : showWordmark ? (
-          <div style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: '26px', fontWeight: 600,
-            color: 'rgba(250,247,242,0.95)', userSelect: 'none',
-          }}>
-            Ro<em style={{ fontStyle: 'italic', color: 'rgba(188,218,178,0.82)' }}>ux</em>
-          </div>
-        ) : (
-          <div style={{ width: '36px' }} />
-        )}
-
-        {/* Center */}
-        {centerContent || null}
-
-        {/* Right — icon buttons + avatar spacer */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          {rightActions?.map((action, i) => (
-            <button
-              key={i}
-              onClick={action.onClick}
-              aria-label={action.label}
-              style={{
-                width: '38px', height: '38px', borderRadius: '50%',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: 'none', background: 'none', cursor: 'pointer',
-                color: 'rgba(210,230,200,0.7)',
-              }}
-            >
-              {action.icon}
+        {/* Main bar */}
+        <div style={{
+          height: `${barHeight}px`,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0 22px',
+        }}>
+          {/* Left */}
+          {leftAction ? (
+            <button onClick={leftAction.onClick} style={backBtnStyle} aria-label={leftAction.label || 'Back'}>
+              {leftAction.icon || (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+                  <path d="m15 18-6-6 6-6"/>
+                </svg>
+              )}
             </button>
-          ))}
-          {/* Avatar spacer — global avatar rendered in App.jsx at z-index 150 */}
-          <div style={{ width: '34px' }} />
-        </div>
-      </div>
+          ) : showWordmark ? (
+            <div style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: '26px', fontWeight: 600,
+              color: 'rgba(250,247,242,0.95)', userSelect: 'none',
+            }}>
+              Ro<em style={{ fontStyle: 'italic', color: 'rgba(188,218,178,0.82)' }}>ux</em>
+            </div>
+          ) : (
+            <div style={{ width: '36px' }} />
+          )}
 
-      {/* Extended content (search strip, etc.) — same green background */}
-      {children}
-    </header>
+          {/* Center */}
+          {centerContent || null}
+
+          {/* Right — icon buttons + avatar spacer */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            {rightActions?.map((action, i) => (
+              <button
+                key={i}
+                onClick={action.onClick}
+                aria-label={action.label}
+                style={{
+                  width: '38px', height: '38px', borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: 'none', background: 'none', cursor: 'pointer',
+                  color: 'rgba(210,230,200,0.7)',
+                }}
+              >
+                {action.icon}
+              </button>
+            ))}
+            {/* Avatar spacer — global avatar rendered in App.jsx at z-index 150 */}
+            <div style={{ width: '34px' }} />
+          </div>
+        </div>
+
+        {/* Extended content (search strip, etc.) — same green background */}
+        {children}
+      </header>
+
+      {/* Spacer to push content below the fixed header */}
+      <div style={{ height: `${barHeight + childrenHeight}px`, flexShrink: 0 }} />
+    </>
   )
 }
 

@@ -286,7 +286,7 @@ export default function RecipeLibrary({ appUser }) {
       <WatermarkLayer />
 
       {/* ── Green zone: Row 1 (topbar 66px) + Row 2 (search 48px) ─────────── */}
-      <TopBar rightActions={[{
+      <TopBar childrenHeight={48} rightActions={[{
         label: 'Search',
         onClick: () => document.querySelector('.library-search')?.focus(),
         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>,
