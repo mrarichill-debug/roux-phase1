@@ -198,9 +198,12 @@ export default function ThisWeek({ appUser }) {
         ])
         if (mealsRes.data) setPlanMeals(mealsRes.data)
         if (proteinsRes.data) setProteins(proteinsRes.data)
+        return mealsRes.data ?? []
       }
+      return []
     } catch (err) {
       console.error('ThisWeek load error:', err)
+      return []
     } finally {
       setLoading(false)
     }
@@ -278,10 +281,11 @@ export default function ThisWeek({ appUser }) {
       if (error) throw error
       const savedMealType = sheetSlot.toLowerCase()
       const savedDow = sheetDow
+      console.log('[Roux] sageSuggest success:', { name: pick.name, mealType: savedMealType, dow: savedDow })
       closeSheet()
       showToast(`Sage suggested ${pick.name}`)
-      await loadWeekData()
-      maybeShowRepeatPrompt(pick.name, savedMealType, 'recipe', pick.id, null, savedDow)
+      const freshMeals = await loadWeekData()
+      maybeShowRepeatPrompt(pick.name, savedMealType, 'recipe', pick.id, null, savedDow, freshMeals)
     } catch (err) {
       console.error('[Roux] sageSuggest error:', err)
     }
@@ -302,10 +306,11 @@ export default function ThisWeek({ appUser }) {
       const savedName = manualInput.trim()
       const savedMealType = sheetSlot.toLowerCase()
       const savedDow = sheetDow
+      console.log('[Roux] saveManualMeal success:', { name: savedName, mealType: savedMealType, dow: savedDow })
       closeSheet()
       showToast(`Added ${savedName}`)
-      await loadWeekData()
-      maybeShowRepeatPrompt(savedName, savedMealType, 'note', null, savedName, savedDow)
+      const freshMeals = await loadWeekData()
+      maybeShowRepeatPrompt(savedName, savedMealType, 'note', null, savedName, savedDow, freshMeals)
     } catch (err) {
       console.error('[Roux] saveManualMeal error:', err)
     }
@@ -343,13 +348,16 @@ export default function ThisWeek({ appUser }) {
   }
 
   // Check if repeat prompt should fire for breakfast/lunch saves
-  function maybeShowRepeatPrompt(mealName, mealType, slotType, recipeId, note, savedDow) {
+  function maybeShowRepeatPrompt(mealName, mealType, slotType, recipeId, note, savedDow, freshMeals) {
+    console.log('[Roux] maybeShowRepeatPrompt:', { mealName, mealType, savedDow, freshMealsCount: freshMeals?.length })
     if (mealType === 'dinner') return
-    // Find empty days for this meal type (excluding the just-saved day)
+    // Use freshMeals (just loaded) to check for empty days — avoids stale closure
+    const meals = freshMeals || planMeals
     const emptyDays = DOW_KEYS.filter(dow => {
       if (dow === savedDow) return false
-      return !planMeals.some(m => m.day_of_week === dow && m.meal_type === mealType)
+      return !meals.some(m => m.day_of_week === dow && m.meal_type === mealType)
     })
+    console.log('[Roux] emptyDays:', emptyDays)
     if (emptyDays.length === 0) return
     setTimeout(() => {
       setRepeatPrompt({ mealName, mealType, slotType, recipeId, note, savedDow })
@@ -1369,7 +1377,8 @@ function SheetOption({ primary, icon, title, sub, onClick }) {
 function RepeatPromptSheet({ prompt, planMeals, selected, onToggleDay, onSelectAll, onConfirm, onSkip }) {
   const { mealName, mealType, savedDow } = prompt
   const slotLabel = mealType.charAt(0).toUpperCase() + mealType.slice(1)
-  const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  // DOW_KEYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday']
+  const DAY_LABELS_MAP = { sunday: 'Sun', monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu', friday: 'Fri', saturday: 'Sat' }
 
   // Determine which days are empty/filled for this meal type
   const filledDows = new Set(planMeals.filter(m => m.meal_type === mealType).map(m => m.day_of_week))
@@ -1407,7 +1416,7 @@ function RepeatPromptSheet({ prompt, planMeals, selected, onToggleDay, onSelectA
 
         {/* Day chips */}
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '18px' }}>
-          {DOW_KEYS.map((dow, i) => {
+          {DOW_KEYS.map(dow => {
             if (dow === savedDow) return null
             const isFilled = filledDows.has(dow)
             const isSelected = selected.has(dow)
@@ -1428,7 +1437,7 @@ function RepeatPromptSheet({ prompt, planMeals, selected, onToggleDay, onSelectA
                   opacity: isFilled ? 0.5 : 1,
                 }}
               >
-                {DAY_LABELS[i]}
+                {DAY_LABELS_MAP[dow]}
                 {isFilled && (
                   <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'rgba(200,185,160,0.5)' }} />
                 )}
