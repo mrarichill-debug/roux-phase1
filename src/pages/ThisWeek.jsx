@@ -103,7 +103,7 @@ export default function ThisWeek({ appUser }) {
   const [loading,           setLoading]           = useState(true)
   const [proteinOpen,       setProteinOpen]       = useState(false)
   const [publishing,        setPublishing]        = useState(false)
-  const [publishBarVisible, setPublishBarVisible] = useState(true)
+  // publishBarVisible removed — publish action lives in status banner only
   const [bannerPulsing,     setBannerPulsing]     = useState(false)
   const [sheetOpen,         setSheetOpen]         = useState(false)
   const [sheetDay,          setSheetDay]          = useState('')
@@ -208,7 +208,6 @@ export default function ThisWeek({ appUser }) {
       }
 
       const isPublished = activePlan?.status === 'published' || activePlan?.status === 'active'
-      setPublishBarVisible(!isPublished && activePlan?.status === 'draft')
 
       if (activePlan) {
         const [mealsRes, proteinsRes] = await Promise.all([
@@ -591,11 +590,8 @@ export default function ThisWeek({ appUser }) {
         setTimeout(() => setBannerPulsing(false), 200)
       }, 60)
 
-      // Step 3 (120ms): publish bar slides down
-      setTimeout(() => setPublishBarVisible(false), 120)
-
-      // Surface shopping list prompt after bar finishes exiting
-      setTimeout(() => setShoppingPrompt(true), 520)
+      // Surface shopping list prompt after publish animation
+      setTimeout(() => setShoppingPrompt(true), 400)
 
     } catch (err) {
       console.error('Publish error:', err)
@@ -724,13 +720,6 @@ export default function ThisWeek({ appUser }) {
           )
         })}
       </div>
-
-      {/* ── Publish Bar ──────────────────────────────────────────────────── */}
-      <PublishBar
-        visible={publishBarVisible && !isPublished}
-        publishing={publishing}
-        onPublish={publishPlan}
-      />
 
       {/* ── Shopping List Prompt (post-publish handoff) ───────────────────── */}
       {shoppingPrompt && (
@@ -1537,51 +1526,6 @@ function LightSlot({ label, meal, onTap }) {
           + add
         </div>
       )}
-    </div>
-  )
-}
-
-// ── Publish Bar ────────────────────────────────────────────────────────────────
-function PublishBar({ visible, publishing, onPublish }) {
-  return (
-    <div style={{
-      position: 'fixed', bottom: '80px', left: '50%',
-      width: '100%', maxWidth: '430px',
-      padding: '10px 24px 12px',
-      background: C.cream, borderTop: `1px solid ${C.linen}`,
-      boxShadow: '0 -2px 16px rgba(80,60,30,0.10)',
-      zIndex: 90,
-      opacity:    visible ? 1 : 0,
-      pointerEvents: visible ? 'all' : 'none',
-      transform:  visible
-        ? 'translateX(-50%) translateY(0)'
-        : 'translateX(-50%) translateY(12px)',
-      transition: 'opacity 0.3s ease, transform 0.3s ease',
-    }}>
-      <button
-        onClick={onPublish}
-        disabled={publishing}
-        style={{
-          width: '100%', background: C.forest, color: 'white', border: 'none',
-          borderRadius: '12px', padding: '15px',
-          fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
-          letterSpacing: '0.5px', cursor: publishing ? 'default' : 'pointer',
-          boxShadow: '0 2px 10px rgba(61,107,79,0.28)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-          opacity: publishing ? 0.7 : 1,
-        }}
-      >
-        {publishing ? (
-          <div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-        ) : (
-          <>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-            </svg>
-            Share this week with the family
-          </>
-        )}
-      </button>
     </div>
   )
 }
