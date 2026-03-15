@@ -182,11 +182,12 @@ export default function WelcomeScreen3b() {
           .maybeSingle()
 
         if (userData) {
-          await supabase.from('users').update({
+          const { error: updateErr } = await supabase.from('users').update({
             household_id: householdId,
             membership_status: 'pending',
             role: selectedRole === 'admin' ? 'co_admin' : selectedRole === 'viewer' ? 'member_viewer' : 'member_admin',
           }).eq('id', userData.id)
+          if (updateErr) console.error('[Roux] Failed to set pending status:', updateErr.message, updateErr.code)
 
           // Find the admin to send notification
           const { data: admin } = await supabase
