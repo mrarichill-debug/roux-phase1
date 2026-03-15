@@ -19,7 +19,7 @@ const C = {
   honey:     '#C49A3C',
   cream:     '#FAF7F2',
   ink:       '#2C2417',
-  driftwood: '#8C7B6B',
+  driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E',
   linen:     '#E8E0D0',
   walnut:    '#8B6F52',
 }
@@ -58,7 +58,7 @@ const sectionHeaderStyle = {
   fontWeight: 500,
   letterSpacing: '2px',
   textTransform: 'uppercase',
-  color: C.driftwood,
+  color: C.driftwoodSm,
   marginBottom: '12px',
 }
 
@@ -481,7 +481,7 @@ export default function WeekSettings({ appUser }) {
                   <div>
                     <span style={{ fontSize: '14px', color: C.ink }}>{t.name}</span>
                     {t.day_of_week && (
-                      <span style={{ fontSize: '11px', color: C.driftwood, marginLeft: '8px' }}>
+                      <span style={{ fontSize: '11px', color: C.driftwoodSm, marginLeft: '8px' }}>
                         {t.day_of_week.charAt(0).toUpperCase() + t.day_of_week.slice(1)}
                       </span>
                     )}
@@ -751,7 +751,7 @@ export default function WeekSettings({ appUser }) {
           </div>
 
           {/* Name */}
-          <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '6px' }}>
             Name
           </div>
           <input
@@ -770,7 +770,7 @@ export default function WeekSettings({ appUser }) {
           />
 
           {/* Day of week */}
-          <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '6px' }}>
             Day
           </div>
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>

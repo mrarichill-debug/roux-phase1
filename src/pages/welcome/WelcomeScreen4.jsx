@@ -129,7 +129,7 @@ export default function WelcomeScreen4() {
         {/* Fields */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '10px', opacity: 0, animation: 'fadeUp 0.5s ease 0.2s forwards' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, paddingLeft: '2px' }}>Email</div>
+            <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwoodSm, paddingLeft: '2px' }}>Email</div>
             <input
               type="email" value={email} placeholder="you@example.com"
               autoComplete="email"
@@ -142,7 +142,7 @@ export default function WelcomeScreen4() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, paddingLeft: '2px' }}>Password</div>
+            <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwoodSm, paddingLeft: '2px' }}>Password</div>
             <div style={{ position: 'relative' }}>
               <input
                 type={pwVisible ? 'text' : 'password'}
@@ -232,7 +232,7 @@ export default function WelcomeScreen4() {
             <div style={{ fontSize: '13px', fontWeight: 500, color: C.ink, marginBottom: '6px' }}>
               Reset your password
             </div>
-            <div style={{ fontSize: '12px', color: C.driftwood, fontWeight: 300, marginBottom: '12px', lineHeight: 1.5 }}>
+            <div style={{ fontSize: '12px', color: C.driftwoodSm, fontWeight: 300, marginBottom: '12px', lineHeight: 1.5 }}>
               Enter your email and we'll send a reset link.
             </div>
             {!forgotSent ? (

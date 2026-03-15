@@ -152,7 +152,7 @@ export default function WelcomeScreen1() {
 
         {/* Legal */}
         <div style={{
-          fontSize: '10px', color: C.driftwood,
+          fontSize: '10px', color: C.driftwoodSm,
           textAlign: 'center', lineHeight: 1.7,
           marginTop: '28px', fontWeight: 300,
           opacity: 0, animation: 'fadeIn 0.5s ease 1.5s forwards',

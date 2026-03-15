@@ -20,7 +20,7 @@ const C = {
   honey:     '#C49A3C',
   cream:     '#FAF7F2',
   ink:       '#2C2417',
-  driftwood: '#8C7B6B',
+  driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E',
   linen:     '#E8E0D0',
   walnut:    '#8B6F52',
 }
@@ -325,7 +325,7 @@ export default function RecipeLibrary({ appUser }) {
       {/* ── Browse By pills (cream body) ───────────────────────────────────── */}
       <div style={{
         fontSize: '9px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase',
-        color: C.driftwood, padding: '14px 22px 6px', position: 'relative', zIndex: 1,
+        color: C.driftwoodSm, padding: '14px 22px 6px', position: 'relative', zIndex: 1,
       }}>
         Browse by
       </div>
@@ -344,7 +344,7 @@ export default function RecipeLibrary({ appUser }) {
                 border:       isActive ? `1px solid ${C.sage}` : '1px solid rgba(200,185,160,0.55)',
                 borderRadius: '20px', padding: '6px 13px',
                 fontSize: '12px', fontWeight: isActive ? 500 : 400,
-                color:        isActive ? C.forest : C.driftwood,
+                color:        isActive ? C.forest : C.driftwoodSm,
                 cursor: 'pointer', whiteSpace: 'nowrap',
                 fontFamily: "'Jost', sans-serif",
                 transition: 'all 0.15s',
@@ -360,7 +360,7 @@ export default function RecipeLibrary({ appUser }) {
       {/* ── Filter row ───────────────────────────────────────────────────────── */}
       <div style={{
         fontSize: '9px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase',
-        color: C.driftwood, padding: '14px 22px 6px', position: 'relative', zIndex: 1,
+        color: C.driftwoodSm, padding: '14px 22px 6px', position: 'relative', zIndex: 1,
       }}>
         Filter by
       </div>
@@ -379,7 +379,7 @@ export default function RecipeLibrary({ appUser }) {
                 border:       isActive ? `1px solid ${C.sage}` : '1px solid rgba(200,185,160,0.55)',
                 borderRadius: '20px', padding: '6px 13px',
                 fontSize: '11px', fontWeight: isActive ? 500 : 400,
-                color:        isActive ? C.forest : C.driftwood,
+                color:        isActive ? C.forest : C.driftwoodSm,
                 cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
                 fontFamily: "'Jost', sans-serif",
                 boxShadow: '0 1px 3px rgba(80,60,30,0.06)',
@@ -447,7 +447,7 @@ export default function RecipeLibrary({ appUser }) {
 
       {/* ── Results count ────────────────────────────────────────────────────── */}
       <div style={{
-        padding: '14px 22px 10px', fontSize: '12px', color: C.driftwood,
+        padding: '14px 22px 10px', fontSize: '12px', color: C.driftwoodSm,
         position: 'relative', zIndex: 1,
       }}>
         {loading ? '…' : `${filteredRecipes.length} recipe${filteredRecipes.length !== 1 ? 's' : ''}`}
@@ -489,7 +489,7 @@ export default function RecipeLibrary({ appUser }) {
           { color: C.sage,   label: 'Vegetarian' },
           { color: C.walnut, label: 'Dairy Free' },
         ].map(({ color, label }) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '10px', color: C.driftwood }}>
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '10px', color: C.driftwoodSm }}>
             <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: color, flexShrink: 0 }} />
             {label}
           </div>
@@ -601,7 +601,7 @@ function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWe
         )}
 
         {/* Meta: time + servings */}
-        <div style={{ fontSize: '11px', color: C.driftwood, display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+        <div style={{ fontSize: '11px', color: C.driftwoodSm, display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
           {timeStr && <span>{timeStr}</span>}
           {recipe.servings && <span>{recipe.servings} srv</span>}
         </div>
@@ -725,7 +725,7 @@ function WeekPickerSheet({ recipe, appUser, onClose }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <div>
-          <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '2px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '2px' }}>
             Add to this week
           </div>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.ink, fontWeight: 500, lineHeight: 1.2 }}>
@@ -767,7 +767,7 @@ function WeekPickerSheet({ recipe, appUser, onClose }) {
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.forest, marginBottom: '4px' }}>
               Added to {added} ✓
             </div>
-            <div style={{ fontSize: '12px', color: C.driftwood }}>Dinner slot updated in This Week.</div>
+            <div style={{ fontSize: '12px', color: C.driftwoodSm }}>Dinner slot updated in This Week.</div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

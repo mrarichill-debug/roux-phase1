@@ -19,7 +19,7 @@ const C = {
   honey:     '#C49A3C',
   cream:     '#FAF7F2',
   ink:       '#2C2417',
-  driftwood: '#8C7B6B',
+  driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E',
   linen:     '#E8E0D0',
   walnut:    '#8B6F52',
   red:       '#A03030',
@@ -821,7 +821,7 @@ export default function ThisWeek({ appUser }) {
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
                       <button onClick={() => setEditingFavorites(v => !v)} style={{
                         background: 'none', border: 'none', cursor: 'pointer',
-                        fontSize: '11px', color: editingFavorites ? C.forest : C.driftwood, fontWeight: 500,
+                        fontSize: '11px', color: editingFavorites ? C.forest : C.driftwoodSm, fontWeight: 500,
                         fontFamily: "'Jost', sans-serif",
                       }}>
                         {editingFavorites ? 'Done' : 'Edit list'}
@@ -880,7 +880,7 @@ export default function ThisWeek({ appUser }) {
                   <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.ink, fontWeight: 500, marginBottom: '14px' }}>{proteinName}</div>
 
                   {/* Store selector */}
-                  <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '6px' }}>
                     Where are you getting it this week?
                   </div>
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
@@ -918,7 +918,7 @@ export default function ThisWeek({ appUser }) {
                           <button key={u} onClick={() => setProteinUnit(u)} style={{
                             padding: '8px 10px', fontSize: '11px', fontFamily: "'Jost', sans-serif", fontWeight: proteinUnit === u ? 500 : 400,
                             borderRadius: '8px', cursor: 'pointer', border: `1px solid ${proteinUnit === u ? C.forest : C.linen}`,
-                            background: proteinUnit === u ? C.forest : 'transparent', color: proteinUnit === u ? 'white' : C.driftwood,
+                            background: proteinUnit === u ? C.forest : 'transparent', color: proteinUnit === u ? 'white' : C.driftwoodSm,
                             transition: 'all 0.15s',
                           }}>
                             {u === 'lb' ? '/ lb' : u === 'pkg' ? '/ pkg' : 'total'}
@@ -945,13 +945,13 @@ export default function ThisWeek({ appUser }) {
               {/* ── Something New tab ──────────────────────────────── */}
               {proteinTab === 'new' && (
                 <div>
-                  <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Name</div>
+                  <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '6px' }}>Name</div>
                   <input type="text" value={proteinName} onChange={e => setProteinName(e.target.value)} placeholder="e.g. Chicken thighs, Ground beef" autoFocus style={{
                     width: '100%', padding: '12px 14px', border: `1px solid ${C.linen}`, borderRadius: '10px',
                     fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300, color: C.ink, outline: 'none', background: C.cream, boxSizing: 'border-box', marginBottom: '14px',
                   }} />
 
-                  <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Store</div>
+                  <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '6px' }}>Store</div>
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
                     {groceryStores.map(store => (
                       <button key={store.id} onClick={() => setProteinStoreId(store.id)} style={{
@@ -999,7 +999,7 @@ export default function ThisWeek({ appUser }) {
                         <button key={u} onClick={() => setProteinUnit(u)} style={{
                           padding: '8px 10px', fontSize: '11px', fontFamily: "'Jost', sans-serif", fontWeight: proteinUnit === u ? 500 : 400,
                           borderRadius: '8px', cursor: 'pointer', border: `1px solid ${proteinUnit === u ? C.forest : C.linen}`,
-                          background: proteinUnit === u ? C.forest : 'transparent', color: proteinUnit === u ? 'white' : C.driftwood,
+                          background: proteinUnit === u ? C.forest : 'transparent', color: proteinUnit === u ? 'white' : C.driftwoodSm,
                           transition: 'all 0.15s',
                         }}>
                           {u === 'lb' ? '/ lb' : u === 'pkg' ? '/ pkg' : 'total'}
@@ -1111,7 +1111,7 @@ function PlanStatusBanner({ plan, loading, isPublished, pulsing, onPublish }) {
           <div style={{ fontSize: '12px', fontWeight: 500, color: C.ink }}>
             {isPublished ? 'Published' : 'Draft'}
           </div>
-          <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300 }}>
+          <div style={{ fontSize: '11px', color: C.driftwoodSm, fontWeight: 300 }}>
             {isPublished ? 'Family can see this plan' : 'Only you can see this plan'}
           </div>
         </div>
@@ -1160,7 +1160,7 @@ function ProteinRoster({ proteins, open, onToggle, onAdd, onEdit, onDelete }) {
             This Week's Proteins
           </span>
           {proteins.length > 0 && (
-            <span style={{ fontSize: '10px', color: C.driftwood }}>
+            <span style={{ fontSize: '10px', color: C.driftwoodSm }}>
               {proteins.length} on hand
             </span>
           )}
@@ -1181,7 +1181,7 @@ function ProteinRoster({ proteins, open, onToggle, onAdd, onEdit, onDelete }) {
       }}>
         <div style={{ padding: '0 14px 12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {proteins.length === 0 ? (
-            <div style={{ fontSize: '12px', color: C.driftwood, fontStyle: 'italic', padding: '4px 0' }}>
+            <div style={{ fontSize: '12px', color: C.driftwoodSm, fontStyle: 'italic', padding: '4px 0' }}>
               No proteins added yet.
             </div>
           ) : proteins.map(p => (
@@ -1195,7 +1195,7 @@ function ProteinRoster({ proteins, open, onToggle, onAdd, onEdit, onDelete }) {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                 {p.grocery_stores?.name && (
-                  <span style={{ fontSize: '11px', color: C.driftwood }}>{p.grocery_stores.name}</span>
+                  <span style={{ fontSize: '11px', color: C.driftwoodSm }}>{p.grocery_stores.name}</span>
                 )}
                 {p.is_on_sale && (
                   <span style={{
@@ -1207,7 +1207,7 @@ function ProteinRoster({ proteins, open, onToggle, onAdd, onEdit, onDelete }) {
                   </span>
                 )}
                 {p.sale_price && parseFloat(p.sale_price) > 0 && (
-                  <span style={{ fontSize: '11px', color: C.driftwood, fontWeight: 400 }}>
+                  <span style={{ fontSize: '11px', color: C.driftwoodSm, fontWeight: 400 }}>
                     ${parseFloat(p.sale_price).toFixed(2)}{p.unit === 'lb' ? ' / lb' : p.unit === 'pkg' ? ' / pkg' : p.unit === 'total' ? ' total' : ''}
                   </span>
                 )}
@@ -1244,7 +1244,7 @@ function ProteinRoster({ proteins, open, onToggle, onAdd, onEdit, onDelete }) {
           <button
             onClick={e => { e.stopPropagation(); onAdd() }}
             style={{
-              fontSize: '11px', color: C.driftwood, background: 'none',
+              fontSize: '11px', color: C.driftwoodSm, background: 'none',
               border: '1px dashed rgba(200,185,160,0.7)', borderRadius: '8px',
               padding: '8px 10px', cursor: 'pointer', textAlign: 'center', fontFamily: "'Jost', sans-serif",
             }}
@@ -1286,7 +1286,7 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, t
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <div style={{
             fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase',
-            color: isToday ? 'rgba(255,255,255,0.65)' : C.driftwood,
+            color: isToday ? 'rgba(255,255,255,0.65)' : C.driftwoodSm,
           }}>
             {dayName}
           </div>
@@ -1328,7 +1328,7 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, t
         {/* Dinner label */}
         <div style={{
           fontSize: '9px', fontWeight: 500, letterSpacing: '1.8px', textTransform: 'uppercase',
-          color: isToday ? 'rgba(255,255,255,0.5)' : C.driftwood,
+          color: isToday ? 'rgba(255,255,255,0.5)' : C.driftwoodSm,
         }}>
           Dinner
         </div>
@@ -1500,7 +1500,7 @@ function OpenDaySlot({ onAdd }) {
       <button
         onClick={onAdd}
         style={{
-          fontSize: '11px', color: C.driftwood, background: 'none', border: 'none',
+          fontSize: '11px', color: C.driftwoodSm, background: 'none', border: 'none',
           cursor: 'pointer', fontFamily: "'Jost', sans-serif",
         }}
       >
@@ -1525,7 +1525,7 @@ function LightSlot({ label, meal, onTap }) {
         cursor: 'pointer', minWidth: 0,
       }}
     >
-      <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '4px' }}>
+      <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '4px' }}>
         {label}
       </div>
       {filled ? (
@@ -1685,7 +1685,7 @@ function BottomSheet({ open, dayName, slotName, dateStr, sagePrimary, mode, manu
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <div>
-          <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '2px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '2px' }}>
             {dayName}
           </div>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', color: C.ink, fontWeight: 500 }}>
@@ -1804,7 +1804,7 @@ function BottomSheet({ open, dayName, slotName, dateStr, sagePrimary, mode, manu
           {/* Divider */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 22px' }}>
             <div style={{ flex: 1, height: '1px', background: C.linen }} />
-            <span style={{ fontSize: '10px', letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood }}>or</span>
+            <span style={{ fontSize: '10px', letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwoodSm }}>or</span>
             <div style={{ flex: 1, height: '1px', background: C.linen }} />
           </div>
 
@@ -1848,7 +1848,7 @@ function SheetOption({ primary, icon, title, sub, onClick }) {
         <div style={{ fontSize: '14px', fontWeight: 500, color: primary ? 'white' : C.ink, marginBottom: '2px' }}>
           {title}
         </div>
-        <div style={{ fontSize: '12px', color: primary ? 'rgba(255,255,255,0.7)' : C.driftwood, fontWeight: 300 }}>
+        <div style={{ fontSize: '12px', color: primary ? 'rgba(255,255,255,0.7)' : C.driftwoodSm, fontWeight: 300 }}>
           {sub}
         </div>
       </div>

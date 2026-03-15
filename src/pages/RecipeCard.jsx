@@ -20,7 +20,7 @@ const C = {
   honey:     '#C49A3C',
   cream:     '#FAF7F2',
   ink:       '#2C2417',
-  driftwood: '#8C7B6B',
+  driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E',
   linen:     '#E8E0D0',
   walnut:    '#8B6F52',
 }
@@ -368,7 +368,7 @@ export default function RecipeCard({ appUser }) {
             }}>
               <div style={{ fontSize: '13px', marginBottom: '2px' }}>{stat.icon}</div>
               <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', color: C.ink, fontWeight: 400 }}>{stat.val}</div>
-              <div style={{ fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500 }}>{stat.label}</div>
+              <div style={{ fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: C.driftwoodSm, fontWeight: 500 }}>{stat.label}</div>
             </div>
           ))}
         </div>
@@ -430,7 +430,7 @@ export default function RecipeCard({ appUser }) {
               padding: '14px', textAlign: 'center',
               fontFamily: "'Jost', sans-serif", fontSize: '12px',
               fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase',
-              color: activeTab === tab ? C.forest : C.driftwood,
+              color: activeTab === tab ? C.forest : C.driftwoodSm,
               cursor: 'pointer', border: 'none', background: 'none',
               borderBottom: activeTab === tab ? `2px solid ${C.forest}` : '2px solid transparent',
               transition: 'all 0.2s',
@@ -514,7 +514,7 @@ export default function RecipeCard({ appUser }) {
                         transition: 'color 0.15s',
                       }}>
                         {nameStr}
-                        {ing.is_optional && <span style={{ fontSize: '11px', color: C.driftwood, marginLeft: '6px' }}>(optional)</span>}
+                        {ing.is_optional && <span style={{ fontSize: '11px', color: C.driftwoodSm, marginLeft: '6px' }}>(optional)</span>}
                       </div>
                     </div>
                   )
@@ -624,7 +624,7 @@ export default function RecipeCard({ appUser }) {
               <div style={{ marginTop: '4px', marginBottom: '8px' }}>
                 <div style={{
                   fontSize: '10px', fontWeight: 500, letterSpacing: '2px',
-                  textTransform: 'uppercase', color: C.driftwood, marginBottom: '10px',
+                  textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '10px',
                   display: 'flex', alignItems: 'center', gap: '8px',
                 }}>
                   Goes Well With
@@ -653,7 +653,7 @@ export default function RecipeCard({ appUser }) {
                           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '14px', color: C.ink, marginBottom: '2px' }}>
                             {rel.name}
                           </div>
-                          <div style={{ fontSize: '11px', color: C.driftwood }}>
+                          <div style={{ fontSize: '11px', color: C.driftwoodSm }}>
                             {[relTime, relCat].filter(Boolean).join(' · ')}
                           </div>
                         </div>
@@ -883,7 +883,7 @@ function WeekDayPickerSheet({ isOpen, overlayVisible, recipe, appUser, onClose }
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <div>
-          <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '2px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '2px' }}>
             Add to this week
           </div>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.ink, fontWeight: 500, lineHeight: 1.2 }}>
@@ -917,7 +917,7 @@ function WeekDayPickerSheet({ isOpen, overlayVisible, recipe, appUser, onClose }
         ) : added ? (
           <div style={{ textAlign: 'center', padding: '24px 0' }}>
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.forest, marginBottom: '4px' }}>Added to {added} ✓</div>
-            <div style={{ fontSize: '12px', color: C.driftwood }}>Dinner slot updated in This Week.</div>
+            <div style={{ fontSize: '12px', color: C.driftwoodSm }}>Dinner slot updated in This Week.</div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

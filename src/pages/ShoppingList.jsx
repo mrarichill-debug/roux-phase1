@@ -21,7 +21,7 @@ const C = {
   honey:     '#C49A3C',
   cream:     '#FAF7F2',
   ink:       '#2C2417',
-  driftwood: '#8C7B6B',
+  driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E',
   linen:     '#E8E0D0',
   walnut:    '#8B6F52',
 }
@@ -551,7 +551,7 @@ export default function ShoppingList({ appUser }) {
             >
               I'll do this later
             </button>
-            <div style={{ fontSize: '11px', color: C.driftwood, marginTop: '10px', lineHeight: 1.5, opacity: 0.75 }}>
+            <div style={{ fontSize: '11px', color: C.driftwoodSm, marginTop: '10px', lineHeight: 1.5, opacity: 0.75 }}>
               Sage reads your receipt and matches each item automatically. Takes about 10 seconds.
             </div>
           </div>
@@ -641,14 +641,14 @@ export default function ShoppingList({ appUser }) {
             >
               <div style={{
                 fontSize: '10px', fontWeight: 500, letterSpacing: '2px',
-                textTransform: 'uppercase', color: C.driftwood,
+                textTransform: 'uppercase', color: C.driftwoodSm,
                 display: 'flex', alignItems: 'center', gap: '7px',
               }}>
                 <span>{emoji}</span>
                 {label}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '10px', color: C.driftwood, fontWeight: 300, opacity: 0.7 }}>
+                <span style={{ fontSize: '10px', color: C.driftwoodSm, fontWeight: 300, opacity: 0.7 }}>
                   {sectionItems.length} item{sectionItems.length !== 1 ? 's' : ''}
                 </span>
                 <svg
@@ -705,7 +705,7 @@ export default function ShoppingList({ appUser }) {
               }}>
                 Got It
               </span>
-              <span style={{ fontSize: '10px', color: C.driftwood, fontWeight: 300 }}>
+              <span style={{ fontSize: '10px', color: C.driftwoodSm, fontWeight: 300 }}>
                 {gotItItems.length} item{gotItItems.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -877,7 +877,7 @@ function ShoppingTopbar({ shoppingState }) {
 function BudgetCol({ label, value, muted, color, pulsing }) {
   return (
     <div style={{ flex: 1, textAlign: 'center' }}>
-      <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '1.8px', textTransform: 'uppercase', color: '#8C7B6B', marginBottom: '3px' }}>
+      <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '1.8px', textTransform: 'uppercase', color: '#6B5B4E', marginBottom: '3px' }}>
         {label}
       </div>
       <div style={{
@@ -956,7 +956,7 @@ function ListItem({ item, isLast, isExpanded, shoppingState, onTap, onGotIt, onA
             </div>
           )}
           {item.estimated_price && (
-            <div style={{ fontSize: '11px', color: '#8C7B6B', fontWeight: 300 }}>
+            <div style={{ fontSize: '11px', color: '#6B5B4E', fontWeight: 300 }}>
               ~{formatPrice(item.estimated_price)}
             </div>
           )}
@@ -1035,7 +1035,7 @@ function GotItItem({ item, isLast, onUndo }) {
       </div>
 
       {(qtyStr || item.estimated_price) && (
-        <div style={{ fontSize: '11px', color: '#8C7B6B', fontWeight: 300, textAlign: 'right' }}>
+        <div style={{ fontSize: '11px', color: '#6B5B4E', fontWeight: 300, textAlign: 'right' }}>
           {qtyStr && <div>{qtyStr}</div>}
           {item.estimated_price && <div>{formatPrice(item.estimated_price)}</div>}
         </div>

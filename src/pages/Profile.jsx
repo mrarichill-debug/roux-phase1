@@ -13,12 +13,12 @@ import { COLOR_SCHEMES, SCHEME_NAMES } from '../lib/colorSchemes'
 const C = {
   forest: '#3D6B4F', forestDk: '#2E5038', sage: '#7A8C6E',
   honey: '#C49A3C', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', linen: '#E8E0D0', walnut: '#8B6F52', red: '#A03030',
+  driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E', linen: '#E8E0D0', walnut: '#8B6F52', red: '#A03030',
 }
 
 const sectionHeader = {
   fontSize: '10px', fontWeight: 500, letterSpacing: '2px',
-  textTransform: 'uppercase', color: C.driftwood, marginBottom: '12px',
+  textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '12px',
 }
 
 const cardStyle = {
@@ -372,13 +372,13 @@ export default function Profile({ appUser }) {
                     onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setEditingName(false) }}
                     style={{ flex: 1, padding: '8px 12px', border: `1px solid ${C.sage}`, borderRadius: '8px', fontFamily: "'Jost', sans-serif", fontSize: '14px', color: C.ink, outline: 'none', background: C.cream }} />
                   <button onClick={saveName} style={{ fontSize: '12px', color: C.forest, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Save</button>
-                  <button onClick={() => setEditingName(false)} style={{ fontSize: '12px', color: C.driftwood, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Cancel</button>
+                  <button onClick={() => setEditingName(false)} style={{ fontSize: '12px', color: C.driftwoodSm, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Cancel</button>
                 </div>
               ) : (
                 <>
                   <div>
                     <div style={{ fontSize: '14px', color: C.ink }}>{displayName}</div>
-                    <div style={{ fontSize: '11px', color: C.driftwood }}>Name</div>
+                    <div style={{ fontSize: '11px', color: C.driftwoodSm }}>Name</div>
                   </div>
                   <button onClick={() => setEditingName(true)} style={{ fontSize: '12px', color: C.forest, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Edit</button>
                 </>
@@ -389,7 +389,7 @@ export default function Profile({ appUser }) {
             <div style={rowStyle}>
               <div>
                 <div style={{ fontSize: '14px', color: C.ink }}>{appUser.email}</div>
-                <div style={{ fontSize: '11px', color: C.driftwood }}>Email</div>
+                <div style={{ fontSize: '11px', color: C.driftwoodSm }}>Email</div>
               </div>
             </div>
 
@@ -397,9 +397,9 @@ export default function Profile({ appUser }) {
             <div style={rowStyle}>
               <div>
                 <div style={{ fontSize: '14px', color: C.ink }}>••••••••</div>
-                <div style={{ fontSize: '11px', color: C.driftwood }}>Password</div>
+                <div style={{ fontSize: '11px', color: C.driftwoodSm }}>Password</div>
               </div>
-              <button onClick={sendPasswordReset} style={{ fontSize: '12px', color: resetSent ? C.driftwood : C.forest, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>
+              <button onClick={sendPasswordReset} style={{ fontSize: '12px', color: resetSent ? C.driftwoodSm : C.forest, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>
                 {resetSent ? 'Sent ✓' : 'Reset'}
               </button>
             </div>
@@ -409,7 +409,7 @@ export default function Profile({ appUser }) {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
                   <div style={{ fontSize: '14px', color: C.ink }}>Vibration feedback</div>
-                  <div style={{ fontSize: '11px', color: C.driftwood }}>Feel a gentle tap when taking actions</div>
+                  <div style={{ fontSize: '11px', color: C.driftwoodSm }}>Feel a gentle tap when taking actions</div>
                 </div>
                 <ToggleSwitch on={haptics} onToggle={toggleHaptics} />
               </div>
@@ -420,7 +420,7 @@ export default function Profile({ appUser }) {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
                   <div style={{ fontSize: '14px', color: C.ink }}>Weekly planning reminders</div>
-                  <div style={{ fontSize: '11px', color: C.driftwood }}>Sage will nudge you when the week needs attention</div>
+                  <div style={{ fontSize: '11px', color: C.driftwoodSm }}>Sage will nudge you when the week needs attention</div>
                 </div>
                 <ToggleSwitch on={notifications} onToggle={toggleNotifications} />
               </div>
@@ -439,13 +439,13 @@ export default function Profile({ appUser }) {
                     onKeyDown={e => { if (e.key === 'Enter') saveHomeName(); if (e.key === 'Escape') setEditingHome(false) }}
                     style={{ flex: 1, padding: '8px 12px', border: `1px solid ${C.sage}`, borderRadius: '8px', fontFamily: "'Jost', sans-serif", fontSize: '14px', color: C.ink, outline: 'none', background: C.cream }} />
                   <button onClick={saveHomeName} style={{ fontSize: '12px', color: C.forest, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Save</button>
-                  <button onClick={() => { setEditingHome(false); setHomeValue(household.name) }} style={{ fontSize: '12px', color: C.driftwood, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Cancel</button>
+                  <button onClick={() => { setEditingHome(false); setHomeValue(household.name) }} style={{ fontSize: '12px', color: C.driftwoodSm, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Cancel</button>
                 </div>
               ) : (
                 <>
                   <div>
                     <div style={{ fontSize: '14px', color: C.ink }}>{household?.name}</div>
-                    <div style={{ fontSize: '11px', color: C.driftwood }}>Home name</div>
+                    <div style={{ fontSize: '11px', color: C.driftwoodSm }}>Home name</div>
                   </div>
                   <button onClick={() => setEditingHome(true)} style={{ fontSize: '12px', color: C.forest, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Edit</button>
                 </>
@@ -516,7 +516,7 @@ export default function Profile({ appUser }) {
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                       <span style={{ fontSize: '11px', color: C.red }}>Remove?</span>
                       <button onClick={() => deleteMember(m.id)} style={{ fontSize: '11px', color: 'white', background: C.red, border: 'none', borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontWeight: 500 }}>Yes</button>
-                      <button onClick={() => setDeleteConfirmId(null)} style={{ fontSize: '11px', color: C.driftwood, background: 'none', border: `1px solid ${C.linen}`, borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>No</button>
+                      <button onClick={() => setDeleteConfirmId(null)} style={{ fontSize: '11px', color: C.driftwoodSm, background: 'none', border: `1px solid ${C.linen}`, borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>No</button>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -562,7 +562,7 @@ export default function Profile({ appUser }) {
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                     <span style={{ fontSize: '11px', color: C.red }}>Remove?</span>
                     <button onClick={() => deleteStore(s.id)} style={{ fontSize: '11px', color: 'white', background: C.red, border: 'none', borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontWeight: 500 }}>Yes</button>
-                    <button onClick={() => setDeleteStoreId(null)} style={{ fontSize: '11px', color: C.driftwood, background: 'none', border: `1px solid ${C.linen}`, borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>No</button>
+                    <button onClick={() => setDeleteStoreId(null)} style={{ fontSize: '11px', color: C.driftwoodSm, background: 'none', border: `1px solid ${C.linen}`, borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>No</button>
                   </div>
                 ) : (
                   <button onClick={() => setDeleteStoreId(s.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(140,123,107,0.55)', padding: '3px', display: 'flex' }} aria-label="Remove store">
@@ -593,7 +593,7 @@ export default function Profile({ appUser }) {
               }}>
                 {household?.invite_code || '------'}
               </div>
-              <div style={{ fontSize: '11px', color: C.driftwood }}>
+              <div style={{ fontSize: '11px', color: C.driftwoodSm }}>
                 Active — share with family to join your kitchen
               </div>
             </div>
@@ -611,7 +611,7 @@ export default function Profile({ appUser }) {
               <button onClick={() => setNewCodeConfirmOpen(true)} style={{
                 flex: 1, padding: '10px', borderRadius: '10px', fontSize: '12px', fontWeight: 500,
                 fontFamily: "'Jost', sans-serif", cursor: 'pointer',
-                background: 'none', color: C.driftwood, border: `1px solid ${C.linen}`,
+                background: 'none', color: C.driftwoodSm, border: `1px solid ${C.linen}`,
               }}>New Code</button>
             </div>
           </div>
@@ -645,7 +645,7 @@ export default function Profile({ appUser }) {
               <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '16px' }}>
                 {editMemberId ? 'Edit family member' : 'Add a family member'}
               </div>
-              <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Name</div>
+              <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '6px' }}>Name</div>
               <input type="text" value={newMemberName} onChange={e => setNewMemberName(e.target.value)} placeholder={newMemberIsPet ? "Pet's name" : 'First and last name'} autoFocus style={{
                 width: '100%', padding: '12px 14px', border: `1px solid ${C.linen}`, borderRadius: '10px',
                 fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300, color: C.ink, outline: 'none', background: C.cream, boxSizing: 'border-box', marginBottom: '14px',
@@ -679,12 +679,12 @@ export default function Profile({ appUser }) {
 
               {!newMemberIsPet && (
                 <>
-                  <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Date of birth (optional)</div>
+                  <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '6px' }}>Date of birth (optional)</div>
                   <input type="date" value={newMemberDob} onChange={e => setNewMemberDob(e.target.value)} style={{
                     width: '100%', padding: '12px 14px', border: `1px solid ${C.linen}`, borderRadius: '10px',
                     fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300, color: C.ink, outline: 'none', background: C.cream, boxSizing: 'border-box', marginBottom: '6px',
                   }} />
-                  <div style={{ fontSize: '11px', fontStyle: 'italic', color: C.driftwood, marginBottom: '14px', lineHeight: 1.4 }}>
+                  <div style={{ fontSize: '11px', fontStyle: 'italic', color: C.driftwoodSm, marginBottom: '14px', lineHeight: 1.4 }}>
                     Used for birthday reminders and to help Sage make better suggestions. Never shared outside your kitchen.
                   </div>
                 </>
@@ -692,7 +692,7 @@ export default function Profile({ appUser }) {
 
               {!newMemberIsPet && (
                 <>
-              <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Role</div>
+              <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '6px' }}>Role</div>
               {editMemberId && newMemberRole === 'admin' ? (
                 <div style={{ marginBottom: '14px' }}>
                   <div style={{ fontSize: '13px', color: C.forest, fontWeight: 500, marginBottom: '8px' }}>Admin (locked)</div>

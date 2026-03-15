@@ -10,7 +10,7 @@ export const C = {
   honey:     '#C49A3C',
   cream:     '#FAF8F4',
   ink:       '#2C2417',
-  driftwood: '#8C7B6B',
+  driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E',
   linen:     '#E8E0D0',
   walnut:    '#8B6F52',
   red:       '#A03030',
@@ -94,7 +94,7 @@ export function ProgressBar({ step, total }) {
           width: `${pct}%`, transition: 'width 0.4s cubic-bezier(0.22,1,0.36,1)',
         }} />
       </div>
-      <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood }}>
+      <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm }}>
         {label}
       </div>
     </div>
@@ -183,7 +183,7 @@ export function PasswordStrength({ password, visible }) {
           { met: hasNumber,  label: 'One number' },
           { met: hasSpecial, label: 'One special character' },
         ].map(({ met, label }) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '6px', transition: 'color 0.2s', color: met ? C.forest : C.driftwood, fontSize: '11px', fontWeight: 300 }}>
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '6px', transition: 'color 0.2s', color: met ? C.forest : C.driftwoodSm, fontSize: '11px', fontWeight: 300 }}>
             <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: met ? C.forest : C.linen, flexShrink: 0, transition: 'background 0.2s' }} />
             {label}
           </div>
@@ -197,11 +197,11 @@ export function PasswordStrength({ password, visible }) {
 export function FormField({ label, error, hint, children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-      <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, paddingLeft: '2px' }}>
+      <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwoodSm, paddingLeft: '2px' }}>
         {label}
       </div>
       {children}
-      {hint && !error && <div style={{ fontSize: '11.5px', color: C.driftwood, fontWeight: 300, paddingLeft: '2px', marginTop: '2px', lineHeight: 1.5 }}>{hint}</div>}
+      {hint && !error && <div style={{ fontSize: '11.5px', color: C.driftwoodSm, fontWeight: 300, paddingLeft: '2px', marginTop: '2px', lineHeight: 1.5 }}>{hint}</div>}
       {error && <div style={{ fontSize: '11.5px', color: C.red, fontWeight: 300, paddingLeft: '2px', marginTop: '2px' }}>{error}</div>}
     </div>
   )
@@ -247,7 +247,7 @@ export function HouseIcon({ size = 34, color = 'currentColor' }) {
 // ── ToS line ─────────────────────────────────────────────────────────────────
 export function TosLine() {
   return (
-    <p style={{ fontSize: '10px', color: C.driftwood, textAlign: 'center', lineHeight: 1.7, marginTop: '12px', fontWeight: 300 }}>
+    <p style={{ fontSize: '10px', color: C.driftwoodSm, textAlign: 'center', lineHeight: 1.7, marginTop: '12px', fontWeight: 300 }}>
       By continuing you agree to our{' '}
       <a href="#" style={{ color: 'inherit', textDecoration: 'underline' }}>Terms of Service</a>
       {' '}and{' '}

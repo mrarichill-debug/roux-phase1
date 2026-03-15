@@ -251,7 +251,7 @@ export default function WelcomeScreen3a() {
 
                 {/* Suggestion chip */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300 }}>Suggestion:</span>
+                  <span style={{ fontSize: '11px', color: C.driftwoodSm, fontWeight: 300 }}>Suggestion:</span>
                   <button
                     type="button"
                     onClick={() => setHomeName(suggestion)}

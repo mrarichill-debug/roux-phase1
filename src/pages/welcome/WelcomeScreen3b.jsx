@@ -74,7 +74,7 @@ function RoleCard({ role, selected, onClick, delay }) {
       {/* Text */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: '14px', fontWeight: 500, color: C.ink, marginBottom: '3px' }}>{role.title}</div>
-        <div style={{ fontSize: '12px', color: C.driftwood, fontWeight: 300, lineHeight: 1.4 }}>{role.desc}</div>
+        <div style={{ fontSize: '12px', color: C.driftwoodSm, fontWeight: 300, lineHeight: 1.4 }}>{role.desc}</div>
       </div>
 
       {/* Badge */}
@@ -256,7 +256,7 @@ export default function WelcomeScreen3b() {
 
             {/* Code entry */}
             <div style={{ opacity: 0, animation: 'fadeUp 0.45s ease 0.22s forwards', marginBottom: '20px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '8px' }}>
                 Invite code
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
@@ -294,7 +294,7 @@ export default function WelcomeScreen3b() {
                   {loading ? '…' : 'Look up'}
                 </button>
               </div>
-              <div style={{ fontSize: '11.5px', color: C.driftwood, fontWeight: 300, marginTop: '8px', lineHeight: 1.5 }}>
+              <div style={{ fontSize: '11.5px', color: C.driftwoodSm, fontWeight: 300, marginTop: '8px', lineHeight: 1.5 }}>
                 Your code looks like HILL-4K9X. Not case sensitive.
               </div>
               {codeStatus === 'error' && (
@@ -316,7 +316,7 @@ export default function WelcomeScreen3b() {
                 {/* Top accent */}
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: `linear-gradient(90deg, ${C.sage}, ${C.forest})` }} />
                 {invitedBy && (
-                  <div style={{ fontSize: '11px', fontWeight: 400, color: C.driftwood, letterSpacing: '0.3px', marginBottom: '10px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 400, color: C.driftwoodSm, letterSpacing: '0.3px', marginBottom: '10px' }}>
                     <strong style={{ color: C.ink, fontWeight: 500 }}>{invitedBy}</strong> invited you to join
                   </div>
                 )}

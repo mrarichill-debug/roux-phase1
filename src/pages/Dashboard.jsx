@@ -19,7 +19,7 @@ const C = {
   honey:     '#C49A3C',
   cream:     '#FAF7F2',
   ink:       '#2C2417',
-  driftwood: '#8C7B6B',
+  driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E',
   linen:     '#E8E0D0',
   walnut:    '#8B6F52',
   red:       '#A03030',
@@ -281,7 +281,7 @@ export default function Dashboard({ appUser }) {
 
           {!loading && (
             <div style={{
-              marginTop: '5px', fontSize: '12px', color: C.driftwood, fontWeight: 300,
+              marginTop: '5px', fontSize: '12px', color: C.driftwoodSm, fontWeight: 300,
               display: 'flex', alignItems: 'center', gap: '10px',
             }}>
               <span>{plannedCount} of 7 nights planned</span>
@@ -513,7 +513,7 @@ function WeekStrip({ weekDates, weekMeals, todayMbIdx, onFullPlan }) {
     <div style={{ margin: '0 22px 14px', position: 'relative', zIndex: 1, animation: 'fadeUp 0.4s ease 0.10s both' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '9px' }}>
-        <span style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood }}>
+        <span style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm }}>
           This Week
         </span>
         <button
@@ -686,7 +686,7 @@ function SageNudge({ openDayNames, loading, open, onToggle }) {
           <button
             onClick={e => { e.stopPropagation(); onToggle() }}
             style={{
-              background: 'none', border: 'none', color: C.driftwood,
+              background: 'none', border: 'none', color: C.driftwoodSm,
               fontSize: '12px', fontFamily: "'Jost', sans-serif",
               fontWeight: 300, cursor: 'pointer', padding: '7px 8px',
             }}
@@ -725,7 +725,7 @@ function SpendingSnapshot({ shoppingList, usedPct, loading }) {
           padding: '13px 16px 12px',
           borderBottom: '1px solid rgba(232,224,208,0.8)',
         }}>
-          <span style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood }}>
+          <span style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm }}>
             This Week's Spend
           </span>
         </div>
@@ -758,7 +758,7 @@ function SpendingSnapshot({ shoppingList, usedPct, loading }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         borderBottom: '1px solid rgba(232,224,208,0.8)',
       }}>
-        <span style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood }}>
+        <span style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm }}>
           This Week's Spend
         </span>
         {variance != null && (
@@ -807,7 +807,7 @@ function SpendingSnapshot({ shoppingList, usedPct, loading }) {
         <svg viewBox="0 0 24 24" fill="none" stroke={C.sage} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12, flexShrink: 0 }}>
           <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
         </svg>
-        <span style={{ fontSize: '11.5px', color: C.driftwood, fontWeight: 300, lineHeight: 1.4 }}>
+        <span style={{ fontSize: '11.5px', color: C.driftwoodSm, fontWeight: 300, lineHeight: 1.4 }}>
           Weeks with 5+ planned meals tend to save on groceries — you're on track.
         </span>
       </div>
@@ -832,7 +832,7 @@ function SpendFig({ value, label, quiet, win, alignRight }) {
       }}>
         {value}
       </div>
-      <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '1.8px', textTransform: 'uppercase', color: C.driftwood }}>
+      <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '1.8px', textTransform: 'uppercase', color: C.driftwoodSm }}>
         {label}
       </div>
     </div>
@@ -951,7 +951,7 @@ function QuickAccess({ navigate, shopTile }) {
           }}>
             {tile.icon}
           </div>
-          <span style={{ fontSize: '9px', fontWeight: 500, color: C.driftwood, textAlign: 'center', letterSpacing: '0.2px', lineHeight: 1.35 }}>
+          <span style={{ fontSize: '9px', fontWeight: 500, color: C.driftwoodSm, textAlign: 'center', letterSpacing: '0.2px', lineHeight: 1.35 }}>
             {tile.label}
           </span>
         </button>
