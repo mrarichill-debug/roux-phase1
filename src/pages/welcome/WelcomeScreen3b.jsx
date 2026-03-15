@@ -142,7 +142,7 @@ export default function WelcomeScreen3b() {
     setCodeStatus('idle')
     try {
       const normalizedCode = code.trim().replace(/-/g, '').toUpperCase()
-      console.log('[Roux] Looking up code via serverless:', normalizedCode)
+      const t0 = performance.now()
 
       const response = await fetch('/api/invite', {
         method: 'POST',
@@ -150,7 +150,7 @@ export default function WelcomeScreen3b() {
         body: JSON.stringify({ code: normalizedCode }),
       })
       const result = await response.json()
-      console.log('[Roux] Code lookup result:', result)
+      console.log('[Roux] Code lookup:', Math.round(performance.now() - t0), 'ms', result)
 
       if (!response.ok || result.error) {
         setCodeStatus('error')
@@ -171,61 +171,66 @@ export default function WelcomeScreen3b() {
     if (!householdId) return
     setLoading(true)
     setAuthError('')
+    const t0 = performance.now()
     try {
-      console.log('[Roux] Join flow: setting pendingJoinFlow flag')
       sessionStorage.setItem('pendingJoinFlow', 'true')
 
-      console.log('[Roux] Join flow: creating auth account...')
+      // Step 1: Auth signup
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: { data: { name: joinName.trim() } },
       })
       if (error) throw error
-      console.log('[Roux] Join flow: auth account created, user id:', data.user?.id)
+      console.log('[Roux] Join flow: signUp done in', Math.round(performance.now() - t0), 'ms')
 
+      // Show pending screen immediately — don't block on backend work
+      goStep(3)
+      setLoading(false)
+
+      // Step 2+3+4 run in background after UI has updated
       const session = data.session
       if (session) {
-        // Wait for the trigger to create the users record
+        const t1 = performance.now()
+
+        // Poll for users record (trigger creates it)
         let userData = null
         for (let i = 0; i < 10; i++) {
           const { data: u } = await supabase.from('users').select('id').eq('auth_id', data.user.id).maybeSingle()
           if (u) { userData = u; break }
-          await new Promise(r => setTimeout(r, 500))
+          await new Promise(r => setTimeout(r, 300))
         }
-        console.log('[Roux] Join flow: users record:', userData ? 'found' : 'NOT FOUND')
+        console.log('[Roux] Join flow: users record', userData ? 'found' : 'NOT FOUND', 'in', Math.round(performance.now() - t1), 'ms')
 
         if (userData) {
-          // Set household and pending status — admin assigns role later
-          const { error: updateErr } = await supabase.from('users').update({
+          const t2 = performance.now()
+
+          // Run membership update and notification in parallel — they're independent
+          const updatePromise = supabase.from('users').update({
             household_id: householdId,
             membership_status: 'pending',
-          }).eq('id', userData.id)
-          console.log('[Roux] Join flow: membership_status set to pending:', updateErr ? 'FAILED: ' + updateErr.message : 'OK')
+          }).eq('id', userData.id).then(({ error: e }) => {
+            console.log('[Roux] Join flow: membership_status update', e ? 'FAILED: ' + e.message : 'OK', 'in', Math.round(performance.now() - t2), 'ms')
+          })
 
-          // Create notification for the admin via serverless function
-          // (bypasses RLS — new user can't write cross-household notifications)
-          const notifPayload = { householdId, userName: joinName.trim(), newUserId: userData.id }
-          console.log('[Roux] Join flow: sending notification request:', notifPayload)
-          try {
-            const notifRes = await fetch('/api/join-notification', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(notifPayload),
-            })
-            const notifResult = await notifRes.json()
-            console.log('[Roux] Join flow: notification response:', notifRes.status, notifResult)
-          } catch (notifErr) {
-            console.error('[Roux] Join flow: notification fetch error:', notifErr)
-          }
+          // Notification is fire-and-forget — don't block on it
+          fetch('/api/join-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ householdId, userName: joinName.trim(), newUserId: userData.id }),
+          }).then(r => r.json()).then(result => {
+            console.log('[Roux] Join flow: notification', result.ok ? 'OK' : 'FAILED', 'in', Math.round(performance.now() - t2), 'ms', result)
+          }).catch(err => {
+            console.error('[Roux] Join flow: notification error:', err)
+          })
+
+          await updatePromise
         }
       }
-      // Route to step 3 which is now the pending screen
-      goStep(3)
+      console.log('[Roux] Join flow: total', Math.round(performance.now() - t0), 'ms')
     } catch (err) {
       console.error('[Roux] Join flow error:', err)
       setAuthError(err.message || 'Something went wrong. Please try again.')
-    } finally {
       setLoading(false)
     }
   }
