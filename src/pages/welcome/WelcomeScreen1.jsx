@@ -78,8 +78,10 @@ export default function WelcomeScreen1() {
         }}>
           <div style={{
             fontFamily: "'Slabo 27px', serif",
-            fontSize: '58px', fontWeight: 400, color: C.ink,
-            letterSpacing: '-1px', lineHeight: 1, marginBottom: '6px',
+            fontSize: '58px',
+            color: '#2C2417',
+            letterSpacing: '-0.5px',
+            marginBottom: '6px',
           }}>
             Roux.
           </div>
