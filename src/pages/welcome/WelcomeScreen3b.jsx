@@ -141,18 +141,16 @@ export default function WelcomeScreen3b() {
     setLoading(true)
     setCodeStatus('idle')
     try {
-      const input = code.trim().toUpperCase()
-      const stripped = input.replace(/-/g, '')
-      // Build the hyphenated version to match stored format (XXXX-XXXX)
-      const withHyphen = stripped.length > 4 ? stripped.slice(0, 4) + '-' + stripped.slice(4) : stripped
-      console.log('[Roux] Code lookup:', { input, stripped, withHyphen })
+      const stripped = code.trim().replace(/-/g, '').toUpperCase()
+      const hyphenated = stripped.slice(0, 4) + '-' + stripped.slice(4)
+      console.log('[Roux] Looking up code:', hyphenated)
 
       // Use anon client (no auth session) — RLS allows anon SELECT on households
       const { data: household, error } = await supabaseAnon
         .from('households')
-        .select('id, name')
-        .or(`invite_code.eq.${withHyphen},invite_code.eq.${stripped}`)
-        .maybeSingle()
+        .select('id, name, founded_by')
+        .eq('invite_code', hyphenated)
+        .single()
 
       console.log('[Roux] Code lookup result:', { household, error: error?.message })
 
