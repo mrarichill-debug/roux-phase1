@@ -273,3 +273,9 @@ Build the enforcement layer as a focused sprint immediately before inviting any 
 - **founded_by on households** — immutable historical record. Never update it.
 - **Cutting board Tonight card per scheme** — kept on Garden and Walnut schemes, solid card on Slate and Midnight. This is intentional and permanent per scheme design.
 - **Nav order** — Home / This Week / Recipes / Sage / Shopping — locked March 2026. Sage moves to center (position 3) only when Sage feature set is substantially complete.
+
+---
+
+## Design Decisions — Pending
+
+- **Day type badge redesign** — current colored pills feel too generic for the Roux aesthetic. Redesign direction: small contextual icon + Caveat handwritten label inside a warm stamp/tag shape. Applies to three surfaces: This Week day row header badges, Week Settings day type selector pills, and the active badge display. Full prototype to be provided before build. Do not change current implementation until spec is delivered.
