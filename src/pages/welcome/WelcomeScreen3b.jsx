@@ -142,20 +142,21 @@ export default function WelcomeScreen3b() {
     setCodeStatus('idle')
     try {
       const input = code.trim().toUpperCase()
-      // Try exact match first, then without hyphens, then with hyphen inserted
       const stripped = input.replace(/-/g, '')
+      // Build the hyphenated version to match stored format (XXXX-XXXX)
       const withHyphen = stripped.length > 4 ? stripped.slice(0, 4) + '-' + stripped.slice(4) : stripped
+      console.log('[Roux] Code lookup:', { input, stripped, withHyphen })
 
-      const { data: results } = await supabase
+      // Try both formats — exact match with and without hyphen
+      const { data: household, error } = await supabase
         .from('households')
-        .select('id, name, invite_code')
+        .select('id, name')
+        .or(`invite_code.eq.${withHyphen},invite_code.eq.${stripped}`)
+        .maybeSingle()
 
-      const household = results?.find(h => {
-        const stored = (h.invite_code || '').toUpperCase().replace(/-/g, '')
-        return stored === stripped
-      })
+      console.log('[Roux] Code lookup result:', { household, error: error?.message })
 
-      if (!household) {
+      if (error || !household) {
         setCodeStatus('error')
       } else {
         setHouseholdId(household.id)
