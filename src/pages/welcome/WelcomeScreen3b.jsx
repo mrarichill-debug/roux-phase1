@@ -226,7 +226,7 @@ export default function WelcomeScreen3b() {
     return inputStyle({ focused: focusedField === name, hasValue: value.length > 0, hasError: opts.hasError || false })
   }
 
-  const role = ROLES.find(r => r.key === selectedRole)
+  // Role selection removed — admin assigns role on approval
 
   return (
     <div style={screenWrap}>
@@ -250,10 +250,10 @@ export default function WelcomeScreen3b() {
                 <input
                   ref={firstInputRef}
                   type="text" value={code}
-                  placeholder="· · · · · ·"
-                  maxLength={6}
+                  placeholder="XXXX-XXXX"
+                  maxLength={9}
                   onChange={onCodeChange}
-                  onKeyDown={e => e.key === 'Enter' && code.length === 6 && verifyCode()}
+                  onKeyDown={e => e.key === 'Enter' && code.length >= 4 && verifyCode()}
                   style={{
                     flex: 1, padding: '16px 14px', textAlign: 'center',
                     borderRadius: '12px',
@@ -267,13 +267,13 @@ export default function WelcomeScreen3b() {
                 />
                 <button
                   onClick={verifyCode}
-                  disabled={code.length !== 6 || loading}
+                  disabled={code.length < 4 || loading}
                   style={{
                     padding: '14px 18px', borderRadius: '12px',
-                    background: code.length === 6 ? C.forest : C.linen,
-                    color: code.length === 6 ? 'white' : C.driftwood,
+                    background: code.length >= 4 ? C.forest : C.linen,
+                    color: code.length >= 4 ? 'white' : C.driftwood,
                     fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
-                    border: 'none', cursor: code.length === 6 ? 'pointer' : 'default',
+                    border: 'none', cursor: code.length >= 4 ? 'pointer' : 'default',
                     whiteSpace: 'nowrap', flexShrink: 0,
                     transition: 'background 0.15s',
                   }}
@@ -282,7 +282,7 @@ export default function WelcomeScreen3b() {
                 </button>
               </div>
               <div style={{ fontSize: '11.5px', color: C.driftwood, fontWeight: 300, marginTop: '8px', lineHeight: 1.5 }}>
-                Your code is 6 characters — like HILL01. Not case sensitive.
+                Your code looks like HILL-4K9X. Not case sensitive.
               </div>
               {codeStatus === 'error' && (
                 <div style={{ fontSize: '11.5px', color: C.red, fontWeight: 300, marginTop: '6px' }}>
@@ -329,8 +329,7 @@ export default function WelcomeScreen3b() {
           </div>
         )}
 
-        {/* ══ STEP 2 — Role selection ═══════════════════════════════════════ */}
-        {/* ══ STEP 2 — Create account (role selection removed — admin assigns) ═ */}
+        {/* ══ STEP 2 — Create account ═══════════════════════════════════════ */}
         {step === 2 && (
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
             <StepHead eyebrow="Almost in" title="Create your login." sub="Quick — just your name, email, and a password." />
