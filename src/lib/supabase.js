@@ -10,6 +10,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Standard client — uses anon key, subject to RLS. Use for all normal operations.
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
+// Anon-only client — no auth session, no stored tokens. Use for unauthenticated
+// lookups (invite code verification) where the query must run as the anon role.
+export const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: { persistSession: false, autoRefreshToken: false },
+})
+
 
 // Helper to get current user
 export const getCurrentUser = async () => {

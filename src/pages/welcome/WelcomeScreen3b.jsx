@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
+import { supabase, supabaseAnon } from '../../lib/supabase'
 import {
   C, BgTexture, NavRow, ProgressBar, screenWrap,
   StepHead, FormField, inputStyle, PrimaryButton,
@@ -147,8 +147,8 @@ export default function WelcomeScreen3b() {
       const withHyphen = stripped.length > 4 ? stripped.slice(0, 4) + '-' + stripped.slice(4) : stripped
       console.log('[Roux] Code lookup:', { input, stripped, withHyphen })
 
-      // Try both formats — exact match with and without hyphen
-      const { data: household, error } = await supabase
+      // Use anon client (no auth session) — RLS allows anon SELECT on households
+      const { data: household, error } = await supabaseAnon
         .from('households')
         .select('id, name')
         .or(`invite_code.eq.${withHyphen},invite_code.eq.${stripped}`)
