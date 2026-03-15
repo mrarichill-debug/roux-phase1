@@ -174,16 +174,40 @@ export default function WelcomeScreen3b() {
 
       const session = data.session
       if (session) {
-        const res = await fetch('/api/join-home', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ householdId, role: selectedRole }),
-        })
-        const result = await res.json()
-        if (!res.ok) throw new Error(result.error || 'Failed to join home')
+        // Set user's household and membership to pending
+        const { data: userData } = await supabase
+          .from('users')
+          .select('id')
+          .eq('auth_id', data.user.id)
+          .maybeSingle()
+
+        if (userData) {
+          await supabase.from('users').update({
+            household_id: householdId,
+            membership_status: 'pending',
+            role: selectedRole === 'admin' ? 'co_admin' : selectedRole === 'viewer' ? 'member_viewer' : 'member_admin',
+          }).eq('id', userData.id)
+
+          // Find the admin to send notification
+          const { data: admin } = await supabase
+            .from('users')
+            .select('id')
+            .eq('household_id', householdId)
+            .eq('role', 'admin')
+            .maybeSingle()
+
+          if (admin) {
+            await supabase.from('notifications').insert({
+              household_id: householdId,
+              user_id: admin.id,
+              type: 'membership_request',
+              title: `${joinName.trim()} wants to join your kitchen`,
+              body: `Approve or decline their request to join as ${selectedRole === 'admin' ? 'Co-admin' : selectedRole === 'viewer' ? 'View only' : 'Family member'}.`,
+              action_type: 'membership_approval',
+              target_id: userData.id,
+            })
+          }
+        }
       }
       goStep(4)
     } catch (err) {

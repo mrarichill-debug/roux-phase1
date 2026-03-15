@@ -225,18 +225,7 @@ export default function Dashboard({ appUser }) {
 
       <WatermarkLayer />
 
-      <TopBar rightActions={[
-        {
-          label: 'Notifications',
-          onClick: () => {},
-          icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
-        },
-        {
-          label: 'Search',
-          onClick: () => {},
-          icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>,
-        },
-      ]} />
+      <TopBar />
 
       {/* ── Scrollable content ────────────────────────────────────────────── */}
       <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>

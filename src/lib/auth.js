@@ -15,7 +15,7 @@ export async function loadAppUser(authUserId) {
   // is defaulted here and synced separately in App.jsx.
   const { data, error } = await supabase
     .from('users')
-    .select('id, name, email, role, household_id, avatar_url')
+    .select('id, name, email, role, household_id, avatar_url, membership_status')
     .eq('auth_id', authUserId)
     .maybeSingle()
 
