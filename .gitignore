@@ -17,3 +17,6 @@ dist/
 # Vercel
 .vercel/
 .env.save
+
+# Supabase CLI
+supabase/.temp/
