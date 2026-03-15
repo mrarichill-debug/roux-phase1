@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { loadAppUser } from './lib/auth'
@@ -25,6 +25,7 @@ import { Shell } from './components/AppShell'
 export default function App() {
   const [session, setSession] = useState(undefined) // undefined = still loading
   const [appUser, setAppUser] = useState(null)
+  const isFetchingRef = useRef(false)
 
   useEffect(() => {
     // onAuthStateChange fires INITIAL_SESSION immediately in Supabase v2 —
@@ -49,6 +50,12 @@ export default function App() {
   }, [])
 
   async function fetchAppUser(authUserId, sess) {
+    if (isFetchingRef.current) {
+      console.log('[Roux] fetchAppUser SKIPPED — already in progress')
+      return
+    }
+    isFetchingRef.current = true
+
     try {
       const isPendingJoin = sessionStorage.getItem('pendingJoinFlow') === 'true'
       console.log('[Roux] fetchAppUser called — authUserId:', authUserId, 'isPendingJoin:', isPendingJoin)
@@ -57,19 +64,35 @@ export default function App() {
       console.log('[Roux] loadAppUser result:', user ? { id: user.id, membership_status: user.membership_status, household_id: user.household_id } : null)
 
       // If join flow is in progress, poll until the users record exists AND
-      // WelcomeScreen3b has finished updating it with membership_status = 'pending'.
+      // has membership_status = 'pending' (set by WelcomeScreen3b handleJoin).
       // The trigger creates the record first (membership_status is null), then
       // handleJoin() updates it — we must wait for that update to land.
       if (isPendingJoin) {
-        console.log('[Roux] Join flow: waiting for users record with membership_status...')
+        console.log('[Roux] Join flow: waiting for membership_status = pending...')
+        let found = false
         for (let i = 0; i < 15; i++) {
-          if (user && user.membership_status) {
-            console.log('[Roux] Join flow: record ready after', i * 500, 'ms — membership_status:', user.membership_status)
+          if (user && user.membership_status === 'pending') {
+            console.log('[Roux] Join flow: record ready after', i * 500, 'ms — membership_status: pending')
+            found = true
             break
           }
           await new Promise(r => setTimeout(r, 500))
           user = await loadAppUser(authUserId)
           console.log('[Roux] Join flow poll', i + 1, ':', user ? { membership_status: user.membership_status, household_id: user.household_id } : 'null')
+        }
+
+        // Final check after loop — user might have been approved instantly (active)
+        if (!found && user && user.membership_status === 'active') {
+          console.log('[Roux] Join flow: user already active, proceeding')
+          found = true
+        }
+
+        if (!found) {
+          // Poll timed out without membership_status being set — do NOT route to AuthenticatedApp
+          console.error('[Roux] Join flow: poll timed out, membership_status:', user?.membership_status, '— signing out')
+          sessionStorage.removeItem('pendingJoinFlow')
+          await supabase.auth.signOut()
+          return
         }
       }
 
@@ -81,16 +104,17 @@ export default function App() {
         return
       }
 
-      // Clear the join flow flag now that we have the user record
-      if (isPendingJoin) {
-        sessionStorage.removeItem('pendingJoinFlow')
-        console.log('[Roux] Join flow: flag cleared, membership_status:', user.membership_status)
-      }
-
-      console.log('[Roux] Routing decision — session:', !!sess, 'appUser:', !!user, 'membership_status:', user.membership_status)
+      console.log('[Roux] Routing decision — session:', !!sess, 'membership_status:', user.membership_status)
       // Set both atomically — prevents splash flash between session and appUser
       setAppUser(user)
       setSession(sess)
+
+      // Clear the join flow flag AFTER state is set
+      if (isPendingJoin) {
+        sessionStorage.removeItem('pendingJoinFlow')
+        console.log('[Roux] Join flow: flag cleared after routing')
+      }
+
       // Sync browser timezone to household record (fire-and-forget)
       if (user.household_id) {
         const browserTz = getBrowserTimezone()
@@ -106,8 +130,11 @@ export default function App() {
       }
     } catch (err) {
       console.error('[Roux] Failed to load app user:', err)
+      sessionStorage.removeItem('pendingJoinFlow')
       // Sign out on error — recover to welcome flow rather than infinite splash
       await supabase.auth.signOut()
+    } finally {
+      isFetchingRef.current = false
     }
   }
 
