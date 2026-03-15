@@ -429,6 +429,7 @@ function AuthenticatedApp({ appUser }) {
 function PendingApprovalScreen({ appUser, onApproved }) {
   const firstName = appUser?.name?.split(' ')[0] ?? ''
   const [adminName, setAdminName] = useState(null)
+  const [isApproved, setIsApproved] = useState(false)
 
   useEffect(() => {
     // Fetch admin's first name for the message
@@ -447,14 +448,57 @@ function PendingApprovalScreen({ appUser, onApproved }) {
         .single()
       console.log('[Roux] Pending poll:', { membership_status: data?.membership_status, error: error?.message })
       if (data?.membership_status === 'active') {
-        console.log('[Roux] Membership approved! Routing to dashboard.')
+        console.log('[Roux] Membership approved! Showing welcome transition.')
         clearInterval(interval)
-        onApproved()
+        setIsApproved(true)
       }
     }, 5000)
 
     return () => clearInterval(interval)
   }, [appUser?.id])
+
+  // Graceful approved transition — show welcome message then reload
+  useEffect(() => {
+    if (!isApproved) return
+    const timer = setTimeout(() => {
+      console.log('[Roux] Welcome transition complete, reloading app.')
+      window.location.href = '/'
+    }, 1500)
+    return () => clearTimeout(timer)
+  }, [isApproved])
+
+  if (isApproved) {
+    return (
+      <div style={{
+        background: '#FAF7F2', minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        padding: '40px 32px', fontFamily: "'Jost', sans-serif", textAlign: 'center',
+        opacity: 0, animation: 'fadeIn 0.5s ease forwards',
+      }}>
+        <div style={{
+          fontFamily: "'Playfair Display', serif", fontSize: '36px', fontWeight: 600,
+          color: '#2C2417', letterSpacing: '-0.5px', marginBottom: '24px',
+        }}>
+          Ro<em style={{ fontStyle: 'italic', color: '#3D6B4F' }}>ux</em>
+        </div>
+        <div style={{
+          width: '56px', height: '56px', borderRadius: '50%',
+          background: 'rgba(61,107,79,0.10)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', marginBottom: '20px',
+        }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#7A8C6E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 26, height: 26 }}>
+            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+          </svg>
+        </div>
+        <div style={{
+          fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 500,
+          color: '#2C2417', fontStyle: 'italic',
+        }}>
+          Welcome to the kitchen, {firstName}.
+        </div>
+      </div>
+    )
+  }
 
   const statusMsg = adminName
     ? `${adminName} will review your request. You'll get access as soon as they approve.`
