@@ -125,6 +125,7 @@ The store filter pills (All / Kroger / Costco) in the Building state topbar are 
 - **Color scheme user-level override** — currently household level. Future: each user picks their own scheme, stored in `user_preferences`. Household scheme is the default, user override takes precedence.
 - **Walnut Tonight card variant** — wood grain CSS needs a dark walnut color variant distinct from the blonde maple Garden treatment.
 - **Serves adjuster with quantity scaling** — affects the data model. Plan this early in the recipe card build.
+- **Welcome screen recipe box illustration** — the ghost recipe box SVG in the lower right corner of the welcome screen is a nice decorative element. This should become part of the watermark/decoration object system and appear on other screens as part of the active seasonal set. Wire it into WatermarkLayer so it rotates with the season like the other objects. Currently only exists on the welcome screen.
 
 ---
 
