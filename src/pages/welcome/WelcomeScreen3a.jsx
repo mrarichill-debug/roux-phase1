@@ -249,15 +249,15 @@ export default function WelcomeScreen3a() {
                   onBlur={() => setFocusedField(null)}
                 />
 
-                {/* Suggestion chip in Caveat */}
+                {/* Suggestion chip */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300 }}>Suggestion:</span>
                   <button
                     type="button"
                     onClick={() => setHomeName(suggestion)}
                     style={{
-                      fontFamily: "'Caveat', cursive",
-                      fontSize: '14px', color: C.forest, fontWeight: 400,
+                      fontFamily: "'Jost', sans-serif",
+                      fontSize: '13px', color: C.forest, fontWeight: 400,
                       padding: '4px 10px', borderRadius: '20px',
                       background: 'rgba(61,107,79,0.08)',
                       border: `1px solid rgba(61,107,79,0.2)`,

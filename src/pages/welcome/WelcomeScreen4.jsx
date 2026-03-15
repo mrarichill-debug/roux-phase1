@@ -97,7 +97,7 @@ export default function WelcomeScreen4() {
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '26px', fontWeight: 500, color: C.ink, marginBottom: '6px' }}>
             Good to see you,
           </div>
-          <div style={{ fontFamily: "'Caveat', cursive", fontSize: '28px', color: C.forest, marginBottom: '14px' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '24px', fontWeight: 500, fontStyle: 'italic', color: C.forest, marginBottom: '14px' }}>
             {successName}
           </div>
           <div style={{ fontSize: '13.5px', color: C.driftwood, fontWeight: 300 }}>
