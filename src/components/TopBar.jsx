@@ -85,11 +85,11 @@ export default function TopBar({
             </button>
           ) : showWordmark ? (
             <div style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: '26px', fontWeight: 600,
+              fontFamily: "'Slabo 27px', serif",
+              fontSize: '26px', fontWeight: 400,
               color: 'rgba(250,247,242,0.95)', userSelect: 'none',
             }}>
-              Ro<em style={{ fontStyle: 'italic', color: 'rgba(188,218,178,0.82)' }}>ux</em>
+              Roux.
             </div>
           ) : (
             <div style={{ width: '36px' }} />

@@ -45,11 +45,11 @@ export function BgTexture() {
 export function MiniWordmark() {
   return (
     <span style={{
-      fontFamily: "'Playfair Display', serif",
-      fontSize: '22px', fontWeight: 600,
+      fontFamily: "'Slabo 27px', serif",
+      fontSize: '22px', fontWeight: 400,
       color: C.ink, letterSpacing: '-0.5px',
     }}>
-      R<em style={{ fontStyle: 'italic', color: C.forest }}>oux</em>
+      Roux.
     </span>
   )
 }

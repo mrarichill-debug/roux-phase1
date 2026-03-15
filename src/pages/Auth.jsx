@@ -10,8 +10,8 @@ export default function Auth({ onSignupComplete }) {
       <div className="w-full max-w-sm">
 
         {/* Wordmark */}
-        <h1 className="font-display text-4xl font-light text-stone-800 text-center mb-8">
-          Roux
+        <h1 style={{ fontFamily: "'Slabo 27px', serif", fontSize: '36px', fontWeight: 400, color: '#2C2417', textAlign: 'center', marginBottom: '32px' }}>
+          Roux.
         </h1>
 
         {/* Tab switcher */}

@@ -24,11 +24,11 @@ export default function Sage({ appUser }) {
       }}>
         {/* Roux wordmark */}
         <div style={{
-          fontFamily: "'Playfair Display', serif", fontSize: '36px',
-          fontWeight: 600, color: C.ink, letterSpacing: '-0.5px',
+          fontFamily: "'Slabo 27px', serif", fontSize: '36px',
+          fontWeight: 400, color: C.ink, letterSpacing: '-0.5px',
           marginBottom: '24px',
         }}>
-          Ro<em style={{ fontStyle: 'italic', color: C.forest }}>ux</em>
+          Roux.
         </div>
 
         {/* Sage sparkle icon */}

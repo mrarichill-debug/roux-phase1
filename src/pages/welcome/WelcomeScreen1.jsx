@@ -77,11 +77,11 @@ export default function WelcomeScreen1() {
           animation: 'logoIn 0.9s cubic-bezier(0.22,1,0.36,1) 0.2s forwards',
         }}>
           <div style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: '58px', fontWeight: 600, color: C.ink,
+            fontFamily: "'Slabo 27px', serif",
+            fontSize: '58px', fontWeight: 400, color: C.ink,
             letterSpacing: '-1px', lineHeight: 1, marginBottom: '6px',
           }}>
-            R<em style={{ fontStyle: 'italic', color: C.forest }}>oux</em>
+            Roux.
           </div>
           {/* Tagline — Screen 1 only */}
           <div style={{

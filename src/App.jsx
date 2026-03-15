@@ -488,10 +488,10 @@ function PendingApprovalScreen({ appUser, onApproved }) {
         opacity: 0, animation: 'fadeIn 0.5s ease forwards',
       }}>
         <div style={{
-          fontFamily: "'Playfair Display', serif", fontSize: '36px', fontWeight: 600,
+          fontFamily: "'Slabo 27px', serif", fontSize: '36px', fontWeight: 400,
           color: '#2C2417', letterSpacing: '-0.5px', marginBottom: '24px',
         }}>
-          Ro<em style={{ fontStyle: 'italic', color: '#3D6B4F' }}>ux</em>
+          Roux.
         </div>
         <div style={{
           width: '56px', height: '56px', borderRadius: '50%',
@@ -523,10 +523,10 @@ function PendingApprovalScreen({ appUser, onApproved }) {
       padding: '40px 32px', fontFamily: "'Jost', sans-serif", textAlign: 'center',
     }}>
       <div style={{
-        fontFamily: "'Playfair Display', serif", fontSize: '36px', fontWeight: 600,
+        fontFamily: "'Slabo 27px', serif", fontSize: '36px', fontWeight: 400,
         color: '#2C2417', letterSpacing: '-0.5px', marginBottom: '24px',
       }}>
-        Ro<em style={{ fontStyle: 'italic', color: '#3D6B4F' }}>ux</em>
+        Roux.
       </div>
       <div style={{
         width: '48px', height: '48px', borderRadius: '50%',
@@ -561,10 +561,10 @@ function DeclinedScreen() {
       padding: '40px 32px', fontFamily: "'Jost', sans-serif", textAlign: 'center',
     }}>
       <div style={{
-        fontFamily: "'Playfair Display', serif", fontSize: '36px', fontWeight: 600,
+        fontFamily: "'Slabo 27px', serif", fontSize: '36px', fontWeight: 400,
         color: '#2C2417', marginBottom: '24px',
       }}>
-        Ro<em style={{ fontStyle: 'italic', color: '#3D6B4F' }}>ux</em>
+        Roux.
       </div>
       <div style={{
         fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500,
