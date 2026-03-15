@@ -173,6 +173,9 @@ export default function WelcomeScreen3b() {
     setLoading(true)
     setAuthError('')
     try {
+      console.log('[Roux] Join flow: setting pendingJoinFlow flag')
+      sessionStorage.setItem('pendingJoinFlow', 'true')
+
       console.log('[Roux] Join flow: creating auth account...')
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
