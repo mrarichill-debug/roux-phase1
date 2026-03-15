@@ -203,21 +203,22 @@ export default function WelcomeScreen3b() {
           }).eq('id', userData.id)
           console.log('[Roux] Join flow: membership_status set to pending:', updateErr ? 'FAILED: ' + updateErr.message : 'OK')
 
-          // Create notification for the admin
-          const { data: admin } = await supabase.from('users').select('id').eq('household_id', householdId).eq('role', 'admin').maybeSingle()
-          if (admin) {
-            const { error: notifErr } = await supabase.from('notifications').insert({
-              household_id: householdId,
-              user_id: admin.id,
-              type: 'membership_request',
-              title: `${joinName.trim()} wants to join ${homeName || 'your home'}`,
-              body: 'Approve or decline their request.',
-              action_type: 'membership_approval',
-              target_id: userData.id,
+          // Create notification for the admin via serverless function
+          // (bypasses RLS — new user can't write cross-household notifications)
+          try {
+            const notifRes = await fetch('/api/join-notification', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                householdId,
+                userName: joinName.trim(),
+                newUserId: userData.id,
+              }),
             })
-            console.log('[Roux] Join flow: notification created:', notifErr ? 'FAILED: ' + notifErr.message : 'OK')
-          } else {
-            console.log('[Roux] Join flow: no admin found for household')
+            const notifResult = await notifRes.json()
+            console.log('[Roux] Join flow: notification created:', notifRes.ok ? 'OK' : 'FAILED', notifResult)
+          } catch (notifErr) {
+            console.error('[Roux] Join flow: notification fetch error:', notifErr)
           }
         }
       }
