@@ -47,7 +47,7 @@ export function MiniWordmark() {
     <span style={{
       fontFamily: "'Slabo 27px', Georgia, serif",
       fontSize: '22px', fontWeight: 400,
-      color: C.ink, letterSpacing: '-0.5px',
+      color: C.forest, letterSpacing: '-0.5px',
     }}>
       Roux.
     </span>

@@ -79,7 +79,7 @@ export default function WelcomeScreen1() {
           <div style={{
             fontFamily: "'Slabo 27px', Georgia, serif",
             fontSize: '58px',
-            color: '#2C2417',
+            color: '#3D6B4F',
             letterSpacing: '-0.5px',
             marginBottom: '6px',
           }}>

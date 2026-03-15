@@ -489,7 +489,7 @@ function PendingApprovalScreen({ appUser, onApproved }) {
       }}>
         <div style={{
           fontFamily: "'Slabo 27px', Georgia, serif", fontSize: '36px', fontWeight: 400,
-          color: '#2C2417', letterSpacing: '-0.5px', marginBottom: '24px',
+          color: '#3D6B4F', letterSpacing: '-0.5px', marginBottom: '24px',
         }}>
           Roux.
         </div>
@@ -562,7 +562,7 @@ function DeclinedScreen() {
     }}>
       <div style={{
         fontFamily: "'Slabo 27px', Georgia, serif", fontSize: '36px', fontWeight: 400,
-        color: '#2C2417', marginBottom: '24px',
+        color: '#3D6B4F', marginBottom: '24px',
       }}>
         Roux.
       </div>

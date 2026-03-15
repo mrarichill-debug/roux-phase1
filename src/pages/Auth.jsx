@@ -10,7 +10,7 @@ export default function Auth({ onSignupComplete }) {
       <div className="w-full max-w-sm">
 
         {/* Wordmark */}
-        <h1 style={{ fontFamily: "'Slabo 27px', Georgia, serif", fontSize: '36px', fontWeight: 400, color: '#2C2417', textAlign: 'center', marginBottom: '32px' }}>
+        <h1 style={{ fontFamily: "'Slabo 27px', Georgia, serif", fontSize: '36px', fontWeight: 400, color: '#3D6B4F', textAlign: 'center', marginBottom: '32px' }}>
           Roux.
         </h1>
 

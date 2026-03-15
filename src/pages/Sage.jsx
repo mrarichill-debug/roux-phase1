@@ -25,7 +25,7 @@ export default function Sage({ appUser }) {
         {/* Roux wordmark */}
         <div style={{
           fontFamily: "'Slabo 27px', Georgia, serif", fontSize: '36px',
-          fontWeight: 400, color: C.ink, letterSpacing: '-0.5px',
+          fontWeight: 400, color: C.forest, letterSpacing: '-0.5px',
           marginBottom: '24px',
         }}>
           Roux.
