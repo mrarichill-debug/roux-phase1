@@ -54,13 +54,9 @@ export default function TopBar({
 }) {
   const barHeight = slim ? 58 : 66
 
-  // Bell is now global in App.jsx — TopBar only shows search by default
-  const defaultActions = [
-    { label: 'Search', onClick: () => {}, icon: SEARCH_ICON },
-  ]
-
-  // Use provided rightActions, or default search if none provided
-  const actions = rightActions || (hideDefaultActions ? [] : defaultActions)
+  // Bell, search, and avatar are all global in App.jsx at z-index 150.
+  // TopBar only renders custom rightActions if explicitly provided (e.g. fav star on RecipeCard).
+  const actions = rightActions || []
 
   return (
     <>
@@ -119,8 +115,8 @@ export default function TopBar({
                 {action.icon}
               </button>
             ))}
-            {/* Avatar spacer — global avatar rendered in App.jsx at z-index 150 */}
-            <div style={{ width: '34px' }} />
+            {/* Spacer for global icons (search + bell + avatar) at z-index 150 */}
+            <div style={{ width: '100px' }} />
           </div>
         </div>
 

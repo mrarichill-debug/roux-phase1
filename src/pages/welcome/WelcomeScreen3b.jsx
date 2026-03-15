@@ -141,13 +141,21 @@ export default function WelcomeScreen3b() {
     setLoading(true)
     setCodeStatus('idle')
     try {
-      // Query households by invite_code (client-side, anon key)
-      const { data: household, error } = await supabase
+      const input = code.trim().toUpperCase()
+      // Try exact match first, then without hyphens, then with hyphen inserted
+      const stripped = input.replace(/-/g, '')
+      const withHyphen = stripped.length > 4 ? stripped.slice(0, 4) + '-' + stripped.slice(4) : stripped
+
+      const { data: results } = await supabase
         .from('households')
-        .select('id, name')
-        .eq('invite_code', code.trim())
-        .maybeSingle()
-      if (error || !household) {
+        .select('id, name, invite_code')
+
+      const household = results?.find(h => {
+        const stored = (h.invite_code || '').toUpperCase().replace(/-/g, '')
+        return stored === stripped
+      })
+
+      if (!household) {
         setCodeStatus('error')
       } else {
         setHouseholdId(household.id)

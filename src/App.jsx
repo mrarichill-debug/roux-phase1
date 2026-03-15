@@ -171,21 +171,37 @@ function AuthenticatedApp({ appUser }) {
         <Route path="/*"             element={<Shell          appUser={appUser} />} />
       </Routes>
 
-      {/* ── Global topbar buttons — fixed, z-index above all screens ──── */}
+      {/* ── Global topbar icons — search, bell, avatar — z-index 150 ──── */}
       <div style={{
         position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)',
-        width: '100%', maxWidth: '430px', height: '68px',
+        width: '100%', maxWidth: '430px', height: '66px',
         display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-        padding: '0 12px', gap: '2px',
+        padding: '0 14px', gap: '2px',
         zIndex: 150, pointerEvents: 'none',
       }}>
-        {/* Global bell — honey dot when unread */}
+        {/* Search */}
+        <button
+          onClick={() => {}}
+          aria-label="Search"
+          style={{
+            pointerEvents: 'auto',
+            width: '32px', height: '32px', borderRadius: '50%',
+            background: 'none', border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'rgba(210,230,200,0.7)',
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 19, height: 19 }}>
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+        </button>
+        {/* Bell */}
         <button
           onClick={() => setNotifOpen(true)}
           aria-label="Notifications"
           style={{
             pointerEvents: 'auto', position: 'relative',
-            width: '34px', height: '34px', borderRadius: '50%',
+            width: '32px', height: '32px', borderRadius: '50%',
             background: 'none', border: 'none', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: 'rgba(210,230,200,0.7)',
@@ -197,23 +213,23 @@ function AuthenticatedApp({ appUser }) {
           </svg>
           {unreadCount > 0 && (
             <span style={{
-              position: 'absolute', top: '5px', right: '5px',
+              position: 'absolute', top: '4px', right: '4px',
               width: '8px', height: '8px', borderRadius: '50%',
               background: '#C49A3C', border: '1.5px solid #3D6B4F',
             }} />
           )}
         </button>
-        {/* Global avatar */}
+        {/* Avatar */}
         <button
           onClick={() => setProfileOpen(true)}
           aria-label="Profile"
           style={{
             pointerEvents: 'auto',
-            width: '34px', height: '34px', borderRadius: '50%',
+            width: '32px', height: '32px', borderRadius: '50%',
             background: 'rgba(255,255,255,0.18)',
             color: 'rgba(250,247,242,0.95)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+            fontSize: '12px', fontWeight: 500, cursor: 'pointer',
             border: '1.5px solid rgba(255,255,255,0.25)',
             userSelect: 'none', fontFamily: "'Jost', sans-serif",
           }}
