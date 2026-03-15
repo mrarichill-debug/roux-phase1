@@ -101,7 +101,10 @@ export default function App() {
         <div style={{ minHeight: '100vh', background: '#FAF7F2' }} />
       ) : appUser.membership_status === 'pending' ? (
         // ── Pending approval — warm holding screen ────────────────────────
-        <PendingApprovalScreen appUser={appUser} />
+        <PendingApprovalScreen appUser={appUser} onApproved={() => {
+          // Re-fetch user to get updated membership_status
+          if (session) fetchAppUser(session.user.id, session)
+        }} />
       ) : appUser.membership_status === 'declined' ? (
         // ── Declined ─────────────────────────────────────────────────────
         <DeclinedScreen />
@@ -293,8 +296,36 @@ function AuthenticatedApp({ appUser }) {
 }
 
 // ── Pending Approval Screen ─────────────────────────────────────────────────
-function PendingApprovalScreen({ appUser }) {
+function PendingApprovalScreen({ appUser, onApproved }) {
   const firstName = appUser?.name?.split(' ')[0] ?? ''
+  const [adminName, setAdminName] = useState(null)
+
+  useEffect(() => {
+    // Fetch admin's first name for the message
+    if (appUser?.household_id) {
+      supabase.from('users').select('name').eq('household_id', appUser.household_id).eq('role', 'admin').maybeSingle()
+        .then(({ data }) => { if (data?.name) setAdminName(data.name.split(' ')[0]) })
+    }
+
+    // Poll every 10s — check if membership_status changed to active
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from('users')
+        .select('membership_status')
+        .eq('id', appUser.id)
+        .single()
+      if (data?.membership_status === 'active') {
+        clearInterval(interval)
+        onApproved()
+      }
+    }, 10000)
+
+    return () => clearInterval(interval)
+  }, [appUser?.id])
+
+  const statusMsg = adminName
+    ? `${adminName} will review your request. You'll get access as soon as they approve.`
+    : 'Your request is being reviewed. You\'ll get access as soon as it\'s approved.'
 
   return (
     <div style={{
@@ -326,7 +357,7 @@ function PendingApprovalScreen({ appUser }) {
       <div style={{
         fontSize: '15px', color: '#8C7B6B', fontWeight: 300, lineHeight: 1.6, maxWidth: '280px',
       }}>
-        The admin will review your request. You'll get access as soon as they approve.
+        {statusMsg}
       </div>
     </div>
   )
