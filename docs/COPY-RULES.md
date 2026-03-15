@@ -150,3 +150,10 @@ No format selection. No "how would you like to add this?" menu.
 - Age is never displayed as a stored value — always calculate from date_of_birth.
 - Week always starts Monday for The Hill Family. State it clearly when surfacing planning dates.
 - Family name in greetings comes from the household record name — not hardcoded.
+
+---
+
+## Color Scheme Names
+
+- Scheme names in user-facing copy: **Garden** / **Slate** / **Walnut** / **Midnight** — always capitalized, no other descriptor needed.
+- Kitchen Theme picker label: **"Kitchen Theme"** in Profile → Our Kitchen section.

@@ -55,26 +55,64 @@
 
 ---
 
-## Bottom Navigation
+## Bottom Navigation — 5 Tabs (Updated March 2026)
 
 - Height: **80px**. Background: `--cream`. Border-top: `1px solid --linen`.
 - Box shadow: `0 -2px 12px rgba(80,60,30,0.08)`.
 - 5 tabs: **Home / This Week / Recipes / Sage / Shopping**
+- Order locked. Rationale:
+  - **Home** stays far left — established mobile convention, thumb muscle memory
+  - **Recipes** is center position — content heart of the app
+  - **Sage** is position 4 — discovery/utility, earns center when fully built
 - Active state: scheme primary color + font-weight 600 + 4px dot below icon.
 - Inactive: `--driftwood` color.
 - Shared component: `src/components/BottomNav.jsx` — used on every screen.
+- Never reorder without full group discussion.
 
 ---
 
-## Color Schemes
+## Color Schemes — Four Options, Household Level
 
 Households can choose from 4 color schemes: **garden** (default), **slate**, **walnut**, **midnight**.
 
+| Scheme | Primary | Personality | Tonight Card | Watermark |
+|---|---|---|---|---|
+| **Garden** | `#3D6B4F` forest green | Warm, natural, default | Wood grain | ON |
+| **Slate** | `#2C3E50` deep slate | Modern, gender-neutral, confident | Solid | OFF |
+| **Walnut** | `#5C3D2E` warm walnut | Rich, masculine, kitchen warmth | Wood grain (dark variant) | ON |
+| **Midnight** | `#1B2A4A` deep navy | Sophisticated, dark mode | Solid | OFF |
+
+- Scheme stored in `households.color_scheme` field (default: `'garden'`)
 - Token definitions: `src/lib/colorSchemes.js`
-- Hook: `src/hooks/useColorScheme.js` — reads `households.color_scheme`, applies CSS vars to `:root`
+- Hook: `src/hooks/useColorScheme.js` — reads `households.color_scheme`, applies CSS vars to `:root` on mount
 - Theme picker: Profile → Our Kitchen → Kitchen Theme
-- `tonightCard`: `'wood_grain'` (garden, walnut) or `'solid'` (slate, midnight)
-- `watermark`: `true` (garden, walnut) or `false` (slate, midnight — WatermarkLayer renders nothing)
+- Future: user-level scheme override (each person picks their own)
+
+---
+
+## Tonight Card — Scheme-Aware
+
+- `tonightCard: 'wood_grain'` schemes (garden, walnut): existing cutting board CSS treatment
+- Walnut variant uses darker grain — rich walnut tones, not blonde maple
+- `tonightCard: 'solid'` schemes (slate, midnight): clean card using primary color as background, cream/light text
+- `tonightCard` property lives on each scheme token object in `colorSchemes.js`
+
+---
+
+## WatermarkLayer — Scheme-Aware
+
+- `watermark: true` (garden, walnut): show seasonal SVG objects as normal
+- `watermark: false` (slate, midnight): WatermarkLayer renders nothing — objects clash with dark/cool backgrounds
+
+---
+
+## Logo Update (March 2026)
+
+- Font changed from Playfair Display to Slabo 27px
+- Treatment: **'Roux.'** — with period, no italics, no color differentiation
+- Color: cream white `rgba(250,247,242,0.95)` on colored topbars
+- This is interim — full logo redesign planned for later phase
+- Tagline *"Roux and You — let's make something good."* remains on welcome screen only
 
 ---
 

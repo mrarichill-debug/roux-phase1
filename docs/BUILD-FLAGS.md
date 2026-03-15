@@ -121,7 +121,9 @@ The store filter pills (All / Kroger / Costco) in the Building state topbar are 
 - **Avery (child) dashboard** — scoped view-only experience. Must be designed before onboarding ships.
 - **Profile photos** — users should be able to add a profile photo that appears in the avatar circle instead of their initial. Applies to all household members. Photos stored in Supabase Storage. Avatar displays photo if available, initial as fallback. Build when Profile screen gets its second design pass.
 - **Notifications screen** — full notification center at `/notifications`. Bell icon in topbar routes here. Two tabs: Action Required and Informational. Notification types: meal plan archived (needs confirmation), new member joined via invite code, week published (family members notified), Sage observations and nudges, birthday reminders. `notifications` table exists in schema but nothing is writing to it yet — wire `activity_log` and notification writes together in same sprint.
-- **Sage search/chat screen** — the search icon in the topbar should route to a dedicated Sage interaction screen at `/sage`. This is Lauren's direct line to Sage — she can ask questions, get suggestions, search recipes by ingredient or occasion, and have a conversation. Not a traditional search bar. Sage responds conversationally. This is a Premium feature. Design required before build.
+- **Sage screen at `/sage`** — currently placeholder. Full design required. Direct conversation interface with Sage — not a search bar. Lauren asks questions, gets suggestions, searches by ingredient or occasion. Premium feature. Search icon in topbar routes here.
+- **Color scheme user-level override** — currently household level. Future: each user picks their own scheme, stored in `user_preferences`. Household scheme is the default, user override takes precedence.
+- **Walnut Tonight card variant** — wood grain CSS needs a dark walnut color variant distinct from the blonde maple Garden treatment.
 - **Serves adjuster with quantity scaling** — affects the data model. Plan this early in the recipe card build.
 
 ---
@@ -267,3 +269,5 @@ Build the enforcement layer as a focused sprint immediately before inviting any 
 - **Haptic feedback** — OFF by default. User toggle in profile settings. iOS Safari fails silently — no error, no fallback UI.
 - **Week start day** — Monday, set at household creation. Immutable.
 - **founded_by on households** — immutable historical record. Never update it.
+- **Cutting board Tonight card per scheme** — kept on Garden and Walnut schemes, solid card on Slate and Midnight. This is intentional and permanent per scheme design.
+- **Nav order** — Home / This Week / Recipes / Sage / Shopping — locked March 2026. Sage moves to center (position 3) only when Sage feature set is substantially complete.

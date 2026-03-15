@@ -61,7 +61,7 @@ Full checklist with flags → `docs/BUILD-FLAGS.md`
 
 ---
 
-## Top 7 Rules — Never Forget
+## Top 9 Rules — Never Forget
 
 1. **Prototypes are law.** `/prototypes/` files are the visual source of truth. Match them exactly. Do not improvise design.
 
@@ -76,6 +76,10 @@ Full checklist with flags → `docs/BUILD-FLAGS.md`
 6. **Sage is a helper, not a planner.** Lauren plans meals. Sage observes, nudges, and suggests when asked. Sage never acts unilaterally or removes options without Lauren's input.
 
 7. **Never use swipe gestures as the only way to access an action.** All destructive actions (delete, remove) must be accessible via a visible UI element — inline edit/trash icons or a three-dot menu. Swipe gestures may be added as a shortcut enhancement on top of visible controls but never as the sole mechanism.
+
+8. **Bottom nav always has 5 tabs in this exact order: Home / This Week / Recipes / Sage / Shopping.** Never add, remove, or reorder tabs without explicit instruction.
+
+9. **Color scheme tokens come from `src/lib/colorSchemes.js` and `useColorScheme()` hook.** Never hardcode `--forest`, `--sage`, or other color values directly in new components — always use CSS variables so scheme switching works automatically.
 
 ---
 
