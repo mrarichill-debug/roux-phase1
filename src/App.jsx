@@ -58,10 +58,13 @@ export default function App() {
     isFetchingRef.current = true
 
     try {
+      console.time('[Roux] Auth → ready')
       const isPendingJoin = sessionStorage.getItem('pendingJoinFlow') === 'true'
       console.log('[Roux] fetchAppUser called — authUserId:', authUserId, 'isPendingJoin:', isPendingJoin)
 
+      console.time('[Roux] loadAppUser')
       let user = await loadAppUser(authUserId)
+      console.timeEnd('[Roux] loadAppUser')
       console.log('[Roux] loadAppUser result:', user ? { id: user.id, membership_status: user.membership_status, household_id: user.household_id } : null)
 
       // If join flow is in progress, poll until the users record exists AND
@@ -120,6 +123,7 @@ export default function App() {
       }
 
       console.log('[Roux] Routing decision — session:', !!sess, 'membership_status:', user.membership_status)
+      console.timeEnd('[Roux] Auth → ready')
       // Set both atomically — prevents splash flash between session and appUser
       setAppUser(user)
       setSession(sess)

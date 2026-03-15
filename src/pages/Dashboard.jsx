@@ -65,7 +65,7 @@ export default function Dashboard({ appUser }) {
   const [spendUsedPct, setSpendUsedPct]     = useState(null)
   const [shopTile, setShopTile]             = useState({ state: 'none', listCount: 0, totalSpent: 0, remaining: 0 })
   const [activeTemplateName, setActiveTemplateName] = useState(null)
-  const [loading, setLoading]               = useState(true)
+  const [loading, setLoading]               = useState(true)  // Phase 1+2 loading
   const [sageOpen, setSageOpen]             = useState(false)
 
   const tz         = appUser?.timezone ?? 'America/Chicago'
@@ -82,20 +82,21 @@ export default function Dashboard({ appUser }) {
   }, [appUser?.household_id])
 
   async function loadDashboardData() {
+    console.time('[Roux] Dashboard total')
     setLoading(true)
     try {
       const hid = appUser.household_id
       const weekStart = getWeekStartTZ(tz)
 
-      const [planRes] = await Promise.all([
-        supabase.from('meal_plans')
-          .select('id, status, week_start_date, week_end_date, notes')
-          .eq('household_id', hid)
-          .eq('week_start_date', weekStart)
-          .maybeSingle(),
-      ])
+      // ── Phase 1: Get the active plan ─────────────────────────────────
+      console.time('[Roux] Phase 1: plan')
+      const { data: plan } = await supabase.from('meal_plans')
+        .select('id, status, week_start_date, week_end_date, notes')
+        .eq('household_id', hid)
+        .eq('week_start_date', weekStart)
+        .maybeSingle()
+      console.timeEnd('[Roux] Phase 1: plan')
 
-      const plan = planRes.data
       setActivePlan(plan)
 
       // Parse active template name from plan notes
@@ -108,89 +109,103 @@ export default function Dashboard({ appUser }) {
         setActiveTemplateName(null)
       }
 
-      if (plan) {
-        const [tonightRes, weekRes, shoppingRes] = await Promise.all([
-          supabase.from('planned_meals')
-            .select('*, meals(name), recipes(name, prep_time_minutes), household_traditions(name)')
-            .eq('meal_plan_id', plan.id)
-            .eq('day_of_week', todayDow)
-            .eq('meal_type', 'dinner')
-            .maybeSingle(),
+      if (!plan) {
+        setLoading(false)
+        console.timeEnd('[Roux] Dashboard total')
+        return
+      }
 
-          supabase.from('planned_meals')
-            .select('day_of_week, status, tradition_id, slot_type, note, created_at, updated_at')
-            .eq('meal_plan_id', plan.id)
-            .eq('meal_type', 'dinner'),
+      // ── Phase 2: Tonight + week strip + shopping lists — all parallel ──
+      console.time('[Roux] Phase 2: meals+lists')
+      const [tonightRes, weekRes, shoppingRes] = await Promise.all([
+        supabase.from('planned_meals')
+          .select('*, meals(name), recipes(name, prep_time_minutes), household_traditions(name)')
+          .eq('meal_plan_id', plan.id)
+          .eq('day_of_week', todayDow)
+          .eq('meal_type', 'dinner')
+          .maybeSingle(),
 
-          supabase.from('shopping_lists')
-            .select('id, status, estimated_cost, actual_cost, updated_at')
-            .eq('meal_plan_id', plan.id)
-            .order('created_at'),
+        supabase.from('planned_meals')
+          .select('day_of_week, status, tradition_id, slot_type, note, created_at, updated_at')
+          .eq('meal_plan_id', plan.id)
+          .eq('meal_type', 'dinner'),
+
+        supabase.from('shopping_lists')
+          .select('id, status, estimated_cost, actual_cost, updated_at')
+          .eq('meal_plan_id', plan.id)
+          .order('created_at'),
+      ])
+      console.timeEnd('[Roux] Phase 2: meals+lists')
+
+      if (tonightRes.data) setTonightMeal(tonightRes.data)
+      if (weekRes.data)    setWeekMeals(weekRes.data)
+
+      // Show primary content now — Phase 3 fills in details
+      setLoading(false)
+
+      // ── Phase 3 (deferred): Spending snapshot + shopping tile state ────
+      const allLists = shoppingRes.data ?? []
+      const primaryList = allLists[0] ?? null
+
+      if (primaryList) {
+        setShoppingList(primaryList)
+
+        // Count items in parallel
+        console.time('[Roux] Phase 3: spending')
+        const sid = primaryList.id
+        const [totalRes, purchasedRes] = await Promise.all([
+          supabase.from('shopping_list_items').select('id', { count: 'exact', head: true }).eq('shopping_list_id', sid),
+          supabase.from('shopping_list_items').select('id', { count: 'exact', head: true }).eq('shopping_list_id', sid).eq('is_purchased', true),
         ])
+        const total     = totalRes.count ?? 0
+        const purchased = purchasedRes.count ?? 0
+        if (total > 0) setSpendUsedPct(Math.round((purchased / total) * 100))
+        console.timeEnd('[Roux] Phase 3: spending')
+      }
 
-        if (tonightRes.data) setTonightMeal(tonightRes.data)
-        if (weekRes.data)    setWeekMeals(weekRes.data)
+      // Shopping tile state
+      if (allLists.length === 0) {
+        setShopTile({ state: 'none', listCount: 0, totalSpent: 0, remaining: 0 })
+      } else {
+        const completedLists = allLists.filter(l => l.status === 'completed')
+        const activeLists    = allLists.filter(l => l.status !== 'completed')
+        const totalSpent     = allLists.reduce((sum, l) => sum + (parseFloat(l.actual_cost) || 0), 0)
+        const listCount      = allLists.length
 
-        const allLists = shoppingRes.data ?? []
-        const primaryList = allLists[0] ?? null
-
-        // SpendingSnapshot uses the primary list (backwards compat)
-        if (primaryList) {
-          setShoppingList(primaryList)
-          const sid = primaryList.id
-          const [totalRes, purchasedRes] = await Promise.all([
-            supabase.from('shopping_list_items').select('id', { count: 'exact', head: true }).eq('shopping_list_id', sid),
-            supabase.from('shopping_list_items').select('id', { count: 'exact', head: true }).eq('shopping_list_id', sid).eq('is_purchased', true),
-          ])
-          const total     = totalRes.count ?? 0
-          const purchased = purchasedRes.count ?? 0
-          if (total > 0) setSpendUsedPct(Math.round((purchased / total) * 100))
-        }
-
-        // Compute shopping tile state
-        if (allLists.length === 0) {
-          setShopTile({ state: 'none', listCount: 0, totalSpent: 0, remaining: 0 })
-        } else {
-          const completedLists = allLists.filter(l => l.status === 'completed')
-          const activeLists    = allLists.filter(l => l.status !== 'completed')
-          const totalSpent     = allLists.reduce((sum, l) => sum + (parseFloat(l.actual_cost) || 0), 0)
-          const listCount      = allLists.length
-
-          if (activeLists.length > 0) {
-            // State 2: at least one list in building/shopping state
-            // Count remaining unpurchased items across active lists
-            const activeIds = activeLists.map(l => l.id)
-            let remaining = 0
-            for (const lid of activeIds) {
-              const { count } = await supabase
-                .from('shopping_list_items')
+        if (activeLists.length > 0) {
+          // Count remaining items across all active lists in parallel
+          const activeIds = activeLists.map(l => l.id)
+          const remainingCounts = await Promise.all(
+            activeIds.map(lid =>
+              supabase.from('shopping_list_items')
                 .select('id', { count: 'exact', head: true })
                 .eq('shopping_list_id', lid)
                 .eq('is_purchased', false)
-              remaining += (count ?? 0)
-            }
-            setShopTile({ state: 'active', listCount, totalSpent, remaining })
-          } else if (completedLists.length > 0) {
-            // All lists completed — check if meals changed since last completion (State 4)
-            const latestComplete = completedLists.reduce((a, b) =>
-              new Date(a.updated_at) > new Date(b.updated_at) ? a : b
+                .then(r => r.count ?? 0)
             )
-            const meals = weekRes.data ?? []
-            const mealsChangedAfter = meals.some(m => {
-              const mTime = new Date(m.updated_at || m.created_at)
-              return mTime > new Date(latestComplete.updated_at)
-            })
-            setShopTile({
-              state: mealsChangedAfter ? 'needs-run' : 'complete',
-              listCount, totalSpent, remaining: 0,
-            })
-          }
+          )
+          const remaining = remainingCounts.reduce((sum, c) => sum + c, 0)
+          setShopTile({ state: 'active', listCount, totalSpent, remaining })
+        } else if (completedLists.length > 0) {
+          const latestComplete = completedLists.reduce((a, b) =>
+            new Date(a.updated_at) > new Date(b.updated_at) ? a : b
+          )
+          const meals = weekRes.data ?? []
+          const mealsChangedAfter = meals.some(m => {
+            const mTime = new Date(m.updated_at || m.created_at)
+            return mTime > new Date(latestComplete.updated_at)
+          })
+          setShopTile({
+            state: mealsChangedAfter ? 'needs-run' : 'complete',
+            listCount, totalSpent, remaining: 0,
+          })
         }
       }
     } catch (err) {
       console.error('Dashboard load error:', err)
     } finally {
       setLoading(false)
+      console.timeEnd('[Roux] Dashboard total')
     }
   }
 
