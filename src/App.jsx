@@ -121,6 +121,7 @@ function AuthenticatedApp({ appUser }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
+  const [approvalRoles, setApprovalRoles] = useState({}) // notifId → selected role
   const firstName = appUser?.name?.split(' ')[0] ?? ''
 
   // Load unread notifications on mount
@@ -140,10 +141,13 @@ function AuthenticatedApp({ appUser }) {
 
   const unreadCount = notifications.filter(n => !n.is_read).length
 
-  async function handleNotifAction(notifId, action, targetId) {
+  async function handleNotifAction(notifId, action, targetId, role) {
     if (action === 'approve_member') {
-      // Approve: set user membership_status to active
-      await supabase.from('users').update({ membership_status: 'active' }).eq('id', targetId)
+      // Approve: set membership_status to active and assign role
+      await supabase.from('users').update({
+        membership_status: 'active',
+        role: role || 'member_admin',
+      }).eq('id', targetId)
       await supabase.from('notifications').update({ is_acted_on: true, acted_on_at: new Date().toISOString() }).eq('id', notifId)
       setNotifications(prev => prev.filter(n => n.id !== notifId))
     } else if (action === 'decline_member') {
@@ -265,17 +269,39 @@ function AuthenticatedApp({ appUser }) {
                         </div>
                       )}
                       {n.action_type === 'membership_approval' && (
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <button onClick={() => handleNotifAction(n.id, 'approve_member', n.target_id)} style={{
-                            flex: 1, padding: '10px', borderRadius: '10px',
-                            background: '#3D6B4F', color: 'white', border: 'none',
-                            fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500, cursor: 'pointer',
-                          }}>Approve</button>
-                          <button onClick={() => handleNotifAction(n.id, 'decline_member', n.target_id)} style={{
-                            flex: 1, padding: '10px', borderRadius: '10px',
-                            background: 'none', color: '#8C7B6B', border: '1px solid #E8E0D0',
-                            fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500, cursor: 'pointer',
-                          }}>Decline</button>
+                        <div>
+                          {/* Role selector */}
+                          <div style={{ display: 'flex', gap: '4px', marginBottom: '10px' }}>
+                            {[
+                              { key: 'co_admin', label: 'Co-admin' },
+                              { key: 'member_admin', label: 'Family member' },
+                              { key: 'member_viewer', label: 'View only' },
+                            ].map(r => {
+                              const sel = (approvalRoles[n.id] || 'member_admin') === r.key
+                              return (
+                                <button key={r.key} onClick={() => setApprovalRoles(prev => ({ ...prev, [n.id]: r.key }))} style={{
+                                  flex: 1, padding: '6px 4px', fontSize: '10px', fontWeight: sel ? 500 : 400,
+                                  fontFamily: "'Jost', sans-serif", borderRadius: '8px', cursor: 'pointer',
+                                  border: `1px solid ${sel ? '#3D6B4F' : '#E8E0D0'}`,
+                                  background: sel ? '#3D6B4F' : 'transparent',
+                                  color: sel ? 'white' : '#2C2417', transition: 'all 0.15s',
+                                  textAlign: 'center',
+                                }}>{r.label}</button>
+                              )
+                            })}
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button onClick={() => handleNotifAction(n.id, 'approve_member', n.target_id, approvalRoles[n.id] || 'member_admin')} style={{
+                              flex: 1, padding: '10px', borderRadius: '10px',
+                              background: '#3D6B4F', color: 'white', border: 'none',
+                              fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+                            }}>Approve</button>
+                            <button onClick={() => handleNotifAction(n.id, 'decline_member', n.target_id)} style={{
+                              flex: 1, padding: '10px', borderRadius: '10px',
+                              background: 'none', color: '#8C7B6B', border: '1px solid #E8E0D0',
+                              fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+                            }}>Decline</button>
+                          </div>
                         </div>
                       )}
                     </div>

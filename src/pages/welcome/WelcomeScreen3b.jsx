@@ -97,18 +97,18 @@ export default function WelcomeScreen3b() {
   const [householdId, setHouseholdId] = useState(null)
   const [homeName, setHomeName]   = useState('')
   const [invitedBy, setInvitedBy] = useState('')
-  const [selectedRole, setSelectedRole] = useState(null)
-  const [joinName, setJoinName]   = useState('')
-  const [email, setEmail]         = useState('')
-  const [password, setPassword]   = useState('')
-  const [pwVisible, setPwVisible] = useState(false)
-  const [loading, setLoading]     = useState(false)
-  const [authError, setAuthError] = useState('')
+  const [joinName, setJoinName]       = useState('')
+  const [email, setEmail]             = useState('')
+  const [password, setPassword]       = useState('')
+  const [confirmPw, setConfirmPw]     = useState('')
+  const [pwVisible, setPwVisible]     = useState(false)
+  const [loading, setLoading]         = useState(false)
+  const [authError, setAuthError]     = useState('')
   const [focusedField, setFocusedField] = useState(null)
 
   const firstInputRef = useRef(null)
   useEffect(() => {
-    if (step <= 3) {
+    if (step <= 2) {
       const t = setTimeout(() => firstInputRef.current?.focus(), 350)
       return () => clearTimeout(t)
     }
@@ -116,7 +116,8 @@ export default function WelcomeScreen3b() {
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
   const { score: pwScore } = getPasswordStrength(password)
-  const step3Ready = joinName.trim() && emailValid && pwScore === 3
+  const pwMatch = password === confirmPw
+  const step2Ready = joinName.trim() && emailValid && pwScore === 3 && pwMatch && confirmPw.length > 0
 
   function goStep(n) {
     setStep(n)
@@ -129,28 +130,28 @@ export default function WelcomeScreen3b() {
   }
 
   function onCodeChange(e) {
-    const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
+    // Allow hyphens in input for prefixed codes (HILL-4K9X), strip for matching
+    const val = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 9)
     setCode(val)
     setCodeStatus('idle')
   }
 
   async function verifyCode() {
-    if (code.length !== 6) return
+    if (code.length < 4) return
     setLoading(true)
     setCodeStatus('idle')
     try {
-      const res = await fetch('/api/invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      })
-      const data = await res.json()
-      if (data.error || !data.householdId) {
+      // Query households by invite_code (client-side, anon key)
+      const { data: household, error } = await supabase
+        .from('households')
+        .select('id, name')
+        .eq('invite_code', code.trim())
+        .maybeSingle()
+      if (error || !household) {
         setCodeStatus('error')
       } else {
-        setHouseholdId(data.householdId)
-        setHomeName(data.homeName || '')
-        setInvitedBy(data.invitedBy || '')
+        setHouseholdId(household.id)
+        setHomeName(household.name || '')
         setCodeStatus('valid')
       }
     } catch {
@@ -161,57 +162,60 @@ export default function WelcomeScreen3b() {
   }
 
   async function handleJoin() {
-    if (!householdId || !selectedRole) return
+    if (!householdId) return
     setLoading(true)
     setAuthError('')
     try {
+      console.log('[Roux] Join flow: creating auth account...')
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: { data: { name: joinName.trim() } },
       })
       if (error) throw error
+      console.log('[Roux] Join flow: auth account created, user id:', data.user?.id)
 
       const session = data.session
       if (session) {
-        // Set user's household and membership to pending
-        const { data: userData } = await supabase
-          .from('users')
-          .select('id')
-          .eq('auth_id', data.user.id)
-          .maybeSingle()
+        // Wait for the trigger to create the users record
+        let userData = null
+        for (let i = 0; i < 10; i++) {
+          const { data: u } = await supabase.from('users').select('id').eq('auth_id', data.user.id).maybeSingle()
+          if (u) { userData = u; break }
+          await new Promise(r => setTimeout(r, 500))
+        }
+        console.log('[Roux] Join flow: users record:', userData ? 'found' : 'NOT FOUND')
 
         if (userData) {
+          // Set household and pending status — admin assigns role later
           const { error: updateErr } = await supabase.from('users').update({
             household_id: householdId,
             membership_status: 'pending',
-            role: selectedRole === 'admin' ? 'co_admin' : selectedRole === 'viewer' ? 'member_viewer' : 'member_admin',
           }).eq('id', userData.id)
-          if (updateErr) console.error('[Roux] Failed to set pending status:', updateErr.message, updateErr.code)
+          console.log('[Roux] Join flow: membership_status set to pending:', updateErr ? 'FAILED: ' + updateErr.message : 'OK')
 
-          // Find the admin to send notification
-          const { data: admin } = await supabase
-            .from('users')
-            .select('id')
-            .eq('household_id', householdId)
-            .eq('role', 'admin')
-            .maybeSingle()
-
+          // Create notification for the admin
+          const { data: admin } = await supabase.from('users').select('id').eq('household_id', householdId).eq('role', 'admin').maybeSingle()
           if (admin) {
-            await supabase.from('notifications').insert({
+            const { error: notifErr } = await supabase.from('notifications').insert({
               household_id: householdId,
               user_id: admin.id,
               type: 'membership_request',
               title: `${joinName.trim()} wants to join your kitchen`,
-              body: `Approve or decline their request to join as ${selectedRole === 'admin' ? 'Co-admin' : selectedRole === 'viewer' ? 'View only' : 'Family member'}.`,
+              body: 'Approve or decline their request.',
               action_type: 'membership_approval',
               target_id: userData.id,
             })
+            console.log('[Roux] Join flow: notification created:', notifErr ? 'FAILED: ' + notifErr.message : 'OK')
+          } else {
+            console.log('[Roux] Join flow: no admin found for household')
           }
         }
       }
-      goStep(4)
+      // Route to step 3 which is now the pending screen
+      goStep(3)
     } catch (err) {
+      console.error('[Roux] Join flow error:', err)
       setAuthError(err.message || 'Something went wrong. Please try again.')
     } finally {
       setLoading(false)
@@ -326,34 +330,8 @@ export default function WelcomeScreen3b() {
         )}
 
         {/* ══ STEP 2 — Role selection ═══════════════════════════════════════ */}
+        {/* ══ STEP 2 — Create account (role selection removed — admin assigns) ═ */}
         {step === 2 && (
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-            <StepHead eyebrow="Your role" title="How will you use Roux?" sub="This sets what you can see and do. The admin can adjust this later." />
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '28px' }}>
-              {ROLES.map((r, i) => (
-                <RoleCard
-                  key={r.key}
-                  role={r}
-                  selected={selectedRole === r.key}
-                  onClick={() => setSelectedRole(r.key)}
-                  delay={`${0.22 + i * 0.08}s`}
-                />
-              ))}
-            </div>
-
-            <PrimaryButton
-              style={{ marginTop: 'auto', opacity: 0, animation: 'fadeUp 0.45s ease 0.46s forwards' }}
-              disabled={!selectedRole}
-              onClick={() => goStep(3)}
-            >
-              Continue <ArrowIcon />
-            </PrimaryButton>
-          </div>
-        )}
-
-        {/* ══ STEP 3 — Create account ═══════════════════════════════════════ */}
-        {step === 3 && (
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
             <StepHead eyebrow="Almost in" title="Create your login." sub="Quick — just your name, email, and a password." />
 
@@ -401,6 +379,22 @@ export default function WelcomeScreen3b() {
                 </div>
                 <PasswordStrength password={password} visible={password.length > 0} />
               </FormField>
+
+              <FormField label="Confirm password">
+                <input
+                  type="password"
+                  value={confirmPw} placeholder="Re-enter your password"
+                  style={fieldInput('confirmPw', confirmPw)}
+                  onChange={e => setConfirmPw(e.target.value)}
+                  onFocus={() => setFocusedField('confirmPw')}
+                  onBlur={() => setFocusedField(null)}
+                />
+                {confirmPw.length > 0 && !pwMatch && (
+                  <div style={{ fontSize: '12px', color: C.honey, marginTop: '4px' }}>
+                    Passwords don't match
+                  </div>
+                )}
+              </FormField>
             </div>
 
             {authError && (
@@ -411,7 +405,7 @@ export default function WelcomeScreen3b() {
 
             <PrimaryButton
               style={{ marginTop: 'auto', opacity: 0, animation: 'fadeUp 0.45s ease 0.3s forwards' }}
-              disabled={!step3Ready} loading={loading}
+              disabled={!step2Ready} loading={loading}
               onClick={handleJoin}
             >
               Join the kitchen{' '}
@@ -424,8 +418,8 @@ export default function WelcomeScreen3b() {
           </div>
         )}
 
-        {/* ══ STEP 4 — Welcome moment ═══════════════════════════════════════ */}
-        {step === 4 && (
+        {/* ══ STEP 3 — Pending approval ═══════════════════════════════════════ */}
+        {step === 3 && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '20px 0 40px', opacity: 0, animation: 'fadeUp 0.6s ease 0.1s forwards' }}>
             {/* People icon */}
             <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'rgba(61,107,79,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', animation: 'iconPop 0.5s cubic-bezier(0.22,1,0.36,1) 0.3s both' }}>
@@ -437,34 +431,15 @@ export default function WelcomeScreen3b() {
               </svg>
             </div>
 
-            {invitedBy && (
-              <div style={{ fontSize: '12px', color: C.driftwood, fontWeight: 300, marginBottom: '6px' }}>
-                Invited by {invitedBy}
-              </div>
-            )}
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '26px', fontWeight: 500, color: C.ink, marginBottom: '6px', lineHeight: 1.2 }}>
-              You're in.
+              Request sent.
             </div>
-            <div style={{ fontFamily: "'Caveat', cursive", fontSize: '26px', color: C.forest, marginBottom: '16px' }}>
+            <div style={{ fontFamily: "'Caveat', cursive", fontSize: '22px', color: C.forest, marginBottom: '20px' }}>
               {homeName}
             </div>
-
-            {role && (
-              <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', padding: '6px 14px', borderRadius: '20px', marginBottom: '20px', display: 'inline-block', background: role.pillBg, color: role.pillColor }}>
-                {role.title}
-              </div>
-            )}
-
-            {role && (
-              <div style={{ fontSize: '13.5px', color: C.driftwood, fontWeight: 300, lineHeight: 1.7, marginBottom: '32px' }}>
-                {role.sub}
-              </div>
-            )}
-
-            {/* App auth listener routes automatically. Button as reassurance. */}
-            <PrimaryButton style={{ opacity: 0, animation: 'fadeUp 0.45s ease 0.5s forwards', marginTop: 0 }}>
-              See the kitchen <ArrowIcon />
-            </PrimaryButton>
+            <div style={{ fontSize: '14px', color: C.driftwood, fontWeight: 300, lineHeight: 1.7, marginBottom: '32px', maxWidth: '260px' }}>
+              The kitchen admin will review your request. You'll get access as soon as they approve.
+            </div>
           </div>
         )}
 

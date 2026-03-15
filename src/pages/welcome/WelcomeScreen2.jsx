@@ -149,40 +149,7 @@ export default function WelcomeScreen2() {
           />
         </div>
 
-        {/* Or divider */}
-        <div style={{
-          width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
-          marginBottom: '20px',
-          opacity: 0, animation: 'fadeUp 0.4s ease 0.48s forwards',
-        }}>
-          <div style={{ flex: 1, height: '1px', background: C.linen }} />
-          <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, letterSpacing: '1px', textTransform: 'uppercase' }}>or</div>
-          <div style={{ flex: 1, height: '1px', background: C.linen }} />
-        </div>
-
-        {/* Have a code button */}
-        <button
-          onClick={() => navigate('/join')}
-          style={{
-            width: '100%', padding: '14px 18px', borderRadius: '12px',
-            background: 'transparent', border: `1px dashed rgba(122,140,110,0.4)`,
-            cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 400, color: C.sage,
-            transition: 'all 0.15s',
-            opacity: 0, animation: 'fadeUp 0.4s ease 0.52s forwards',
-          }}
-          onMouseDown={e => { e.currentTarget.style.background = 'rgba(122,140,110,0.06)'; e.currentTarget.style.borderStyle = 'solid' }}
-          onMouseUp={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderStyle = 'dashed' }}
-          onTouchStart={e => { e.currentTarget.style.background = 'rgba(122,140,110,0.06)' }}
-          onTouchEnd={e => { e.currentTarget.style.background = 'transparent' }}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-            <rect x="3" y="11" width="18" height="11" rx="2"/>
-            <path d="M7 11V7a5 5 0 0110 0v4"/>
-          </svg>
-          I have an invite code
-        </button>
+        {/* OR divider and redundant invite code button removed — 'Join a home' IS the invite flow */}
 
         {/* Step dots */}
         <div style={{ display: 'flex', justifyContent: 'center' }}>
