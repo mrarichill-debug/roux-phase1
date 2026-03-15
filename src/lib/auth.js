@@ -19,6 +19,8 @@ export async function loadAppUser(authUserId) {
     .eq('auth_id', authUserId)
     .maybeSingle()
 
+  console.log('[Roux] loadAppUser query:', { authUserId, data: data ? { id: data.id, membership_status: data.membership_status, household_id: data.household_id } : null, error: error?.message })
+
   if (error) throw new Error(`Failed to load user: ${error.message}`)
   if (!data)  return null
 

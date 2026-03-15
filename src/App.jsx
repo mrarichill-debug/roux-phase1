@@ -51,25 +51,30 @@ export default function App() {
   async function fetchAppUser(authUserId, sess) {
     try {
       const isPendingJoin = sessionStorage.getItem('pendingJoinFlow') === 'true'
-      let user = await loadAppUser(authUserId)
+      console.log('[Roux] fetchAppUser called — authUserId:', authUserId, 'isPendingJoin:', isPendingJoin)
 
-      // If join flow is in progress and users record doesn't exist yet,
-      // poll up to 5 seconds for the trigger to create it
-      if (!user && isPendingJoin) {
-        console.log('[Roux] Join flow: users record not ready, polling...')
-        for (let i = 0; i < 10; i++) {
-          await new Promise(r => setTimeout(r, 500))
-          user = await loadAppUser(authUserId)
-          if (user) {
-            console.log('[Roux] Join flow: users record found after', (i + 1) * 500, 'ms')
+      let user = await loadAppUser(authUserId)
+      console.log('[Roux] loadAppUser result:', user ? { id: user.id, membership_status: user.membership_status, household_id: user.household_id } : null)
+
+      // If join flow is in progress, poll until the users record exists AND
+      // WelcomeScreen3b has finished updating it with membership_status = 'pending'.
+      // The trigger creates the record first (membership_status is null), then
+      // handleJoin() updates it — we must wait for that update to land.
+      if (isPendingJoin) {
+        console.log('[Roux] Join flow: waiting for users record with membership_status...')
+        for (let i = 0; i < 15; i++) {
+          if (user && user.membership_status) {
+            console.log('[Roux] Join flow: record ready after', i * 500, 'ms — membership_status:', user.membership_status)
             break
           }
+          await new Promise(r => setTimeout(r, 500))
+          user = await loadAppUser(authUserId)
+          console.log('[Roux] Join flow poll', i + 1, ':', user ? { membership_status: user.membership_status, household_id: user.household_id } : 'null')
         }
       }
 
       if (!user) {
         // No user record found — RLS may be blocking or trigger didn't fire.
-        // Sign out so the app routes to the welcome flow instead of hanging on splash.
         console.error('[Roux] No user record found for auth ID:', authUserId, '— signing out')
         sessionStorage.removeItem('pendingJoinFlow')
         await supabase.auth.signOut()
@@ -81,6 +86,8 @@ export default function App() {
         sessionStorage.removeItem('pendingJoinFlow')
         console.log('[Roux] Join flow: flag cleared, membership_status:', user.membership_status)
       }
+
+      console.log('[Roux] Routing decision — session:', !!sess, 'appUser:', !!user, 'membership_status:', user.membership_status)
       // Set both atomically — prevents splash flash between session and appUser
       setAppUser(user)
       setSession(sess)
