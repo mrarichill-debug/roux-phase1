@@ -59,9 +59,22 @@
 
 - Height: **80px**. Background: `--cream`. Border-top: `1px solid --linen`.
 - Box shadow: `0 -2px 12px rgba(80,60,30,0.08)`.
-- 4 tabs: **Home / Recipes / This Week / Shopping**
-- Active state: `--forest` color + font-weight 600 + 4px dot below icon.
+- 5 tabs: **Home / This Week / Recipes / Sage / Shopping**
+- Active state: scheme primary color + font-weight 600 + 4px dot below icon.
 - Inactive: `--driftwood` color.
+- Shared component: `src/components/BottomNav.jsx` — used on every screen.
+
+---
+
+## Color Schemes
+
+Households can choose from 4 color schemes: **garden** (default), **slate**, **walnut**, **midnight**.
+
+- Token definitions: `src/lib/colorSchemes.js`
+- Hook: `src/hooks/useColorScheme.js` — reads `households.color_scheme`, applies CSS vars to `:root`
+- Theme picker: Profile → Our Kitchen → Kitchen Theme
+- `tonightCard`: `'wood_grain'` (garden, walnut) or `'solid'` (slate, midnight)
+- `watermark`: `true` (garden, walnut) or `false` (slate, midnight — WatermarkLayer renders nothing)
 
 ---
 

@@ -9,6 +9,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import TopBar from '../components/TopBar'
+import BottomNav from '../components/BottomNav'
 import WatermarkLayer from '../components/WatermarkLayer'
 import { getWeekStartTZ } from '../lib/dateUtils'
 
@@ -349,7 +350,7 @@ export default function ShoppingList({ appUser }) {
           <div className="shimmer-block" style={{ height: '120px', borderRadius: '14px', marginBottom: '12px' }} />
           <div className="shimmer-block" style={{ height: '100px', borderRadius: '14px' }} />
         </div>
-        <BottomNav navigate={navigate} />
+        <BottomNav activeTab="shopping" />
       </div>
     )
   }
@@ -383,7 +384,7 @@ export default function ShoppingList({ appUser }) {
             Go to This Week
           </button>
         </div>
-        <BottomNav navigate={navigate} />
+        <BottomNav activeTab="shopping" />
       </div>
     )
   }
@@ -777,7 +778,7 @@ export default function ShoppingList({ appUser }) {
       )}
 
       {/* ── Bottom nav ──────────────────────────────────────────────────────── */}
-      <BottomNav navigate={navigate} />
+      <BottomNav activeTab="shopping" />
 
       {/* ── Receipt capture overlay ──────────────────────────────────────────── */}
       {receiptSheetOpen && (
@@ -1040,69 +1041,6 @@ function GotItItem({ item, isLast, onUndo }) {
         </div>
       )}
     </div>
-  )
-}
-
-// ── Bottom nav ─────────────────────────────────────────────────────────────────
-function BottomNav({ navigate }) {
-  const tabs = [
-    {
-      label: 'Home', path: '/',
-      icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>,
-    },
-    {
-      label: 'This Week', path: '/thisweek',
-      icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>,
-    },
-    {
-      label: 'Recipes', path: '/recipes',
-      icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}><path d="M4 19.5A2.5 2.5 0 016.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" /></svg>,
-    },
-    {
-      label: 'Shopping', path: '/shopping', active: true,
-      icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" /></svg>,
-    },
-  ]
-
-  return (
-    <nav style={{
-      position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-      width: '100%', maxWidth: '430px', height: '80px',
-      background: '#FAF7F2', borderTop: '1px solid #E8E0D0',
-      display: 'flex', alignItems: 'center', justifyContent: 'space-around',
-      padding: '0 8px 12px', zIndex: 100,
-      boxShadow: '0 -2px 12px rgba(80,60,30,0.08)',
-    }}>
-      {tabs.map(tab => (
-        <button
-          key={tab.path}
-          onClick={() => navigate(tab.path)}
-          style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            gap: '4px', flex: 1, cursor: 'pointer', padding: '8px 4px',
-            background: 'none', border: 'none',
-            color: tab.active ? '#3D6B4F' : '#8C7B6B',
-            position: 'relative',
-          }}
-        >
-          {tab.icon}
-          <span style={{
-            fontSize: '10px', fontWeight: tab.active ? 600 : 400,
-            letterSpacing: '0.3px',
-            color: tab.active ? '#3D6B4F' : '#8C7B6B',
-          }}>
-            {tab.label}
-          </span>
-          {tab.active && (
-            <div style={{
-              position: 'absolute', bottom: '2px',
-              width: '4px', height: '4px', borderRadius: '50%',
-              background: '#3D6B4F',
-            }} />
-          )}
-        </button>
-      ))}
-    </nav>
   )
 }
 

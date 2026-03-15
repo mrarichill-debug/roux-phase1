@@ -32,6 +32,9 @@ Roux is a premium family recipe library that also plans meals, built for Lauren 
 - `src/lib/auth.js` — `loadAppUser(authUserId)`
 - `src/pages/Recipes.jsx` — Phase 1 recipe library (built)
 - `src/components/AppShell.jsx` — BrowserRouter + drawer + routes
+- `src/components/BottomNav.jsx` — shared 5-tab nav (Home / This Week / Recipes / Sage / Shopping)
+- `src/lib/colorSchemes.js` — color scheme tokens (garden/slate/walnut/midnight)
+- `src/hooks/useColorScheme.js` — reads household scheme, applies CSS vars
 - `/prototypes/` — approved HTML prototypes (visual source of truth)
 - `/docs/` — full design system, screen specs, copy rules, build flags
 
