@@ -98,8 +98,22 @@ export default function App() {
       }
 
       if (!user) {
-        // No user record found — RLS may be blocking or trigger didn't fire.
-        console.error('[Roux] No user record found for auth ID:', authUserId, '— signing out')
+        // User record not found on first try — retry a few times before giving up.
+        // RLS timing or Supabase cache can cause a brief null window after sign-in.
+        console.log('[Roux] No user record on first load, retrying...')
+        for (let i = 0; i < 6; i++) {
+          await new Promise(r => setTimeout(r, 500))
+          user = await loadAppUser(authUserId)
+          if (user) {
+            console.log('[Roux] User record found on retry', i + 1, ':', { id: user.id, membership_status: user.membership_status })
+            break
+          }
+        }
+      }
+
+      if (!user) {
+        // Still no user record after retries — sign out.
+        console.error('[Roux] No user record found for auth ID:', authUserId, 'after retries — signing out')
         sessionStorage.removeItem('pendingJoinFlow')
         await supabase.auth.signOut()
         return
@@ -201,19 +215,30 @@ function AuthenticatedApp({ appUser }) {
 
   async function handleNotifAction(notifId, action, targetId, role) {
     if (action === 'approve_member') {
-      console.log('[Roux] Approving member:', targetId, 'with role:', role || 'member_admin')
-      const { error: updateErr } = await supabase.from('users').update({
+      const assignedRole = role || 'member_admin'
+      console.log('[Roux] Approving member:', targetId, 'with role:', assignedRole)
+
+      // Update membership_status and role
+      const { data: updateData, error: updateErr } = await supabase.from('users').update({
         membership_status: 'active',
-        role: role || 'member_admin',
-      }).eq('id', targetId)
-      console.log('[Roux] Approve update result:', updateErr ? 'FAILED: ' + updateErr.message : 'OK')
+        role: assignedRole,
+      }).eq('id', targetId).select('id, membership_status, role')
+      console.log('[Roux] Approve update result:', updateErr ? 'FAILED: ' + updateErr.message : 'OK', 'rows:', updateData?.length ?? 0, 'data:', updateData)
+
+      // Verify the update actually landed
+      if (!updateData || updateData.length === 0) {
+        console.error('[Roux] Approve: UPDATE returned 0 rows — RLS may be blocking. Trying via target user read...')
+        const { data: check } = await supabase.from('users').select('id, membership_status, role, household_id').eq('id', targetId).maybeSingle()
+        console.log('[Roux] Approve verify read:', check)
+      }
+
       const { error: notifErr } = await supabase.from('notifications').update({ is_acted_on: true, acted_on_at: new Date().toISOString() }).eq('id', notifId)
       console.log('[Roux] Notification mark acted:', notifErr ? 'FAILED: ' + notifErr.message : 'OK')
       setNotifications(prev => prev.filter(n => n.id !== notifId))
     } else if (action === 'decline_member') {
       console.log('[Roux] Declining member:', targetId)
-      const { error: updateErr } = await supabase.from('users').update({ membership_status: 'declined' }).eq('id', targetId)
-      console.log('[Roux] Decline update result:', updateErr ? 'FAILED: ' + updateErr.message : 'OK')
+      const { data: updateData, error: updateErr } = await supabase.from('users').update({ membership_status: 'declined' }).eq('id', targetId).select('id, membership_status')
+      console.log('[Roux] Decline update result:', updateErr ? 'FAILED: ' + updateErr.message : 'OK', 'rows:', updateData?.length ?? 0)
       await supabase.from('notifications').update({ is_acted_on: true, acted_on_at: new Date().toISOString() }).eq('id', notifId)
       setNotifications(prev => prev.filter(n => n.id !== notifId))
     }
