@@ -30,12 +30,16 @@ export default async function handler(req, res) {
 
   const supabase = createClient(supabaseUrl, serviceRoleKey)
 
-  // Look up the household by invite code (case-insensitive)
+  // Normalize: strip hyphens, uppercase, reconstruct hyphenated format
+  const stripped = code.trim().replace(/-/g, '').toUpperCase()
+  const hyphenated = stripped.slice(0, 4) + '-' + stripped.slice(4)
+  console.log('[invite] Looking up code:', hyphenated)
+
   const { data: household, error } = await supabase
     .from('households')
     .select('id, name, founded_by')
-    .ilike('invite_code', code.trim())
-    .maybeSingle()
+    .eq('invite_code', hyphenated)
+    .single()
 
   if (error || !household) {
     return res.status(404).json({ error: 'invalid' })

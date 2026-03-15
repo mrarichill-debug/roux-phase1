@@ -148,27 +148,6 @@ export default function WelcomeScreen1() {
           </button>
         </div>
 
-        {/* Invite hint */}
-        <div style={{
-          fontSize: '12px', color: C.driftwood, fontWeight: 300,
-          textAlign: 'center', lineHeight: 1.6,
-          opacity: 0, animation: 'fadeIn 0.5s ease 1.4s forwards',
-        }}>
-          Joining someone's home?{' '}
-          <button
-            onClick={() => navigate('/join')}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: C.sage, fontWeight: 400, fontFamily: "'Jost', sans-serif",
-              fontSize: '12px', padding: 0,
-              borderBottom: `1px solid rgba(122,140,110,0.3)`,
-              paddingBottom: '1px',
-            }}
-          >
-            Use your invite link.
-          </button>
-        </div>
-
         {/* Legal */}
         <div style={{
           fontSize: '10px', color: C.driftwood,

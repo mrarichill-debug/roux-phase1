@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase, supabaseAnon } from '../../lib/supabase'
+import { supabase } from '../../lib/supabase'
 import {
   C, BgTexture, NavRow, ProgressBar, screenWrap,
   StepHead, FormField, inputStyle, PrimaryButton,
@@ -141,24 +141,23 @@ export default function WelcomeScreen3b() {
     setLoading(true)
     setCodeStatus('idle')
     try {
-      const stripped = code.trim().replace(/-/g, '').toUpperCase()
-      const hyphenated = stripped.slice(0, 4) + '-' + stripped.slice(4)
-      console.log('[Roux] Looking up code:', hyphenated)
+      const normalizedCode = code.trim().replace(/-/g, '').toUpperCase()
+      console.log('[Roux] Looking up code via serverless:', normalizedCode)
 
-      // Use anon client (no auth session) — RLS allows anon SELECT on households
-      const { data: household, error } = await supabaseAnon
-        .from('households')
-        .select('id, name, founded_by')
-        .eq('invite_code', hyphenated)
-        .single()
+      const response = await fetch('/api/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: normalizedCode }),
+      })
+      const result = await response.json()
+      console.log('[Roux] Code lookup result:', result)
 
-      console.log('[Roux] Code lookup result:', { household, error: error?.message })
-
-      if (error || !household) {
+      if (!response.ok || result.error) {
         setCodeStatus('error')
       } else {
-        setHouseholdId(household.id)
-        setHomeName(household.name || '')
+        setHouseholdId(result.householdId)
+        setHomeName(result.homeName || '')
+        setInvitedBy(result.invitedBy || '')
         setCodeStatus('valid')
       }
     } catch {
