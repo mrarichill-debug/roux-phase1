@@ -50,7 +50,8 @@ export default function Profile({ appUser }) {
   const [editMemberId, setEditMemberId] = useState(null)
   const [newMemberName, setNewMemberName] = useState('')
   const [newMemberDob, setNewMemberDob] = useState('')
-  const [newMemberRole, setNewMemberRole] = useState('family_member')
+  const [newMemberRole, setNewMemberRole] = useState('member_admin')
+  const [newMemberIsPet, setNewMemberIsPet] = useState(false)
   const [savingMember, setSavingMember] = useState(false)
 
   // Display name (local copy for optimistic update)
@@ -161,8 +162,9 @@ export default function Profile({ appUser }) {
     setEditMemberId(m.id)
     setNewMemberName(m.name)
     setNewMemberDob(m.date_of_birth || '')
-    const raw = m.notes || 'family_member'
-    const roleKey = raw === 'Admin' ? 'admin' : raw === 'Co-admin' || raw === 'co_admin' ? 'co_admin' : raw === 'View only' || raw === 'Just browsing' || raw === 'view_only' ? 'view_only' : 'family_member'
+    setNewMemberIsPet(m.is_pet || false)
+    const raw = m.notes || 'member_admin'
+    const roleKey = raw === 'Admin' ? 'admin' : raw === 'Co-admin' || raw === 'co_admin' ? 'co_admin' : raw === 'View only' || raw === 'Just browsing' || raw === 'member_viewer' ? 'member_viewer' : 'member_admin'
     setNewMemberRole(roleKey)
     setAddMemberOpen(true)
   }
@@ -171,7 +173,8 @@ export default function Profile({ appUser }) {
     setEditMemberId(null)
     setNewMemberName('')
     setNewMemberDob('')
-    setNewMemberRole('family_member')
+    setNewMemberRole('member_admin')
+    setNewMemberIsPet(false)
     setAddMemberOpen(true)
   }
 
@@ -179,16 +182,17 @@ export default function Profile({ appUser }) {
     if (!newMemberName.trim() || savingMember) return
     setSavingMember(true)
     try {
-      const roleLabel = newMemberRole === 'admin' ? 'Admin' : newMemberRole === 'co_admin' ? 'Co-admin' : newMemberRole === 'view_only' ? 'View only' : 'Family member'
+      const roleLabel = newMemberIsPet ? '' : newMemberRole === 'admin' ? 'Admin' : newMemberRole === 'co_admin' ? 'Co-admin' : newMemberRole === 'member_viewer' ? 'View only' : 'Family member'
       const { error } = await supabase.from('family_members').update({
         name: newMemberName.trim(),
-        date_of_birth: newMemberDob || null,
+        date_of_birth: newMemberIsPet ? null : (newMemberDob || null),
+        is_pet: newMemberIsPet,
         notes: roleLabel,
       }).eq('id', editMemberId)
       if (error) throw error
-      setMembers(prev => prev.map(m => m.id === editMemberId ? { ...m, name: newMemberName.trim(), date_of_birth: newMemberDob || null, notes: roleLabel } : m))
+      setMembers(prev => prev.map(m => m.id === editMemberId ? { ...m, name: newMemberName.trim(), date_of_birth: newMemberIsPet ? null : (newMemberDob || null), is_pet: newMemberIsPet, notes: roleLabel } : m))
       setAddMemberOpen(false)
-      showToast('Member updated')
+      showToast(newMemberIsPet ? 'Pet updated' : 'Member updated')
     } catch (err) {
       console.error('[Roux] saveMemberEdit error:', err)
     } finally {
@@ -200,11 +204,12 @@ export default function Profile({ appUser }) {
     if (!newMemberName.trim() || savingMember) return
     setSavingMember(true)
     try {
-      const roleLabel = newMemberRole === 'admin' ? 'Admin' : newMemberRole === 'co_admin' ? 'Co-admin' : newMemberRole === 'view_only' ? 'View only' : 'Family member'
+      const roleLabel = newMemberIsPet ? '' : newMemberRole === 'admin' ? 'Admin' : newMemberRole === 'co_admin' ? 'Co-admin' : newMemberRole === 'member_viewer' ? 'View only' : 'Family member'
       const { data, error } = await supabase.from('family_members').insert({
         household_id: appUser.household_id,
         name: newMemberName.trim(),
-        date_of_birth: newMemberDob || null,
+        date_of_birth: newMemberIsPet ? null : (newMemberDob || null),
+        is_pet: newMemberIsPet,
         notes: roleLabel,
       }).select('id, name, date_of_birth, is_pet, notes').single()
       if (error) throw error
@@ -212,8 +217,9 @@ export default function Profile({ appUser }) {
       setAddMemberOpen(false)
       setNewMemberName('')
       setNewMemberDob('')
-      setNewMemberRole('family_member')
-      showToast('Family member added')
+      setNewMemberRole('member_admin')
+      setNewMemberIsPet(false)
+      showToast(newMemberIsPet ? 'Pet added' : 'Family member added')
     } catch (err) {
       console.error('[Roux] addMember error:', err)
     } finally {
@@ -319,13 +325,14 @@ export default function Profile({ appUser }) {
     return age
   }
 
-  const ROLE_LABELS = { admin: 'Admin', co_admin: 'Co-admin', 'Co-admin': 'Co-admin', family_member: 'Family member', 'Family member': 'Family member', view_only: 'View only', 'View only': 'View only', 'Just browsing': 'View only' }
+  const ROLE_LABELS = { admin: 'Admin', co_admin: 'Co-admin', 'Co-admin': 'Co-admin', member_admin: 'Family member', 'Family member': 'Family member', member_viewer: 'View only', 'View only': 'View only', 'Just browsing': 'View only' }
 
   function getMemberRole(m) {
     return m.notes || 'Family member'
   }
 
   function getMemberLabel(m) {
+    if (m.is_pet) return '\u{1F43E}'
     const age = getAge(m.date_of_birth)
     const rawRole = getMemberRole(m)
     const roleLabel = ROLE_LABELS[rawRole] || rawRole
@@ -494,12 +501,13 @@ export default function Profile({ appUser }) {
             <div style={sectionHeader}>Family Members</div>
             {members.map(m => {
               const isAdmin = getMemberRole(m) === 'Admin'
+              const isPet = m.is_pet
               return (
                 <div key={m.id} style={rowStyle}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '14px', color: C.ink }}>
                       {m.name}
-                      <span style={{ fontSize: '11px', color: isAdmin ? C.forest : C.driftwood, fontWeight: isAdmin ? 500 : 400, marginLeft: '8px' }}>
+                      <span style={{ fontSize: isPet ? '13px' : '11px', color: isAdmin ? C.forest : C.driftwood, fontWeight: isAdmin ? 500 : 400, marginLeft: '8px' }}>
                         {getMemberLabel(m)}
                       </span>
                     </div>
@@ -638,19 +646,52 @@ export default function Profile({ appUser }) {
                 {editMemberId ? 'Edit family member' : 'Add a family member'}
               </div>
               <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Name</div>
-              <input type="text" value={newMemberName} onChange={e => setNewMemberName(e.target.value)} placeholder="First and last name" autoFocus style={{
+              <input type="text" value={newMemberName} onChange={e => setNewMemberName(e.target.value)} placeholder={newMemberIsPet ? "Pet's name" : 'First and last name'} autoFocus style={{
                 width: '100%', padding: '12px 14px', border: `1px solid ${C.linen}`, borderRadius: '10px',
                 fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300, color: C.ink, outline: 'none', background: C.cream, boxSizing: 'border-box', marginBottom: '14px',
               }} />
-              <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Date of birth (optional)</div>
-              <input type="date" value={newMemberDob} onChange={e => setNewMemberDob(e.target.value)} style={{
-                width: '100%', padding: '12px 14px', border: `1px solid ${C.linen}`, borderRadius: '10px',
-                fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300, color: C.ink, outline: 'none', background: C.cream, boxSizing: 'border-box', marginBottom: '6px',
-              }} />
-              <div style={{ fontSize: '11px', fontStyle: 'italic', color: C.driftwood, marginBottom: '14px', lineHeight: 1.4 }}>
-                Used for birthday reminders and to help Sage make better suggestions. Never shared outside your kitchen.
-              </div>
 
+              {/* Pet toggle */}
+              <button
+                onClick={() => setNewMemberIsPet(v => !v)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
+                  padding: '10px 0', marginBottom: '14px', background: 'none', border: 'none',
+                  cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+                }}
+              >
+                <div style={{
+                  width: '38px', height: '22px', borderRadius: '11px',
+                  background: newMemberIsPet ? C.forest : C.linen,
+                  position: 'relative', transition: 'background 0.2s',
+                }}>
+                  <div style={{
+                    width: '18px', height: '18px', borderRadius: '50%', background: 'white',
+                    position: 'absolute', top: '2px',
+                    left: newMemberIsPet ? '18px' : '2px',
+                    transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                  }} />
+                </div>
+                <span style={{ fontSize: '13px', color: C.ink, fontWeight: 400 }}>
+                  This is a pet {newMemberIsPet ? '\u{1F43E}' : ''}
+                </span>
+              </button>
+
+              {!newMemberIsPet && (
+                <>
+                  <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Date of birth (optional)</div>
+                  <input type="date" value={newMemberDob} onChange={e => setNewMemberDob(e.target.value)} style={{
+                    width: '100%', padding: '12px 14px', border: `1px solid ${C.linen}`, borderRadius: '10px',
+                    fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300, color: C.ink, outline: 'none', background: C.cream, boxSizing: 'border-box', marginBottom: '6px',
+                  }} />
+                  <div style={{ fontSize: '11px', fontStyle: 'italic', color: C.driftwood, marginBottom: '14px', lineHeight: 1.4 }}>
+                    Used for birthday reminders and to help Sage make better suggestions. Never shared outside your kitchen.
+                  </div>
+                </>
+              )}
+
+              {!newMemberIsPet && (
+                <>
               <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Role</div>
               {editMemberId && newMemberRole === 'admin' ? (
                 <div style={{ marginBottom: '14px' }}>
@@ -666,8 +707,8 @@ export default function Profile({ appUser }) {
                 <div style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>
                   {[
                     { key: 'co_admin', label: 'Co-admin' },
-                    { key: 'family_member', label: 'Family member' },
-                    { key: 'view_only', label: 'View only' },
+                    { key: 'member_admin', label: 'Family member' },
+                    { key: 'member_viewer', label: 'View only' },
                   ].map(r => (
                     <button key={r.key} onClick={() => setNewMemberRole(r.key)} style={{
                       flex: 1, padding: '8px 6px', fontSize: '11px', fontFamily: "'Jost', sans-serif",
@@ -681,6 +722,8 @@ export default function Profile({ appUser }) {
                     </button>
                   ))}
                 </div>
+              )}
+              </>
               )}
 
               <button onClick={editMemberId ? saveMemberEdit : addMember} disabled={!newMemberName.trim() || savingMember} style={{
