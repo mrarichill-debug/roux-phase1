@@ -24,26 +24,27 @@ import ProfileSheet from './components/ProfileSheet'
 import { Shell } from './components/AppShell'
 
 export default function App() {
-  const [session, setSession] = useState(undefined) // undefined = still loading
+  const [authLoading, setAuthLoading] = useState(true) // true until initial auth check completes
+  const [session, setSession] = useState(null)
   const [appUser, setAppUser] = useState(null)
   const isFetchingRef = useRef(false)
+  const initialCheckDone = useRef(false)
 
   useEffect(() => {
-    // onAuthStateChange fires INITIAL_SESSION immediately in Supabase v2 —
-    // no separate getSession() needed. Using both causes a race condition where
-    // fetchAppUser runs twice concurrently and can overwrite state with null.
-    //
-    // IMPORTANT: Do not call setSession() before fetchAppUser completes.
-    // Setting session immediately while appUser is still null causes a flash
-    // (the !appUser branch renders a loading div). Keep session at its previous
-    // value until the user record loads, then set both atomically so the UI
-    // transitions directly from loading/welcome to the authenticated app.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sess) => {
+      console.log('[Roux] onAuthStateChange:', _event, sess ? 'has session' : 'no session')
+
       if (sess) {
         fetchAppUser(sess.user.id, sess)
       } else {
+        // Only route to welcome screen after the initial check confirms no session.
+        // Before that, keep showing the cream loading state.
         setSession(null)
         setAppUser(null)
+        if (!initialCheckDone.current) {
+          initialCheckDone.current = true
+          setAuthLoading(false)
+        }
       }
     })
 
@@ -95,6 +96,7 @@ export default function App() {
           // Poll timed out without membership_status being set — do NOT route to AuthenticatedApp
           console.error('[Roux] Join flow: poll timed out, membership_status:', user?.membership_status, '— signing out')
           sessionStorage.removeItem('pendingJoinFlow')
+          setAuthLoading(false)
           await supabase.auth.signOut()
           return
         }
@@ -118,15 +120,20 @@ export default function App() {
         // Still no user record after retries — sign out.
         console.error('[Roux] No user record found for auth ID:', authUserId, 'after retries — signing out')
         sessionStorage.removeItem('pendingJoinFlow')
+        setAuthLoading(false)
         await supabase.auth.signOut()
         return
       }
 
       console.log('[Roux] Routing decision — session:', !!sess, 'membership_status:', user.membership_status)
       console.timeEnd('[Roux] Auth → ready')
-      // Set both atomically — prevents splash flash between session and appUser
+      // Set all three atomically — prevents any flash between states
       setAppUser(user)
       setSession(sess)
+      if (!initialCheckDone.current) {
+        initialCheckDone.current = true
+      }
+      setAuthLoading(false)
 
       // Clear the join flow flag AFTER state is set
       if (isPendingJoin) {
@@ -150,6 +157,7 @@ export default function App() {
     } catch (err) {
       console.error('[Roux] Failed to load app user:', err)
       sessionStorage.removeItem('pendingJoinFlow')
+      setAuthLoading(false)
       // Sign out on error — recover to welcome flow rather than infinite splash
       await supabase.auth.signOut()
     } finally {
@@ -157,13 +165,13 @@ export default function App() {
     }
   }
 
-  // Still determining auth state — plain cream background, no logo or text
-  if (session === undefined) return <div style={{ minHeight: '100vh', background: '#FAF7F2' }} />
+  // Auth still loading — plain cream background, never show welcome or dashboard
+  if (authLoading) return <div style={{ minHeight: '100vh', background: '#FAF7F2' }} />
 
   return (
     <BrowserRouter>
       {!session ? (
-        // ── Welcome flow ─────────────────────────────────────────────────
+        // ── Welcome flow — only shown after auth confirms no session ─────
         <Routes>
           <Route path="/"            element={<WelcomeScreen1 />} />
           <Route path="/get-started" element={<WelcomeScreen2 />} />
