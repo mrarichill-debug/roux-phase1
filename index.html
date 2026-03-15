@@ -5,14 +5,19 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Roux</title>
-    <!-- Fonts: Playfair Display (headings) + Jost (body/UI) + Caveat (handwritten accent) + Slabo 27px (wordmark) -->
+    <!-- Slabo 27px — self-hosted for reliable wordmark rendering -->
+    <style>
+      @font-face {
+        font-family: 'Slabo 27px';
+        src: url('/fonts/Slabo27px.woff2') format('woff2');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+      }
+    </style>
+    <!-- Fonts: Playfair Display (headings) + Jost (body/UI) + Caveat (handwritten accent) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Slabo 27px loaded first — wordmark must not flash with fallback font -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Slabo+27px&display=swap"
-      rel="stylesheet"
-    />
     <link
       href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&family=Caveat:wght@500;600&display=swap"
       rel="stylesheet"
