@@ -16,12 +16,17 @@ export default async function handler(req, res) {
   }
 
   const { householdId, userName, newUserId } = req.body || {}
+  console.log('[join-notification] Received:', JSON.stringify({ householdId, userName, newUserId }))
+
   if (!householdId || !userName || !newUserId) {
+    console.error('[join-notification] Missing params')
     return res.status(400).json({ error: 'householdId, userName, and newUserId required' })
   }
 
   const supabaseUrl    = process.env.VITE_SUPABASE_URL
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  console.log('[join-notification] Env check: url=' + !!supabaseUrl + ' key=' + !!serviceRoleKey)
 
   if (!supabaseUrl || !serviceRoleKey) {
     console.error('[join-notification] Missing Supabase env vars')
@@ -30,17 +35,26 @@ export default async function handler(req, res) {
 
   const supabase = createClient(supabaseUrl, serviceRoleKey)
 
-  // Find the household admin
-  const { data: admin, error: adminErr } = await supabase
+  // Find the household admin — try 'admin' first, fall back to 'co_admin'
+  let { data: admin, error: adminErr } = await supabase
     .from('users')
-    .select('id')
+    .select('id, name, role')
     .eq('household_id', householdId)
-    .eq('role', 'admin')
+    .in('role', ['admin', 'co_admin'])
+    .order('role')
+    .limit(1)
     .maybeSingle()
 
+  console.log('[join-notification] Admin lookup result:', JSON.stringify({ admin, error: adminErr?.message }))
+
   if (adminErr || !admin) {
-    console.error('[join-notification] Admin lookup failed:', adminErr?.message || 'no admin found')
-    return res.status(404).json({ error: 'No admin found for household' })
+    // Last resort: list all users in household for debugging
+    const { data: allUsers } = await supabase
+      .from('users')
+      .select('id, name, role, household_id')
+      .eq('household_id', householdId)
+    console.error('[join-notification] No admin found. All users in household:', JSON.stringify(allUsers))
+    return res.status(404).json({ error: 'No admin found for household', householdId })
   }
 
   // Get household name for the notification
@@ -64,10 +78,10 @@ export default async function handler(req, res) {
   })
 
   if (notifErr) {
-    console.error('[join-notification] Insert failed:', notifErr.message)
-    return res.status(500).json({ error: 'Failed to create notification' })
+    console.error('[join-notification] Insert failed:', notifErr.message, notifErr.details, notifErr.hint)
+    return res.status(500).json({ error: 'Failed to create notification', details: notifErr.message })
   }
 
-  console.log('[join-notification] Notification created for admin', admin.id, 'about user', newUserId)
+  console.log('[join-notification] SUCCESS: Notification created for', admin.name, '(', admin.id, ') about user', newUserId)
   return res.status(200).json({ ok: true })
 }

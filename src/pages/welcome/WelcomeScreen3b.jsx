@@ -205,18 +205,16 @@ export default function WelcomeScreen3b() {
 
           // Create notification for the admin via serverless function
           // (bypasses RLS — new user can't write cross-household notifications)
+          const notifPayload = { householdId, userName: joinName.trim(), newUserId: userData.id }
+          console.log('[Roux] Join flow: sending notification request:', notifPayload)
           try {
             const notifRes = await fetch('/api/join-notification', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                householdId,
-                userName: joinName.trim(),
-                newUserId: userData.id,
-              }),
+              body: JSON.stringify(notifPayload),
             })
             const notifResult = await notifRes.json()
-            console.log('[Roux] Join flow: notification created:', notifRes.ok ? 'OK' : 'FAILED', notifResult)
+            console.log('[Roux] Join flow: notification response:', notifRes.status, notifResult)
           } catch (notifErr) {
             console.error('[Roux] Join flow: notification fetch error:', notifErr)
           }
