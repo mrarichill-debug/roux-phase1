@@ -45,7 +45,7 @@ export function BgTexture() {
 export function MiniWordmark() {
   return (
     <span style={{
-      fontFamily: "'Slabo 27px', serif",
+      fontFamily: "'Slabo 27px', Georgia, serif",
       fontSize: '22px', fontWeight: 400,
       color: C.ink, letterSpacing: '-0.5px',
     }}>

@@ -488,7 +488,7 @@ function PendingApprovalScreen({ appUser, onApproved }) {
         opacity: 0, animation: 'fadeIn 0.5s ease forwards',
       }}>
         <div style={{
-          fontFamily: "'Slabo 27px', serif", fontSize: '36px', fontWeight: 400,
+          fontFamily: "'Slabo 27px', Georgia, serif", fontSize: '36px', fontWeight: 400,
           color: '#2C2417', letterSpacing: '-0.5px', marginBottom: '24px',
         }}>
           Roux.
@@ -523,7 +523,7 @@ function PendingApprovalScreen({ appUser, onApproved }) {
       padding: '40px 32px', fontFamily: "'Jost', sans-serif", textAlign: 'center',
     }}>
       <div style={{
-        fontFamily: "'Slabo 27px', serif", fontSize: '36px', fontWeight: 400,
+        fontFamily: "'Slabo 27px', Georgia, serif", fontSize: '36px', fontWeight: 400,
         color: '#2C2417', letterSpacing: '-0.5px', marginBottom: '24px',
       }}>
         Roux.
@@ -561,7 +561,7 @@ function DeclinedScreen() {
       padding: '40px 32px', fontFamily: "'Jost', sans-serif", textAlign: 'center',
     }}>
       <div style={{
-        fontFamily: "'Slabo 27px', serif", fontSize: '36px', fontWeight: 400,
+        fontFamily: "'Slabo 27px', Georgia, serif", fontSize: '36px', fontWeight: 400,
         color: '#2C2417', marginBottom: '24px',
       }}>
         Roux.

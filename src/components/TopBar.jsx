@@ -85,7 +85,7 @@ export default function TopBar({
             </button>
           ) : showWordmark ? (
             <div style={{
-              fontFamily: "'Slabo 27px', serif",
+              fontFamily: "'Slabo 27px', Georgia, serif",
               fontSize: '26px', fontWeight: 400,
               color: 'rgba(250,247,242,0.95)', userSelect: 'none',
             }}>

@@ -77,7 +77,7 @@ export default function WelcomeScreen1() {
           animation: 'logoIn 0.9s cubic-bezier(0.22,1,0.36,1) 0.2s forwards',
         }}>
           <div style={{
-            fontFamily: "'Slabo 27px', serif",
+            fontFamily: "'Slabo 27px', Georgia, serif",
             fontSize: '58px',
             color: '#2C2417',
             letterSpacing: '-0.5px',
