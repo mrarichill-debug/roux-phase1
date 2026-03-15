@@ -210,7 +210,7 @@ export default function WelcomeScreen3b() {
               household_id: householdId,
               user_id: admin.id,
               type: 'membership_request',
-              title: `${joinName.trim()} wants to join your kitchen`,
+              title: `${joinName.trim()} wants to join ${homeName || 'your home'}`,
               body: 'Approve or decline their request.',
               action_type: 'membership_approval',
               target_id: userData.id,

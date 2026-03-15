@@ -200,15 +200,19 @@ function AuthenticatedApp({ appUser }) {
 
   async function handleNotifAction(notifId, action, targetId, role) {
     if (action === 'approve_member') {
-      // Approve: set membership_status to active and assign role
-      await supabase.from('users').update({
+      console.log('[Roux] Approving member:', targetId, 'with role:', role || 'member_admin')
+      const { error: updateErr } = await supabase.from('users').update({
         membership_status: 'active',
         role: role || 'member_admin',
       }).eq('id', targetId)
-      await supabase.from('notifications').update({ is_acted_on: true, acted_on_at: new Date().toISOString() }).eq('id', notifId)
+      console.log('[Roux] Approve update result:', updateErr ? 'FAILED: ' + updateErr.message : 'OK')
+      const { error: notifErr } = await supabase.from('notifications').update({ is_acted_on: true, acted_on_at: new Date().toISOString() }).eq('id', notifId)
+      console.log('[Roux] Notification mark acted:', notifErr ? 'FAILED: ' + notifErr.message : 'OK')
       setNotifications(prev => prev.filter(n => n.id !== notifId))
     } else if (action === 'decline_member') {
-      await supabase.from('users').update({ membership_status: 'declined' }).eq('id', targetId)
+      console.log('[Roux] Declining member:', targetId)
+      const { error: updateErr } = await supabase.from('users').update({ membership_status: 'declined' }).eq('id', targetId)
+      console.log('[Roux] Decline update result:', updateErr ? 'FAILED: ' + updateErr.message : 'OK')
       await supabase.from('notifications').update({ is_acted_on: true, acted_on_at: new Date().toISOString() }).eq('id', notifId)
       setNotifications(prev => prev.filter(n => n.id !== notifId))
     }
@@ -406,18 +410,21 @@ function PendingApprovalScreen({ appUser, onApproved }) {
         .then(({ data }) => { if (data?.name) setAdminName(data.name.split(' ')[0]) })
     }
 
-    // Poll every 10s — check if membership_status changed to active
+    // Poll every 5s — check if membership_status changed to active
+    console.log('[Roux] PendingApprovalScreen: starting poll for user', appUser.id)
     const interval = setInterval(async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('users')
         .select('membership_status')
         .eq('id', appUser.id)
         .single()
+      console.log('[Roux] Pending poll:', { membership_status: data?.membership_status, error: error?.message })
       if (data?.membership_status === 'active') {
+        console.log('[Roux] Membership approved! Routing to dashboard.')
         clearInterval(interval)
         onApproved()
       }
-    }, 10000)
+    }, 5000)
 
     return () => clearInterval(interval)
   }, [appUser?.id])
