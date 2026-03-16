@@ -19,6 +19,7 @@ import RecipeCard     from './pages/RecipeCard'
 import SaveRecipe     from './pages/SaveRecipe'
 import ShoppingList from './pages/ShoppingList'
 import Sage         from './pages/Sage'
+import PlanMeal     from './pages/PlanMeal'
 import WeekSettings from './pages/WeekSettings'
 import Profile from './pages/Profile'
 import ProfileSheet from './components/ProfileSheet'
@@ -264,7 +265,7 @@ function AuthenticatedApp({ appUser }) {
         <Route path="/thisweek"     element={<ThisWeek      appUser={appUser} />} />
         <Route path="/meals"         element={<Meals          appUser={appUser} />} />
         <Route path="/meals/recipes" element={<RecipeLibrary appUser={appUser} />} />
-        <Route path="/meals/plan"    element={<Sage           appUser={appUser} />} />
+        <Route path="/meals/plan"    element={<PlanMeal       appUser={appUser} />} />
         <Route path="/meals/traditions" element={<Sage        appUser={appUser} />} />
         <Route path="/recipes"      element={<RecipeLibrary appUser={appUser} />} />
         <Route path="/recipe/:id"   element={<RecipeCard    appUser={appUser} />} />
