@@ -127,6 +127,8 @@ The store filter pills (All / Kroger / Costco) in the Building state topbar are 
 - **Serves adjuster with quantity scaling** — affects the data model. Plan this early in the recipe card build.
 - **Welcome screen recipe box illustration** — the ghost recipe box SVG in the lower right corner of the welcome screen is a nice decorative element. This should become part of the watermark/decoration object system and appear on other screens as part of the active seasonal set. Wire it into WatermarkLayer so it rotates with the season like the other objects. Currently only exists on the welcome screen.
 - **Invite flow font audit** — the invite flow screens (code entry, invitation card, role selection, account creation, pending approval) should use the same Playfair Display / Jost / Caveat font system as the rest of the app. Do a font audit of WelcomeScreen3b.jsx and PendingApprovalScreen (in App.jsx) and ensure typography matches the design system exactly — no default browser fonts or inconsistent weights.
+- **Plan a Meal screen** (`/meals/plan`) — currently routes to Sage placeholder. Full design required. Build a meal composition screen where Lauren selects a recipe, names the meal, and assigns it to a day/slot. This is the primary action from the Meals hub.
+- **Traditions screen** (`/meals/traditions`) — currently routes to Sage placeholder. Should show household_traditions data with add/edit/delete. Links to WeekSettings traditions section but as a standalone browsable list.
 
 ---
 

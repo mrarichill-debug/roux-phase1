@@ -57,17 +57,29 @@
 
 ## Bottom Navigation — 5 Tabs (Updated March 2026)
 
-- Height: **80px**. Background: `--cream`. Border-top: `1px solid --linen`.
-- Box shadow: `0 -2px 12px rgba(80,60,30,0.08)`.
-- 5 tabs: **Home / This Week / Recipes / Sage / Shopping**
-- Order locked. Rationale:
-  - **Home** stays far left — established mobile convention, thumb muscle memory
-  - **Recipes** is center position — content heart of the app
-  - **Sage** is position 4 — discovery/utility, earns center when fully built
-- Active state: scheme primary color + font-weight 600 + 4px dot below icon.
+- Height: **58px**. Background: `--cream`. Border-top: `1px solid --linen`. Overflow hidden.
+- 5 tabs: **Today / Week / Meals / Sage / Shop**
+- Routes: `/` `/thisweek` `/meals` `/sage` `/shopping`
+- Layout: paired spacing — left pair (Today+Week), center (Meals on green circle), right pair (Sage+Shop).
+- **Green circle**: 68px diameter `--forest` circle behind Meals tab, clips at top and bottom of nav.
+- **Meals icon**: Version A stacked recipe box, always cream color on green circle.
+- **Circle pulse**: `circlePulse` keyframe on tap — scale 1.0→1.04→1.0 over 200ms.
+- Active state (Today/Week/Sage/Shop): scheme primary color + font-weight 600 + 3px dot below label.
 - Inactive: `--driftwood` color.
+- Meals tab: always cream, never changes color — sits on the green circle.
+- Custom SVG icons: Today (calendar+dot), Week (calendar+grid), Meals (recipe box), Sage (chat+sparkle), Shop (list+bullets).
 - Shared component: `src/components/BottomNav.jsx` — used on every screen.
-- Never reorder without full group discussion.
+
+---
+
+## Meals Hub Screen (`/meals`)
+
+- Forest green topbar with "Meals" heading.
+- Three stacked cards: **Plan a Meal** (forest green, dominant), **Family Recipes** (white), **Our Traditions** (white).
+- Plan a Meal routes to `/meals/plan` (placeholder).
+- Family Recipes routes to `/meals/recipes` (RecipeLibrary).
+- Our Traditions routes to `/meals/traditions` (placeholder).
+- Recipe count queries live from Supabase.
 
 ---
 

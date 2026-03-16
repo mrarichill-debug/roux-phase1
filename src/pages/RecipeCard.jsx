@@ -104,7 +104,7 @@ export default function RecipeCard({ appUser }) {
   const { id }    = useParams()
   const navigate  = useNavigate()
   const location  = useLocation()
-  const backTo    = location.state?.from || '/recipes'
+  const backTo    = location.state?.from || '/meals/recipes'
 
   const [recipe,       setRecipe]       = useState(null)
   const [ingredients,  setIngredients]  = useState([])

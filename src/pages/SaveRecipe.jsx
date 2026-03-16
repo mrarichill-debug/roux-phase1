@@ -27,7 +27,7 @@ export default function SaveRecipe() {
         boxShadow: '0 2px 0px rgba(20,40,25,0.55), 0 4px 8px rgba(20,40,25,0.40)',
       }}>
         <button
-          onClick={() => navigate('/recipes')}
+          onClick={() => navigate('/meals/recipes')}
           style={{
             background: 'none', border: 'none', cursor: 'pointer',
             color: 'rgba(250,247,242,0.85)', padding: '4px',

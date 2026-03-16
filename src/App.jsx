@@ -13,6 +13,7 @@ import WelcomeScreen4  from './pages/welcome/WelcomeScreen4'
 
 import Dashboard      from './pages/Dashboard'
 import ThisWeek       from './pages/ThisWeek'
+import Meals          from './pages/Meals'
 import RecipeLibrary  from './pages/RecipeLibrary'
 import RecipeCard     from './pages/RecipeCard'
 import SaveRecipe     from './pages/SaveRecipe'
@@ -261,6 +262,10 @@ function AuthenticatedApp({ appUser }) {
       <Routes>
         <Route path="/"              element={<Dashboard     appUser={appUser} />} />
         <Route path="/thisweek"     element={<ThisWeek      appUser={appUser} />} />
+        <Route path="/meals"         element={<Meals          appUser={appUser} />} />
+        <Route path="/meals/recipes" element={<RecipeLibrary appUser={appUser} />} />
+        <Route path="/meals/plan"    element={<Sage           appUser={appUser} />} />
+        <Route path="/meals/traditions" element={<Sage        appUser={appUser} />} />
         <Route path="/recipes"      element={<RecipeLibrary appUser={appUser} />} />
         <Route path="/recipe/:id"   element={<RecipeCard    appUser={appUser} />} />
         <Route path="/save-recipe"  element={<SaveRecipe    appUser={appUser} />} />

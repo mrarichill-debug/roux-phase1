@@ -1,120 +1,211 @@
 /**
  * Shared 5-tab bottom navigation.
- * Order: Home | This Week | Recipes | Sage | Shopping
+ * Order: Today | Week | Meals (center, green circle) | Sage | Shop
  */
+import { useRef, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', driftwood: '#8C7B6B', linen: '#E8E0D0',
 }
 
-const NAV_TABS = [
-  {
-    key: 'home', label: 'Home', path: '/',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
-        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-        <polyline points="9 22 9 12 15 12 15 22"/>
-      </svg>
-    ),
-  },
-  {
-    key: 'thisweek', label: 'This Week', path: '/thisweek',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
-        <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
-        <line x1="16" x2="16" y1="2" y2="6"/>
-        <line x1="8" x2="8" y1="2" y2="6"/>
-        <line x1="3" x2="21" y1="10" y2="10"/>
-      </svg>
-    ),
-  },
-  {
-    key: 'recipes', label: 'Recipes', path: '/recipes',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
-        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-      </svg>
-    ),
-  },
-  {
-    key: 'sage', label: 'Sage', path: '/sage',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
-        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-      </svg>
-    ),
-  },
-  {
-    key: 'shopping', label: 'Shopping', path: '/shopping',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
-        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-        <line x1="3" x2="21" y1="6" y2="6"/>
-        <path d="M16 10a4 4 0 0 1-8 0"/>
-      </svg>
-    ),
-  },
-]
+// ── Icons ────────────────────────────────────────────────────────────────────
 
-// Map paths to their tab key for active detection
+const TodayIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2"/>
+    <line x1="3" x2="21" y1="9" y2="9"/>
+    <line x1="9" x2="9" y1="4" y2="9"/>
+    <line x1="15" x2="15" y1="4" y2="9"/>
+    <circle cx="12" cy="15.5" r="2.2" fill="currentColor" stroke="none"/>
+  </svg>
+)
+
+const WeekIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2"/>
+    <line x1="3" x2="21" y1="9" y2="9"/>
+    <line x1="9" x2="9" y1="4" y2="9"/>
+    <line x1="15" x2="15" y1="4" y2="9"/>
+    <circle cx="7.5" cy="13.5" r="1.3" fill="currentColor" stroke="none"/>
+    <circle cx="12" cy="13.5" r="1.3" fill="currentColor" stroke="none"/>
+    <circle cx="16.5" cy="13.5" r="1.3" fill="currentColor" stroke="none"/>
+    <circle cx="7.5" cy="18" r="1.3" fill="currentColor" stroke="none" opacity="0.4"/>
+    <circle cx="12" cy="18" r="1.3" fill="currentColor" stroke="none" opacity="0.4"/>
+    <circle cx="16.5" cy="18" r="1.3" fill="currentColor" stroke="none" opacity="0.4"/>
+  </svg>
+)
+
+const MealsIcon = () => (
+  <svg width="22" height="20" viewBox="0 0 32 30" fill="none">
+    <rect x="1" y="9" width="24" height="18" rx="2" stroke="rgba(250,247,242,0.92)" strokeWidth="2" fill="none"/>
+    <rect x="3" y="6" width="20" height="5" rx="1.5" stroke="rgba(250,247,242,0.92)" strokeWidth="2" fill="none"/>
+    <rect x="5" y="3" width="16" height="5" rx="1.5" stroke="rgba(250,247,242,0.92)" strokeWidth="2" fill="none"/>
+    <line x1="5" x2="21" y1="15" y2="15" stroke="rgba(250,247,242,0.65)" strokeWidth="1.5" strokeLinecap="round"/>
+    <line x1="5" x2="16" y1="20" y2="20" stroke="rgba(250,247,242,0.65)" strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M5 10V8" stroke="rgba(250,247,242,0.5)" strokeWidth="1.2" strokeLinecap="round"/>
+    <path d="M21 10V8" stroke="rgba(250,247,242,0.5)" strokeWidth="1.2" strokeLinecap="round"/>
+  </svg>
+)
+
+const SageIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    <path d="M12 7 L11.2 9.5a1 1 0 0 1-.6.6L8 11l2.6.9a1 1 0 0 1 .6.6L12 15l.8-2.5a1 1 0 0 1 .6-.6L16 11l-2.6-.9a1 1 0 0 1-.6-.6Z"/>
+  </svg>
+)
+
+const ShopIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="9" x2="21" y1="6" y2="6"/>
+    <line x1="9" x2="21" y1="12" y2="12"/>
+    <line x1="9" x2="21" y1="18" y2="18"/>
+    <circle cx="4" cy="6" r="1.3" fill="currentColor" stroke="none"/>
+    <circle cx="4" cy="12" r="1.3" fill="currentColor" stroke="none"/>
+    <circle cx="4" cy="18" r="1.3" fill="currentColor" stroke="none"/>
+  </svg>
+)
+
+// ── Path → tab mapping ───────────────────────────────────────────────────────
 const PATH_TO_TAB = {
-  '/': 'home',
-  '/thisweek': 'thisweek',
-  '/recipes': 'recipes',
+  '/': 'today',
+  '/thisweek': 'week',
+  '/week': 'week',
+  '/meals': 'meals',
+  '/meals/recipes': 'meals',
+  '/meals/plan': 'meals',
+  '/meals/traditions': 'meals',
+  '/recipes': 'meals',
+  '/recipe': 'meals',
+  '/save-recipe': 'meals',
   '/sage': 'sage',
-  '/shopping': 'shopping',
-  '/profile': 'home',
-  '/week-settings': 'thisweek',
+  '/shopping': 'shop',
+  '/profile': 'today',
+  '/week-settings': 'week',
 }
 
+function getTabFromPath(pathname) {
+  // Exact match first
+  if (PATH_TO_TAB[pathname]) return PATH_TO_TAB[pathname]
+  // Prefix match for dynamic routes like /recipe/:id
+  if (pathname.startsWith('/recipe/')) return 'meals'
+  if (pathname.startsWith('/meals/')) return 'meals'
+  return 'today'
+}
+
+// ── NavItem ──────────────────────────────────────────────────────────────────
+function NavItem({ tab, label, icon, active, isCenter, onClick, width }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', gap: '3px',
+        width: width || 42, height: '100%',
+        cursor: 'pointer', background: 'none', border: 'none',
+        color: isCenter ? 'rgba(250,247,242,0.95)' : (active ? C.forest : C.driftwood),
+        transition: 'color 0.15s',
+        position: 'relative',
+        fontFamily: "'Jost', sans-serif",
+        padding: 0,
+      }}
+    >
+      {icon}
+      <span style={{
+        fontSize: '9px',
+        fontWeight: active || isCenter ? 600 : 400,
+        letterSpacing: '0.3px',
+        color: isCenter ? 'rgba(250,247,242,0.85)' : undefined,
+      }}>
+        {label}
+      </span>
+      {active && !isCenter && (
+        <span style={{
+          position: 'absolute', bottom: '2px', left: '50%', transform: 'translateX(-50%)',
+          width: '3px', height: '3px', borderRadius: '50%', background: C.forest,
+        }} />
+      )}
+    </button>
+  )
+}
+
+// ── BottomNav ────────────────────────────────────────────────────────────────
 export default function BottomNav({ activeTab }) {
   const navigate = useNavigate()
   const location = useLocation()
+  const circleRef = useRef(null)
 
-  // Use explicit activeTab if provided, otherwise derive from path
-  const currentTab = activeTab || PATH_TO_TAB[location.pathname] || 'home'
+  const currentTab = activeTab || getTabFromPath(location.pathname)
+
+  const handleMealsTap = useCallback(() => {
+    // Pulse animation
+    if (circleRef.current) {
+      circleRef.current.classList.remove('meals-circle-active')
+      // Force reflow to restart animation
+      void circleRef.current.offsetWidth
+      circleRef.current.classList.add('meals-circle-active')
+    }
+    navigate('/meals')
+  }, [navigate])
 
   return (
     <nav style={{
       position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-      width: '100%', maxWidth: '430px', height: '80px',
-      padding: '10px 0 22px',
-      display: 'grid', gridTemplateColumns: 'repeat(5,1fr)',
+      width: '100%', maxWidth: '430px', height: '58px',
       zIndex: 100, background: C.cream,
       borderTop: `1px solid ${C.linen}`,
-      boxShadow: '0 -2px 12px rgba(80,60,30,0.08)',
+      overflow: 'hidden',
     }}>
-      {NAV_TABS.map(tab => {
-        const active = tab.key === currentTab
-        return (
-          <button
-            key={tab.key}
-            onClick={() => navigate(tab.path)}
-            style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
-              cursor: 'pointer', padding: '4px 0',
-              background: 'none', border: 'none',
-              color: active ? C.forest : C.driftwood,
-              transition: 'color 0.15s',
-              position: 'relative',
-              fontFamily: "'Jost', sans-serif",
-            }}
-          >
-            {active && (
-              <span style={{
-                position: 'absolute', bottom: '-2px', left: '50%', transform: 'translateX(-50%)',
-                width: '4px', height: '4px', borderRadius: '50%', background: C.forest,
-              }} />
-            )}
-            {tab.icon}
-            <span style={{ fontSize: '10px', fontWeight: active ? 600 : 400, letterSpacing: '0.3px' }}>
-              {tab.label}
-            </span>
-          </button>
-        )
-      })}
+      {/* Green circle behind Meals */}
+      <div
+        ref={circleRef}
+        style={{
+          position: 'absolute', left: '50%', top: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 68, height: 68, borderRadius: '50%',
+          background: C.forest,
+          zIndex: 1,
+          transition: 'transform 0.2s ease',
+        }}
+      />
+
+      {/* Nav items */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 2,
+      }}>
+        {/* Left pair */}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <NavItem tab="today" label="Today" icon={<TodayIcon />}
+            active={currentTab === 'today'} width={52}
+            onClick={() => navigate('/')} />
+          <NavItem tab="week" label="Week" icon={<WeekIcon />}
+            active={currentTab === 'week'} width={52}
+            onClick={() => navigate('/thisweek')} />
+        </div>
+
+        {/* Gap */}
+        <div style={{ width: 10 }} />
+
+        {/* Meals center */}
+        <NavItem tab="meals" label="Meals" icon={<MealsIcon />}
+          isCenter active={currentTab === 'meals'} width={64}
+          onClick={handleMealsTap} />
+
+        {/* Gap */}
+        <div style={{ width: 10 }} />
+
+        {/* Right pair */}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <NavItem tab="sage" label="Sage" icon={<SageIcon />}
+            active={currentTab === 'sage'} width={52}
+            onClick={() => navigate('/sage')} />
+          <NavItem tab="shop" label="Shop" icon={<ShopIcon />}
+            active={currentTab === 'shop'} width={52}
+            onClick={() => navigate('/shopping')} />
+        </div>
+      </div>
     </nav>
   )
 }

@@ -13,7 +13,7 @@ export function Shell({ appUser }) {
   const menuItems = [
     { label: 'Home',          path: '/',          icon: <CalendarIcon /> },
     { label: 'This Week',     path: '/thisweek',  icon: <CalendarIcon /> },
-    { label: 'Recipes',       path: '/recipes',   icon: <RecipesIcon /> },
+    { label: 'Meals',         path: '/meals',     icon: <RecipesIcon /> },
     { label: 'Shopping List', path: '/shopping',  icon: <ShoppingIcon /> },
     { label: 'Sage',          path: '/sage',      icon: <SageIcon /> },
     { label: 'Family',        path: '/family',    icon: <FamilyIcon /> },

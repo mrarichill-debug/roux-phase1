@@ -177,6 +177,16 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Meals circle pulse (bottom nav) ─────────────────────────────────────── */
+@keyframes circlePulse {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.04); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+.meals-circle-active {
+  animation: circlePulse 0.2s ease;
+}
+
 /* ── Cutting board Tonight card ───────────────────────────────────────────── */
 .tonight-board {
   position: relative;
