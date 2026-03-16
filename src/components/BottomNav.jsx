@@ -12,7 +12,7 @@ const C = {
 // ── Icons ────────────────────────────────────────────────────────────────────
 
 const TodayIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="4" width="18" height="18" rx="2"/>
     <line x1="3" x2="21" y1="9" y2="9"/>
     <line x1="9" x2="9" y1="4" y2="9"/>
@@ -22,7 +22,7 @@ const TodayIcon = () => (
 )
 
 const WeekIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="4" width="18" height="18" rx="2"/>
     <line x1="3" x2="21" y1="9" y2="9"/>
     <line x1="9" x2="9" y1="4" y2="9"/>
@@ -49,14 +49,14 @@ const MealsIcon = () => (
 )
 
 const SageIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
     <path d="M12 7 L11.2 9.5a1 1 0 0 1-.6.6L8 11l2.6.9a1 1 0 0 1 .6.6L12 15l.8-2.5a1 1 0 0 1 .6-.6L16 11l-2.6-.9a1 1 0 0 1-.6-.6Z"/>
   </svg>
 )
 
 const ShopIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <line x1="9" x2="21" y1="6" y2="6"/>
     <line x1="9" x2="21" y1="12" y2="12"/>
     <line x1="9" x2="21" y1="18" y2="18"/>
@@ -151,7 +151,7 @@ export default function BottomNav({ activeTab }) {
   return (
     <nav style={{
       position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-      width: '100%', maxWidth: '430px', height: '58px',
+      width: '100%', maxWidth: '430px', height: '66px',
       zIndex: 100, background: C.cream,
       borderTop: `1px solid ${C.linen}`,
       overflow: 'hidden',
@@ -163,7 +163,7 @@ export default function BottomNav({ activeTab }) {
           position: 'absolute', left: '50%', top: '50%',
           transform: 'translate(-50%, -50%)',
           width: 68, height: 68, borderRadius: '50%',
-          background: C.forest,
+          background: 'radial-gradient(ellipse at center, rgba(61,107,79,0.95) 0%, rgba(61,107,79,0.85) 50%, rgba(61,107,79,0.6) 75%, rgba(61,107,79,0.0) 100%)',
           zIndex: 1,
           transition: 'transform 0.2s ease',
         }}
