@@ -27,18 +27,18 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, householdId }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!open || !householdId) return
+    if (!open) return
     setLoading(true)
     supabase
       .from('recipes')
-      .select('id, name, source, category')
-      .eq('household_id', householdId)
+      .select('id, name, author, credited_to_name, source_type')
       .order('name')
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) console.error('[Roux] Recipe picker fetch error:', error)
         setRecipes(data || [])
         setLoading(false)
       })
-  }, [open, householdId])
+  }, [open])
 
   const filtered = recipes.filter(r =>
     r.name.toLowerCase().includes(search.toLowerCase())
@@ -139,9 +139,9 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, householdId }) {
                     }}>
                       {r.name}
                     </div>
-                    {r.source && (
+                    {(r.author || r.credited_to_name) && (
                       <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, marginTop: '2px' }}>
-                        {r.source}
+                        {r.author || r.credited_to_name}
                       </div>
                     )}
                   </div>
@@ -183,7 +183,7 @@ export default function PlanMeal({ appUser }) {
   const addedIds = new Set(recipes.map(r => r.id))
 
   const handleAddRecipe = useCallback((recipe) => {
-    setRecipes(prev => [...prev, { id: recipe.id, name: recipe.name, source: recipe.source, role: '' }])
+    setRecipes(prev => [...prev, { id: recipe.id, name: recipe.name, credit: recipe.author || recipe.credited_to_name || '', role: '' }])
   }, [])
 
   const handleRemoveRecipe = useCallback((recipeId) => {
@@ -356,9 +356,9 @@ export default function PlanMeal({ appUser }) {
                     }}>
                       {r.name}
                     </div>
-                    {r.source && (
+                    {r.credit && (
                       <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, marginTop: '1px' }}>
-                        {r.source}
+                        {r.credit}
                       </div>
                     )}
                     {/* Role input — only show when 2+ recipes */}
