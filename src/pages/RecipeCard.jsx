@@ -736,7 +736,7 @@ export default function RecipeCard({ appUser }) {
       />
 
       {/* ── Bottom Nav ────────────────────────────────────────────────────── */}
-      <BottomNav activeTab="recipes" />
+      <BottomNav activeTab="meals" />
 
     </div>
   )

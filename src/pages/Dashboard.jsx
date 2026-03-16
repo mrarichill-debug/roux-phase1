@@ -339,7 +339,7 @@ export default function Dashboard({ appUser }) {
       </div>
 
       {/* ── Bottom Nav ────────────────────────────────────────────────────── */}
-      <BottomNav activeTab="home" />
+      <BottomNav activeTab="today" />
 
     </div>
   )

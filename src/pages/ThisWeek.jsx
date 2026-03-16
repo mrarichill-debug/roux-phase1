@@ -730,7 +730,7 @@ export default function ThisWeek({ appUser }) {
       )}
 
       {/* ── Bottom Nav ────────────────────────────────────────────────────── */}
-      <BottomNav activeTab="thisweek" />
+      <BottomNav activeTab="week" />
 
       {/* ── Sheet overlay ─────────────────────────────────────────────────── */}
       <div

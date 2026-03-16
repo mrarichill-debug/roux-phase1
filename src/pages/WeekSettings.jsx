@@ -721,7 +721,7 @@ export default function WeekSettings({ appUser }) {
       )}
 
       {/* ── Bottom Nav ────────────────────────────────────────────────────── */}
-      <BottomNav activeTab="thisweek" />
+      <BottomNav activeTab="week" />
 
       {/* ── Add Tradition Sheet overlay ──────────────────────────────── */}
       <div

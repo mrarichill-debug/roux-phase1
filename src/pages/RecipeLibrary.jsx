@@ -497,7 +497,7 @@ export default function RecipeLibrary({ appUser }) {
       </div>
 
       {/* ── Bottom Nav ────────────────────────────────────────────────────────── */}
-      <BottomNav activeTab="recipes" />
+      <BottomNav activeTab="meals" />
 
       {/* ── + Week sheet overlay ──────────────────────────────────────────────── */}
       <div
