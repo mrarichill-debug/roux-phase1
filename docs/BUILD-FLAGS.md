@@ -132,6 +132,12 @@ The store filter pills (All / Kroger / Costco) in the Building state topbar are 
 
 ---
 
+## Small UX Touches to Add
+
+- **Exit confirmation on Plan a Meal screen** — when user taps back or navigates away mid-meal with unsaved changes, show a warm confirmation dialog. Copy options to consider: "Leave before saving?" / "Your meal isn't done yet" / "Step away from the stove?" with buttons "Keep cooking" (stay) and "Leave" (exit). Trigger only if meal name or at least one recipe has been entered.
+
+---
+
 ## ⚑ Roadmap — Post-MVP Features
 
 - **Multiple shopping lists per week** — one-to-many relationship between `meal_plans` and `shopping_lists`. Each list has its own receipt capture. Budget and utilization aggregate across all lists for the week.
