@@ -31,6 +31,7 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
   // Quick add form state
   const [qaName, setQaName] = useState('')
   const [qaSource, setQaSource] = useState('')
+  const [qaType, setQaType] = useState('quick') // 'quick' | 'draft'
   const [qaSaving, setQaSaving] = useState(false)
   const [qaSuggestions, setQaSuggestions] = useState([])
   const debounceRef = useRef(null)
@@ -40,11 +41,12 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
     setView('list')
     setQaName('')
     setQaSource('')
+    setQaType('quick')
     setQaSuggestions([])
     setLoading(true)
     supabase
       .from('recipes')
-      .select('id, name, author, credited_to_name, source_type, recipe_type')
+      .select('id, name, author, credited_to_name, source_type, recipe_type, status')
       .order('name')
       .then(({ data, error }) => {
         if (error) console.error('[Roux] Recipe picker fetch error:', error)
@@ -65,7 +67,7 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
     debounceRef.current = setTimeout(async () => {
       const { data } = await supabase
         .from('recipes')
-        .select('id, name, author, recipe_type')
+        .select('id, name, author, recipe_type, status')
         .ilike('name', `${val.trim()}%`)
         .limit(5)
       setQaSuggestions(data || [])
@@ -75,6 +77,7 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
   async function handleQuickSave() {
     if (!qaName.trim() || qaSaving) return
     setQaSaving(true)
+    const isQuick = qaType === 'quick'
     try {
       const { data, error } = await supabase
         .from('recipes')
@@ -83,13 +86,14 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
           author: qaSource.trim() || null,
           household_id: appUser.household_id,
           added_by: appUser.id,
-          recipe_type: 'quick',
+          recipe_type: isQuick ? 'quick' : 'full',
+          status: isQuick ? 'complete' : 'draft',
         })
-        .select('id, name, author, credited_to_name, source_type, recipe_type')
+        .select('id, name, author, credited_to_name, source_type, recipe_type, status')
         .single()
 
       if (error) throw error
-      onSelect({ ...data, isQuick: true })
+      onSelect({ ...data, isQuick, isDraft: !isQuick })
       onClose()
     } catch (err) {
       console.error('[Roux] Quick add recipe error:', err)
@@ -100,7 +104,7 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
 
   // Select an existing recipe from autofill suggestions
   function handleSuggestionTap(recipe) {
-    onSelect({ ...recipe, isQuick: recipe.recipe_type === 'quick' })
+    onSelect({ ...recipe, isQuick: recipe.recipe_type === 'quick', isDraft: recipe.status === 'draft' })
     onClose()
   }
 
@@ -183,7 +187,7 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
                   return (
                     <button
                       key={r.id}
-                      onClick={() => { if (!alreadyAdded) { onSelect({ ...r, isQuick: r.recipe_type === 'quick' }); onClose() } }}
+                      onClick={() => { if (!alreadyAdded) { onSelect({ ...r, isQuick: r.recipe_type === 'quick', isDraft: r.status === 'draft' }); onClose() } }}
                       disabled={alreadyAdded}
                       style={{
                         display: 'flex', alignItems: 'center', gap: '12px',
@@ -310,6 +314,43 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
               )}
             </div>
 
+            {/* Type toggle */}
+            <div>
+              <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 400, marginBottom: '8px' }}>
+                This is a...
+              </div>
+              <div style={{ display: 'flex', gap: '0', borderRadius: '10px', overflow: 'hidden', border: `1px solid ${C.linen}` }}>
+                {[
+                  { key: 'quick', label: 'Quick item' },
+                  { key: 'draft', label: "Recipe I'll finish later" },
+                ].map(opt => {
+                  const sel = qaType === opt.key
+                  return (
+                    <button
+                      key={opt.key}
+                      onClick={() => setQaType(opt.key)}
+                      style={{
+                        flex: 1, padding: '8px 10px',
+                        background: sel ? (opt.key === 'quick' ? C.forest : C.honey) : 'white',
+                        color: sel ? 'white' : C.ink,
+                        border: 'none', cursor: 'pointer',
+                        fontFamily: "'Jost', sans-serif", fontSize: '12px',
+                        fontWeight: sel ? 500 : 300,
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  )
+                })}
+              </div>
+              {qaType === 'draft' && (
+                <div style={{ fontSize: '10px', color: C.driftwood, fontWeight: 300, marginTop: '6px', fontStyle: 'italic' }}>
+                  We'll remind you to add the details.
+                </div>
+              )}
+            </div>
+
             {/* Source */}
             <input
               type="text"
@@ -397,6 +438,7 @@ export default function PlanMeal({ appUser }) {
             id: recipe.id, name: recipe.name,
             credit: recipe.author || recipe.credited_to_name || '',
             isQuick: recipe.isQuick || false,
+            isDraft: recipe.isDraft || false,
           }],
         }
       }))
@@ -408,6 +450,7 @@ export default function PlanMeal({ appUser }) {
       id: recipe.id, name: recipe.name,
       credit: recipe.author || recipe.credited_to_name || '',
       isQuick: recipe.isQuick || false,
+      isDraft: recipe.isDraft || false,
       alternatives: [],
     }])
   }, [altPickerSlot])
@@ -706,12 +749,23 @@ export default function PlanMeal({ appUser }) {
                           }}>
                             {r.name}
                           </span>
-                          {r.isQuick && (
+                          {r.isQuick && !r.isDraft && (
                             <span style={{
                               fontSize: '9px', fontWeight: 500, color: C.honey,
                               background: 'rgba(196,154,60,0.12)', borderRadius: '4px',
                               padding: '1px 5px',
                             }}>Quick item</span>
+                          )}
+                          {r.isDraft && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); navigate('/save-recipe') }}
+                              style={{
+                                fontSize: '9px', fontWeight: 500, color: C.honey,
+                                background: 'rgba(196,154,60,0.12)', borderRadius: '4px',
+                                padding: '1px 5px', border: 'none', cursor: 'pointer',
+                                fontFamily: "'Jost', sans-serif",
+                              }}
+                            >Draft — tap to finish</button>
                           )}
                         </div>
                         {r.credit && (

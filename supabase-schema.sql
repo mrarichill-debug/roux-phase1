@@ -285,6 +285,8 @@ CREATE TABLE recipes (
   sage_assist_content   TEXT,
   recipe_type           TEXT        NOT NULL DEFAULT 'full'
                           CHECK (recipe_type IN ('full', 'quick')),
+  status                TEXT        NOT NULL DEFAULT 'complete'
+                          CHECK (status IN ('draft', 'complete')),
   created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
