@@ -18,15 +18,18 @@ const C = {
 export default function Meals({ appUser }) {
   const navigate = useNavigate()
   const [recipeCount, setRecipeCount] = useState(null)
+  const [mealCount, setMealCount] = useState(null)
   const [traditionCount, setTraditionCount] = useState(null)
 
   const fetchCounts = useCallback(async () => {
     if (!appUser?.household_id) return
-    const [{ count: rc }, { count: tc }] = await Promise.all([
+    const [{ count: rc }, { count: mc }, { count: tc }] = await Promise.all([
       supabase.from('recipes').select('id', { count: 'exact', head: true }),
+      supabase.from('meals').select('id', { count: 'exact', head: true }),
       supabase.from('household_traditions').select('id', { count: 'exact', head: true }),
     ])
     setRecipeCount(rc ?? 0)
+    setMealCount(mc ?? 0)
     setTraditionCount(tc ?? 0)
   }, [appUser?.household_id])
 
@@ -78,6 +81,11 @@ export default function Meals({ appUser }) {
           }}>
             + Start planning
           </div>
+          {mealCount > 0 && (
+            <div style={{ fontSize: '9px', color: 'rgba(250,247,242,0.55)', fontWeight: 300, marginTop: '6px' }}>
+              {mealCount} meal{mealCount !== 1 ? 's' : ''} saved
+            </div>
+          )}
         </button>
 
         {/* ── Card 2: Family Recipes ────────────────────────────────── */}
