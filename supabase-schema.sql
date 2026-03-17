@@ -283,6 +283,8 @@ CREATE TABLE recipes (
   sage_assist_offered   TEXT,
   sage_assist_status    TEXT        CHECK (sage_assist_status IN ('pending', 'accepted', 'declined')),
   sage_assist_content   TEXT,
+  recipe_type           TEXT        NOT NULL DEFAULT 'full'
+                          CHECK (recipe_type IN ('full', 'quick')),
   created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -353,6 +355,20 @@ CREATE TABLE meal_recipes (
   is_swappable BOOLEAN     NOT NULL DEFAULT FALSE,
   sort_order   INTEGER     NOT NULL DEFAULT 0,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+
+-- ── Table 12b: meal_recipe_alternatives ─────────────────────────────────────
+-- Alternative recipe options for a meal component slot. E.g., for French Dip
+-- Night the "bread" slot might have Store Bought Rolls or Homemade Baguette.
+
+CREATE TABLE meal_recipe_alternatives (
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  meal_recipe_id  UUID        NOT NULL REFERENCES meal_recipes(id) ON DELETE CASCADE,
+  recipe_id       UUID        NOT NULL REFERENCES recipes(id) ON DELETE RESTRICT,
+  last_used_at    TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(meal_recipe_id, recipe_id)
 );
 
 

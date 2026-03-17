@@ -1,8 +1,9 @@
 /**
  * PlanMeal.jsx — Plan a Meal screen.
- * Name a meal, add one or more recipes, optionally assign to a day this week.
+ * Name a meal, add one or more recipes (with alternatives), optionally assign to a day this week.
+ * Quick items are stored as recipe_type='quick' for cost tracking and autofill.
  */
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { getWeekDatesTZ, getWeekStartTZ, toLocalDateStr } from '../lib/dateUtils'
@@ -31,16 +32,19 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
   const [qaName, setQaName] = useState('')
   const [qaSource, setQaSource] = useState('')
   const [qaSaving, setQaSaving] = useState(false)
+  const [qaSuggestions, setQaSuggestions] = useState([])
+  const debounceRef = useRef(null)
 
   useEffect(() => {
     if (!open) return
     setView('list')
     setQaName('')
     setQaSource('')
+    setQaSuggestions([])
     setLoading(true)
     supabase
       .from('recipes')
-      .select('id, name, author, credited_to_name, source_type')
+      .select('id, name, author, credited_to_name, source_type, recipe_type')
       .order('name')
       .then(({ data, error }) => {
         if (error) console.error('[Roux] Recipe picker fetch error:', error)
@@ -53,6 +57,21 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
     r.name.toLowerCase().includes(search.toLowerCase())
   )
 
+  // Autofill — debounced search as user types in quick add name
+  function handleQaNameChange(val) {
+    setQaName(val)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (val.trim().length < 2) { setQaSuggestions([]); return }
+    debounceRef.current = setTimeout(async () => {
+      const { data } = await supabase
+        .from('recipes')
+        .select('id, name, author, recipe_type')
+        .ilike('name', `${val.trim()}%`)
+        .limit(5)
+      setQaSuggestions(data || [])
+    }, 250)
+  }
+
   async function handleQuickSave() {
     if (!qaName.trim() || qaSaving) return
     setQaSaving(true)
@@ -64,20 +83,25 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
           author: qaSource.trim() || null,
           household_id: appUser.household_id,
           added_by: appUser.id,
+          recipe_type: 'quick',
         })
-        .select('id, name, author, credited_to_name, source_type')
+        .select('id, name, author, credited_to_name, source_type, recipe_type')
         .single()
 
       if (error) throw error
-
-      // Pass the new recipe back with isDraft flag
-      onSelect({ ...data, isDraft: true })
+      onSelect({ ...data, isQuick: true })
       onClose()
     } catch (err) {
       console.error('[Roux] Quick add recipe error:', err)
     } finally {
       setQaSaving(false)
     }
+  }
+
+  // Select an existing recipe from autofill suggestions
+  function handleSuggestionTap(recipe) {
+    onSelect({ ...recipe, isQuick: recipe.recipe_type === 'quick' })
+    onClose()
   }
 
   return (
@@ -159,7 +183,7 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
                   return (
                     <button
                       key={r.id}
-                      onClick={() => { if (!alreadyAdded) { onSelect(r); onClose() } }}
+                      onClick={() => { if (!alreadyAdded) { onSelect({ ...r, isQuick: r.recipe_type === 'quick' }); onClose() } }}
                       disabled={alreadyAdded}
                       style={{
                         display: 'flex', alignItems: 'center', gap: '12px',
@@ -171,11 +195,20 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
                       }}
                     >
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{
-                          fontFamily: "'Playfair Display', serif", fontSize: '15px',
-                          fontWeight: 500, color: C.ink,
-                        }}>
-                          {r.name}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{
+                            fontFamily: "'Playfair Display', serif", fontSize: '15px',
+                            fontWeight: 500, color: C.ink,
+                          }}>
+                            {r.name}
+                          </span>
+                          {r.recipe_type === 'quick' && (
+                            <span style={{
+                              fontSize: '9px', fontWeight: 500, color: C.honey,
+                              background: 'rgba(196,154,60,0.12)', borderRadius: '4px',
+                              padding: '1px 5px',
+                            }}>Quick</span>
+                          )}
                         </div>
                         {(r.author || r.credited_to_name) && (
                           <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, marginTop: '2px' }}>
@@ -204,7 +237,7 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
                   color: C.forest, fontWeight: 400, padding: '8px 0',
                 }}
               >
-                Don't see it? Add a quick recipe &rarr;
+                Don't see it? Add a quick item &rarr;
               </button>
             </div>
           </>
@@ -213,7 +246,7 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
           <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {/* Back link */}
             <button
-              onClick={() => setView('list')}
+              onClick={() => { setView('list'); setQaSuggestions([]) }}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 fontFamily: "'Jost', sans-serif", fontSize: '13px',
@@ -231,21 +264,51 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
               Quick add
             </div>
 
-            {/* Recipe name */}
-            <input
-              type="text"
-              value={qaName}
-              onChange={e => setQaName(e.target.value)}
-              placeholder="What do you call this one?"
-              style={{
-                width: '100%', padding: '12px 0', fontSize: '20px',
-                fontFamily: "'Playfair Display', serif", fontWeight: 500,
-                background: 'none', border: 'none', borderBottom: `1.5px solid ${C.linen}`,
-                outline: 'none', color: C.ink, boxSizing: 'border-box',
-              }}
-              onFocus={e => e.target.style.borderBottomColor = C.sage}
-              onBlur={e => e.target.style.borderBottomColor = C.linen}
-            />
+            <div style={{ fontSize: '12px', color: C.driftwood, fontWeight: 300, marginTop: '-10px' }}>
+              Type anything — we'll remember it for next time
+            </div>
+
+            {/* Recipe name with autofill */}
+            <div>
+              <input
+                type="text"
+                value={qaName}
+                onChange={e => handleQaNameChange(e.target.value)}
+                placeholder="E.g. Store Bought Rolls, Cereal, Rotisserie Chicken"
+                style={{
+                  width: '100%', padding: '12px 0', fontSize: '20px',
+                  fontFamily: "'Playfair Display', serif", fontWeight: 500,
+                  background: 'none', border: 'none', borderBottom: `1.5px solid ${C.linen}`,
+                  outline: 'none', color: C.ink, boxSizing: 'border-box',
+                }}
+                onFocus={e => e.target.style.borderBottomColor = C.sage}
+                onBlur={e => { e.target.style.borderBottomColor = C.linen }}
+              />
+
+              {/* Autofill suggestions */}
+              {qaSuggestions.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
+                  {qaSuggestions.filter(s => !addedIds.has(s.id)).map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => handleSuggestionTap(s)}
+                      style={{
+                        padding: '6px 12px', borderRadius: '20px',
+                        border: `1px solid ${C.linen}`, background: 'white',
+                        cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+                        fontSize: '13px', fontWeight: 400, color: C.ink,
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {s.name}
+                      {s.recipe_type === 'quick' && (
+                        <span style={{ fontSize: '9px', color: C.honey, marginLeft: '4px' }}>Quick</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Source */}
             <input
@@ -292,12 +355,18 @@ export default function PlanMeal({ appUser }) {
   const tz = appUser?.timezone || 'America/Chicago'
 
   // Form state
+  // Each recipe: { id, name, credit, role, isQuick, alternatives: [{ id, name, credit, isQuick }] }
   const [mealName, setMealName] = useState('')
-  const [recipes, setRecipes] = useState([]) // { id, name, source, role }
+  const [recipes, setRecipes] = useState([])
   const [addToWeek, setAddToWeek] = useState(false)
   const [selectedDay, setSelectedDay] = useState(null)
   const [notes, setNotes] = useState('')
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [altPickerSlot, setAltPickerSlot] = useState(null) // index of recipe slot for alt picker
+
+  // Weekly confirmation — which alternative is chosen per slot
+  // { [slotIndex]: recipeId }
+  const [weekChoices, setWeekChoices] = useState({})
 
   // Save state
   const [saving, setSaving] = useState(false)
@@ -306,18 +375,50 @@ export default function PlanMeal({ appUser }) {
   // Week dates for day picker
   const weekDates = getWeekDatesTZ(tz, 0)
 
-  const addedIds = new Set(recipes.map(r => r.id))
+  // All recipe IDs currently in the meal (primaries + alternatives)
+  const addedIds = new Set()
+  recipes.forEach(r => {
+    addedIds.add(r.id)
+    if (r.alternatives) r.alternatives.forEach(a => addedIds.add(a.id))
+  })
 
   const handleAddRecipe = useCallback((recipe) => {
+    // If adding an alternative to a specific slot
+    if (altPickerSlot !== null) {
+      setRecipes(prev => prev.map((r, i) => {
+        if (i !== altPickerSlot) return r
+        const alts = r.alternatives || []
+        if (alts.some(a => a.id === recipe.id)) return r // no duplicates
+        return {
+          ...r,
+          alternatives: [...alts, {
+            id: recipe.id, name: recipe.name,
+            credit: recipe.author || recipe.credited_to_name || '',
+            isQuick: recipe.isQuick || false,
+          }],
+        }
+      }))
+      setAltPickerSlot(null)
+      return
+    }
+
+    // Normal add as a new slot
     setRecipes(prev => [...prev, {
       id: recipe.id, name: recipe.name,
       credit: recipe.author || recipe.credited_to_name || '',
-      role: '', isDraft: recipe.isDraft || false,
+      role: '', isQuick: recipe.isQuick || false,
+      alternatives: [],
     }])
-  }, [])
+  }, [altPickerSlot])
 
   const handleRemoveRecipe = useCallback((recipeId) => {
     setRecipes(prev => prev.filter(r => r.id !== recipeId))
+  }, [])
+
+  const handleRemoveAlt = useCallback((slotIndex, altId) => {
+    setRecipes(prev => prev.map((r, i) =>
+      i === slotIndex ? { ...r, alternatives: r.alternatives.filter(a => a.id !== altId) } : r
+    ))
   }, [])
 
   const handleRoleChange = useCallback((recipeId, role) => {
@@ -326,6 +427,9 @@ export default function PlanMeal({ appUser }) {
 
   const canSave = mealName.trim().length > 0 && recipes.length > 0
     && (!addToWeek || selectedDay !== null)
+
+  // Check if any slot has alternatives (needs weekly confirmation)
+  const slotsWithAlts = addToWeek ? recipes.filter(r => r.alternatives && r.alternatives.length > 0) : []
 
   async function handleSave() {
     if (!canSave || saving) return
@@ -352,20 +456,43 @@ export default function PlanMeal({ appUser }) {
         recipe_id: r.id,
         role: r.role.trim() || null,
         sort_order: i,
+        is_swappable: r.alternatives && r.alternatives.length > 0,
       }))
 
-      const { error: mrErr } = await supabase
+      const { data: insertedMR, error: mrErr } = await supabase
         .from('meal_recipes')
         .insert(mealRecipeRows)
+        .select('id, recipe_id, sort_order')
 
       if (mrErr) throw mrErr
 
-      // 3. If adding to this week — find or create meal plan, then insert planned_meal
+      // 3. Insert alternatives for each meal_recipe that has them
+      const altRows = []
+      for (const mr of insertedMR) {
+        const slotIndex = mr.sort_order
+        const slot = recipes[slotIndex]
+        if (slot && slot.alternatives && slot.alternatives.length > 0) {
+          for (const alt of slot.alternatives) {
+            altRows.push({
+              meal_recipe_id: mr.id,
+              recipe_id: alt.id,
+            })
+          }
+        }
+      }
+
+      if (altRows.length > 0) {
+        const { error: altErr } = await supabase
+          .from('meal_recipe_alternatives')
+          .insert(altRows)
+        if (altErr) throw altErr
+      }
+
+      // 4. If adding to this week — find or create meal plan, then insert planned_meal
       if (addToWeek && selectedDay !== null) {
         const weekStart = getWeekStartTZ(tz, 0)
         const weekEnd = toLocalDateStr(weekDates[6])
 
-        // Find existing plan for this week
         let { data: plan } = await supabase
           .from('meal_plans')
           .select('id')
@@ -373,7 +500,6 @@ export default function PlanMeal({ appUser }) {
           .eq('week_start_date', weekStart)
           .maybeSingle()
 
-        // Create one if it doesn't exist
         if (!plan) {
           const { data: newPlan, error: planErr } = await supabase
             .from('meal_plans')
@@ -391,7 +517,6 @@ export default function PlanMeal({ appUser }) {
           plan = newPlan
         }
 
-        // Insert planned meal
         const { error: pmErr } = await supabase
           .from('planned_meals')
           .insert({
@@ -404,9 +529,19 @@ export default function PlanMeal({ appUser }) {
           })
 
         if (pmErr) throw pmErr
+
+        // Update last_used_at for chosen alternatives
+        for (const [slotIdx, chosenId] of Object.entries(weekChoices)) {
+          const mr = insertedMR.find(m => m.sort_order === Number(slotIdx))
+          if (!mr) continue
+          await supabase
+            .from('meal_recipe_alternatives')
+            .update({ last_used_at: new Date().toISOString() })
+            .eq('meal_recipe_id', mr.id)
+            .eq('recipe_id', chosenId)
+        }
       }
 
-      // Show toast, then navigate
       setToast('Meal saved.')
       setTimeout(() => navigate('/meals'), 1200)
 
@@ -477,66 +612,115 @@ export default function PlanMeal({ appUser }) {
                   background: 'white', borderRadius: '12px',
                   padding: '12px 14px',
                   border: `1px solid ${C.linen}`,
-                  display: 'flex', alignItems: 'center', gap: '10px',
                 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      fontFamily: "'Playfair Display', serif", fontSize: '15px',
-                      fontWeight: 500, color: C.ink,
-                    }}>
-                      {r.name}
-                    </div>
-                    {r.credit && (
-                      <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, marginTop: '1px' }}>
-                        {r.credit}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{
+                          fontFamily: "'Playfair Display', serif", fontSize: '15px',
+                          fontWeight: 500, color: C.ink,
+                        }}>
+                          {r.name}
+                        </span>
+                        {r.isQuick && (
+                          <span style={{
+                            fontSize: '9px', fontWeight: 500, color: C.honey,
+                            background: 'rgba(196,154,60,0.12)', borderRadius: '4px',
+                            padding: '1px 5px',
+                          }}>Quick item</span>
+                        )}
+                        {r.alternatives && r.alternatives.length > 0 && (
+                          <span style={{
+                            fontSize: '9px', fontWeight: 500, color: C.sage,
+                            background: 'rgba(122,140,110,0.12)', borderRadius: '4px',
+                            padding: '1px 5px',
+                          }}>&#8597; {r.alternatives.length + 1} options</span>
+                        )}
                       </div>
-                    )}
-                    {r.isDraft && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); navigate('/save-recipe') }}
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: '4px',
-                          marginTop: '4px', padding: '2px 8px', borderRadius: '6px',
-                          background: 'rgba(196,154,60,0.12)', border: 'none',
-                          cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-                          fontSize: '10px', fontWeight: 500, color: C.honey,
-                        }}
-                      >
-                        Draft — tap to complete
-                      </button>
-                    )}
-                    {/* Role input — only show when 2+ recipes */}
-                    {recipes.length >= 2 && (
-                      <input
-                        type="text"
-                        value={r.role}
-                        onChange={e => handleRoleChange(r.id, e.target.value)}
-                        placeholder="role (optional)"
-                        style={{
-                          marginTop: '6px', padding: '4px 0',
-                          fontSize: '12px', fontFamily: "'Jost', sans-serif", fontWeight: 300,
-                          background: 'none', border: 'none',
-                          borderBottom: `1px solid ${C.linen}`,
-                          outline: 'none', color: C.driftwoodSm,
-                          width: '120px',
-                        }}
-                      />
-                    )}
+                      {r.credit && (
+                        <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, marginTop: '1px' }}>
+                          {r.credit}
+                        </div>
+                      )}
+                      {/* Role input — only show when 2+ recipes */}
+                      {recipes.length >= 2 && (
+                        <input
+                          type="text"
+                          value={r.role}
+                          onChange={e => handleRoleChange(r.id, e.target.value)}
+                          placeholder="role (optional)"
+                          style={{
+                            marginTop: '6px', padding: '4px 0',
+                            fontSize: '12px', fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                            background: 'none', border: 'none',
+                            borderBottom: `1px solid ${C.linen}`,
+                            outline: 'none', color: C.driftwoodSm,
+                            width: '120px',
+                          }}
+                        />
+                      )}
+                    </div>
+                    {/* Remove button */}
+                    <button
+                      onClick={() => handleRemoveRecipe(r.id)}
+                      style={{
+                        width: '30px', height: '30px', borderRadius: '50%',
+                        background: 'none', border: `1px solid ${C.linen}`,
+                        cursor: 'pointer', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0, color: C.driftwood,
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
                   </div>
-                  {/* Remove button */}
+
+                  {/* Alternatives list */}
+                  {r.alternatives && r.alternatives.length > 0 && (
+                    <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: `1px solid ${C.linen}` }}>
+                      <div style={{ fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '6px' }}>
+                        Alternatives
+                      </div>
+                      {r.alternatives.map(alt => (
+                        <div key={alt.id} style={{
+                          display: 'flex', alignItems: 'center', gap: '8px',
+                          padding: '4px 0',
+                        }}>
+                          <span style={{ fontSize: '13px', color: C.ink, fontWeight: 300, flex: 1 }}>
+                            {alt.name}
+                            {alt.isQuick && (
+                              <span style={{ fontSize: '9px', color: C.honey, marginLeft: '4px' }}>Quick</span>
+                            )}
+                          </span>
+                          <button
+                            onClick={() => handleRemoveAlt(i, alt.id)}
+                            style={{
+                              background: 'none', border: 'none', cursor: 'pointer',
+                              color: C.driftwood, padding: '2px', display: 'flex',
+                            }}
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}>
+                              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add alternative link */}
                   <button
-                    onClick={() => handleRemoveRecipe(r.id)}
+                    onClick={() => { setAltPickerSlot(i); setPickerOpen(true) }}
                     style={{
-                      width: '30px', height: '30px', borderRadius: '50%',
-                      background: 'none', border: `1px solid ${C.linen}`,
-                      cursor: 'pointer', display: 'flex',
-                      alignItems: 'center', justifyContent: 'center',
-                      flexShrink: 0, color: C.driftwood,
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      fontFamily: "'Jost', sans-serif", fontSize: '11px',
+                      color: C.sage, fontWeight: 400, padding: '6px 0 0',
+                      textAlign: 'left',
                     }}
                   >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
+                    + Add alternative
                   </button>
                 </div>
               ))}
@@ -545,7 +729,7 @@ export default function PlanMeal({ appUser }) {
 
           {/* Add recipe button */}
           <button
-            onClick={() => setPickerOpen(true)}
+            onClick={() => { setAltPickerSlot(null); setPickerOpen(true) }}
             style={{
               display: 'flex', alignItems: 'center', gap: '8px',
               padding: '12px 16px', borderRadius: '12px',
@@ -566,7 +750,7 @@ export default function PlanMeal({ appUser }) {
         <div style={{ opacity: 0, animation: 'fadeUp 0.4s ease 0.14s forwards' }}>
           {/* Toggle */}
           <button
-            onClick={() => { setAddToWeek(v => !v); if (addToWeek) setSelectedDay(null) }}
+            onClick={() => { setAddToWeek(v => !v); if (addToWeek) { setSelectedDay(null); setWeekChoices({}) } }}
             style={{
               display: 'flex', alignItems: 'center', gap: '10px',
               background: 'none', border: 'none', cursor: 'pointer',
@@ -595,38 +779,92 @@ export default function PlanMeal({ appUser }) {
 
           {/* Day picker */}
           {addToWeek && (
-            <div style={{
-              display: 'flex', gap: '6px', marginTop: '14px',
-              flexWrap: 'wrap',
-            }}>
-              {DAY_LABELS.map((label, i) => {
-                const date = weekDates[i]
-                const dayNum = date.getDate()
-                const sel = selectedDay === i
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedDay(i)}
-                    style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center',
-                      gap: '2px', padding: '8px 0', width: '44px',
-                      borderRadius: '10px', cursor: 'pointer',
-                      border: sel ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
-                      background: sel ? 'rgba(61,107,79,0.08)' : 'white',
-                      fontFamily: "'Jost', sans-serif",
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    <span style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px', color: sel ? C.forest : C.driftwood, fontWeight: 500 }}>
-                      {label}
-                    </span>
-                    <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', color: sel ? C.forest : C.ink, fontWeight: 500 }}>
-                      {dayNum}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
+            <>
+              <div style={{
+                display: 'flex', gap: '6px', marginTop: '14px',
+                flexWrap: 'wrap',
+              }}>
+                {DAY_LABELS.map((label, idx) => {
+                  const date = weekDates[idx]
+                  const dayNum = date.getDate()
+                  const sel = selectedDay === idx
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedDay(idx)}
+                      style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                        gap: '2px', padding: '8px 0', width: '44px',
+                        borderRadius: '10px', cursor: 'pointer',
+                        border: sel ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                        background: sel ? 'rgba(61,107,79,0.08)' : 'white',
+                        fontFamily: "'Jost', sans-serif",
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      <span style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px', color: sel ? C.forest : C.driftwood, fontWeight: 500 }}>
+                        {label}
+                      </span>
+                      <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', color: sel ? C.forest : C.ink, fontWeight: 500 }}>
+                        {dayNum}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* ── Weekly confirmation picker for slots with alternatives ── */}
+              {slotsWithAlts.length > 0 && selectedDay !== null && (
+                <div style={{
+                  marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px',
+                }}>
+                  {recipes.map((r, slotIdx) => {
+                    if (!r.alternatives || r.alternatives.length === 0) return null
+                    const roleName = r.role || r.name.toLowerCase()
+                    const options = [
+                      { id: r.id, name: r.name },
+                      ...r.alternatives.map(a => ({ id: a.id, name: a.name })),
+                    ]
+                    const chosen = weekChoices[slotIdx] || r.id
+                    return (
+                      <div key={slotIdx} style={{
+                        background: 'white', borderRadius: '10px',
+                        padding: '10px 14px', border: `1px solid ${C.linen}`,
+                      }}>
+                        <div style={{
+                          fontSize: '12px', color: C.driftwood, fontWeight: 400,
+                          marginBottom: '8px',
+                        }}>
+                          Which <span style={{ fontStyle: 'italic' }}>{roleName}</span> this week?
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {options.map(opt => {
+                            const sel = chosen === opt.id
+                            return (
+                              <button
+                                key={opt.id}
+                                onClick={() => setWeekChoices(prev => ({ ...prev, [slotIdx]: opt.id }))}
+                                style={{
+                                  padding: '6px 14px', borderRadius: '20px',
+                                  border: sel ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                                  background: sel ? 'rgba(61,107,79,0.08)' : 'white',
+                                  color: sel ? C.forest : C.ink,
+                                  fontFamily: "'Jost', sans-serif", fontSize: '13px',
+                                  fontWeight: sel ? 500 : 400,
+                                  cursor: 'pointer', transition: 'all 0.15s',
+                                }}
+                              >
+                                {opt.name}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -698,7 +936,7 @@ export default function PlanMeal({ appUser }) {
       {/* ── Recipe Picker Sheet ──────────────────────────────────────────── */}
       <RecipePickerSheet
         open={pickerOpen}
-        onClose={() => setPickerOpen(false)}
+        onClose={() => { setPickerOpen(false); setAltPickerSlot(null) }}
         onSelect={handleAddRecipe}
         addedIds={addedIds}
         appUser={appUser}

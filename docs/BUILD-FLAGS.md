@@ -275,6 +275,8 @@ Build the enforcement layer as a focused sprint immediately before inviting any 
 - **founded_by on households** — immutable historical record. Never update it.
 - **Cutting board Tonight card per scheme** — kept on Garden and Walnut schemes, solid card on Slate and Midnight. This is intentional and permanent per scheme design.
 - **Nav order** — Home / This Week / Recipes / Sage / Shopping — locked March 2026. Sage moves to center (position 3) only when Sage feature set is substantially complete.
+- **Quick items stored as recipes** — all non-recipe items (store bought rolls, cereal, rotisserie chicken) are stored as recipes with `recipe_type = 'quick'` (default is `'full'`). This enables cost tracking, autofill, and usage history across all items. Locked March 2026.
+- **Meal component alternatives** — each recipe slot in a meal can have alternative options stored in `meal_recipe_alternatives`. When a meal with alternatives is added to the week, Lauren picks which option to use that week. `last_used_at` tracks the most recent choice for smart defaults.
 
 ---
 
