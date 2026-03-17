@@ -1,8 +1,9 @@
 /**
  * Meals.jsx — Meals hub screen.
  * Three cards: Plan a Meal, Family Recipes, Our Traditions.
+ * Counts refresh on mount and on window focus (returning from sub-screens).
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import TopBar from '../components/TopBar'
@@ -17,15 +18,28 @@ const C = {
 export default function Meals({ appUser }) {
   const navigate = useNavigate()
   const [recipeCount, setRecipeCount] = useState(null)
+  const [traditionCount, setTraditionCount] = useState(null)
+
+  const fetchCounts = useCallback(async () => {
+    if (!appUser?.household_id) return
+    const [{ count: rc }, { count: tc }] = await Promise.all([
+      supabase.from('recipes').select('id', { count: 'exact', head: true }),
+      supabase.from('household_traditions').select('id', { count: 'exact', head: true }),
+    ])
+    setRecipeCount(rc ?? 0)
+    setTraditionCount(tc ?? 0)
+  }, [appUser?.household_id])
 
   useEffect(() => {
-    if (!appUser?.household_id) return
-    supabase
-      .from('recipes')
-      .select('id', { count: 'exact', head: true })
-      .eq('household_id', appUser.household_id)
-      .then(({ count }) => setRecipeCount(count ?? 0))
-  }, [appUser?.household_id])
+    fetchCounts()
+  }, [fetchCounts])
+
+  // Refresh counts when window regains focus (returning from sub-screens)
+  useEffect(() => {
+    function handleFocus() { fetchCounts() }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [fetchCounts])
 
   return (
     <div style={{
@@ -95,7 +109,7 @@ export default function Meals({ appUser }) {
             <div style={{ fontSize: '10px', color: C.driftwoodSm, fontWeight: 300 }}>
               Your saved collection
             </div>
-            {recipeCount !== null && (
+            {recipeCount > 0 && (
               <div style={{ fontSize: '9px', color: C.driftwoodSm, fontWeight: 400, marginTop: '3px', opacity: 0.7 }}>
                 {recipeCount} recipe{recipeCount !== 1 ? 's' : ''}
               </div>
@@ -136,6 +150,11 @@ export default function Meals({ appUser }) {
             <div style={{ fontSize: '10px', color: C.driftwoodSm, fontWeight: 300 }}>
               The meals that bring everyone home
             </div>
+            {traditionCount > 0 && (
+              <div style={{ fontSize: '9px', color: C.driftwoodSm, fontWeight: 400, marginTop: '3px', opacity: 0.7 }}>
+                {traditionCount} tradition{traditionCount !== 1 ? 's' : ''}
+              </div>
+            )}
           </div>
           <svg viewBox="0 0 24 24" fill="none" stroke={C.linen} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
             <polyline points="9 18 15 12 9 6"/>
