@@ -21,13 +21,22 @@ const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
 
 // ── Recipe Picker Bottom Sheet ──────────────────────────────────────────────
-function RecipePickerSheet({ open, onClose, onSelect, addedIds, householdId }) {
+function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
   const [recipes, setRecipes] = useState([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [view, setView] = useState('list') // 'list' | 'quickadd'
+
+  // Quick add form state
+  const [qaName, setQaName] = useState('')
+  const [qaSource, setQaSource] = useState('')
+  const [qaSaving, setQaSaving] = useState(false)
 
   useEffect(() => {
     if (!open) return
+    setView('list')
+    setQaName('')
+    setQaSource('')
     setLoading(true)
     supabase
       .from('recipes')
@@ -43,6 +52,33 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, householdId }) {
   const filtered = recipes.filter(r =>
     r.name.toLowerCase().includes(search.toLowerCase())
   )
+
+  async function handleQuickSave() {
+    if (!qaName.trim() || qaSaving) return
+    setQaSaving(true)
+    try {
+      const { data, error } = await supabase
+        .from('recipes')
+        .insert({
+          name: qaName.trim(),
+          author: qaSource.trim() || null,
+          household_id: appUser.household_id,
+          added_by: appUser.id,
+        })
+        .select('id, name, author, credited_to_name, source_type')
+        .single()
+
+      if (error) throw error
+
+      // Pass the new recipe back with isDraft flag
+      onSelect({ ...data, isDraft: true })
+      onClose()
+    } catch (err) {
+      console.error('[Roux] Quick add recipe error:', err)
+    } finally {
+      setQaSaving(false)
+    }
+  }
 
   return (
     <>
@@ -75,86 +111,176 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, householdId }) {
         {/* Handle */}
         <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
 
-        {/* Header */}
-        <div style={{ padding: '16px 22px 0' }}>
-          <div style={{
-            fontFamily: "'Playfair Display', serif", fontSize: '20px',
-            fontWeight: 500, color: C.ink, marginBottom: '12px',
-          }}>
-            Add a recipe
-          </div>
+        {view === 'list' ? (
+          <>
+            {/* Header */}
+            <div style={{ padding: '16px 22px 0' }}>
+              <div style={{
+                fontFamily: "'Playfair Display', serif", fontSize: '20px',
+                fontWeight: 500, color: C.ink, marginBottom: '12px',
+              }}>
+                Add a recipe
+              </div>
 
-          {/* Search */}
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search recipes..."
-            style={{
-              width: '100%', padding: '10px 14px', fontSize: '14px',
-              fontFamily: "'Jost', sans-serif", fontWeight: 300,
-              border: `1.5px solid ${C.linen}`, borderRadius: '12px',
-              background: 'white', outline: 'none', boxSizing: 'border-box',
-              color: C.ink,
-            }}
-            onFocus={e => e.target.style.borderColor = C.sage}
-            onBlur={e => e.target.style.borderColor = C.linen}
-          />
-        </div>
+              {/* Search */}
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search recipes..."
+                style={{
+                  width: '100%', padding: '10px 14px', fontSize: '14px',
+                  fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                  border: `1.5px solid ${C.linen}`, borderRadius: '12px',
+                  background: 'white', outline: 'none', boxSizing: 'border-box',
+                  color: C.ink,
+                }}
+                onFocus={e => e.target.style.borderColor = C.sage}
+                onBlur={e => e.target.style.borderColor = C.linen}
+              />
+            </div>
 
-        {/* Recipe list */}
-        <div style={{
-          flex: 1, overflowY: 'auto', padding: '12px 22px',
-          WebkitOverflowScrolling: 'touch',
-        }}>
-          {loading ? (
-            <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', padding: '20px 0' }}>
-              Loading recipes...
-            </div>
-          ) : filtered.length === 0 ? (
-            <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', padding: '20px 0' }}>
-              {search ? 'No recipes match your search.' : 'No recipes yet.'}
-            </div>
-          ) : (
-            filtered.map(r => {
-              const alreadyAdded = addedIds.has(r.id)
-              return (
-                <button
-                  key={r.id}
-                  onClick={() => { if (!alreadyAdded) { onSelect(r); onClose() } }}
-                  disabled={alreadyAdded}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                    width: '100%', padding: '12px 0',
-                    background: 'none', border: 'none', borderBottom: `1px solid ${C.linen}`,
-                    cursor: alreadyAdded ? 'default' : 'pointer',
-                    opacity: alreadyAdded ? 0.5 : 1,
-                    textAlign: 'left', fontFamily: "'Jost', sans-serif",
-                  }}
-                >
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      fontFamily: "'Playfair Display', serif", fontSize: '15px',
-                      fontWeight: 500, color: C.ink,
-                    }}>
-                      {r.name}
-                    </div>
-                    {(r.author || r.credited_to_name) && (
-                      <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, marginTop: '2px' }}>
-                        {r.author || r.credited_to_name}
+            {/* Recipe list */}
+            <div style={{
+              flex: 1, overflowY: 'auto', padding: '12px 22px',
+              WebkitOverflowScrolling: 'touch',
+            }}>
+              {loading ? (
+                <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', padding: '20px 0' }}>
+                  Loading recipes...
+                </div>
+              ) : filtered.length === 0 ? (
+                <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', padding: '20px 0' }}>
+                  {search ? 'No recipes match your search.' : 'No recipes yet.'}
+                </div>
+              ) : (
+                filtered.map(r => {
+                  const alreadyAdded = addedIds.has(r.id)
+                  return (
+                    <button
+                      key={r.id}
+                      onClick={() => { if (!alreadyAdded) { onSelect(r); onClose() } }}
+                      disabled={alreadyAdded}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '12px',
+                        width: '100%', padding: '12px 0',
+                        background: 'none', border: 'none', borderBottom: `1px solid ${C.linen}`,
+                        cursor: alreadyAdded ? 'default' : 'pointer',
+                        opacity: alreadyAdded ? 0.5 : 1,
+                        textAlign: 'left', fontFamily: "'Jost', sans-serif",
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontFamily: "'Playfair Display', serif", fontSize: '15px',
+                          fontWeight: 500, color: C.ink,
+                        }}>
+                          {r.name}
+                        </div>
+                        {(r.author || r.credited_to_name) && (
+                          <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, marginTop: '2px' }}>
+                            {r.author || r.credited_to_name}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  {alreadyAdded && (
-                    <svg viewBox="0 0 24 24" fill="none" stroke={C.forest} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18, flexShrink: 0 }}>
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  )}
-                </button>
-              )
-            })
-          )}
-        </div>
+                      {alreadyAdded && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke={C.forest} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18, flexShrink: 0 }}>
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      )}
+                    </button>
+                  )
+                })
+              )}
+            </div>
+
+            {/* Quick add link */}
+            <div style={{ padding: '8px 22px 0', borderTop: `1px solid ${C.linen}` }}>
+              <button
+                onClick={() => setView('quickadd')}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  fontFamily: "'Jost', sans-serif", fontSize: '13px',
+                  color: C.forest, fontWeight: 400, padding: '8px 0',
+                }}
+              >
+                Don't see it? Add a quick recipe &rarr;
+              </button>
+            </div>
+          </>
+        ) : (
+          /* ── Quick Add Form ──────────────────────────────────────────── */
+          <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Back link */}
+            <button
+              onClick={() => setView('list')}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontFamily: "'Jost', sans-serif", fontSize: '13px',
+                color: C.driftwood, fontWeight: 400, padding: 0,
+                textAlign: 'left',
+              }}
+            >
+              &larr; Back to recipes
+            </button>
+
+            <div style={{
+              fontFamily: "'Playfair Display', serif", fontSize: '20px',
+              fontWeight: 500, color: C.ink,
+            }}>
+              Quick add
+            </div>
+
+            {/* Recipe name */}
+            <input
+              type="text"
+              value={qaName}
+              onChange={e => setQaName(e.target.value)}
+              placeholder="What do you call this one?"
+              style={{
+                width: '100%', padding: '12px 0', fontSize: '20px',
+                fontFamily: "'Playfair Display', serif", fontWeight: 500,
+                background: 'none', border: 'none', borderBottom: `1.5px solid ${C.linen}`,
+                outline: 'none', color: C.ink, boxSizing: 'border-box',
+              }}
+              onFocus={e => e.target.style.borderBottomColor = C.sage}
+              onBlur={e => e.target.style.borderBottomColor = C.linen}
+            />
+
+            {/* Source */}
+            <input
+              type="text"
+              value={qaSource}
+              onChange={e => setQaSource(e.target.value)}
+              placeholder="Brandee · NYT Cooking · Mom's kitchen"
+              style={{
+                width: '100%', padding: '10px 0', fontSize: '14px',
+                fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                background: 'none', border: 'none', borderBottom: `1.5px solid ${C.linen}`,
+                outline: 'none', color: C.ink, boxSizing: 'border-box',
+              }}
+              onFocus={e => e.target.style.borderBottomColor = C.sage}
+              onBlur={e => e.target.style.borderBottomColor = C.linen}
+            />
+
+            {/* Save button */}
+            <button
+              onClick={handleQuickSave}
+              disabled={!qaName.trim() || qaSaving}
+              style={{
+                width: '100%', padding: '14px', borderRadius: '14px',
+                background: qaName.trim() && !qaSaving ? C.forest : C.linen,
+                color: qaName.trim() && !qaSaving ? 'white' : C.driftwood,
+                border: 'none', cursor: qaName.trim() && !qaSaving ? 'pointer' : 'default',
+                fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
+                boxShadow: qaName.trim() && !qaSaving ? '0 4px 16px rgba(30,55,35,0.25)' : 'none',
+                transition: 'all 0.2s', marginTop: '4px',
+              }}
+            >
+              {qaSaving ? 'Saving...' : 'Save and add'}
+            </button>
+          </div>
+        )}
       </div>
     </>
   )
@@ -183,7 +309,11 @@ export default function PlanMeal({ appUser }) {
   const addedIds = new Set(recipes.map(r => r.id))
 
   const handleAddRecipe = useCallback((recipe) => {
-    setRecipes(prev => [...prev, { id: recipe.id, name: recipe.name, credit: recipe.author || recipe.credited_to_name || '', role: '' }])
+    setRecipes(prev => [...prev, {
+      id: recipe.id, name: recipe.name,
+      credit: recipe.author || recipe.credited_to_name || '',
+      role: '', isDraft: recipe.isDraft || false,
+    }])
   }, [])
 
   const handleRemoveRecipe = useCallback((recipeId) => {
@@ -360,6 +490,20 @@ export default function PlanMeal({ appUser }) {
                       <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, marginTop: '1px' }}>
                         {r.credit}
                       </div>
+                    )}
+                    {r.isDraft && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); navigate('/save-recipe') }}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '4px',
+                          marginTop: '4px', padding: '2px 8px', borderRadius: '6px',
+                          background: 'rgba(196,154,60,0.12)', border: 'none',
+                          cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+                          fontSize: '10px', fontWeight: 500, color: C.honey,
+                        }}
+                      >
+                        Draft — tap to complete
+                      </button>
                     )}
                     {/* Role input — only show when 2+ recipes */}
                     {recipes.length >= 2 && (
@@ -557,7 +701,7 @@ export default function PlanMeal({ appUser }) {
         onClose={() => setPickerOpen(false)}
         onSelect={handleAddRecipe}
         addedIds={addedIds}
-        householdId={appUser?.household_id}
+        appUser={appUser}
       />
 
       <BottomNav activeTab="meals" />
