@@ -355,24 +355,27 @@ export default function PlanMeal({ appUser }) {
   const tz = appUser?.timezone || 'America/Chicago'
 
   // Form state
-  // Each recipe: { id, name, credit, role, isQuick, alternatives: [{ id, name, credit, isQuick }] }
+  // Each recipe: { id, name, credit, isQuick, alternatives: [{ id, name, credit, isQuick }] }
   const [mealName, setMealName] = useState('')
   const [recipes, setRecipes] = useState([])
   const [addToWeek, setAddToWeek] = useState(false)
   const [selectedDay, setSelectedDay] = useState(null)
   const [notes, setNotes] = useState('')
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [altPickerSlot, setAltPickerSlot] = useState(null) // index of recipe slot for alt picker
+  const [altPickerSlot, setAltPickerSlot] = useState(null)
 
-  // Weekly confirmation — which alternative is chosen per slot
-  // { [slotIndex]: recipeId }
+  // Reorder mode
+  const [reordering, setReordering] = useState(false)
+  const [dragIdx, setDragIdx] = useState(null)
+  const [overIdx, setOverIdx] = useState(null)
+
+  // Weekly confirmation — { [slotIndex]: recipeId }
   const [weekChoices, setWeekChoices] = useState({})
 
   // Save state
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null)
 
-  // Week dates for day picker
   const weekDates = getWeekDatesTZ(tz, 0)
 
   // All recipe IDs currently in the meal (primaries + alternatives)
@@ -383,12 +386,11 @@ export default function PlanMeal({ appUser }) {
   })
 
   const handleAddRecipe = useCallback((recipe) => {
-    // If adding an alternative to a specific slot
     if (altPickerSlot !== null) {
       setRecipes(prev => prev.map((r, i) => {
         if (i !== altPickerSlot) return r
         const alts = r.alternatives || []
-        if (alts.some(a => a.id === recipe.id)) return r // no duplicates
+        if (alts.some(a => a.id === recipe.id)) return r
         return {
           ...r,
           alternatives: [...alts, {
@@ -402,11 +404,10 @@ export default function PlanMeal({ appUser }) {
       return
     }
 
-    // Normal add as a new slot
     setRecipes(prev => [...prev, {
       id: recipe.id, name: recipe.name,
       credit: recipe.author || recipe.credited_to_name || '',
-      role: '', isQuick: recipe.isQuick || false,
+      isQuick: recipe.isQuick || false,
       alternatives: [],
     }])
   }, [altPickerSlot])
@@ -421,14 +422,56 @@ export default function PlanMeal({ appUser }) {
     ))
   }, [])
 
-  const handleRoleChange = useCallback((recipeId, role) => {
-    setRecipes(prev => prev.map(r => r.id === recipeId ? { ...r, role } : r))
-  }, [])
+  // ── Drag reorder handlers ───────────────────────────────────────────
+  function handleDragStart(idx) { setDragIdx(idx) }
+  function handleDragOver(e, idx) { e.preventDefault(); setOverIdx(idx) }
+  function handleDrop(idx) {
+    if (dragIdx === null || dragIdx === idx) { setDragIdx(null); setOverIdx(null); return }
+    setRecipes(prev => {
+      const arr = [...prev]
+      const [moved] = arr.splice(dragIdx, 1)
+      arr.splice(idx, 0, moved)
+      return arr
+    })
+    setDragIdx(null)
+    setOverIdx(null)
+  }
+  function handleDragEnd() { setDragIdx(null); setOverIdx(null) }
+
+  // Touch-based drag
+  const touchStartY = useRef(0)
+  const touchIdx = useRef(null)
+  const listRef = useRef(null)
+
+  function handleTouchStart(e, idx) {
+    touchStartY.current = e.touches[0].clientY
+    touchIdx.current = idx
+    setDragIdx(idx)
+  }
+  function handleTouchMove(e) {
+    if (touchIdx.current === null || !listRef.current) return
+    const y = e.touches[0].clientY
+    const cards = listRef.current.children
+    for (let i = 0; i < cards.length; i++) {
+      const rect = cards[i].getBoundingClientRect()
+      if (y >= rect.top && y <= rect.bottom && i !== touchIdx.current) {
+        setOverIdx(i)
+        break
+      }
+    }
+  }
+  function handleTouchEnd() {
+    if (touchIdx.current !== null && overIdx !== null && touchIdx.current !== overIdx) {
+      handleDrop(overIdx)
+    }
+    touchIdx.current = null
+    setDragIdx(null)
+    setOverIdx(null)
+  }
 
   const canSave = mealName.trim().length > 0 && recipes.length > 0
     && (!addToWeek || selectedDay !== null)
 
-  // Check if any slot has alternatives (needs weekly confirmation)
   const slotsWithAlts = addToWeek ? recipes.filter(r => r.alternatives && r.alternatives.length > 0) : []
 
   async function handleSave() {
@@ -436,7 +479,6 @@ export default function PlanMeal({ appUser }) {
     setSaving(true)
 
     try {
-      // 1. Insert meal
       const { data: meal, error: mealErr } = await supabase
         .from('meals')
         .insert({
@@ -450,11 +492,10 @@ export default function PlanMeal({ appUser }) {
 
       if (mealErr) throw mealErr
 
-      // 2. Insert meal_recipes
       const mealRecipeRows = recipes.map((r, i) => ({
         meal_id: meal.id,
         recipe_id: r.id,
-        role: r.role.trim() || null,
+        role: null,
         sort_order: i,
         is_swappable: r.alternatives && r.alternatives.length > 0,
       }))
@@ -466,17 +507,12 @@ export default function PlanMeal({ appUser }) {
 
       if (mrErr) throw mrErr
 
-      // 3. Insert alternatives for each meal_recipe that has them
       const altRows = []
       for (const mr of insertedMR) {
-        const slotIndex = mr.sort_order
-        const slot = recipes[slotIndex]
+        const slot = recipes[mr.sort_order]
         if (slot && slot.alternatives && slot.alternatives.length > 0) {
           for (const alt of slot.alternatives) {
-            altRows.push({
-              meal_recipe_id: mr.id,
-              recipe_id: alt.id,
-            })
+            altRows.push({ meal_recipe_id: mr.id, recipe_id: alt.id })
           }
         }
       }
@@ -488,7 +524,6 @@ export default function PlanMeal({ appUser }) {
         if (altErr) throw altErr
       }
 
-      // 4. If adding to this week — find or create meal plan, then insert planned_meal
       if (addToWeek && selectedDay !== null) {
         const weekStart = getWeekStartTZ(tz, 0)
         const weekEnd = toLocalDateStr(weekDates[6])
@@ -530,7 +565,6 @@ export default function PlanMeal({ appUser }) {
 
         if (pmErr) throw pmErr
 
-        // Update last_used_at for chosen alternatives
         for (const [slotIdx, chosenId] of Object.entries(weekChoices)) {
           const mr = insertedMR.find(m => m.sort_order === Number(slotIdx))
           if (!mr) continue
@@ -558,7 +592,6 @@ export default function PlanMeal({ appUser }) {
       margin: '0 auto', fontFamily: "'Jost', sans-serif",
       paddingBottom: '140px',
     }}>
-      {/* Topbar */}
       <TopBar
         leftAction={{
           icon: (
@@ -598,157 +631,201 @@ export default function PlanMeal({ appUser }) {
         {/* ── Section 2: Recipes ────────────────────────────────────────── */}
         <div style={{ opacity: 0, animation: 'fadeUp 0.4s ease 0.10s forwards' }}>
           <div style={{
-            fontSize: '10px', letterSpacing: '1.5px', textTransform: 'uppercase',
-            color: C.driftwood, fontWeight: 500, marginBottom: '10px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            marginBottom: '10px',
           }}>
-            Recipes
+            <div style={{
+              fontSize: '10px', letterSpacing: '1.5px', textTransform: 'uppercase',
+              color: C.driftwood, fontWeight: 500,
+            }}>
+              Recipes
+            </div>
+            {recipes.length >= 2 && (
+              <button
+                onClick={() => setReordering(v => !v)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  fontFamily: "'Jost', sans-serif", fontSize: '11px',
+                  color: reordering ? C.forest : C.driftwood,
+                  fontWeight: reordering ? 500 : 400, padding: 0,
+                }}
+              >
+                {reordering ? 'Done' : 'Reorder'}
+              </button>
+            )}
           </div>
 
           {/* Added recipes */}
           {recipes.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
-              {recipes.map((r, i) => (
-                <div key={r.id} style={{
-                  background: 'white', borderRadius: '12px',
-                  padding: '12px 14px',
-                  border: `1px solid ${C.linen}`,
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{
-                          fontFamily: "'Playfair Display', serif", fontSize: '15px',
-                          fontWeight: 500, color: C.ink,
-                        }}>
-                          {r.name}
-                        </span>
-                        {r.isQuick && (
-                          <span style={{
-                            fontSize: '9px', fontWeight: 500, color: C.honey,
-                            background: 'rgba(196,154,60,0.12)', borderRadius: '4px',
-                            padding: '1px 5px',
-                          }}>Quick item</span>
-                        )}
-                        {r.alternatives && r.alternatives.length > 0 && (
-                          <span style={{
-                            fontSize: '9px', fontWeight: 500, color: C.sage,
-                            background: 'rgba(122,140,110,0.12)', borderRadius: '4px',
-                            padding: '1px 5px',
-                          }}>&#8597; {r.alternatives.length + 1} options</span>
-                        )}
-                      </div>
-                      {r.credit && (
-                        <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, marginTop: '1px' }}>
-                          {r.credit}
-                        </div>
-                      )}
-                      {/* Role input — only show when 2+ recipes */}
-                      {recipes.length >= 2 && (
-                        <input
-                          type="text"
-                          value={r.role}
-                          onChange={e => handleRoleChange(r.id, e.target.value)}
-                          placeholder="role (optional)"
-                          style={{
-                            marginTop: '6px', padding: '4px 0',
-                            fontSize: '12px', fontFamily: "'Jost', sans-serif", fontWeight: 300,
-                            background: 'none', border: 'none',
-                            borderBottom: `1px solid ${C.linen}`,
-                            outline: 'none', color: C.driftwoodSm,
-                            width: '120px',
-                          }}
-                        />
-                      )}
-                    </div>
-                    {/* Remove button */}
-                    <button
-                      onClick={() => handleRemoveRecipe(r.id)}
-                      style={{
-                        width: '30px', height: '30px', borderRadius: '50%',
-                        background: 'none', border: `1px solid ${C.linen}`,
-                        cursor: 'pointer', display: 'flex',
-                        alignItems: 'center', justifyContent: 'center',
-                        flexShrink: 0, color: C.driftwood,
-                      }}
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
-                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                      </svg>
-                    </button>
-                  </div>
-
-                  {/* Alternatives list */}
-                  {r.alternatives && r.alternatives.length > 0 && (
-                    <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: `1px solid ${C.linen}` }}>
-                      <div style={{ fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '6px' }}>
-                        Alternatives
-                      </div>
-                      {r.alternatives.map(alt => (
-                        <div key={alt.id} style={{
-                          display: 'flex', alignItems: 'center', gap: '8px',
-                          padding: '4px 0',
-                        }}>
-                          <span style={{ fontSize: '13px', color: C.ink, fontWeight: 300, flex: 1 }}>
-                            {alt.name}
-                            {alt.isQuick && (
-                              <span style={{ fontSize: '9px', color: C.honey, marginLeft: '4px' }}>Quick</span>
-                            )}
-                          </span>
-                          <button
-                            onClick={() => handleRemoveAlt(i, alt.id)}
-                            style={{
-                              background: 'none', border: 'none', cursor: 'pointer',
-                              color: C.driftwood, padding: '2px', display: 'flex',
-                            }}
-                          >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}>
-                              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Add alternative link */}
-                  <button
-                    onClick={() => { setAltPickerSlot(i); setPickerOpen(true) }}
+            <div
+              ref={listRef}
+              onTouchMove={reordering ? handleTouchMove : undefined}
+              onTouchEnd={reordering ? handleTouchEnd : undefined}
+              style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}
+            >
+              {recipes.map((r, i) => {
+                const hasAlts = r.alternatives && r.alternatives.length > 0
+                const isDragging = dragIdx === i
+                const isOver = overIdx === i && dragIdx !== i
+                return (
+                  <div
+                    key={r.id}
+                    draggable={reordering}
+                    onDragStart={reordering ? () => handleDragStart(i) : undefined}
+                    onDragOver={reordering ? (e) => handleDragOver(e, i) : undefined}
+                    onDrop={reordering ? () => handleDrop(i) : undefined}
+                    onDragEnd={reordering ? handleDragEnd : undefined}
+                    onTouchStart={reordering ? (e) => handleTouchStart(e, i) : undefined}
                     style={{
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      fontFamily: "'Jost', sans-serif", fontSize: '11px',
-                      color: C.sage, fontWeight: 400, padding: '6px 0 0',
-                      textAlign: 'left',
+                      background: 'white', borderRadius: '12px',
+                      padding: '12px 14px',
+                      border: `1px solid ${isOver ? C.forest : C.linen}`,
+                      borderLeft: hasAlts ? `3px solid ${C.honey}` : `1px solid ${isOver ? C.forest : C.linen}`,
+                      opacity: isDragging ? 0.5 : 1,
+                      transition: 'border-color 0.15s, opacity 0.15s',
                     }}
                   >
-                    + Add alternative
-                  </button>
-                </div>
-              ))}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      {/* Drag handle in reorder mode */}
+                      {reordering && (
+                        <span style={{
+                          fontSize: '16px', color: C.driftwood, cursor: 'grab',
+                          userSelect: 'none', lineHeight: 1, flexShrink: 0,
+                        }}>
+                          &#9776;
+                        </span>
+                      )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {hasAlts && (
+                            <span style={{ fontSize: '13px', color: C.honey, flexShrink: 0 }}>&#8597;</span>
+                          )}
+                          <span style={{
+                            fontFamily: "'Playfair Display', serif", fontSize: '15px',
+                            fontWeight: 600, color: C.ink,
+                          }}>
+                            {r.name}
+                          </span>
+                          {r.isQuick && (
+                            <span style={{
+                              fontSize: '9px', fontWeight: 500, color: C.honey,
+                              background: 'rgba(196,154,60,0.12)', borderRadius: '4px',
+                              padding: '1px 5px',
+                            }}>Quick item</span>
+                          )}
+                        </div>
+                        {r.credit && (
+                          <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, marginTop: '1px' }}>
+                            {r.credit}
+                          </div>
+                        )}
+                      </div>
+                      {/* Remove button — hidden in reorder mode */}
+                      {!reordering && (
+                        <button
+                          onClick={() => handleRemoveRecipe(r.id)}
+                          style={{
+                            width: '30px', height: '30px', borderRadius: '50%',
+                            background: 'none', border: `1px solid ${C.linen}`,
+                            cursor: 'pointer', display: 'flex',
+                            alignItems: 'center', justifyContent: 'center',
+                            flexShrink: 0, color: C.driftwood,
+                          }}
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Alternatives — only visible outside reorder mode */}
+                    {!reordering && hasAlts && (
+                      <div style={{ marginTop: '10px' }}>
+                        {r.alternatives.map(alt => (
+                          <div key={alt.id}>
+                            {/* OR divider */}
+                            <div style={{
+                              display: 'flex', alignItems: 'center', gap: '10px',
+                              margin: '6px 0',
+                            }}>
+                              <div style={{ flex: 1, height: '1px', background: C.linen }} />
+                              <span style={{ fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500 }}>
+                                or
+                              </span>
+                              <div style={{ flex: 1, height: '1px', background: C.linen }} />
+                            </div>
+                            <div style={{
+                              display: 'flex', alignItems: 'center', gap: '8px',
+                              paddingLeft: '10px',
+                            }}>
+                              <span style={{ fontSize: '14px', color: C.ink, fontWeight: 300, flex: 1 }}>
+                                {alt.name}
+                                {alt.isQuick && (
+                                  <span style={{ fontSize: '9px', color: C.honey, marginLeft: '4px' }}>Quick</span>
+                                )}
+                              </span>
+                              <button
+                                onClick={() => handleRemoveAlt(i, alt.id)}
+                                style={{
+                                  background: 'none', border: 'none', cursor: 'pointer',
+                                  color: C.driftwood, padding: '2px', display: 'flex',
+                                }}
+                              >
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}>
+                                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Add alternative link — hidden in reorder mode */}
+                    {!reordering && (
+                      <button
+                        onClick={() => { setAltPickerSlot(i); setPickerOpen(true) }}
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          fontFamily: "'Jost', sans-serif", fontSize: '11px',
+                          color: C.sage, fontWeight: 400,
+                          padding: hasAlts ? '6px 0 0 10px' : '6px 0 0',
+                          textAlign: 'left',
+                        }}
+                      >
+                        + Add alternative
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
 
-          {/* Add recipe button */}
-          <button
-            onClick={() => { setAltPickerSlot(null); setPickerOpen(true) }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              padding: '12px 16px', borderRadius: '12px',
-              border: `1.5px dashed ${C.linen}`, background: 'none',
-              cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-              fontSize: '14px', color: C.forest, fontWeight: 400,
-              width: '100%',
-            }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ width: 18, height: 18 }}>
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            Add a recipe
-          </button>
+          {/* Add recipe button — hidden in reorder mode */}
+          {!reordering && (
+            <button
+              onClick={() => { setAltPickerSlot(null); setPickerOpen(true) }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '12px 16px', borderRadius: '12px',
+                border: `1.5px dashed ${C.linen}`, background: 'none',
+                cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+                fontSize: '14px', color: C.forest, fontWeight: 400,
+                width: '100%',
+              }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ width: 18, height: 18 }}>
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Add a recipe
+            </button>
+          )}
         </div>
 
         {/* ── Section 3: Add to This Week ──────────────────────────────── */}
         <div style={{ opacity: 0, animation: 'fadeUp 0.4s ease 0.14s forwards' }}>
-          {/* Toggle */}
           <button
             onClick={() => { setAddToWeek(v => !v); if (addToWeek) { setSelectedDay(null); setWeekChoices({}) } }}
             style={{
@@ -777,7 +854,13 @@ export default function PlanMeal({ appUser }) {
             </span>
           </button>
 
-          {/* Day picker */}
+          {/* Hint when toggle is off */}
+          {!addToWeek && (
+            <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, marginTop: '6px', paddingLeft: '50px' }}>
+              You can also add this to a week later
+            </div>
+          )}
+
           {addToWeek && (
             <>
               <div style={{
@@ -813,14 +896,14 @@ export default function PlanMeal({ appUser }) {
                 })}
               </div>
 
-              {/* ── Weekly confirmation picker for slots with alternatives ── */}
+              {/* Weekly confirmation picker for slots with alternatives */}
               {slotsWithAlts.length > 0 && selectedDay !== null && (
                 <div style={{
                   marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px',
                 }}>
                   {recipes.map((r, slotIdx) => {
                     if (!r.alternatives || r.alternatives.length === 0) return null
-                    const roleName = r.role || r.name.toLowerCase()
+                    const roleName = r.name.toLowerCase()
                     const options = [
                       { id: r.id, name: r.name },
                       ...r.alternatives.map(a => ({ id: a.id, name: a.name })),
