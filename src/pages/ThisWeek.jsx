@@ -1305,7 +1305,6 @@ function ProteinRoster({ proteins, open, onToggle, onAdd, onEdit, onDelete }) {
 
 // ── Day Row ────────────────────────────────────────────────────────────────────
 function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, otherMeals, tradition, savedDayType, animDelay, onOpenSheet, expanded, mealCount, onToggleExpand }) {
-  const [otherExpanded, setOtherExpanded] = useState(false)
   const dayType  = getDayType(date.getDay(), savedDayType)
   const dayName  = isToday ? 'Today' : dowKey.charAt(0).toUpperCase() + dowKey.slice(1)
   const isOpenEv = dinner?.note === 'open_evening'
@@ -1359,7 +1358,7 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, o
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {mealCount > 0 && (
             <span style={{ fontSize: '12px', color: C.driftwood, fontWeight: 300 }}>
-              {mealCount} meal{mealCount !== 1 ? 's' : ''}
+              {mealCount} item{mealCount !== 1 ? 's' : ''} planned
             </span>
           )}
           <svg viewBox="0 0 24 24" fill="none" stroke={C.linen} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
@@ -1437,29 +1436,30 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, o
         </div>
       </div>
 
-      {/* Body */}
-      <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {/* Dinner label */}
-        <div style={{
-          fontSize: '9px', fontWeight: 500, letterSpacing: '1.8px', textTransform: 'uppercase',
-          color: isToday ? 'rgba(255,255,255,0.5)' : C.driftwoodSm,
-        }}>
-          Dinner
+      {/* Body — all four slots */}
+      <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+
+        {/* ── Dinner (dominant) ─────────────────────────────────────── */}
+        <div>
+          <div style={{
+            fontSize: '9px', fontWeight: 500, letterSpacing: '1.8px', textTransform: 'uppercase',
+            color: C.driftwoodSm, marginBottom: '6px',
+          }}>
+            Dinner
+          </div>
+          {isOpenEv ? (
+            <OpenDaySlot onAdd={() => onOpenSheet(dayName, 'Dinner', toDateStr(date))} />
+          ) : hasDinner ? (
+            <FilledMealCard meal={dinner} onSwap={() => onOpenSheet(dayName, 'Dinner', toDateStr(date), false, dinner.id)} />
+          ) : (
+            <EmptyDinnerSlot
+              onTap={() => onOpenSheet(dayName, 'Dinner', toDateStr(date))}
+              onSage={() => onOpenSheet(dayName, 'Dinner', toDateStr(date), true)}
+            />
+          )}
         </div>
 
-        {/* Dinner slot */}
-        {isOpenEv ? (
-          <OpenDaySlot onAdd={() => onOpenSheet(dayName, 'Dinner', toDateStr(date))} />
-        ) : hasDinner ? (
-          <FilledMealCard meal={dinner} onSwap={() => onOpenSheet(dayName, 'Dinner', toDateStr(date), false, dinner.id)} />
-        ) : (
-          <EmptyDinnerSlot
-            onTap={()      => onOpenSheet(dayName, 'Dinner', toDateStr(date))}
-            onSage={()     => onOpenSheet(dayName, 'Dinner', toDateStr(date), true)}
-          />
-        )}
-
-        {/* Light slots: Breakfast + Lunch */}
+        {/* ── Breakfast + Lunch (secondary, side by side) ──────────── */}
         <div style={{ display: 'flex', gap: '7px' }}>
           <LightSlot
             label="Breakfast"
@@ -1473,23 +1473,31 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, o
           />
         </div>
 
-        {/* Everything else — collapsed by default */}
-        {otherExpanded ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <div style={{
-              fontSize: '9px', fontWeight: 500, letterSpacing: '1.8px', textTransform: 'uppercase',
-              color: C.driftwoodSm, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            }}>
-              <span>Everything else</span>
-              <button onClick={() => setOtherExpanded(false)} style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                fontSize: '11px', color: C.driftwood, fontWeight: 300,
-                fontFamily: "'Jost', sans-serif", padding: 0,
-              }}>Hide</button>
+        {/* ── Everything else (full slot) ──────────────────────────── */}
+        <div>
+          <div style={{
+            fontSize: '9px', fontWeight: 500, letterSpacing: '1.8px', textTransform: 'uppercase',
+            color: C.driftwoodSm, marginBottom: '6px',
+          }}>
+            Everything else
+          </div>
+          {otherMeals.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {otherMeals.map(m => (
+                <FilledMealCard key={m.id} meal={m} onSwap={() => onOpenSheet(dayName, 'Everything else', toDateStr(date), false, m.id)} />
+              ))}
+              <button
+                onClick={() => onOpenSheet(dayName, 'Everything else', toDateStr(date))}
+                style={{
+                  background: 'none', border: `1px dashed ${C.linen}`, borderRadius: '8px',
+                  padding: '8px', cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+                  fontSize: '12px', color: C.driftwood, fontWeight: 300, width: '100%',
+                }}
+              >
+                + Add
+              </button>
             </div>
-            {otherMeals.map(m => (
-              <FilledMealCard key={m.id} meal={m} onSwap={() => onOpenSheet(dayName, 'Everything else', toDateStr(date), false, m.id)} />
-            ))}
+          ) : (
             <button
               onClick={() => onOpenSheet(dayName, 'Everything else', toDateStr(date))}
               style={{
@@ -1500,26 +1508,8 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, o
             >
               + Add
             </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => otherMeals.length > 0 ? setOtherExpanded(true) : onOpenSheet(dayName, 'Everything else', toDateStr(date))}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              fontFamily: "'Jost', sans-serif", fontSize: '11px',
-              color: C.driftwood, fontWeight: 300, padding: '4px 0 0',
-              textAlign: 'left', display: 'flex', alignItems: 'center', gap: '4px',
-            }}
-          >
-            <span style={{ fontSize: '13px', lineHeight: 1 }}>+</span>
-            Everything else
-            {otherMeals.length > 0 && (
-              <span style={{ fontSize: '10px', color: C.sage, marginLeft: '4px' }}>
-                ({otherMeals.length})
-              </span>
-            )}
-          </button>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )
