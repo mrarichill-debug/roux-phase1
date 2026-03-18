@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
+import AddToPlanSheet from '../components/AddToPlanSheet'
 
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
@@ -17,6 +18,7 @@ export default function SavedMeals({ appUser }) {
   const navigate = useNavigate()
   const [meals, setMeals] = useState(null)
   const [search, setSearch] = useState('')
+  const [planSheetMeal, setPlanSheetMeal] = useState(null)
 
   useEffect(() => {
     if (!appUser?.household_id) return
@@ -131,31 +133,54 @@ export default function SavedMeals({ appUser }) {
                       .filter(Boolean)
 
                     return (
-                      <button
+                      <div
                         key={meal.id}
-                        onClick={() => navigate(`/meals/plan/${meal.id}`)}
                         style={{
                           background: 'white', borderRadius: '14px', padding: '16px',
                           border: '1px solid #E4DDD2',
-                          cursor: 'pointer', textAlign: 'left', width: '100%',
                           opacity: 0, animation: `fadeUp 0.4s ease ${0.04 * i}s forwards`,
                         }}
                       >
-                        <div style={{
-                          fontFamily: "'Playfair Display', serif", fontSize: '18px',
-                          fontWeight: 500, color: C.ink,
-                        }}>
-                          {meal.name}
-                        </div>
-                        {recipeNames.length > 0 && (
+                        <button
+                          onClick={() => navigate(`/meals/plan/${meal.id}`)}
+                          style={{
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            textAlign: 'left', width: '100%', padding: 0,
+                            fontFamily: "'Jost', sans-serif",
+                          }}
+                        >
                           <div style={{
-                            fontSize: '12px', color: C.driftwood, fontWeight: 300,
-                            marginTop: '4px', lineHeight: 1.4,
+                            fontFamily: "'Playfair Display', serif", fontSize: '18px',
+                            fontWeight: 500, color: C.ink,
                           }}>
-                            {recipeNames.join(' · ')}
+                            {meal.name}
                           </div>
-                        )}
-                      </button>
+                          {recipeNames.length > 0 && (
+                            <div style={{
+                              fontSize: '12px', color: C.driftwood, fontWeight: 300,
+                              marginTop: '4px', lineHeight: 1.4,
+                            }}>
+                              {recipeNames.join(' · ')}
+                            </div>
+                          )}
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setPlanSheetMeal({ id: meal.id, name: meal.name }) }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '5px',
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            fontFamily: "'Jost', sans-serif", fontSize: '11px',
+                            color: C.forest, fontWeight: 400, padding: '8px 0 0',
+                          }}
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13 }}>
+                            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+                            <line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/>
+                            <line x1="3" x2="21" y1="10" y2="10"/>
+                          </svg>
+                          Add to plan
+                        </button>
+                      </div>
                     )
                   })}
                 </div>
@@ -164,6 +189,14 @@ export default function SavedMeals({ appUser }) {
           )
         })()}
       </div>
+
+      <AddToPlanSheet
+        open={!!planSheetMeal}
+        onClose={() => setPlanSheetMeal(null)}
+        meal={planSheetMeal}
+        appUser={appUser}
+        onSuccess={() => setPlanSheetMeal(null)}
+      />
 
       <BottomNav activeTab="meals" />
     </div>

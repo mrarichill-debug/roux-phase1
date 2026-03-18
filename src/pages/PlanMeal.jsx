@@ -6,9 +6,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { getWeekDatesTZ, getWeekStartTZ, toLocalDateStr } from '../lib/dateUtils'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
+import AddToPlanSheet from '../components/AddToPlanSheet'
 
 const C = {
   forest: '#3D6B4F', forestDk: '#2E5038',
@@ -18,8 +18,6 @@ const C = {
   honey: '#C49A3C', red: '#A03030',
 }
 
-const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
 
 // ── Recipe Picker Bottom Sheet ──────────────────────────────────────────────
 function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
@@ -400,26 +398,24 @@ export default function PlanMeal({ appUser }) {
   // Form state
   const [mealName, setMealName] = useState('')
   const [recipes, setRecipes] = useState([])
-  const [addToWeek, setAddToWeek] = useState(false)
-  const [selectedDay, setSelectedDay] = useState(null)
   const [notes, setNotes] = useState('')
   const [pickerOpen, setPickerOpen] = useState(false)
   const [altPickerSlot, setAltPickerSlot] = useState(null)
   const [loadingEdit, setLoadingEdit] = useState(isEditMode)
+
+  // Add to plan
+  const [addToPlanAfterSave, setAddToPlanAfterSave] = useState(false)
+  const [planSheetOpen, setPlanSheetOpen] = useState(false)
+  const [savedMealForPlan, setSavedMealForPlan] = useState(null)
 
   // Reorder mode
   const [reordering, setReordering] = useState(false)
   const [dragIdx, setDragIdx] = useState(null)
   const [overIdx, setOverIdx] = useState(null)
 
-  // Weekly confirmation — { [slotIndex]: recipeId }
-  const [weekChoices, setWeekChoices] = useState({})
-
   // Save state
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null)
-
-  const weekDates = getWeekDatesTZ(tz, 0)
 
   // ── Load existing meal in edit mode ─────────────────────────────────
   useEffect(() => {
@@ -464,21 +460,6 @@ export default function PlanMeal({ appUser }) {
             alternatives: alts,
           }
         }))
-      }
-
-      // Check if meal is on the current week plan
-      const weekStart = getWeekStartTZ(tz, 0)
-      const { data: pm } = await supabase
-        .from('planned_meals')
-        .select('day_of_week, meal_plan_id, meal_plans!inner(week_start_date)')
-        .eq('meal_id', editMealId)
-        .eq('meal_plans.week_start_date', weekStart)
-        .maybeSingle()
-
-      if (pm) {
-        setAddToWeek(true)
-        const dayIdx = DAY_KEYS.indexOf(pm.day_of_week)
-        if (dayIdx >= 0) setSelectedDay(dayIdx)
       }
 
       setLoadingEdit(false)
@@ -580,9 +561,6 @@ export default function PlanMeal({ appUser }) {
   }
 
   const canSave = mealName.trim().length > 0 && recipes.length > 0
-    && (!addToWeek || selectedDay !== null)
-
-  const slotsWithAlts = addToWeek ? recipes.filter(r => r.alternatives && r.alternatives.length > 0) : []
 
   async function handleSave() {
     if (!canSave || saving) return
@@ -654,64 +632,13 @@ export default function PlanMeal({ appUser }) {
         if (altErr) throw altErr
       }
 
-      if (addToWeek && selectedDay !== null) {
-        const weekStart = getWeekStartTZ(tz, 0)
-        const weekEnd = toLocalDateStr(weekDates[6])
-
-        let { data: plan } = await supabase
-          .from('meal_plans')
-          .select('id')
-          .eq('household_id', appUser.household_id)
-          .eq('week_start_date', weekStart)
-          .maybeSingle()
-
-        if (!plan) {
-          const { data: newPlan, error: planErr } = await supabase
-            .from('meal_plans')
-            .insert({
-              household_id: appUser.household_id,
-              created_by: appUser.id,
-              week_start_date: weekStart,
-              week_end_date: weekEnd,
-              status: 'draft',
-            })
-            .select('id')
-            .single()
-
-          if (planErr) throw planErr
-          plan = newPlan
-        }
-
-        // Remove any existing planned_meal for this meal on this week before re-adding
-        if (isEditMode) {
-          await supabase.from('planned_meals')
-            .delete()
-            .eq('meal_id', mealId)
-            .eq('meal_plan_id', plan.id)
-        }
-
-        const { error: pmErr } = await supabase
-          .from('planned_meals')
-          .insert({
-            household_id: appUser.household_id,
-            meal_plan_id: plan.id,
-            day_of_week: DAY_KEYS[selectedDay],
-            meal_type: 'dinner',
-            slot_type: 'meal',
-            meal_id: mealId,
-          })
-
-        if (pmErr) throw pmErr
-
-        for (const [slotIdx, chosenId] of Object.entries(weekChoices)) {
-          const mr = insertedMR.find(m => m.sort_order === Number(slotIdx))
-          if (!mr) continue
-          await supabase
-            .from('meal_recipe_alternatives')
-            .update({ last_used_at: new Date().toISOString() })
-            .eq('meal_recipe_id', mr.id)
-            .eq('recipe_id', chosenId)
-        }
+      // If "add to plan after saving" toggle is on, open the sheet
+      if (!isEditMode && addToPlanAfterSave) {
+        setSavedMealForPlan({ id: mealId, name: mealName.trim() })
+        setToast('Meal saved.')
+        setSaving(false)
+        setTimeout(() => setPlanSheetOpen(true), 600)
+        return
       }
 
       setToast('Meal saved.')
@@ -980,126 +907,61 @@ export default function PlanMeal({ appUser }) {
           )}
         </div>
 
-        {/* ── Section 3: Add to This Week ──────────────────────────────── */}
+        {/* ── Section 3: Add to Plan ────────────────────────────────────── */}
         <div style={{ opacity: 0, animation: 'fadeUp 0.4s ease 0.14s forwards' }}>
-          <button
-            onClick={() => { setAddToWeek(v => !v); if (addToWeek) { setSelectedDay(null); setWeekChoices({}) } }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '10px',
-              background: 'none', border: 'none', cursor: 'pointer',
-              padding: 0, fontFamily: "'Jost', sans-serif",
-            }}
-          >
-            <div style={{
-              width: '40px', height: '22px', borderRadius: '11px',
-              background: addToWeek ? C.forest : C.linen,
-              position: 'relative', transition: 'background 0.2s',
-              flexShrink: 0,
-            }}>
-              <div style={{
-                width: '18px', height: '18px', borderRadius: '50%',
-                background: 'white',
-                position: 'absolute', top: '2px',
-                left: addToWeek ? '20px' : '2px',
-                transition: 'left 0.2s',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
-              }} />
-            </div>
-            <span style={{ fontSize: '14px', color: C.ink, fontWeight: 400 }}>
-              Add to this week's plan
-            </span>
-          </button>
-
-          {/* Hint when toggle is off */}
-          {!addToWeek && (
-            <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, marginTop: '6px', paddingLeft: '50px' }}>
-              You can also add this to a week later
-            </div>
-          )}
-
-          {addToWeek && (
+          {isEditMode ? (
+            /* Edit mode — persistent "Add to plan" button */
+            <button
+              onClick={() => { setSavedMealForPlan({ id: editMealId, name: mealName }); setPlanSheetOpen(true) }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '12px 16px', borderRadius: '12px',
+                border: `1.5px solid rgba(61,107,79,0.4)`, background: 'none',
+                cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+                fontSize: '14px', color: C.forest, fontWeight: 400,
+                width: '100%',
+              }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
+                <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+                <line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/>
+                <line x1="3" x2="21" y1="10" y2="10"/>
+              </svg>
+              Add to plan
+            </button>
+          ) : (
+            /* New meal — toggle */
             <>
-              <div style={{
-                display: 'flex', gap: '6px', marginTop: '14px',
-                flexWrap: 'wrap',
-              }}>
-                {DAY_LABELS.map((label, idx) => {
-                  const date = weekDates[idx]
-                  const dayNum = date.getDate()
-                  const sel = selectedDay === idx
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedDay(idx)}
-                      style={{
-                        display: 'flex', flexDirection: 'column', alignItems: 'center',
-                        gap: '2px', padding: '8px 0', width: '44px',
-                        borderRadius: '10px', cursor: 'pointer',
-                        border: sel ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
-                        background: sel ? 'rgba(61,107,79,0.08)' : 'white',
-                        fontFamily: "'Jost', sans-serif",
-                        transition: 'all 0.15s',
-                      }}
-                    >
-                      <span style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px', color: sel ? C.forest : C.driftwood, fontWeight: 500 }}>
-                        {label}
-                      </span>
-                      <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', color: sel ? C.forest : C.ink, fontWeight: 500 }}>
-                        {dayNum}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-
-              {/* Weekly confirmation picker for slots with alternatives */}
-              {slotsWithAlts.length > 0 && selectedDay !== null && (
+              <button
+                onClick={() => setAddToPlanAfterSave(v => !v)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  padding: 0, fontFamily: "'Jost', sans-serif",
+                }}
+              >
                 <div style={{
-                  marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px',
+                  width: '40px', height: '22px', borderRadius: '11px',
+                  background: addToPlanAfterSave ? C.forest : C.linen,
+                  position: 'relative', transition: 'background 0.2s',
+                  flexShrink: 0,
                 }}>
-                  {recipes.map((r, slotIdx) => {
-                    if (!r.alternatives || r.alternatives.length === 0) return null
-                    const options = [
-                      { id: r.id, name: r.name },
-                      ...r.alternatives.map(a => ({ id: a.id, name: a.name })),
-                    ]
-                    const chosen = weekChoices[slotIdx] || r.id
-                    return (
-                      <div key={slotIdx} style={{
-                        background: 'white', borderRadius: '10px',
-                        padding: '10px 14px', border: `1px solid ${C.linen}`,
-                      }}>
-                        <div style={{
-                          fontSize: '12px', color: C.driftwood, fontWeight: 400,
-                          marginBottom: '8px',
-                        }}>
-                          Which version this week?
-                        </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                          {options.map(opt => {
-                            const sel = chosen === opt.id
-                            return (
-                              <button
-                                key={opt.id}
-                                onClick={() => setWeekChoices(prev => ({ ...prev, [slotIdx]: opt.id }))}
-                                style={{
-                                  padding: '6px 14px', borderRadius: '20px',
-                                  border: sel ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
-                                  background: sel ? 'rgba(61,107,79,0.08)' : 'white',
-                                  color: sel ? C.forest : C.ink,
-                                  fontFamily: "'Jost', sans-serif", fontSize: '13px',
-                                  fontWeight: sel ? 500 : 400,
-                                  cursor: 'pointer', transition: 'all 0.15s',
-                                }}
-                              >
-                                {opt.name}
-                              </button>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    )
-                  })}
+                  <div style={{
+                    width: '18px', height: '18px', borderRadius: '50%',
+                    background: 'white',
+                    position: 'absolute', top: '2px',
+                    left: addToPlanAfterSave ? '20px' : '2px',
+                    transition: 'left 0.2s',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                  }} />
+                </div>
+                <span style={{ fontSize: '14px', color: C.ink, fontWeight: 400 }}>
+                  Add to plan after saving
+                </span>
+              </button>
+              {!addToPlanAfterSave && (
+                <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, marginTop: '6px', paddingLeft: '50px' }}>
+                  You can always add it to a week later
                 </div>
               )}
             </>
@@ -1179,6 +1041,15 @@ export default function PlanMeal({ appUser }) {
         onSelect={handleAddRecipe}
         addedIds={addedIds}
         appUser={appUser}
+      />
+
+      {/* ── Add to Plan Sheet ──────────────────────────────────────────── */}
+      <AddToPlanSheet
+        open={planSheetOpen}
+        onClose={() => setPlanSheetOpen(false)}
+        meal={savedMealForPlan}
+        appUser={appUser}
+        onSuccess={() => navigate(isEditMode ? '/meals/saved' : '/meals')}
       />
 
       <BottomNav activeTab="meals" />
