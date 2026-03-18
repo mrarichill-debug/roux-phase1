@@ -92,6 +92,7 @@ Full checklist with flags → `docs/BUILD-FLAGS.md`
 | `docs/COPY-RULES.md` | Writing any user-facing string — Sage voice, button copy, tone, home vs household |
 | `docs/BUILD-FLAGS.md` | Starting any build task — what's done, what's next, what must be fixed before launch |
 | `docs/PRODUCT-TIERS.md` | Making tier decisions — Free, Plus, Premium feature breakdown and enforcement notes |
+| `docs/USER-EDUCATION.md` | Pre-launch review — empty states, first-use tooltips, Sage education nudges per screen |
 
 ---
 
