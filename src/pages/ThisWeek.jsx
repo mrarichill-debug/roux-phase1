@@ -336,20 +336,49 @@ export default function ThisWeek({ appUser }) {
     try {
       const activePlan = await ensurePlan()
       if (!activePlan) return
+      const itemName = manualInput.trim()
+
+      // Find or create a quick recipe for this item
+      let { data: existing } = await supabase
+        .from('recipes')
+        .select('id')
+        .eq('household_id', appUser.household_id)
+        .eq('recipe_type', 'quick')
+        .ilike('name', itemName)
+        .limit(1)
+        .maybeSingle()
+
+      let recipeId
+      if (existing) {
+        recipeId = existing.id
+      } else {
+        const { data: newRecipe, error: recipeErr } = await supabase
+          .from('recipes')
+          .insert({
+            name: itemName,
+            household_id: appUser.household_id,
+            added_by: appUser.id,
+            recipe_type: 'quick',
+            status: 'complete',
+          })
+          .select('id')
+          .single()
+        if (recipeErr) throw recipeErr
+        recipeId = newRecipe.id
+      }
+
       const { error } = await supabase.from('planned_meals').insert({
         meal_plan_id: activePlan.id, household_id: appUser.household_id,
         day_of_week: sheetDow, meal_type: slotToMealType(sheetSlot),
-        slot_type: 'note', note: manualInput.trim(), status: 'planned',
+        slot_type: 'recipe', recipe_id: recipeId, status: 'planned',
       })
       if (error) throw error
-      const savedName = manualInput.trim()
       const savedMealType = slotToMealType(sheetSlot)
       const savedDow = sheetDow
-      console.log('[Roux] saveManualMeal success:', { name: savedName, mealType: savedMealType, dow: savedDow })
       closeSheet()
-      showToast(`Added ${savedName}`)
-      const freshMeals = await loadWeekData()
-      maybeShowRepeatPrompt(savedName, savedMealType, 'note', null, savedName, savedDow)
+      showToast(`Added ${itemName}`)
+      await loadWeekData()
+      maybeShowRepeatPrompt(itemName, savedMealType, 'recipe', recipeId, null, savedDow)
     } catch (err) {
       console.error('[Roux] saveManualMeal error:', err)
     }
