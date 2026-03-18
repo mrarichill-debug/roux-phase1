@@ -740,14 +740,14 @@ export default function ThisWeek({ appUser }) {
         {weekDates.map((date, i) => {
           const dowKey    = DOW_KEYS[date.getDay()]
           const isToday   = toDateStr(date) === todayStr && weekOffset === 0
-          const dinner    = getMealsForDay(dowKey, 'dinner')[0]   ?? null
-          const breakfast = getMealsForDay(dowKey, 'breakfast')[0] ?? null
-          const lunch     = getMealsForDay(dowKey, 'lunch')[0]    ?? null
-          const otherMeals = getMealsForDay(dowKey, 'other')
-          const allDayMeals = planMeals.filter(m => m.day_of_week === dowKey)
+          const dinnerMeals    = getMealsForDay(dowKey, 'dinner')
+          const breakfastMeals = getMealsForDay(dowKey, 'breakfast')
+          const lunchMeals     = getMealsForDay(dowKey, 'lunch')
+          const otherMeals     = getMealsForDay(dowKey, 'other')
+          const allDayMeals    = planMeals.filter(m => m.day_of_week === dowKey)
           // Tradition from household_traditions (by day_of_week), overridden by actual planned meal tradition
           const htTrad    = traditions.find(t => t.day_of_week === dowKey)
-          const tradition = dinner?.household_traditions ?? htTrad ?? null
+          const tradition = dinnerMeals[0]?.household_traditions ?? htTrad ?? null
           const expanded  = expandedDays.has(dowKey)
 
           return (
@@ -757,9 +757,9 @@ export default function ThisWeek({ appUser }) {
               dowKey={dowKey}
               isToday={isToday}
               isPastWeek={isPastWeek}
-              dinner={dinner}
-              breakfast={breakfast}
-              lunch={lunch}
+              dinnerMeals={dinnerMeals}
+              breakfastMeals={breakfastMeals}
+              lunchMeals={lunchMeals}
               otherMeals={otherMeals}
               tradition={tradition}
               savedDayType={savedDayTypes?.[dowKey] ?? null}
@@ -1304,11 +1304,60 @@ function ProteinRoster({ proteins, open, onToggle, onAdd, onEdit, onDelete }) {
 }
 
 // ── Day Row ────────────────────────────────────────────────────────────────────
-function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, otherMeals, tradition, savedDayType, animDelay, onOpenSheet, expanded, mealCount, onToggleExpand }) {
+function DayRow({ date, dowKey, isToday, isPastWeek, dinnerMeals, breakfastMeals, lunchMeals, otherMeals, tradition, savedDayType, animDelay, onOpenSheet, expanded, mealCount, onToggleExpand }) {
   const dayType  = getDayType(date.getDay(), savedDayType)
   const dayName  = isToday ? 'Today' : dowKey.charAt(0).toUpperCase() + dowKey.slice(1)
-  const isOpenEv = dinner?.note === 'open_evening'
-  const hasDinner= dinner && !isOpenEv
+  const dateStr  = toDateStr(date)
+
+  // Reusable multi-item slot renderer
+  function renderSlot(label, sheetSlotName, meals, isDominant) {
+    const isOpenEv = isDominant && meals.length === 1 && meals[0]?.note === 'open_evening'
+    return (
+      <div>
+        <div style={{
+          fontSize: '9px', fontWeight: 500, letterSpacing: '1.8px', textTransform: 'uppercase',
+          color: C.driftwoodSm, marginBottom: isDominant ? '6px' : '4px',
+        }}>
+          {label}
+        </div>
+        {isOpenEv ? (
+          <OpenDaySlot onAdd={() => onOpenSheet(dayName, sheetSlotName, dateStr)} />
+        ) : meals.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {meals.map(m => (
+              <FilledMealCard key={m.id} meal={m} onSwap={() => onOpenSheet(dayName, sheetSlotName, dateStr, false, m.id)} />
+            ))}
+            <button
+              onClick={() => onOpenSheet(dayName, sheetSlotName, dateStr)}
+              style={{
+                background: 'none', border: `1px dashed ${C.linen}`, borderRadius: '8px',
+                padding: isDominant ? '8px' : '6px', cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+                fontSize: '12px', color: C.driftwood, fontWeight: 300, width: '100%',
+              }}
+            >
+              + Add another
+            </button>
+          </div>
+        ) : isDominant ? (
+          <EmptyDinnerSlot
+            onTap={() => onOpenSheet(dayName, sheetSlotName, dateStr)}
+            onSage={() => onOpenSheet(dayName, sheetSlotName, dateStr, true)}
+          />
+        ) : (
+          <button
+            onClick={() => onOpenSheet(dayName, sheetSlotName, dateStr)}
+            style={{
+              background: 'none', border: `1px dashed ${C.linen}`, borderRadius: '8px',
+              padding: '6px', cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+              fontSize: '12px', color: C.driftwood, fontWeight: 300, width: '100%',
+            }}
+          >
+            + Add
+          </button>
+        )}
+      </div>
+    )
+  }
 
   // Collapsed row
   if (!expanded) {
@@ -1392,7 +1441,6 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, o
           cursor: 'pointer',
         }}
       >
-        {/* Left: day name + date + tradition */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <div style={{
             fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase',
@@ -1418,7 +1466,6 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, o
           )}
         </div>
 
-        {/* Right: day type badge + collapse chevron */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{
             fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px', textTransform: 'uppercase',
@@ -1438,78 +1485,18 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, o
 
       {/* Body — all four slots */}
       <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {renderSlot('Dinner', 'Dinner', dinnerMeals, true)}
 
-        {/* ── Dinner (dominant) ─────────────────────────────────────── */}
-        <div>
-          <div style={{
-            fontSize: '9px', fontWeight: 500, letterSpacing: '1.8px', textTransform: 'uppercase',
-            color: C.driftwoodSm, marginBottom: '6px',
-          }}>
-            Dinner
-          </div>
-          {isOpenEv ? (
-            <OpenDaySlot onAdd={() => onOpenSheet(dayName, 'Dinner', toDateStr(date))} />
-          ) : hasDinner ? (
-            <FilledMealCard meal={dinner} onSwap={() => onOpenSheet(dayName, 'Dinner', toDateStr(date), false, dinner.id)} />
-          ) : (
-            <EmptyDinnerSlot
-              onTap={() => onOpenSheet(dayName, 'Dinner', toDateStr(date))}
-              onSage={() => onOpenSheet(dayName, 'Dinner', toDateStr(date), true)}
-            />
-          )}
-        </div>
-
-        {/* ── Breakfast + Lunch (secondary, side by side) ──────────── */}
         <div style={{ display: 'flex', gap: '7px' }}>
-          <LightSlot
-            label="Breakfast"
-            meal={breakfast}
-            onTap={() => onOpenSheet(dayName, 'Breakfast', toDateStr(date), false, breakfast?.id || null)}
-          />
-          <LightSlot
-            label="Lunch"
-            meal={lunch}
-            onTap={() => onOpenSheet(dayName, 'Lunch', toDateStr(date), false, lunch?.id || null)}
-          />
+          <div style={{ flex: 1 }}>
+            {renderSlot('Breakfast', 'Breakfast', breakfastMeals, false)}
+          </div>
+          <div style={{ flex: 1 }}>
+            {renderSlot('Lunch', 'Lunch', lunchMeals, false)}
+          </div>
         </div>
 
-        {/* ── Everything else (full slot) ──────────────────────────── */}
-        <div>
-          <div style={{
-            fontSize: '9px', fontWeight: 500, letterSpacing: '1.8px', textTransform: 'uppercase',
-            color: C.driftwoodSm, marginBottom: '6px',
-          }}>
-            Everything else
-          </div>
-          {otherMeals.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {otherMeals.map(m => (
-                <FilledMealCard key={m.id} meal={m} onSwap={() => onOpenSheet(dayName, 'Everything else', toDateStr(date), false, m.id)} />
-              ))}
-              <button
-                onClick={() => onOpenSheet(dayName, 'Everything else', toDateStr(date))}
-                style={{
-                  background: 'none', border: `1px dashed ${C.linen}`, borderRadius: '8px',
-                  padding: '8px', cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-                  fontSize: '12px', color: C.driftwood, fontWeight: 300, width: '100%',
-                }}
-              >
-                + Add
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => onOpenSheet(dayName, 'Everything else', toDateStr(date))}
-              style={{
-                background: 'none', border: `1px dashed ${C.linen}`, borderRadius: '8px',
-                padding: '8px', cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-                fontSize: '12px', color: C.driftwood, fontWeight: 300, width: '100%',
-              }}
-            >
-              + Add
-            </button>
-          )}
-        </div>
+        {renderSlot('Everything else', 'Everything else', otherMeals, false)}
       </div>
     </div>
   )
