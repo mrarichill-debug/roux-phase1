@@ -324,7 +324,7 @@ export default function ThisWeek({ appUser }) {
       closeSheet()
       showToast(`Sage suggested ${pick.name}`)
       const freshMeals = await loadWeekData()
-      maybeShowRepeatPrompt(pick.name, savedMealType, 'recipe', pick.id, null, savedDow, freshMeals)
+      maybeShowRepeatPrompt(pick.name, savedMealType, 'recipe', pick.id, null, savedDow)
     } catch (err) {
       console.error('[Roux] sageSuggest error:', err)
     }
@@ -349,7 +349,7 @@ export default function ThisWeek({ appUser }) {
       closeSheet()
       showToast(`Added ${savedName}`)
       const freshMeals = await loadWeekData()
-      maybeShowRepeatPrompt(savedName, savedMealType, 'note', null, savedName, savedDow, freshMeals)
+      maybeShowRepeatPrompt(savedName, savedMealType, 'note', null, savedName, savedDow)
     } catch (err) {
       console.error('[Roux] saveManualMeal error:', err)
     }
@@ -398,18 +398,11 @@ export default function ThisWeek({ appUser }) {
     }
   }
 
-  // Check if repeat prompt should fire for breakfast/lunch saves
-  function maybeShowRepeatPrompt(mealName, mealType, slotType, recipeId, note, savedDow, freshMeals) {
-    console.log('[Roux] maybeShowRepeatPrompt:', { mealName, mealType, savedDow, freshMealsCount: freshMeals?.length })
-    if (mealType === 'dinner') return
-    // Use freshMeals (just loaded) to check for empty days — avoids stale closure
-    const meals = freshMeals || planMeals
-    const emptyDays = DOW_KEYS.filter(dow => {
-      if (dow === savedDow) return false
-      return !meals.some(m => m.day_of_week === dow && m.meal_type === mealType)
-    })
-    console.log('[Roux] emptyDays:', emptyDays)
-    if (emptyDays.length === 0) return
+  // Offer to add the same item to other days this week
+  function maybeShowRepeatPrompt(mealName, mealType, slotType, recipeId, note, savedDow) {
+    // Show for all slot types — slots support multiple items
+    const otherDays = DOW_KEYS.filter(dow => dow !== savedDow)
+    if (otherDays.length === 0) return
     setTimeout(() => {
       setRepeatPrompt({ mealName, mealType, slotType, recipeId, note, savedDow })
       setRepeatSelected(new Set())
@@ -423,17 +416,7 @@ export default function ThisWeek({ appUser }) {
     const { mealType, slotType, recipeId, note } = repeatPrompt
     const daysToWrite = [...repeatSelected]
 
-    // Re-check which slots are still empty
-    const { data: currentMeals } = await supabase
-      .from('planned_meals')
-      .select('day_of_week')
-      .eq('meal_plan_id', activePlan.id)
-      .eq('meal_type', mealType)
-    const filledDows = new Set((currentMeals ?? []).map(m => m.day_of_week))
-
-    const inserts = daysToWrite
-      .filter(dow => !filledDows.has(dow))
-      .map(dow => ({
+    const inserts = daysToWrite.map(dow => ({
         meal_plan_id: activePlan.id,
         household_id: appUser.household_id,
         day_of_week: dow,
@@ -1958,10 +1941,7 @@ function RepeatPromptSheet({ prompt, planMeals, weekDates, selected, onToggleDay
 
   // Derive day order from weekDates (respects user's week start — Mon-Sun or Sun-Sat)
   const orderedDows = weekDates.map(d => DOW_KEYS[d.getDay()])
-
-  // Determine which days are empty/filled for this meal type
-  const filledDows = new Set(planMeals.filter(m => m.meal_type === mealType).map(m => m.day_of_week))
-  const emptyDays = orderedDows.filter(dow => dow !== savedDow && !filledDows.has(dow))
+  const availableDays = orderedDows.filter(dow => dow !== savedDow)
 
   return (
     <div style={{
@@ -1983,43 +1963,36 @@ function RepeatPromptSheet({ prompt, planMeals, weekDates, selected, onToggleDay
 
         {/* Select all link */}
         <button
-          onClick={() => onSelectAll(emptyDays)}
+          onClick={() => onSelectAll(availableDays)}
           style={{
             background: 'none', border: 'none', cursor: 'pointer',
             fontSize: '12px', color: C.forest, fontWeight: 500,
             fontFamily: "'Jost', sans-serif", padding: '0 0 8px',
           }}
         >
-          Select all empty days
+          Select all days
         </button>
 
         {/* Day chips */}
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '18px' }}>
-          {orderedDows.map(dow => {
-            if (dow === savedDow) return null
-            const isFilled = filledDows.has(dow)
+          {availableDays.map(dow => {
             const isSelected = selected.has(dow)
             return (
               <button
                 key={dow}
-                onClick={isFilled ? undefined : () => onToggleDay(dow)}
-                disabled={isFilled}
+                onClick={() => onToggleDay(dow)}
                 style={{
                   width: '42px', height: '42px', borderRadius: '10px',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  gap: '2px', cursor: isFilled ? 'default' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer',
                   fontFamily: "'Jost', sans-serif", fontSize: '11px', fontWeight: 500,
                   border: isSelected ? `1.5px solid ${C.forest}` : '1.5px solid rgba(200,185,160,0.55)',
-                  background: isSelected ? C.forest : isFilled ? 'rgba(200,185,160,0.15)' : 'white',
-                  color: isSelected ? 'white' : isFilled ? 'rgba(200,185,160,0.6)' : C.ink,
+                  background: isSelected ? C.forest : 'white',
+                  color: isSelected ? 'white' : C.ink,
                   transition: 'all 0.15s',
-                  opacity: isFilled ? 0.5 : 1,
                 }}
               >
                 {DAY_LABELS_MAP[dow]}
-                {isFilled && (
-                  <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'rgba(200,185,160,0.5)' }} />
-                )}
               </button>
             )
           })}
