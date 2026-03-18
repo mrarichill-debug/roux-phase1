@@ -82,6 +82,29 @@ The store filter pills (All / Kroger / Costco) in the Building state topbar are 
 
 ---
 
+## Schema Notes
+
+### Traditions — Occurrence Model (added Mar 17, 2026)
+
+Traditions use an occurrence-based data model. Two new tables are live in Supabase:
+
+- **`tradition_occurrences`** — each time a tradition happens. Has a `date`, `label`, `notes`, and `is_sealed` flag that locks it as history once passed.
+- **`tradition_occurrence_meals`** — what was cooked at each occurrence. Links to `meal_id` or `recipe_id`. Has `is_anchor` boolean so meals can be promoted to permanent anchors from any occurrence.
+
+**Model summary:**
+
+- A **Tradition** is the thing itself (Christmas Dinner, Taco Tuesday)
+- An **Occurrence** is each time it happens (Christmas 2025, Taco Tuesday Mar 18)
+- **Anchor meals** (in `tradition_meals`) pre-populate each new occurrence as a starting point
+- **Occurrence meals** are what was actually cooked — anchors plus anything added for that occasion
+- **First-time flow:** no history → build first occurrence from scratch
+- **Returning flow:** show last occurrence → start from anchors → add and swap freely
+- `is_flexible` on `household_traditions` distinguishes recurring traditions (Taco Tuesday) from occasion traditions (Christmas Dinner)
+
+**Do not build the Traditions UI yet.** Schema is protected for future build.
+
+---
+
 ## Database & Data Gaps
 
 *Identified during full database audit — March 14, 2026.*
