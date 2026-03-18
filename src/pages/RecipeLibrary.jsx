@@ -428,7 +428,7 @@ export default function RecipeLibrary({ appUser }) {
               Selecting recipe for
             </div>
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', color: C.ink, fontWeight: 500 }}>
-              {dayLabel} {targetSlot}
+              {dayLabel} {targetSlot === 'other' ? 'Everything else' : targetSlot.charAt(0).toUpperCase() + targetSlot.slice(1)}
             </div>
           </div>
           <button

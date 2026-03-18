@@ -1897,7 +1897,7 @@ function BottomSheet({ open, dayName, slotName, dateStr, sagePrimary, mode, manu
               sub="Search or filter your recipe collection"
               onClick={() => {
                 onClose()
-                navigate('/meals/recipes', { state: { selectMode: true, targetDay: dateStr, targetSlot: slotName.toLowerCase() } })
+                navigate('/meals/recipes', { state: { selectMode: true, targetDay: dateStr, targetSlot: slotName === 'Everything else' ? 'other' : slotName.toLowerCase() } })
               }}
             />
             <SheetOption
