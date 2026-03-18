@@ -267,10 +267,10 @@ function AuthenticatedApp({ appUser }) {
         <Route path="/meals"         element={<Meals          appUser={appUser} />} />
         <Route path="/meals/recipes" element={<RecipeLibrary appUser={appUser} />} />
         <Route path="/meals/plan"    element={<PlanMeal       appUser={appUser} />} />
+        <Route path="/meals/plan/:id" element={<PlanMeal       appUser={appUser} />} />
         <Route path="/meals/traditions" element={<Sage        appUser={appUser} />} />
         <Route path="/meals/traditions/new" element={<Sage  appUser={appUser} />} />
         <Route path="/meals/saved"     element={<SavedMeals   appUser={appUser} />} />
-        <Route path="/meals/saved/:id" element={<Sage        appUser={appUser} />} />
         <Route path="/recipes"      element={<RecipeLibrary appUser={appUser} />} />
         <Route path="/recipe/:id"   element={<RecipeCard    appUser={appUser} />} />
         <Route path="/save-recipe"  element={<SaveRecipe    appUser={appUser} />} />

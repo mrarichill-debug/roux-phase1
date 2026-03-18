@@ -133,7 +133,7 @@ export default function SavedMeals({ appUser }) {
                     return (
                       <button
                         key={meal.id}
-                        onClick={() => navigate(`/meals/saved/${meal.id}`)}
+                        onClick={() => navigate(`/meals/plan/${meal.id}`)}
                         style={{
                           background: 'white', borderRadius: '14px', padding: '16px',
                           border: '1px solid #E4DDD2',

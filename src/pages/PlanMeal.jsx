@@ -4,7 +4,7 @@
  * Quick items are stored as recipe_type='quick' for cost tracking and autofill.
  */
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { getWeekDatesTZ, getWeekStartTZ, toLocalDateStr } from '../lib/dateUtils'
 import TopBar from '../components/TopBar'
@@ -393,10 +393,11 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
 // ── Main Component ──────────────────────────────────────────────────────────
 export default function PlanMeal({ appUser }) {
   const navigate = useNavigate()
+  const { id: editMealId } = useParams()
+  const isEditMode = !!editMealId
   const tz = appUser?.timezone || 'America/Chicago'
 
   // Form state
-  // Each recipe: { id, name, credit, isQuick, alternatives: [{ id, name, credit, isQuick }] }
   const [mealName, setMealName] = useState('')
   const [recipes, setRecipes] = useState([])
   const [addToWeek, setAddToWeek] = useState(false)
@@ -404,6 +405,7 @@ export default function PlanMeal({ appUser }) {
   const [notes, setNotes] = useState('')
   const [pickerOpen, setPickerOpen] = useState(false)
   const [altPickerSlot, setAltPickerSlot] = useState(null)
+  const [loadingEdit, setLoadingEdit] = useState(isEditMode)
 
   // Reorder mode
   const [reordering, setReordering] = useState(false)
@@ -418,6 +420,71 @@ export default function PlanMeal({ appUser }) {
   const [toast, setToast] = useState(null)
 
   const weekDates = getWeekDatesTZ(tz, 0)
+
+  // ── Load existing meal in edit mode ─────────────────────────────────
+  useEffect(() => {
+    if (!editMealId) return
+    async function load() {
+      // Fetch meal
+      const { data: meal, error: mealErr } = await supabase
+        .from('meals')
+        .select('id, name, description')
+        .eq('id', editMealId)
+        .maybeSingle()
+
+      if (mealErr || !meal) { console.error('[Roux] Edit meal fetch error:', mealErr); setLoadingEdit(false); return }
+
+      setMealName(meal.name)
+      setNotes(meal.description || '')
+
+      // Fetch meal_recipes with recipe details + alternatives
+      const { data: mrs } = await supabase
+        .from('meal_recipes')
+        .select('id, recipe_id, sort_order, is_swappable, recipes(id, name, author, credited_to_name, recipe_type, status), meal_recipe_alternatives(id, recipe_id, recipes(id, name, author, credited_to_name, recipe_type, status))')
+        .eq('meal_id', editMealId)
+        .order('sort_order')
+
+      if (mrs) {
+        setRecipes(mrs.map(mr => {
+          const r = mr.recipes
+          const alts = (mr.meal_recipe_alternatives || []).map(a => {
+            const ar = a.recipes
+            return {
+              id: ar.id, name: ar.name,
+              credit: ar.author || ar.credited_to_name || '',
+              isQuick: ar.recipe_type === 'quick',
+              isDraft: ar.status === 'draft',
+            }
+          })
+          return {
+            id: r.id, name: r.name,
+            credit: r.author || r.credited_to_name || '',
+            isQuick: r.recipe_type === 'quick',
+            isDraft: r.status === 'draft',
+            alternatives: alts,
+          }
+        }))
+      }
+
+      // Check if meal is on the current week plan
+      const weekStart = getWeekStartTZ(tz, 0)
+      const { data: pm } = await supabase
+        .from('planned_meals')
+        .select('day_of_week, meal_plan_id, meal_plans!inner(week_start_date)')
+        .eq('meal_id', editMealId)
+        .eq('meal_plans.week_start_date', weekStart)
+        .maybeSingle()
+
+      if (pm) {
+        setAddToWeek(true)
+        const dayIdx = DAY_KEYS.indexOf(pm.day_of_week)
+        if (dayIdx >= 0) setSelectedDay(dayIdx)
+      }
+
+      setLoadingEdit(false)
+    }
+    load()
+  }, [editMealId, tz])
 
   // All recipe IDs currently in the meal (primaries + alternatives)
   const addedIds = new Set()
@@ -522,21 +589,41 @@ export default function PlanMeal({ appUser }) {
     setSaving(true)
 
     try {
-      const { data: meal, error: mealErr } = await supabase
-        .from('meals')
-        .insert({
-          name: mealName.trim(),
-          household_id: appUser.household_id,
-          created_by: appUser.id,
-          description: notes.trim() || null,
-        })
-        .select('id')
-        .single()
+      let mealId
 
-      if (mealErr) throw mealErr
+      if (isEditMode) {
+        // ── Update existing meal ──────────────────────────────────────
+        const { error: mealErr } = await supabase
+          .from('meals')
+          .update({ name: mealName.trim(), description: notes.trim() || null })
+          .eq('id', editMealId)
 
+        if (mealErr) throw mealErr
+        mealId = editMealId
+
+        // Delete old meal_recipes (cascades to meal_recipe_alternatives)
+        await supabase.from('meal_recipes').delete().eq('meal_id', editMealId)
+
+      } else {
+        // ── Insert new meal ───────────────────────────────────────────
+        const { data: meal, error: mealErr } = await supabase
+          .from('meals')
+          .insert({
+            name: mealName.trim(),
+            household_id: appUser.household_id,
+            created_by: appUser.id,
+            description: notes.trim() || null,
+          })
+          .select('id')
+          .single()
+
+        if (mealErr) throw mealErr
+        mealId = meal.id
+      }
+
+      // ── Insert meal_recipes (fresh for both create and edit) ──────
       const mealRecipeRows = recipes.map((r, i) => ({
-        meal_id: meal.id,
+        meal_id: mealId,
         recipe_id: r.id,
         role: null,
         sort_order: i,
@@ -595,6 +682,14 @@ export default function PlanMeal({ appUser }) {
           plan = newPlan
         }
 
+        // Remove any existing planned_meal for this meal on this week before re-adding
+        if (isEditMode) {
+          await supabase.from('planned_meals')
+            .delete()
+            .eq('meal_id', mealId)
+            .eq('meal_plan_id', plan.id)
+        }
+
         const { error: pmErr } = await supabase
           .from('planned_meals')
           .insert({
@@ -603,7 +698,7 @@ export default function PlanMeal({ appUser }) {
             day_of_week: DAY_KEYS[selectedDay],
             meal_type: 'dinner',
             slot_type: 'meal',
-            meal_id: meal.id,
+            meal_id: mealId,
           })
 
         if (pmErr) throw pmErr
@@ -620,7 +715,7 @@ export default function PlanMeal({ appUser }) {
       }
 
       setToast('Meal saved.')
-      setTimeout(() => navigate('/meals'), 1200)
+      setTimeout(() => navigate(isEditMode ? '/meals/saved' : '/meals'), 1200)
 
     } catch (err) {
       console.error('[Roux] PlanMeal save error:', err)
@@ -642,15 +737,22 @@ export default function PlanMeal({ appUser }) {
               <path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/>
             </svg>
           ),
-          onClick: () => navigate('/meals'),
+          onClick: () => navigate(isEditMode ? '/meals/saved' : '/meals'),
         }}
         centerContent={
           <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>
-            Plan a Meal
+            {isEditMode ? 'Edit Meal' : 'Plan a Meal'}
           </span>
         }
       />
 
+      {loadingEdit ? (
+        <div style={{ padding: '20px 18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div className="shimmer-block" style={{ height: '48px', borderRadius: '12px' }} />
+          <div className="shimmer-block" style={{ height: '80px', borderRadius: '12px' }} />
+          <div className="shimmer-block" style={{ height: '44px', borderRadius: '12px' }} />
+        </div>
+      ) : (
       <div style={{ padding: '20px 18px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
         {/* ── Section 1: Meal Name ──────────────────────────────────────── */}
@@ -1030,6 +1132,7 @@ export default function PlanMeal({ appUser }) {
           />
         </div>
       </div>
+      )}
 
       {/* ── Pinned CTA ──────────────────────────────────────────────────── */}
       <div style={{
