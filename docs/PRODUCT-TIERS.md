@@ -14,6 +14,7 @@
 - Manual shopping list
 - Family Suggestions — household members can suggest meals to the planner
 - Day Types — default set only (School Day, Weekend, No School, Summer), editable but not custom
+- Weekly Proteins — basic entry (protein name per week plan)
 
 ---
 
@@ -43,7 +44,7 @@
 - Multiple shopping lists
 - Spending trend analysis
 - Utilization tracking — what gets cooked vs. bought
-- Weekly Proteins — protein tracking with sale price per week plan
+- Weekly Proteins — sale price tracking, spending trends, Sage protein suggestions
 
 ---
 

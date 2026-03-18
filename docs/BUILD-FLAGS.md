@@ -161,6 +161,14 @@ When a tradition is applied to a day (manually or via auto-scheduling), its anch
 
 Birthday traditions are auto-created for all non-pet family members: `tradition_type = 'annual'`, `planning_lead_days = 7`. When a new family member is added with a `date_of_birth`, a birthday tradition should be auto-created at that time. Schema supports this via `occasion_date` + `occasion_month` on `household_traditions`.
 
+### Tradition Auto-Scheduling on Week View — Not Yet Built (Mar 18, 2026)
+
+Traditions must be applied via the slot picker which creates a `planned_meals` row with `tradition_id`. Do not auto-display traditions based on `day_of_week` matching alone — this bypasses the plan and cannot be removed or edited properly. The previous auto-display shortcut (matching `household_traditions.day_of_week` to show tradition names on day cards) has been removed. Traditions now only appear on day cards when a `planned_meals` row with a `tradition_id` exists for that day.
+
+### Weekly Proteins — Tier Placement (Mar 18, 2026)
+
+Basic weekly protein entry (protein name per week plan) is a **Free** feature. The intelligence layer — sale price tracking, spending trends, Sage using proteins for meal suggestions — is **Premium**. No tier enforcement is built yet; this documents the intended split.
+
 ---
 
 ## Database & Data Gaps

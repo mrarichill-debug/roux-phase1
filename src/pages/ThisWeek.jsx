@@ -779,9 +779,8 @@ export default function ThisWeek({ appUser }) {
           const lunchMeals     = getMealsForDay(dowKey, 'lunch')
           const otherMeals     = getMealsForDay(dowKey, 'other')
           const allDayMeals    = planMeals.filter(m => m.day_of_week === dowKey)
-          // Tradition from household_traditions (by day_of_week), overridden by actual planned meal tradition
-          const htTrad    = traditions.find(t => t.day_of_week === dowKey)
-          const tradition = dinnerMeals[0]?.household_traditions ?? htTrad ?? null
+          // Tradition only from planned_meals with tradition_id — no auto-display from day_of_week matching
+          const tradition = allDayMeals.find(m => m.household_traditions)?.household_traditions ?? null
           const expanded  = expandedDays.has(dowKey)
 
           return (
