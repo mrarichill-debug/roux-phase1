@@ -136,6 +136,7 @@ export default function ThisWeek({ appUser }) {
   const [proteinFavorites,  setProteinFavorites]  = useState([])
   const [saveToUsuals,      setSaveToUsuals]      = useState(true)
   const [editingFavorites,  setEditingFavorites]  = useState(false)
+  const [expandedDays,      setExpandedDays]      = useState(new Set()) // dowKeys that are expanded
 
   const overlayRef = useRef(null)
   const tz         = appUser?.timezone ?? 'America/Chicago'
@@ -143,6 +144,16 @@ export default function ThisWeek({ appUser }) {
   const today      = new Date()
   const todayStr   = getTodayStr(tz)    // YYYY-MM-DD in user's timezone
   const isPastWeek = weekOffset < 0
+
+  // Auto-expand today when viewing current week
+  useEffect(() => {
+    if (weekOffset === 0) {
+      const todayDow = DOW_KEYS[getDayOfWeekTZ(tz)]
+      setExpandedDays(new Set([todayDow]))
+    } else {
+      setExpandedDays(new Set())
+    }
+  }, [weekOffset, tz])
 
   useEffect(() => {
     if (appUser?.household_id) {
@@ -690,6 +701,34 @@ export default function ThisWeek({ appUser }) {
         onDelete={deleteProtein}
       />
 
+      {/* ── Expand/Collapse All ──────────────────────────────────────────── */}
+      {(() => {
+        const allDowKeys = weekDates.map(d => DOW_KEYS[d.getDay()])
+        const allExpanded = allDowKeys.every(k => expandedDays.has(k))
+        const todayDow = weekOffset === 0 ? DOW_KEYS[getDayOfWeekTZ(tz)] : null
+        return (
+          <div style={{ padding: '0 24px 6px', display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              onClick={() => {
+                if (allExpanded) {
+                  // Collapse all except today
+                  setExpandedDays(todayDow ? new Set([todayDow]) : new Set())
+                } else {
+                  setExpandedDays(new Set(allDowKeys))
+                }
+              }}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontFamily: "'Jost', sans-serif", fontSize: '12px',
+                fontWeight: 300, color: C.forest, padding: 0,
+              }}
+            >
+              {allExpanded ? 'Collapse all' : 'Expand all'}
+            </button>
+          </div>
+        )
+      })()}
+
       {/* ── Day Rows ─────────────────────────────────────────────────────── */}
       <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: '12px', position: 'relative', zIndex: 1 }}>
         {weekDates.map((date, i) => {
@@ -698,9 +737,11 @@ export default function ThisWeek({ appUser }) {
           const dinner    = getMealsForDay(dowKey, 'dinner')[0]   ?? null
           const breakfast = getMealsForDay(dowKey, 'breakfast')[0] ?? null
           const lunch     = getMealsForDay(dowKey, 'lunch')[0]    ?? null
+          const allDayMeals = planMeals.filter(m => m.day_of_week === dowKey)
           // Tradition from household_traditions (by day_of_week), overridden by actual planned meal tradition
           const htTrad    = traditions.find(t => t.day_of_week === dowKey)
           const tradition = dinner?.household_traditions ?? htTrad ?? null
+          const expanded  = expandedDays.has(dowKey)
 
           return (
             <DayRow
@@ -716,6 +757,14 @@ export default function ThisWeek({ appUser }) {
               savedDayType={savedDayTypes?.[dowKey] ?? null}
               animDelay={`${0.06 + i * 0.05}s`}
               onOpenSheet={openSheet}
+              expanded={expanded}
+              mealCount={allDayMeals.length}
+              onToggleExpand={() => setExpandedDays(prev => {
+                const next = new Set(prev)
+                if (next.has(dowKey)) next.delete(dowKey)
+                else next.add(dowKey)
+                return next
+              })}
             />
           )
         })}
@@ -1247,12 +1296,72 @@ function ProteinRoster({ proteins, open, onToggle, onAdd, onEdit, onDelete }) {
 }
 
 // ── Day Row ────────────────────────────────────────────────────────────────────
-function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, tradition, savedDayType, animDelay, onOpenSheet }) {
+function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, tradition, savedDayType, animDelay, onOpenSheet, expanded, mealCount, onToggleExpand }) {
   const dayType  = getDayType(date.getDay(), savedDayType)
   const dayName  = isToday ? 'Today' : dowKey.charAt(0).toUpperCase() + dowKey.slice(1)
   const isOpenEv = dinner?.note === 'open_evening'
   const hasDinner= dinner && !isOpenEv
 
+  // Collapsed row
+  if (!expanded) {
+    return (
+      <button
+        onClick={onToggleExpand}
+        style={{
+          background: 'white',
+          border: isToday ? `1px solid ${C.forest}` : '1px solid rgba(200,185,160,0.55)',
+          borderRadius: '12px', overflow: 'hidden',
+          boxShadow: '0 1px 4px rgba(80,60,30,0.04)',
+          animation: `fadeUp 0.35s ease ${animDelay} both`,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 14px', cursor: 'pointer', width: '100%',
+          fontFamily: "'Jost', sans-serif", textAlign: 'left',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: '15px', fontWeight: 500, color: C.ink, lineHeight: 1, minWidth: '22px',
+          }}>
+            {date.getDate()}
+          </div>
+          <div style={{
+            fontSize: '11px', fontWeight: 400, color: C.driftwoodSm,
+            letterSpacing: '0.3px',
+          }}>
+            {dayName}
+          </div>
+          <div style={{
+            fontSize: '9px', fontWeight: 500, letterSpacing: '0.6px', textTransform: 'uppercase',
+            padding: '2px 6px', borderRadius: '4px',
+            background: dayType.bg, color: dayType.color,
+          }}>
+            {dayType.label}
+          </div>
+          {tradition && (
+            <div style={{
+              fontSize: '9px', fontWeight: 500, padding: '2px 6px', borderRadius: '4px',
+              background: 'rgba(196,154,60,0.12)', color: C.honey,
+            }}>
+              {tradition.name}
+            </div>
+          )}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {mealCount > 0 && (
+            <span style={{ fontSize: '12px', color: C.driftwood, fontWeight: 300 }}>
+              {mealCount} meal{mealCount !== 1 ? 's' : ''}
+            </span>
+          )}
+          <svg viewBox="0 0 24 24" fill="none" stroke={C.linen} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </div>
+      </button>
+    )
+  }
+
+  // Expanded card
   return (
     <div style={{
       background: 'white',
@@ -1264,13 +1373,17 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, t
       animation: `fadeUp 0.35s ease ${animDelay} both`,
     }}>
 
-      {/* Header */}
-      <div style={{
-        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-        padding: '11px 14px 10px',
-        borderBottom: isToday ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(200,185,160,0.35)',
-        background: isToday ? C.forest : 'transparent',
-      }}>
+      {/* Header — tappable to collapse */}
+      <div
+        onClick={onToggleExpand}
+        style={{
+          display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+          padding: '11px 14px 10px',
+          borderBottom: isToday ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(200,185,160,0.35)',
+          background: isToday ? C.forest : 'transparent',
+          cursor: 'pointer',
+        }}
+      >
         {/* Left: day name + date + tradition */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <div style={{
@@ -1288,8 +1401,8 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, t
           {tradition && (
             <div style={{
               fontSize: '9px', fontWeight: 500, padding: '3px 7px', borderRadius: '4px',
-              background: isToday ? 'rgba(255,255,255,0.15)' : 'rgba(139,111,82,0.10)',
-              color: isToday ? 'rgba(255,255,255,0.85)' : C.walnut,
+              background: isToday ? 'rgba(255,255,255,0.15)' : 'rgba(196,154,60,0.12)',
+              color: isToday ? 'rgba(255,255,255,0.85)' : C.honey,
               display: 'inline-flex', alignItems: 'center', alignSelf: 'flex-start',
             }}>
               {tradition.name}
@@ -1297,8 +1410,8 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, t
           )}
         </div>
 
-        {/* Right: day type badge */}
-        <div>
+        {/* Right: day type badge + collapse chevron */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{
             fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px', textTransform: 'uppercase',
             padding: '3px 7px', borderRadius: '4px',
@@ -1309,6 +1422,9 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, t
           }}>
             {dayType.emoji} {dayType.label}
           </div>
+          <svg viewBox="0 0 24 24" fill="none" stroke={isToday ? 'rgba(255,255,255,0.5)' : C.linen} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+            <polyline points="18 15 12 9 6 15"/>
+          </svg>
         </div>
       </div>
 
