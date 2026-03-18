@@ -16,6 +16,7 @@ const C = {
 export default function SavedMeals({ appUser }) {
   const navigate = useNavigate()
   const [meals, setMeals] = useState(null)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     if (!appUser?.household_id) return
@@ -83,45 +84,85 @@ export default function SavedMeals({ appUser }) {
               Plan a meal to get started
             </button>
           </div>
-        ) : (
-          /* Meal list */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {meals.map((meal, i) => {
-              const recipeNames = (meal.meal_recipes || [])
-                .sort((a, b) => a.sort_order - b.sort_order)
-                .map(mr => mr.recipes?.name)
-                .filter(Boolean)
+        ) : (() => {
+          const filtered = search.trim()
+            ? meals.filter(m => m.name.toLowerCase().includes(search.toLowerCase()))
+            : meals
 
-              return (
-                <button
-                  key={meal.id}
-                  onClick={() => navigate(`/meals/saved/${meal.id}`)}
-                  style={{
-                    background: 'white', borderRadius: '14px', padding: '16px',
-                    border: '1px solid #E4DDD2',
-                    cursor: 'pointer', textAlign: 'left', width: '100%',
-                    opacity: 0, animation: `fadeUp 0.4s ease ${0.04 * i}s forwards`,
-                  }}
-                >
-                  <div style={{
-                    fontFamily: "'Playfair Display', serif", fontSize: '18px',
-                    fontWeight: 500, color: C.ink,
+          return (
+            <>
+              {/* Search bar — only when 2+ meals */}
+              {meals.length > 1 && (
+                <div style={{ position: 'relative', marginBottom: '14px' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{
+                    width: 14, height: 14, position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)',
                   }}>
-                    {meal.name}
-                  </div>
-                  {recipeNames.length > 0 && (
-                    <div style={{
-                      fontSize: '12px', color: C.driftwood, fontWeight: 300,
-                      marginTop: '4px', lineHeight: 1.4,
-                    }}>
-                      {recipeNames.join(' · ')}
-                    </div>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        )}
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                  </svg>
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Search your meals\u2026"
+                    style={{
+                      width: '100%', padding: '10px 12px 10px 34px', fontSize: '14px',
+                      fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                      background: C.cream, border: '1px solid #E4DDD2',
+                      borderRadius: '10px', outline: 'none', color: C.ink,
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={e => e.target.style.borderColor = '#7A8C6E'}
+                    onBlur={e => e.target.style.borderColor = '#E4DDD2'}
+                  />
+                </div>
+              )}
+
+              {/* Filtered meal list */}
+              {filtered.length === 0 ? (
+                <div style={{ fontSize: '13px', color: C.driftwood, fontWeight: 300, padding: '20px 0', textAlign: 'center' }}>
+                  No meals match that search.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {filtered.map((meal, i) => {
+                    const recipeNames = (meal.meal_recipes || [])
+                      .sort((a, b) => a.sort_order - b.sort_order)
+                      .map(mr => mr.recipes?.name)
+                      .filter(Boolean)
+
+                    return (
+                      <button
+                        key={meal.id}
+                        onClick={() => navigate(`/meals/saved/${meal.id}`)}
+                        style={{
+                          background: 'white', borderRadius: '14px', padding: '16px',
+                          border: '1px solid #E4DDD2',
+                          cursor: 'pointer', textAlign: 'left', width: '100%',
+                          opacity: 0, animation: `fadeUp 0.4s ease ${0.04 * i}s forwards`,
+                        }}
+                      >
+                        <div style={{
+                          fontFamily: "'Playfair Display', serif", fontSize: '18px',
+                          fontWeight: 500, color: C.ink,
+                        }}>
+                          {meal.name}
+                        </div>
+                        {recipeNames.length > 0 && (
+                          <div style={{
+                            fontSize: '12px', color: C.driftwood, fontWeight: 300,
+                            marginTop: '4px', lineHeight: 1.4,
+                          }}>
+                            {recipeNames.join(' · ')}
+                          </div>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </>
+          )
+        })()}
       </div>
 
       <BottomNav activeTab="meals" />
