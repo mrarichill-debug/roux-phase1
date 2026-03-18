@@ -1544,44 +1544,31 @@ function FilledMealCard({ meal, onSwap }) {
   const hasNote = meal.note && meal.note !== 'open_evening' && meal.slot_type !== 'note'
 
   return (
-    <div style={{
-      background: C.cream, border: '1px solid rgba(200,185,160,0.5)',
-      borderRadius: '10px', padding: '11px 12px',
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      cursor: 'pointer', gap: '8px',
-      animation: 'mealEntrance 0.22s ease both',
-    }}>
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <div style={{
-          fontFamily: "'Playfair Display', serif",
-          fontSize: '15px', color: C.ink, fontWeight: 500,
-          lineHeight: 1.25,
-        }}>
-          {name ?? 'Meal'}
-        </div>
-        {hasNote && (
-          <span style={{
-            width: '6px', height: '6px', borderRadius: '50%',
-            background: C.honey, flexShrink: 0,
-          }} />
-        )}
+    <button
+      onClick={onSwap}
+      style={{
+        background: C.cream, border: '1px solid rgba(200,185,160,0.5)',
+        borderRadius: '10px', padding: '12px 14px',
+        display: 'flex', alignItems: 'center', gap: '6px',
+        cursor: 'pointer', width: '100%', minHeight: '44px',
+        animation: 'mealEntrance 0.22s ease both',
+        fontFamily: "'Jost', sans-serif", textAlign: 'left',
+      }}
+    >
+      <div style={{
+        fontFamily: "'Playfair Display', serif",
+        fontSize: '15px', color: C.ink, fontWeight: 500,
+        lineHeight: 1.25, flex: 1, minWidth: 0,
+      }}>
+        {name ?? 'Meal'}
       </div>
-      <button
-        onClick={e => { e.stopPropagation(); onSwap() }}
-        style={{
-          width: '34px', height: '34px', borderRadius: '50%',
-          border: '1px solid rgba(200,185,160,0.6)', background: 'white',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', color: C.driftwood, flexShrink: 0,
-        }}
-        aria-label="Swap meal"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 15, height: 15 }}>
-          <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0"/>
-          <path d="M12 8v4l3 3"/>
-        </svg>
-      </button>
-    </div>
+      {hasNote && (
+        <span style={{
+          width: '6px', height: '6px', borderRadius: '50%',
+          background: C.honey, flexShrink: 0,
+        }} />
+      )}
+    </button>
   )
 }
 
