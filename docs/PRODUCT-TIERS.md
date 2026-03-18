@@ -13,7 +13,7 @@
 - Traditions — recurring (e.g. Taco Tuesday), basic setup and display
 - Manual shopping list
 - Family Suggestions — household members can suggest meals to the planner
-- Day Types — default set only (School Day, Weekend, Holiday, Summer), editable but not custom
+- Day Types — default set only (School Day, Weekend, No School, Summer), editable but not custom
 
 ---
 
@@ -58,4 +58,4 @@
 - Tier enforcement layer not yet built — required before inviting non-Hill users
 - Lauren Hill is permanently Premium regardless of tier logic
 - Sage interaction limits tracked in `sage_usage` table with immutable historical rates
-- Day Type defaults are seeded per household at creation — School Day, Weekend, Holiday, Summer
+- Day Type defaults are seeded per household at creation — School Day, Weekend, No School, Summer

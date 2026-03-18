@@ -103,6 +103,28 @@ Traditions use an occurrence-based data model. Two new tables are live in Supaba
 
 **Do not build the Traditions UI yet.** Schema is protected for future build.
 
+### Day Types — Default Set Correction (Mar 17, 2026)
+
+The four default day types seeded per household are: **School Day**, **Weekend**, **No School**, **Summer**. Holiday was removed — occasions belong in Traditions, not Day Types. The codebase (WeekSettings.jsx, ThisWeek.jsx, Dashboard.jsx) already uses this correct set. PRODUCT-TIERS.md updated to match.
+
+### Occasion Traditions — Auto-Scheduling (Mar 17, 2026)
+
+*Schema supports this fully. Do not build the UI yet — document so the week view build accounts for it.*
+
+When a week plan is created or loaded, the app should check `household_traditions` for any rows where `tradition_type = 'occasion'` and the tradition's date falls within that week.
+
+**Date matching rules:**
+
+- **Fixed date:** `occasion_month` + `occasion_date` matches a date in the week (e.g. July 4th)
+- **Relative date:** `occasion_week` + `occasion_month` logic (e.g. fourth Thursday in November)
+- **Lead time:** if `planning_lead_days > 0`, surface the tradition that many days before the occasion date
+
+**When a match is found, auto-populate the day in the plan with:**
+
+- The tradition's anchor meals pre-loaded into that day's `planned_meals`
+- A honey-colored tradition label displayed above the meal list for that day in the week view
+- If a previous occurrence exists (`tradition_occurrences`), surface a Sage-style nudge: *"Last [occasion name] you made [X meals]. Want to start from there?"*
+
 ---
 
 ## Database & Data Gaps
