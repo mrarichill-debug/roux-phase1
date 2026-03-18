@@ -131,6 +131,22 @@ export default function Meals({ appUser }) {
           </div>
         </div>
 
+        {/* ── Tagline strip ──────────────────────────────────────────── */}
+        <div style={{ textAlign: 'center', padding: '28px 0' }}>
+          <div style={{
+            fontFamily: "'Playfair Display', serif", fontSize: '15px',
+            fontStyle: 'italic', color: '#8C7B6B', lineHeight: 1.6,
+          }}>
+            Recipes become meals.<br />
+            Meals become your family's story.
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '14px' }}>
+            <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#E4DDD2' }} />
+            <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#C4B8A8' }} />
+            <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#E4DDD2' }} />
+          </div>
+        </div>
+
         {/* ── Zone 2: Your kitchen ───────────────────────────────────── */}
         <div>
           <div style={zoneLabel}>Your kitchen</div>
