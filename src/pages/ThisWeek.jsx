@@ -384,6 +384,28 @@ export default function ThisWeek({ appUser }) {
     }
   }
 
+  // Save an existing recipe directly (from autofill suggestion)
+  async function saveExistingRecipe(recipeId, recipeName) {
+    try {
+      const activePlan = await ensurePlan()
+      if (!activePlan) return
+      const { error } = await supabase.from('planned_meals').insert({
+        meal_plan_id: activePlan.id, household_id: appUser.household_id,
+        day_of_week: sheetDow, meal_type: slotToMealType(sheetSlot),
+        slot_type: 'recipe', recipe_id: recipeId, status: 'planned',
+      })
+      if (error) throw error
+      const savedMealType = slotToMealType(sheetSlot)
+      const savedDow = sheetDow
+      closeSheet()
+      showToast(`Added ${recipeName}`)
+      await loadWeekData()
+      maybeShowRepeatPrompt(recipeName, savedMealType, 'recipe', recipeId, null, savedDow)
+    } catch (err) {
+      console.error('[Roux] saveExistingRecipe error:', err)
+    }
+  }
+
   // "Mark as open evening"
   async function markOpenEvening() {
     try {
@@ -827,11 +849,13 @@ export default function ThisWeek({ appUser }) {
         onClose={closeSheet}
         onSageSuggest={sageSuggest}
         onManualSave={saveManualMeal}
+        onSelectExisting={saveExistingRecipe}
         onOpenEvening={markOpenEvening}
         onRemove={removeMeal}
         onSwap={swapMeal}
         onSetMode={setSheetMode}
         navigate={navigate}
+        appUser={appUser}
       />
 
       {/* ── Add Protein Sheet ──────────────────────────────────────────── */}
@@ -1746,8 +1770,28 @@ function ShoppingPrompt({ onGo, onDismiss }) {
 }
 
 // ── Bottom Sheet ───────────────────────────────────────────────────────────────
-function BottomSheet({ open, dayName, slotName, dateStr, sagePrimary, mode, manualInput, onManualChange, onClose, onSageSuggest, onManualSave, onOpenEvening, onRemove, onSwap, onSetMode, navigate }) {
+function BottomSheet({ open, dayName, slotName, dateStr, sagePrimary, mode, manualInput, onManualChange, onClose, onSageSuggest, onManualSave, onSelectExisting, onOpenEvening, onRemove, onSwap, onSetMode, navigate, appUser }) {
   const sheetTitle = mode === 'filled' ? slotName : mode === 'manual' ? 'Enter meal name' : slotName
+  const [suggestions, setSuggestions] = useState([])
+  const debounceRef = useRef(null)
+
+  // Reset suggestions when mode changes or sheet closes
+  useEffect(() => { setSuggestions([]) }, [mode, open])
+
+  function handleManualInputChange(val) {
+    onManualChange(val)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (val.trim().length < 2) { setSuggestions([]); return }
+    debounceRef.current = setTimeout(async () => {
+      const { data } = await supabase
+        .from('recipes')
+        .select('id, name')
+        .eq('recipe_type', 'quick')
+        .ilike('name', `%${val.trim()}%`)
+        .limit(5)
+      setSuggestions(data || [])
+    }, 250)
+  }
 
   return (
     <div onClick={e => e.stopPropagation()} style={{
@@ -1819,7 +1863,7 @@ function BottomSheet({ open, dayName, slotName, dateStr, sagePrimary, mode, manu
           <input
             type="text"
             value={manualInput}
-            onChange={e => onManualChange(e.target.value)}
+            onChange={e => handleManualInputChange(e.target.value)}
             placeholder="e.g. Tacos, Leftover soup, Eating out"
             autoFocus
             style={{
@@ -1827,10 +1871,37 @@ function BottomSheet({ open, dayName, slotName, dateStr, sagePrimary, mode, manu
               border: `1px solid ${C.linen}`, borderRadius: '12px',
               fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300,
               color: C.ink, outline: 'none', background: C.cream,
-              marginBottom: '14px',
+              marginBottom: suggestions.length > 0 ? '0' : '14px',
             }}
             onKeyDown={e => { if (e.key === 'Enter') onManualSave() }}
           />
+
+          {/* Autofill suggestions */}
+          {suggestions.length > 0 && (
+            <div style={{
+              display: 'flex', flexDirection: 'column',
+              border: `1px solid ${C.linen}`, borderTop: 'none',
+              borderRadius: '0 0 12px 12px', overflow: 'hidden',
+              marginBottom: '14px', background: 'white',
+            }}>
+              {suggestions.map(s => (
+                <button
+                  key={s.id}
+                  onClick={() => { setSuggestions([]); onSelectExisting(s.id, s.name) }}
+                  style={{
+                    padding: '10px 16px', background: 'none', border: 'none',
+                    borderTop: `1px solid ${C.linen}`,
+                    cursor: 'pointer', textAlign: 'left',
+                    fontFamily: "'Jost', sans-serif", fontSize: '14px',
+                    fontWeight: 300, color: C.ink,
+                  }}
+                >
+                  {s.name}
+                </button>
+              ))}
+            </div>
+          )}
+
           <button
             onClick={onManualSave}
             disabled={!manualInput.trim()}
