@@ -125,6 +125,42 @@ When a week plan is created or loaded, the app should check `household_tradition
 - A honey-colored tradition label displayed above the meal list for that day in the week view
 - If a previous occurrence exists (`tradition_occurrences`), surface a Sage-style nudge: *"Last [occasion name] you made [X meals]. Want to start from there?"*
 
+### Day Planner — Full Slot Support (Mar 18, 2026)
+
+Every day in the week view supports all active meal slots: **Breakfast**, **Lunch**, **Dinner**, **Snack**, and **Everything else** (`other` in DB). `meal_prep` is hidden — do not surface it in the UI.
+
+**Layout per day:**
+
+- **Dinner** is the dominant slot — largest visual weight, always visible
+- **Breakfast** and **Lunch** are secondary — visible but compact
+- **Snack** and **Everything else** are collapsed by default — a quiet `+ Snack` and `+ Everything else` tap target at the bottom of each day expands them
+
+**`meal_type` → UI label mapping:**
+
+| DB value | UI label |
+|---|---|
+| `breakfast` | Breakfast |
+| `lunch` | Lunch |
+| `dinner` | Dinner |
+| `other` | Everything else |
+| `meal_prep` | *Hidden — not surfaced in UI* |
+
+`snack` has been added to the `planned_meals` `meal_type` CHECK constraint.
+
+Every slot uses the same universal picker — search recipes, search saved meals, or apply a tradition. The picker is identical regardless of which slot it's opened from. Never show raw DB values in the UI.
+
+### Slot-to-Slot Move (Mar 18, 2026)
+
+When a meal is placed in a slot, Lauren can move it to a different slot on the same day via a move icon on the meal chip. Opens a simple slot picker: *"Move to — Breakfast / Lunch / Dinner / Snack / Everything else."* Updates `meal_type` on the `planned_meals` row. No remove-and-re-add required.
+
+### Tradition Auto-Population — Slot Default (Mar 18, 2026)
+
+When a tradition is applied to a day (manually or via auto-scheduling), its anchor meals default to the `other` slot ("Everything else"). Lauren moves them to the correct slots using the slot-to-slot move interaction. Do not attempt to guess the right slot.
+
+### Birthday Traditions — Auto-Creation (Mar 18, 2026)
+
+Birthday traditions are auto-created for all non-pet family members: `tradition_type = 'annual'`, `planning_lead_days = 7`. When a new family member is added with a `date_of_birth`, a birthday tradition should be auto-created at that time. Schema supports this via `occasion_date` + `occasion_month` on `household_traditions`.
+
 ---
 
 ## Database & Data Gaps

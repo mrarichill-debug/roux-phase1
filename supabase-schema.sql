@@ -457,7 +457,7 @@ CREATE TABLE planned_meals (
   day_of_week    TEXT        CHECK (day_of_week IN
                    ('monday','tuesday','wednesday','thursday','friday','saturday','sunday')),
   meal_type      TEXT        NOT NULL
-                   CHECK (meal_type IN ('breakfast', 'lunch', 'dinner', 'other', 'meal_prep')),
+                   CHECK (meal_type IN ('breakfast', 'lunch', 'dinner', 'snack', 'other', 'meal_prep')),
   scope          TEXT        NOT NULL DEFAULT 'day'
                    CHECK (scope IN ('day', 'week', 'weekday', 'weekend', 'meal_prep')),
   slot_type      TEXT        CHECK (slot_type IN
@@ -658,7 +658,7 @@ CREATE TABLE template_meals (
   template_id UUID        NOT NULL REFERENCES meal_plan_templates(id) ON DELETE CASCADE,
   day_of_week TEXT        CHECK (day_of_week IN
                 ('monday','tuesday','wednesday','thursday','friday','saturday','sunday')),
-  meal_type   TEXT        CHECK (meal_type IN ('breakfast', 'lunch', 'dinner', 'other', 'meal_prep')),
+  meal_type   TEXT        CHECK (meal_type IN ('breakfast', 'lunch', 'dinner', 'snack', 'other', 'meal_prep')),
   scope       TEXT        NOT NULL DEFAULT 'day'
                 CHECK (scope IN ('day', 'week', 'weekday', 'weekend', 'meal_prep')),
   slot_type   TEXT        CHECK (slot_type IN

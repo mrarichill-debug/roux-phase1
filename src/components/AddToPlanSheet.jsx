@@ -18,7 +18,8 @@ const SLOT_OPTIONS = [
   { key: 'breakfast', label: 'Breakfast' },
   { key: 'lunch', label: 'Lunch' },
   { key: 'dinner', label: 'Dinner' },
-  { key: 'other', label: 'Snack' },
+  { key: 'snack', label: 'Snack' },
+  { key: 'other', label: 'Everything else' },
 ]
 
 export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess }) {
