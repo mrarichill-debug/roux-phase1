@@ -18,7 +18,6 @@ const SLOT_OPTIONS = [
   { key: 'breakfast', label: 'Breakfast' },
   { key: 'lunch', label: 'Lunch' },
   { key: 'dinner', label: 'Dinner' },
-  { key: 'snack', label: 'Snack' },
   { key: 'other', label: 'Everything else' },
 ]
 
