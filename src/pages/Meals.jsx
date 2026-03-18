@@ -82,7 +82,7 @@ export default function Meals({ appUser }) {
                 background: C.forest, borderRadius: '14px', padding: '14px 14px 16px',
                 display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
                 border: 'none', cursor: 'pointer', textAlign: 'left',
-                minHeight: '130px',
+                minHeight: '110px',
               }}
             >
               {/* Plus icon */}
@@ -91,7 +91,7 @@ export default function Meals({ appUser }) {
               </svg>
               <div>
                 <div style={{
-                  fontFamily: "'Playfair Display', serif", fontSize: '16px',
+                  fontFamily: "'Playfair Display', serif", fontSize: '18px',
                   color: 'rgba(250,247,242,0.95)', fontWeight: 500, marginBottom: '3px',
                 }}>
                   Plan a Meal
@@ -109,7 +109,7 @@ export default function Meals({ appUser }) {
                 background: C.offWhite, borderRadius: '14px', padding: '14px 14px 16px',
                 display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
                 border: 'none', cursor: 'pointer', textAlign: 'left',
-                minHeight: '130px',
+                minHeight: '110px',
               }}
             >
               {/* Star icon */}
@@ -118,7 +118,7 @@ export default function Meals({ appUser }) {
               </svg>
               <div>
                 <div style={{
-                  fontFamily: "'Playfair Display', serif", fontSize: '16px',
+                  fontFamily: "'Playfair Display', serif", fontSize: '18px',
                   color: C.ink, fontWeight: 500, marginBottom: '3px',
                 }}>
                   Add a Tradition
@@ -142,24 +142,26 @@ export default function Meals({ appUser }) {
             <button
               onClick={() => navigate('/meals/recipes')}
               style={{
-                background: 'white', borderRadius: '14px', padding: '14px 12px 16px',
+                background: 'white', borderRadius: '14px', padding: '14px 10px 16px',
                 border: `1px solid ${C.linen}`, cursor: 'pointer', textAlign: 'center',
                 display: 'flex', flexDirection: 'column', alignItems: 'center',
-                gap: '6px', minHeight: '100px', justifyContent: 'center',
+                gap: '4px', minHeight: '100px', justifyContent: 'center',
               }}
             >
-              {/* Archive icon */}
-              <svg viewBox="0 0 24 24" fill="none" stroke={C.forest} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22, opacity: 0.6 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
                 <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
                 <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
               </svg>
               <div style={{
                 fontFamily: "'Playfair Display', serif", fontSize: '22px',
-                fontWeight: 500, color: C.ink, lineHeight: 1,
+                fontWeight: 500, color: C.forest, lineHeight: 1, marginTop: '2px',
               }}>
                 {recipeCount ?? '—'}
               </div>
-              <div style={{ fontSize: '9px', color: C.driftwoodSm, fontWeight: 400 }}>
+              <div style={{ fontSize: '12px', color: C.ink, fontWeight: 400 }}>
+                Family Recipes
+              </div>
+              <div style={{ fontSize: '10px', color: C.driftwood, fontWeight: 300 }}>
                 recipes
               </div>
               {draftCount > 0 && (
@@ -177,24 +179,26 @@ export default function Meals({ appUser }) {
             <button
               onClick={() => navigate('/meals/saved')}
               style={{
-                background: 'white', borderRadius: '14px', padding: '14px 12px 16px',
+                background: 'white', borderRadius: '14px', padding: '14px 10px 16px',
                 border: `1px solid ${C.linen}`, cursor: 'pointer', textAlign: 'center',
                 display: 'flex', flexDirection: 'column', alignItems: 'center',
-                gap: '6px', minHeight: '100px', justifyContent: 'center',
+                gap: '4px', minHeight: '100px', justifyContent: 'center',
               }}
             >
-              {/* Meals icon — same as nav */}
-              <svg viewBox="0 0 18 18" fill="none" stroke={C.forest} style={{ width: 22, height: 22, opacity: 0.6 }}>
+              <svg viewBox="0 0 18 18" fill="none" stroke={C.driftwood} style={{ width: 16, height: 16 }}>
                 <rect x="2" y="2" width="14" height="14" rx="2" strokeWidth="1.3"/>
                 <path d="M5 6h8M5 9h8M5 12h5" strokeWidth="1.3" strokeLinecap="round"/>
               </svg>
               <div style={{
                 fontFamily: "'Playfair Display', serif", fontSize: '22px',
-                fontWeight: 500, color: C.ink, lineHeight: 1,
+                fontWeight: 500, color: C.forest, lineHeight: 1, marginTop: '2px',
               }}>
                 {mealCount ?? '—'}
               </div>
-              <div style={{ fontSize: '9px', color: C.driftwoodSm, fontWeight: 400 }}>
+              <div style={{ fontSize: '12px', color: C.ink, fontWeight: 400 }}>
+                Saved Meals
+              </div>
+              <div style={{ fontSize: '10px', color: C.driftwood, fontWeight: 300 }}>
                 built
               </div>
             </button>
@@ -203,23 +207,25 @@ export default function Meals({ appUser }) {
             <button
               onClick={() => navigate('/meals/traditions')}
               style={{
-                background: 'white', borderRadius: '14px', padding: '14px 12px 16px',
+                background: 'white', borderRadius: '14px', padding: '14px 10px 16px',
                 border: `1px solid ${C.linen}`, cursor: 'pointer', textAlign: 'center',
                 display: 'flex', flexDirection: 'column', alignItems: 'center',
-                gap: '6px', minHeight: '100px', justifyContent: 'center',
+                gap: '4px', minHeight: '100px', justifyContent: 'center',
               }}
             >
-              {/* Star icon */}
-              <svg viewBox="0 0 24 24" fill="none" stroke={C.honey} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22, opacity: 0.6 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
               </svg>
               <div style={{
                 fontFamily: "'Playfair Display', serif", fontSize: '22px',
-                fontWeight: 500, color: C.ink, lineHeight: 1,
+                fontWeight: 500, color: C.forest, lineHeight: 1, marginTop: '2px',
               }}>
                 {traditionCount ?? '—'}
               </div>
-              <div style={{ fontSize: '9px', color: C.driftwoodSm, fontWeight: 400 }}>
+              <div style={{ fontSize: '12px', color: C.ink, fontWeight: 400 }}>
+                Traditions
+              </div>
+              <div style={{ fontSize: '10px', color: C.driftwood, fontWeight: 300 }}>
                 kept
               </div>
             </button>
