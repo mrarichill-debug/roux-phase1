@@ -1059,7 +1059,6 @@ export default function PlanMeal({ appUser }) {
                 }}>
                   {recipes.map((r, slotIdx) => {
                     if (!r.alternatives || r.alternatives.length === 0) return null
-                    const roleName = r.name.toLowerCase()
                     const options = [
                       { id: r.id, name: r.name },
                       ...r.alternatives.map(a => ({ id: a.id, name: a.name })),
@@ -1074,7 +1073,7 @@ export default function PlanMeal({ appUser }) {
                           fontSize: '12px', color: C.driftwood, fontWeight: 400,
                           marginBottom: '8px',
                         }}>
-                          Which <span style={{ fontStyle: 'italic' }}>{roleName}</span> this week?
+                          Which version this week?
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                           {options.map(opt => {
