@@ -1488,51 +1488,30 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinnerMeals, breakfastMeals
 // ── Filled Meal Card ───────────────────────────────────────────────────────────
 function FilledMealCard({ meal, onSwap }) {
   const name    = getMealName(meal)
-  const chip    = getStatusChip(meal.status)
   const hasNote = meal.note && meal.note !== 'open_evening' && meal.slot_type !== 'note'
-  const isCustom= meal.slot_type === 'note' && meal.note !== 'open_evening'
 
   return (
     <div style={{
       background: C.cream, border: '1px solid rgba(200,185,160,0.5)',
       borderRadius: '10px', padding: '11px 12px',
-      display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       cursor: 'pointer', gap: '8px',
       animation: 'mealEntrance 0.22s ease both',
     }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
         <div style={{
           fontFamily: "'Playfair Display', serif",
           fontSize: '15px', color: C.ink, fontWeight: 500,
-          lineHeight: 1.25, marginBottom: '4px',
+          lineHeight: 1.25,
         }}>
-          {name ?? 'Dinner'}
+          {name ?? 'Meal'}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        {hasNote && (
           <span style={{
-            fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px', textTransform: 'uppercase',
-            padding: '2px 6px', borderRadius: '4px',
-            ...chipStyles[chip.variant],
-          }}>
-            {chip.label}
-          </span>
-          {isCustom && (
-            <span style={{
-              fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px', textTransform: 'uppercase',
-              padding: '2px 6px', borderRadius: '4px',
-              background: 'rgba(139,111,82,0.08)', color: C.walnut,
-            }}>
-              Custom
-            </span>
-          )}
-          {hasNote && (
-            <span style={{
-              width: '6px', height: '6px', borderRadius: '50%',
-              background: C.honey, flexShrink: 0,
-              display: 'inline-block',
-            }} />
-          )}
-        </div>
+            width: '6px', height: '6px', borderRadius: '50%',
+            background: C.honey, flexShrink: 0,
+          }} />
+        )}
       </div>
       <button
         onClick={e => { e.stopPropagation(); onSwap() }}
