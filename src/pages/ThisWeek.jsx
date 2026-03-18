@@ -39,10 +39,10 @@ function formatWeekRange(dates) {
 }
 
 const DAY_TYPE_MAP = {
-  school:    { label: 'School',    emoji: '🔵', color: '#3A6CB5',    bg: 'rgba(91,141,217,0.12)'  },
-  weekend:   { label: 'Weekend',   emoji: '🟢', color: C.forest,     bg: 'rgba(122,140,110,0.12)' },
-  no_school: { label: 'No School', emoji: '🟠', color: '#D4874A',    bg: 'rgba(212,135,74,0.12)'  },
-  summer:    { label: 'Summer',    emoji: '🟡', color: C.honey,      bg: 'rgba(196,154,60,0.12)'  },
+  school:    { label: 'School',    color: '#3A6CB5',    bg: 'rgba(58,108,181,0.10)'  },
+  weekend:   { label: 'Weekend',   color: C.forest,     bg: 'rgba(61,107,79,0.10)'   },
+  no_school: { label: 'No School', color: '#D4874A',    bg: 'rgba(212,135,74,0.10)'  },
+  summer:    { label: 'Summer',    color: C.honey,      bg: 'rgba(196,154,60,0.10)'  },
 }
 
 function getDayType(jsDay, savedType) {
@@ -1425,8 +1425,9 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinnerMeals, breakfastMeals
             {dayName}
           </div>
           <div style={{
-            fontSize: '9px', fontWeight: 500, letterSpacing: '0.6px', textTransform: 'uppercase',
-            padding: '2px 6px', borderRadius: '4px',
+            fontSize: '10px', fontWeight: 400, letterSpacing: '0.8px', textTransform: 'uppercase',
+            padding: '2px 8px', borderRadius: '4px',
+            fontFamily: "'Jost', sans-serif",
             background: dayType.bg, color: dayType.color,
           }}>
             {dayType.label}
@@ -1504,14 +1505,14 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinnerMeals, breakfastMeals
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{
-            fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px', textTransform: 'uppercase',
-            padding: '3px 7px', borderRadius: '4px',
-            display: 'flex', alignItems: 'center', gap: '4px',
+            fontSize: '10px', fontWeight: 400, letterSpacing: '0.8px', textTransform: 'uppercase',
+            padding: '2px 8px', borderRadius: '4px',
+            fontFamily: "'Jost', sans-serif",
             ...(isToday
               ? { background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.85)' }
               : { background: dayType.bg, color: dayType.color }),
           }}>
-            {dayType.emoji} {dayType.label}
+            {dayType.label}
           </div>
           <svg viewBox="0 0 24 24" fill="none" stroke={isToday ? 'rgba(255,255,255,0.5)' : C.linen} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
             <polyline points="18 15 12 9 6 15"/>

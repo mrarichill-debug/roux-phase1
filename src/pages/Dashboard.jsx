@@ -40,8 +40,8 @@ function formatGreetingDate(d) {
 
 function getDayType(jsDay) {
   // 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
-  if (jsDay === 0 || jsDay === 6) return { label: 'Weekend', emoji: '🟢', color: '#3D6B4F', bg: 'rgba(61,107,79,0.10)', border: 'rgba(61,107,79,0.18)' }
-  return { label: 'School Day', emoji: '🔵', color: '#3A6CB5', bg: 'rgba(91,141,217,0.10)', border: 'rgba(91,141,217,0.18)' }
+  if (jsDay === 0 || jsDay === 6) return { label: 'Weekend', color: '#3D6B4F', bg: 'rgba(61,107,79,0.10)', border: 'rgba(61,107,79,0.18)' }
+  return { label: 'School Day', color: '#3A6CB5', bg: 'rgba(91,141,217,0.10)', border: 'rgba(91,141,217,0.18)' }
 }
 
 function getMealName(meal) {
@@ -259,12 +259,12 @@ export default function Dashboard({ appUser }) {
               {formatGreetingDate(today)}
             </span>
             <span style={{
-              fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px',
-              textTransform: 'uppercase', padding: '3px 9px', borderRadius: '20px',
+              fontSize: '10px', fontWeight: 400, letterSpacing: '0.8px',
+              textTransform: 'uppercase', padding: '2px 8px', borderRadius: '4px',
+              fontFamily: "'Jost', sans-serif",
               background: dayType.bg, color: dayType.color,
-              border: `1px solid ${dayType.border}`,
             }}>
-              {dayType.emoji} {dayType.label}
+              {dayType.label}
             </span>
           </div>
 
