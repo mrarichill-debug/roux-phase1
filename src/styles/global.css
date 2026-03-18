@@ -105,6 +105,15 @@ body {
   to   { opacity: 1; transform: scale(1); }
 }
 
+/* ── Slabo 27px — secondary display font ─────────────────────────────────── */
+/* Use for: screen hero titles, empty state headlines, completion moments.    */
+/* Never below 24px or above 32px. Never for nav, buttons, counts, or UI.    */
+.slabo-title {
+  font-family: 'Slabo 27px', serif;
+  font-size: 27px;
+  font-weight: 400;
+}
+
 /* ── Hide scrollbar (horizontal scroll pills) ─────────────────────────────── */
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }

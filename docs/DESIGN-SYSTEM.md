@@ -33,6 +33,7 @@
 - **Playfair Display** — headings, meal names, dates, hero text, step numbers. Weights: 400, 500, 600. Italic for brand accents ("oux" in logo, greeting name, Sage messages on recipe card). Load from Google Fonts.
 - **Jost** — body text, labels, buttons, meta, UI copy. Weights: 300 (default body), 400, 500 (emphasis). Never use system fonts as fallback for branded moments.
 - **Caveat** — handwritten accent only. Family Notes headings, home name on welcome moments, personal notes on recipe cards. Weights 500–600. Font must be loaded before Caveat elements render — never fall back to a system font.
+- **Slabo 27px** — secondary display font. Self-hosted at `/fonts/Slabo27px.woff2`. Use in exactly three contexts: (1) screen hero titles ("Your Kitchen." on Meals hub), (2) empty state headlines ("Nothing planned yet."), (3) completion moments ("Meal saved."). Always with trailing period. CSS class: `.slabo-title` (27px, weight 400). Never below 24px or above 32px. Never for navigation, buttons, counts, or functional UI text.
 
 > **⚠ Note:** Fraunces and DM Sans are retired. Do not use them.
 
