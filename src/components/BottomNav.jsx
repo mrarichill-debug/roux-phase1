@@ -32,9 +32,9 @@ const NAV_TABS = [
   {
     key: 'meals', label: 'Meals', path: '/meals',
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
-        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+      <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" style={{ width: 22, height: 22 }}>
+        <rect x="2" y="2" width="14" height="14" rx="2" strokeWidth="1.3"/>
+        <path d="M5 6h8M5 9h8M5 12h5" strokeWidth="1.3" strokeLinecap="round"/>
       </svg>
     ),
   },
@@ -70,6 +70,8 @@ const PATH_TO_TAB = {
   '/meals/recipes': 'meals',
   '/meals/plan': 'meals',
   '/meals/traditions': 'meals',
+  '/meals/traditions/new': 'meals',
+  '/meals/saved': 'meals',
   '/recipes': 'meals',
   '/recipe': 'meals',
   '/save-recipe': 'meals',

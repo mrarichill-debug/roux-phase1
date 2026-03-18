@@ -1,7 +1,8 @@
 /**
  * Meals.jsx — Meals hub screen.
- * Three cards: Plan a Meal, Family Recipes, Our Traditions.
- * Counts refresh on mount and on window focus (returning from sub-screens).
+ * Zone 1: Add something (Plan a Meal + Add a Tradition tiles)
+ * Zone 2: Your kitchen (Family Recipes + Saved Meals + Traditions archive tiles)
+ * Counts refresh on mount and on window focus.
  */
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -12,32 +13,45 @@ import BottomNav from '../components/BottomNav'
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
   driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E', linen: '#E8E0D0',
-  honey: '#C49A3C',
+  honey: '#C49A3C', offWhite: '#F0EBE3',
+}
+
+const zoneLabel = {
+  fontSize: '11px', letterSpacing: '1.2px', textTransform: 'uppercase',
+  color: C.driftwood, fontWeight: 300, fontFamily: "'Jost', sans-serif",
+  marginBottom: '10px',
 }
 
 export default function Meals({ appUser }) {
   const navigate = useNavigate()
   const [recipeCount, setRecipeCount] = useState(null)
+  const [draftCount, setDraftCount] = useState(null)
   const [mealCount, setMealCount] = useState(null)
   const [traditionCount, setTraditionCount] = useState(null)
 
   const fetchCounts = useCallback(async () => {
     if (!appUser?.household_id) return
-    const [{ count: rc }, { count: mc }, { count: tc }] = await Promise.all([
-      supabase.from('recipes').select('id', { count: 'exact', head: true }),
+    const [
+      { count: rc },
+      { count: dc },
+      { count: mc },
+      { count: tc },
+    ] = await Promise.all([
+      supabase.from('recipes').select('id', { count: 'exact', head: true })
+        .eq('status', 'complete').eq('recipe_type', 'full'),
+      supabase.from('recipes').select('id', { count: 'exact', head: true })
+        .eq('status', 'draft').eq('recipe_type', 'full'),
       supabase.from('meals').select('id', { count: 'exact', head: true }),
       supabase.from('household_traditions').select('id', { count: 'exact', head: true }),
     ])
     setRecipeCount(rc ?? 0)
+    setDraftCount(dc ?? 0)
     setMealCount(mc ?? 0)
     setTraditionCount(tc ?? 0)
   }, [appUser?.household_id])
 
-  useEffect(() => {
-    fetchCounts()
-  }, [fetchCounts])
+  useEffect(() => { fetchCounts() }, [fetchCounts])
 
-  // Refresh counts when window regains focus (returning from sub-screens)
   useEffect(() => {
     function handleFocus() { fetchCounts() }
     window.addEventListener('focus', handleFocus)
@@ -52,122 +66,165 @@ export default function Meals({ appUser }) {
     }}>
       <TopBar />
 
-      <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div style={{ padding: '18px 16px 0', display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-        {/* ── Card 1: Plan a Meal ───────────────────────────────────── */}
-        <button
-          onClick={() => navigate('/meals/plan')}
-          style={{
-            background: C.forest, borderRadius: '14px', padding: '16px 16px',
-            display: 'flex', flexDirection: 'column', gap: '6px',
-            border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
+        {/* ── Zone 1: Add something ──────────────────────────────────── */}
+        <div>
+          <div style={zoneLabel}>Add something</div>
+          <div style={{
+            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px',
             opacity: 0, animation: 'fadeUp 0.4s ease 0.05s forwards',
-          }}
-        >
-          <div style={{ fontSize: '9px', letterSpacing: '2px', textTransform: 'uppercase', color: 'rgba(250,247,242,0.55)', fontFamily: "'Jost', sans-serif" }}>
-            What are we having?
-          </div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', color: 'rgba(250,247,242,0.95)', fontWeight: 500 }}>
-            Plan a Meal
-          </div>
-          <div style={{ fontSize: '11px', color: 'rgba(250,247,242,0.65)', fontWeight: 300 }}>
-            One recipe or a combination — build it your way.
-          </div>
-          <div style={{
-            background: 'rgba(250,247,242,0.15)', borderRadius: '20px',
-            padding: '6px 14px', marginTop: '6px',
-            fontSize: '11px', color: 'rgba(250,247,242,0.9)', fontWeight: 500,
-            alignSelf: 'flex-start',
           }}>
-            + Start planning
-          </div>
-          {mealCount > 0 && (
-            <div style={{ fontSize: '9px', color: 'rgba(250,247,242,0.55)', fontWeight: 300, marginTop: '6px' }}>
-              {mealCount} meal{mealCount !== 1 ? 's' : ''} saved
-            </div>
-          )}
-        </button>
+            {/* Plan a Meal */}
+            <button
+              onClick={() => navigate('/meals/plan')}
+              style={{
+                background: C.forest, borderRadius: '14px', padding: '14px 14px 16px',
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                border: 'none', cursor: 'pointer', textAlign: 'left',
+                minHeight: '130px',
+              }}
+            >
+              {/* Plus icon */}
+              <svg viewBox="0 0 24 24" fill="none" stroke="rgba(250,247,242,0.6)" strokeWidth="1.8" strokeLinecap="round" style={{ width: 20, height: 20 }}>
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              <div>
+                <div style={{
+                  fontFamily: "'Playfair Display', serif", fontSize: '16px',
+                  color: 'rgba(250,247,242,0.95)', fontWeight: 500, marginBottom: '3px',
+                }}>
+                  Plan a Meal
+                </div>
+                <div style={{ fontSize: '10px', color: 'rgba(250,247,242,0.55)', fontWeight: 300, lineHeight: 1.3 }}>
+                  Build it, add it to the week.
+                </div>
+              </div>
+            </button>
 
-        {/* ── Card 2: Family Recipes ────────────────────────────────── */}
-        <button
-          onClick={() => navigate('/meals/recipes')}
-          style={{
-            background: 'white', borderRadius: '14px', padding: '16px 18px',
-            border: `1px solid rgba(200,185,160,0.5)`,
-            display: 'flex', alignItems: 'center', gap: '14px',
-            cursor: 'pointer', textAlign: 'left', width: '100%',
-            boxShadow: '0 1px 4px rgba(80,60,30,0.06)',
+            {/* Add a Tradition */}
+            <button
+              onClick={() => navigate('/meals/traditions/new')}
+              style={{
+                background: C.offWhite, borderRadius: '14px', padding: '14px 14px 16px',
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                border: 'none', cursor: 'pointer', textAlign: 'left',
+                minHeight: '130px',
+              }}
+            >
+              {/* Star icon */}
+              <svg viewBox="0 0 24 24" fill="none" stroke={C.honey} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+              <div>
+                <div style={{
+                  fontFamily: "'Playfair Display', serif", fontSize: '16px',
+                  color: C.ink, fontWeight: 500, marginBottom: '3px',
+                }}>
+                  Add a Tradition
+                </div>
+                <div style={{ fontSize: '10px', color: C.driftwoodSm, fontWeight: 300, lineHeight: 1.3 }}>
+                  A meal your family keeps coming back to.
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* ── Zone 2: Your kitchen ───────────────────────────────────── */}
+        <div>
+          <div style={zoneLabel}>Your kitchen</div>
+          <div style={{
+            display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px',
             opacity: 0, animation: 'fadeUp 0.4s ease 0.10s forwards',
-          }}
-        >
-          {/* Recipe box icon */}
-          <div style={{ flexShrink: 0, color: C.forest, opacity: 0.7 }}>
-            <svg width="36" height="32" viewBox="0 0 32 30" fill="none">
-              <rect x="1" y="9" width="24" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-              <rect x="3" y="6" width="20" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-              <rect x="5" y="3" width="16" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-              <line x1="5" x2="21" y1="15" y2="15" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
-              <line x1="5" x2="16" y1="20" y2="20" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
-            </svg>
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '17px', color: C.ink, fontWeight: 500, marginBottom: '2px' }}>
-              Family Recipes
-            </div>
-            <div style={{ fontSize: '10px', color: C.driftwoodSm, fontWeight: 300 }}>
-              Your saved collection
-            </div>
-            {recipeCount > 0 && (
-              <div style={{ fontSize: '9px', color: C.driftwoodSm, fontWeight: 400, marginTop: '3px', opacity: 0.7 }}>
-                {recipeCount} recipe{recipeCount !== 1 ? 's' : ''}
-              </div>
-            )}
-          </div>
-          <svg viewBox="0 0 24 24" fill="none" stroke={C.linen} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        </button>
-
-        {/* ── Card 3: Our Traditions ────────────────────────────────── */}
-        <button
-          onClick={() => navigate('/meals/traditions')}
-          style={{
-            background: 'white', borderRadius: '14px', padding: '16px 18px',
-            border: `1px solid rgba(200,185,160,0.5)`,
-            display: 'flex', alignItems: 'center', gap: '14px',
-            cursor: 'pointer', textAlign: 'left', width: '100%',
-            boxShadow: '0 1px 4px rgba(80,60,30,0.06)',
-            opacity: 0, animation: 'fadeUp 0.4s ease 0.15s forwards',
-          }}
-        >
-          {/* Star/honey icon */}
-          <div style={{
-            width: '36px', height: '36px', borderRadius: '10px',
-            background: 'rgba(196,154,60,0.08)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
           }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke={C.honey} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-            </svg>
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '17px', color: C.ink, fontWeight: 500, marginBottom: '2px' }}>
-              Our Traditions
-            </div>
-            <div style={{ fontSize: '10px', color: C.driftwoodSm, fontWeight: 300 }}>
-              The meals that bring everyone home
-            </div>
-            {traditionCount > 0 && (
-              <div style={{ fontSize: '9px', color: C.driftwoodSm, fontWeight: 400, marginTop: '3px', opacity: 0.7 }}>
-                {traditionCount} tradition{traditionCount !== 1 ? 's' : ''}
+            {/* Family Recipes */}
+            <button
+              onClick={() => navigate('/meals/recipes')}
+              style={{
+                background: 'white', borderRadius: '14px', padding: '14px 12px 16px',
+                border: `1px solid ${C.linen}`, cursor: 'pointer', textAlign: 'center',
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                gap: '6px', minHeight: '100px', justifyContent: 'center',
+              }}
+            >
+              {/* Archive icon */}
+              <svg viewBox="0 0 24 24" fill="none" stroke={C.forest} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22, opacity: 0.6 }}>
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+              </svg>
+              <div style={{
+                fontFamily: "'Playfair Display', serif", fontSize: '22px',
+                fontWeight: 500, color: C.ink, lineHeight: 1,
+              }}>
+                {recipeCount ?? '—'}
               </div>
-            )}
+              <div style={{ fontSize: '9px', color: C.driftwoodSm, fontWeight: 400 }}>
+                recipes
+              </div>
+              {draftCount > 0 && (
+                <div style={{
+                  fontSize: '8px', fontWeight: 500, color: C.honey,
+                  background: 'rgba(196,154,60,0.12)', borderRadius: '4px',
+                  padding: '1px 6px', marginTop: '2px',
+                }}>
+                  {draftCount} to finish
+                </div>
+              )}
+            </button>
+
+            {/* Saved Meals */}
+            <button
+              onClick={() => navigate('/meals/saved')}
+              style={{
+                background: 'white', borderRadius: '14px', padding: '14px 12px 16px',
+                border: `1px solid ${C.linen}`, cursor: 'pointer', textAlign: 'center',
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                gap: '6px', minHeight: '100px', justifyContent: 'center',
+              }}
+            >
+              {/* Meals icon — same as nav */}
+              <svg viewBox="0 0 18 18" fill="none" stroke={C.forest} style={{ width: 22, height: 22, opacity: 0.6 }}>
+                <rect x="2" y="2" width="14" height="14" rx="2" strokeWidth="1.3"/>
+                <path d="M5 6h8M5 9h8M5 12h5" strokeWidth="1.3" strokeLinecap="round"/>
+              </svg>
+              <div style={{
+                fontFamily: "'Playfair Display', serif", fontSize: '22px',
+                fontWeight: 500, color: C.ink, lineHeight: 1,
+              }}>
+                {mealCount ?? '—'}
+              </div>
+              <div style={{ fontSize: '9px', color: C.driftwoodSm, fontWeight: 400 }}>
+                built
+              </div>
+            </button>
+
+            {/* Traditions */}
+            <button
+              onClick={() => navigate('/meals/traditions')}
+              style={{
+                background: 'white', borderRadius: '14px', padding: '14px 12px 16px',
+                border: `1px solid ${C.linen}`, cursor: 'pointer', textAlign: 'center',
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                gap: '6px', minHeight: '100px', justifyContent: 'center',
+              }}
+            >
+              {/* Star icon */}
+              <svg viewBox="0 0 24 24" fill="none" stroke={C.honey} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22, opacity: 0.6 }}>
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+              <div style={{
+                fontFamily: "'Playfair Display', serif", fontSize: '22px',
+                fontWeight: 500, color: C.ink, lineHeight: 1,
+              }}>
+                {traditionCount ?? '—'}
+              </div>
+              <div style={{ fontSize: '9px', color: C.driftwoodSm, fontWeight: 400 }}>
+                kept
+              </div>
+            </button>
           </div>
-          <svg viewBox="0 0 24 24" fill="none" stroke={C.linen} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        </button>
+        </div>
 
       </div>
 
