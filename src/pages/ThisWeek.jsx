@@ -246,6 +246,12 @@ export default function ThisWeek({ appUser }) {
     return planMeals.filter(m => m.day_of_week === dowKey && m.meal_type === mealType)
   }
 
+  // Map UI slot label to DB meal_type
+  function slotToMealType(slot) {
+    if (slot === 'Everything else') return 'other'
+    return slot.toLowerCase()
+  }
+
   function openSheet(dayName, slotName, dateStr = '', fromSage = false, existingMealId = null) {
     setSheetDay(dayName)
     setSheetSlot(slotName)
@@ -308,11 +314,11 @@ export default function ThisWeek({ appUser }) {
       const pick = available.length > 0 ? available[Math.floor(Math.random() * available.length)] : recipes[Math.floor(Math.random() * recipes.length)]
       const { error } = await supabase.from('planned_meals').insert({
         meal_plan_id: activePlan.id, household_id: appUser.household_id,
-        day_of_week: sheetDow, meal_type: sheetSlot.toLowerCase(),
+        day_of_week: sheetDow, meal_type: slotToMealType(sheetSlot),
         slot_type: 'recipe', recipe_id: pick.id, status: 'planned', sage_suggested: true,
       })
       if (error) throw error
-      const savedMealType = sheetSlot.toLowerCase()
+      const savedMealType = slotToMealType(sheetSlot)
       const savedDow = sheetDow
       console.log('[Roux] sageSuggest success:', { name: pick.name, mealType: savedMealType, dow: savedDow })
       closeSheet()
@@ -332,12 +338,12 @@ export default function ThisWeek({ appUser }) {
       if (!activePlan) return
       const { error } = await supabase.from('planned_meals').insert({
         meal_plan_id: activePlan.id, household_id: appUser.household_id,
-        day_of_week: sheetDow, meal_type: sheetSlot.toLowerCase(),
+        day_of_week: sheetDow, meal_type: slotToMealType(sheetSlot),
         slot_type: 'note', note: manualInput.trim(), status: 'planned',
       })
       if (error) throw error
       const savedName = manualInput.trim()
-      const savedMealType = sheetSlot.toLowerCase()
+      const savedMealType = slotToMealType(sheetSlot)
       const savedDow = sheetDow
       console.log('[Roux] saveManualMeal success:', { name: savedName, mealType: savedMealType, dow: savedDow })
       closeSheet()
@@ -356,7 +362,7 @@ export default function ThisWeek({ appUser }) {
       if (!activePlan) return
       const { error } = await supabase.from('planned_meals').insert({
         meal_plan_id: activePlan.id, household_id: appUser.household_id,
-        day_of_week: sheetDow, meal_type: sheetSlot.toLowerCase(),
+        day_of_week: sheetDow, meal_type: slotToMealType(sheetSlot),
         slot_type: 'note', note: 'open_evening', status: 'planned',
       })
       if (error) throw error
@@ -737,6 +743,7 @@ export default function ThisWeek({ appUser }) {
           const dinner    = getMealsForDay(dowKey, 'dinner')[0]   ?? null
           const breakfast = getMealsForDay(dowKey, 'breakfast')[0] ?? null
           const lunch     = getMealsForDay(dowKey, 'lunch')[0]    ?? null
+          const otherMeals = getMealsForDay(dowKey, 'other')
           const allDayMeals = planMeals.filter(m => m.day_of_week === dowKey)
           // Tradition from household_traditions (by day_of_week), overridden by actual planned meal tradition
           const htTrad    = traditions.find(t => t.day_of_week === dowKey)
@@ -753,6 +760,7 @@ export default function ThisWeek({ appUser }) {
               dinner={dinner}
               breakfast={breakfast}
               lunch={lunch}
+              otherMeals={otherMeals}
               tradition={tradition}
               savedDayType={savedDayTypes?.[dowKey] ?? null}
               animDelay={`${0.06 + i * 0.05}s`}
@@ -1296,7 +1304,8 @@ function ProteinRoster({ proteins, open, onToggle, onAdd, onEdit, onDelete }) {
 }
 
 // ── Day Row ────────────────────────────────────────────────────────────────────
-function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, tradition, savedDayType, animDelay, onOpenSheet, expanded, mealCount, onToggleExpand }) {
+function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, otherMeals, tradition, savedDayType, animDelay, onOpenSheet, expanded, mealCount, onToggleExpand }) {
+  const [otherExpanded, setOtherExpanded] = useState(false)
   const dayType  = getDayType(date.getDay(), savedDayType)
   const dayName  = isToday ? 'Today' : dowKey.charAt(0).toUpperCase() + dowKey.slice(1)
   const isOpenEv = dinner?.note === 'open_evening'
@@ -1463,6 +1472,54 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinner, breakfast, lunch, t
             onTap={() => onOpenSheet(dayName, 'Lunch', toDateStr(date), false, lunch?.id || null)}
           />
         </div>
+
+        {/* Everything else — collapsed by default */}
+        {otherExpanded ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{
+              fontSize: '9px', fontWeight: 500, letterSpacing: '1.8px', textTransform: 'uppercase',
+              color: C.driftwoodSm, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <span>Everything else</span>
+              <button onClick={() => setOtherExpanded(false)} style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontSize: '11px', color: C.driftwood, fontWeight: 300,
+                fontFamily: "'Jost', sans-serif", padding: 0,
+              }}>Hide</button>
+            </div>
+            {otherMeals.map(m => (
+              <FilledMealCard key={m.id} meal={m} onSwap={() => onOpenSheet(dayName, 'Everything else', toDateStr(date), false, m.id)} />
+            ))}
+            <button
+              onClick={() => onOpenSheet(dayName, 'Everything else', toDateStr(date))}
+              style={{
+                background: 'none', border: `1px dashed ${C.linen}`, borderRadius: '8px',
+                padding: '8px', cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+                fontSize: '12px', color: C.driftwood, fontWeight: 300, width: '100%',
+              }}
+            >
+              + Add
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => otherMeals.length > 0 ? setOtherExpanded(true) : onOpenSheet(dayName, 'Everything else', toDateStr(date))}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontFamily: "'Jost', sans-serif", fontSize: '11px',
+              color: C.driftwood, fontWeight: 300, padding: '4px 0 0',
+              textAlign: 'left', display: 'flex', alignItems: 'center', gap: '4px',
+            }}
+          >
+            <span style={{ fontSize: '13px', lineHeight: 1 }}>+</span>
+            Everything else
+            {otherMeals.length > 0 && (
+              <span style={{ fontSize: '10px', color: C.sage, marginLeft: '4px' }}>
+                ({otherMeals.length})
+              </span>
+            )}
+          </button>
+        )}
       </div>
     </div>
   )
