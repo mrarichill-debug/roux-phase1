@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import { getWeekDatesTZ, getWeekStartTZ, toLocalDateStr } from '../lib/dateUtils'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
+import AddDayTypeSheet from '../components/AddDayTypeSheet'
 
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
@@ -58,8 +59,15 @@ export default function ThisWeekSettings({ appUser }) {
   const [previewingId, setPreviewingId] = useState(null)
   const [previousDayTypes, setPreviousDayTypes] = useState(null)
   const [confirmRemoveTemplate, setConfirmRemoveTemplate] = useState(false)
+  const [addDtOpen, setAddDtOpen] = useState(false)
 
   function showToast(msg) { setToastMsg(msg); setTimeout(() => setToastMsg(''), 2500) }
+
+  function handleDayTypeSaved(dt) {
+    const key = dt.name.toLowerCase().replace(/\s+/g, '_')
+    setDtKeyToId(prev => ({ ...prev, [key]: dt.id }))
+    showToast('Day type added')
+  }
 
   useEffect(() => {
     if (appUser?.household_id) loadData()
@@ -333,6 +341,13 @@ export default function ThisWeekSettings({ appUser }) {
                 </div>
               )
             })}
+            <button onClick={() => setAddDtOpen(true)} style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: '13px', color: C.forest, fontWeight: 400, padding: '10px 0',
+              fontFamily: "'Jost', sans-serif", textAlign: 'left',
+            }}>
+              + Add a day type
+            </button>
           </div>
 
           {/* ── Traditions ─────────────────────────────────────────────── */}
@@ -537,6 +552,13 @@ export default function ThisWeekSettings({ appUser }) {
           </div>
         </>
       )}
+
+      <AddDayTypeSheet
+        open={addDtOpen}
+        onClose={() => setAddDtOpen(false)}
+        householdId={appUser?.household_id}
+        onSaved={handleDayTypeSaved}
+      />
 
       {/* ── Toast ─────────────────────────────────────────────────────── */}
       {toastMsg && (
