@@ -137,6 +137,7 @@ export default function ThisWeek({ appUser }) {
   const [saveToUsuals,      setSaveToUsuals]      = useState(true)
   const [editingFavorites,  setEditingFavorites]  = useState(false)
   const [expandedDays,      setExpandedDays]      = useState(new Set()) // dowKeys that are expanded
+  const [householdCreatedAt, setHouseholdCreatedAt] = useState(null)
 
   const overlayRef = useRef(null)
   const tz         = appUser?.timezone ?? 'America/Chicago'
@@ -163,6 +164,11 @@ export default function ThisWeek({ appUser }) {
         .then(({ data }) => { if (data) setGroceryStores(data) })
       supabase.from('protein_favorites').select('*, grocery_stores(name)').eq('household_id', appUser.household_id).order('sort_order')
         .then(({ data, error }) => { if (data) setProteinFavorites(data); if (error) console.log('[Roux] protein_favorites not available:', error.message) })
+      // Fetch household created_at for week navigation boundary
+      if (!householdCreatedAt) {
+        supabase.from('households').select('created_at').eq('id', appUser.household_id).maybeSingle()
+          .then(({ data }) => { if (data?.created_at) setHouseholdCreatedAt(data.created_at) })
+      }
     }
   }, [appUser?.household_id, weekOffset, location.key])
 
@@ -653,6 +659,24 @@ export default function ThisWeek({ appUser }) {
 
   const isPublished = plan?.status === 'published' || plan?.status === 'active'
 
+  // Compute earliest navigable week from household created_at
+  const atEarliestWeek = (() => {
+    if (!householdCreatedAt) return false
+    const created = new Date(householdCreatedAt)
+    const createdMonday = getMondayOfDate(created)
+    const currentMonday = new Date(weekDates[0])
+    return currentMonday <= createdMonday
+  })()
+
+  function getMondayOfDate(d) {
+    const dt = new Date(d)
+    const day = dt.getDay()
+    const diff = day === 0 ? -6 : 1 - day
+    dt.setDate(dt.getDate() + diff)
+    dt.setHours(0, 0, 0, 0)
+    return dt
+  }
+
   return (
     <div style={{
       background:   C.cream,
@@ -676,7 +700,12 @@ export default function ThisWeek({ appUser }) {
         position: 'relative', zIndex: 1,
         animation: 'fadeUp 0.35s ease both',
       }}>
-        <button onClick={() => setWeekOffset(w => w - 1)} style={weekNavBtnStyle} aria-label="Previous week">
+        <button
+          onClick={atEarliestWeek ? undefined : () => setWeekOffset(w => w - 1)}
+          disabled={atEarliestWeek}
+          style={{ ...weekNavBtnStyle, opacity: atEarliestWeek ? 0.3 : 1, cursor: atEarliestWeek ? 'default' : 'pointer' }}
+          aria-label="Previous week"
+        >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
             <path d="m15 18-6-6 6-6"/>
           </svg>
@@ -688,6 +717,11 @@ export default function ThisWeek({ appUser }) {
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.ink, fontWeight: 500 }}>
             {formatWeekRange(weekDates)}
           </div>
+          {atEarliestWeek && (
+            <div style={{ fontSize: '12px', fontStyle: 'italic', color: C.driftwood, fontWeight: 300, marginTop: '4px' }}>
+              This is where it all started.
+            </div>
+          )}
           {activeTemplateName && (
             <button
               onClick={() => navigate('/week-settings')}
