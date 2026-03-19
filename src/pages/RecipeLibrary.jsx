@@ -610,37 +610,18 @@ function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWe
         )}
       </div>
 
-      {/* Plan button — bottom right */}
-      {!selectMode && (
-        <button
-          onClick={handlePlanTap}
-          style={{
-            position: 'absolute', bottom: '8px', right: '8px',
-            width: '24px', height: '24px', borderRadius: '50%',
-            background: C.forest, border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 1px 4px rgba(30,55,35,0.25)',
-          }}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" style={{ width: 12, height: 12 }}>
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-        </button>
-      )}
-      {selectMode && (
-        <button
-          onClick={handlePlanTap}
-          style={{
-            position: 'absolute', bottom: '8px', right: '8px',
-            padding: '4px 10px', borderRadius: '10px',
-            background: C.forest, border: 'none', cursor: 'pointer',
-            fontSize: '10px', fontWeight: 500, color: 'white',
-            fontFamily: "'Jost', sans-serif",
-          }}
-        >
-          Select
-        </button>
-      )}
+      {/* Plan link — bottom right */}
+      <button
+        onClick={handlePlanTap}
+        style={{
+          position: 'absolute', bottom: '10px', right: '12px',
+          background: 'none', border: 'none', cursor: 'pointer',
+          fontFamily: "'Jost', sans-serif", fontSize: '11px',
+          fontWeight: 300, color: C.forest, padding: 0,
+        }}
+      >
+        {selectMode ? 'Select' : '+ Plan'}
+      </button>
     </div>
   )
 }
