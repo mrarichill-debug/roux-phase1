@@ -697,7 +697,7 @@ export default function ThisWeek({ appUser }) {
       <div style={{
         position: 'relative', zIndex: 1,
         padding: '14px 24px 8px',
-        height: '82px',
+        height: '100px',
         animation: 'fadeUp 0.35s ease both',
       }}>
         {/* Back arrow — absolute left */}
@@ -758,67 +758,74 @@ export default function ThisWeek({ appUser }) {
             {formatWeekRange(weekDates)}
           </div>
 
-          {/* Row 3 — Metadata (fixed height, always present) */}
+          {/* Row 3 — Pills + status line (fixed height, always present) */}
           <div style={{
-            minHeight: '22px', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', gap: '8px', marginTop: '2px',
+            minHeight: '38px', display: 'flex', flexDirection: 'column',
+            alignItems: 'center', gap: '4px', paddingTop: '8px',
           }}>
-            {atEarliestWeek && (
-              <span style={{
-                fontSize: '12px', fontStyle: 'italic', color: C.driftwood,
+            {/* Pills row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {atEarliestWeek && (
+                <span style={{
+                  fontSize: '12px', fontStyle: 'italic', color: C.driftwood,
+                  fontWeight: 300, fontFamily: "'Jost', sans-serif",
+                }}>
+                  This is where it all started.
+                </span>
+              )}
+              {!atEarliestWeek && plan && !isPublished && (
+                <span style={{
+                  fontSize: '9px', fontWeight: 500, letterSpacing: '0.6px',
+                  textTransform: 'uppercase', padding: '2px 8px', borderRadius: '4px',
+                  background: 'rgba(196,154,60,0.10)', color: C.honey,
+                }}>
+                  Draft
+                </span>
+              )}
+              {!atEarliestWeek && isPublished && (
+                <span style={{
+                  fontSize: '9px', fontWeight: 500, letterSpacing: '0.6px',
+                  textTransform: 'uppercase', padding: '2px 8px', borderRadius: '4px',
+                  background: 'rgba(61,107,79,0.10)', color: C.forest,
+                }}>
+                  Published
+                </span>
+              )}
+              {activeTemplateName && (
+                <button
+                  onClick={() => navigate('/week-settings')}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '4px',
+                    padding: '2px 8px', borderRadius: '10px',
+                    background: 'rgba(196,154,60,0.12)', border: 'none',
+                    color: C.honey, fontSize: '10px', fontWeight: 500,
+                    fontFamily: "'Jost', sans-serif", cursor: 'pointer',
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 9, height: 9 }}>
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                    <line x1="7" y1="7" x2="7.01" y2="7"/>
+                  </svg>
+                  {activeTemplateName}
+                </button>
+              )}
+            </div>
+            {/* Status line */}
+            {!atEarliestWeek && plan && (
+              <div style={{
+                fontSize: '11px', fontStyle: 'italic', color: C.driftwood,
                 fontWeight: 300, fontFamily: "'Jost', sans-serif",
               }}>
-                This is where it all started.
-              </span>
-            )}
-            {!atEarliestWeek && plan && !isPublished && (
-              <span style={{
-                fontSize: '9px', fontWeight: 500, letterSpacing: '0.6px',
-                textTransform: 'uppercase', padding: '2px 8px', borderRadius: '4px',
-                background: 'rgba(196,154,60,0.10)', color: C.honey,
-              }}>
-                Draft
-              </span>
-            )}
-            {!atEarliestWeek && isPublished && (
-              <span style={{
-                fontSize: '9px', fontWeight: 500, letterSpacing: '0.6px',
-                textTransform: 'uppercase', padding: '2px 8px', borderRadius: '4px',
-                background: 'rgba(61,107,79,0.10)', color: C.forest,
-              }}>
-                Published
-              </span>
-            )}
-            {activeTemplateName && (
-              <button
-                onClick={() => navigate('/week-settings')}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '4px',
-                  padding: '2px 8px', borderRadius: '10px',
-                  background: 'rgba(196,154,60,0.12)', border: 'none',
-                  color: C.honey, fontSize: '10px', fontWeight: 500,
-                  fontFamily: "'Jost', sans-serif", cursor: 'pointer',
-                }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 9, height: 9 }}>
-                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-                  <line x1="7" y1="7" x2="7.01" y2="7"/>
-                </svg>
-                {activeTemplateName}
-              </button>
+                {isPublished
+                  ? (isPastWeek ? 'Family could see this plan' : 'Family can see this plan')
+                  : 'Only you can see this plan'}
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* ── Plan Status Banner ───────────────────────────────────────────── */}
-      <PlanStatusBanner
-        plan={plan}
-        loading={loading}
-        isPublished={isPublished}
-        pulsing={bannerPulsing}
-        onPublish={publishPlan}
-      />
+      {/* Plan Status Banner removed — status now in header row 3 */}
 
       {/* ── Protein Roster ───────────────────────────────────────────────── */}
       <ProteinRoster
