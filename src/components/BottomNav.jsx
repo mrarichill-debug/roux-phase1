@@ -79,6 +79,7 @@ const PATH_TO_TAB = {
   '/shopping': 'shop',
   '/profile': 'today',
   '/week-settings': 'week',
+  '/week/defaults': 'week',
 }
 
 function getTabFromPath(pathname) {

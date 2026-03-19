@@ -22,6 +22,8 @@ import Sage         from './pages/Sage'
 import PlanMeal     from './pages/PlanMeal'
 import SavedMeals   from './pages/SavedMeals'
 import WeekSettings from './pages/WeekSettings'
+import ThisWeekSettings from './pages/ThisWeekSettings'
+import HouseholdDefaults from './pages/HouseholdDefaults'
 import Profile from './pages/Profile'
 import ProfileSheet from './components/ProfileSheet'
 import { Shell } from './components/AppShell'
@@ -276,7 +278,8 @@ function AuthenticatedApp({ appUser }) {
         <Route path="/save-recipe"  element={<SaveRecipe    appUser={appUser} />} />
         <Route path="/shopping"      element={<ShoppingList  appUser={appUser} />} />
         <Route path="/sage"          element={<Sage          appUser={appUser} />} />
-        <Route path="/week-settings" element={<WeekSettings  appUser={appUser} />} />
+        <Route path="/week-settings" element={<ThisWeekSettings appUser={appUser} />} />
+        <Route path="/week/defaults" element={<HouseholdDefaults appUser={appUser} />} />
         <Route path="/profile"       element={<Profile        appUser={appUser} />} />
         <Route path="/*"             element={<Shell          appUser={appUser} />} />
       </Routes>
