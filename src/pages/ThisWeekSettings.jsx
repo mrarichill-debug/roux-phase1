@@ -321,8 +321,8 @@ export default function ThisWeekSettings({ appUser }) {
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '10px 0', borderBottom: i < 6 ? `1px solid rgba(200,185,160,0.20)` : 'none',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '15px', fontWeight: 500, color: C.ink, minWidth: '22px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: '120px', flexShrink: 0 }}>
+                    <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '15px', fontWeight: 500, color: C.ink, minWidth: '24px', textAlign: 'right', display: 'inline-block' }}>
                       {date.getDate()}
                     </span>
                     <span style={{ fontSize: '13px', color: C.driftwoodSm }}>{day}</span>

@@ -1541,18 +1541,21 @@ function DayRow({ date, dowKey, isToday, isPastWeek, dinnerMeals, breakfastMeals
           fontFamily: "'Jost', sans-serif", textAlign: 'left',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: '15px', fontWeight: 500, color: C.ink, lineHeight: 1, minWidth: '22px',
-          }}>
-            {date.getDate()}
-          </div>
-          <div style={{
-            fontSize: '11px', fontWeight: 400, color: C.driftwoodSm,
-            letterSpacing: '0.3px',
-          }}>
-            {dayName}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: '120px', flexShrink: 0 }}>
+            <div style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: '15px', fontWeight: 500, color: C.ink, lineHeight: 1,
+              minWidth: '24px', textAlign: 'right',
+            }}>
+              {date.getDate()}
+            </div>
+            <div style={{
+              fontSize: '11px', fontWeight: 400, color: C.driftwoodSm,
+              letterSpacing: '0.3px',
+            }}>
+              {dayName}
+            </div>
           </div>
           <div style={{
             fontSize: '10px', fontWeight: 400, letterSpacing: '0.8px', textTransform: 'uppercase',
