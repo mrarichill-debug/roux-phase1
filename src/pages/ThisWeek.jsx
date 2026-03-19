@@ -184,7 +184,7 @@ export default function ThisWeek({ appUser }) {
           .select('id, name, day_of_week, tradition_type')
           .eq('household_id', hid),
         supabase.from('meal_plans')
-          .select('id, status, week_start_date, week_end_date, published_at, notes')
+          .select('id, status, week_start_date, week_end_date, published_at, notes, template_id, meal_plan_templates(name)')
           .eq('household_id', hid)
           .eq('week_start_date', weekStart)
           .maybeSingle(),
@@ -212,17 +212,16 @@ export default function ThisWeek({ appUser }) {
 
       setPlan(activePlan)
 
-      // Parse saved day types + template name from meal_plans.notes (set by Week Settings)
+      // Parse saved day types from notes, template name from joined table
       if (activePlan?.notes) {
         try {
           const config = JSON.parse(activePlan.notes)
           setSavedDayTypes(config.day_types || null)
-          setActiveTemplateName(config.active_template_name || null)
-        } catch { setSavedDayTypes(null); setActiveTemplateName(null) }
+        } catch { setSavedDayTypes(null) }
       } else {
         setSavedDayTypes(null)
-        setActiveTemplateName(null)
       }
+      setActiveTemplateName(activePlan?.meal_plan_templates?.name || null)
 
       const isPublished = activePlan?.status === 'published' || activePlan?.status === 'active'
 

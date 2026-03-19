@@ -440,6 +440,7 @@ CREATE TABLE meal_plans (
   status          TEXT        NOT NULL DEFAULT 'draft'
                     CHECK (status IN ('draft', 'published', 'active', 'completed', 'archived')),
   season_tag      TEXT,
+  template_id     UUID        REFERENCES meal_plan_templates(id) ON DELETE SET NULL,
   notes           TEXT,
   published_at    TIMESTAMPTZ,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),

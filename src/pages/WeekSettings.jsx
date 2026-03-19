@@ -112,7 +112,7 @@ export default function WeekSettings({ appUser }) {
 
       const [planRes, tradRes, templatesRes] = await Promise.all([
         supabase.from('meal_plans')
-          .select('id, status, week_start_date, week_end_date, notes')
+          .select('id, status, week_start_date, week_end_date, notes, template_id')
           .eq('household_id', hid)
           .eq('week_start_date', weekStart)
           .maybeSingle(),
@@ -149,6 +149,8 @@ export default function WeekSettings({ appUser }) {
           }
         } catch { /* notes is plain text, not JSON — ignore */ }
       }
+      // Restore active template from template_id column
+      if (activePlan?.template_id) setActiveTemplateId(activePlan.template_id)
     } catch (err) {
       console.error('WeekSettings load error:', err)
     } finally {
@@ -241,16 +243,16 @@ export default function WeekSettings({ appUser }) {
         .filter(([, on]) => on)
         .map(([id]) => id)
 
-      // Save day types + active traditions + active template to meal_plans.notes as JSON
-      const activeTemplate = activeTemplateId ? savedTemplates.find(t => t.id === activeTemplateId) : null
+      // Save day types + active traditions to notes, template_id to its own column
       const weekConfig = {
         day_types: dayTypes,
         active_traditions: activeTraditions,
-        active_template_id: activeTemplateId || null,
-        active_template_name: activeTemplate?.name || null,
       }
       const { error } = await supabase.from('meal_plans')
-        .update({ notes: JSON.stringify(weekConfig) })
+        .update({
+          notes: JSON.stringify(weekConfig),
+          template_id: activeTemplateId || null,
+        })
         .eq('id', activePlan.id)
       if (error) throw error
 

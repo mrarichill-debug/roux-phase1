@@ -91,7 +91,7 @@ export default function Dashboard({ appUser }) {
       // ── Phase 1: Get the active plan ─────────────────────────────────
       console.time('[Roux] Phase 1: plan')
       const { data: plan } = await supabase.from('meal_plans')
-        .select('id, status, week_start_date, week_end_date, notes')
+        .select('id, status, week_start_date, week_end_date, notes, template_id, meal_plan_templates(name)')
         .eq('household_id', hid)
         .eq('week_start_date', weekStart)
         .maybeSingle()
@@ -99,15 +99,8 @@ export default function Dashboard({ appUser }) {
 
       setActivePlan(plan)
 
-      // Parse active template name from plan notes
-      if (plan?.notes) {
-        try {
-          const config = JSON.parse(plan.notes)
-          setActiveTemplateName(config.active_template_name || null)
-        } catch { setActiveTemplateName(null) }
-      } else {
-        setActiveTemplateName(null)
-      }
+      // Read template name from joined table
+      setActiveTemplateName(plan?.meal_plan_templates?.name || null)
 
       if (!plan) {
         setLoading(false)
