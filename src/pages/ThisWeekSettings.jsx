@@ -374,20 +374,20 @@ export default function ThisWeekSettings({ appUser }) {
                   const isApplied = activeTemplateId === t.id && !previewingId
                   const isPreviewing = previewingId === t.id
                   return (
-                    <div key={t.id} style={{
-                      padding: '10px 12px', borderRadius: '10px',
+                    <div key={t.id} onClick={() => !isPreviewing && handleTemplateTap(t)} style={{
+                      padding: '12px 12px', borderRadius: '10px', minHeight: '44px',
                       border: isPreviewing ? `1.5px solid ${C.forest}` : isApplied ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
                       background: isPreviewing ? 'rgba(61,107,79,0.04)' : isApplied ? 'rgba(61,107,79,0.06)' : 'white',
+                      cursor: isPreviewing ? 'default' : 'pointer',
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <button onClick={() => handleTemplateTap(t)} style={{
-                          background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                        <span style={{
                           fontFamily: "'Jost', sans-serif", fontSize: '13px', textAlign: 'left',
                           color: isApplied || isPreviewing ? C.forest : C.ink,
                           fontWeight: isApplied || isPreviewing ? 500 : 400,
                         }}>
                           {t.name} {isApplied && '✓'}
-                        </button>
+                        </span>
                         {isPreviewing && (
                           <div style={{ display: 'flex', gap: '8px' }}>
                             <button onClick={confirmApply} style={{
