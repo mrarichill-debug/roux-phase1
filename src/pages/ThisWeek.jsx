@@ -695,22 +695,33 @@ export default function ThisWeek({ appUser }) {
 
       {/* ── Week Navigation ──────────────────────────────────────────────── */}
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '18px 24px 10px',
         position: 'relative', zIndex: 1,
+        padding: '18px 24px 10px',
+        minHeight: '56px',
         animation: 'fadeUp 0.35s ease both',
       }}>
+        {/* Back arrow — fixed left */}
         <button
           onClick={atEarliestWeek ? undefined : () => setWeekOffset(w => w - 1)}
           disabled={atEarliestWeek}
-          style={{ ...weekNavBtnStyle, opacity: atEarliestWeek ? 0.3 : 1, cursor: atEarliestWeek ? 'default' : 'pointer' }}
+          style={{
+            ...weekNavBtnStyle,
+            position: 'absolute', left: '24px', top: '50%', transform: 'translateY(-50%)',
+            opacity: atEarliestWeek ? 0.3 : 1, cursor: atEarliestWeek ? 'default' : 'pointer',
+          }}
           aria-label="Previous week"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
             <path d="m15 18-6-6 6-6"/>
           </svg>
         </button>
-        <div style={{ textAlign: 'center' }}>
+
+        {/* Center content — absolutely centered */}
+        <div style={{
+          position: 'absolute', left: '50%', top: '50%',
+          transform: 'translate(-50%, -50%)',
+          textAlign: 'center', whiteSpace: 'nowrap',
+        }}>
           <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.sage, marginBottom: '2px' }}>
             {weekOffset === 0 ? 'This Week' : weekOffset < 0 ? 'Past Week' : 'Next Week'}
           </div>
@@ -741,7 +752,12 @@ export default function ThisWeek({ appUser }) {
             </button>
           )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+
+        {/* Forward arrow + settings — fixed right */}
+        <div style={{
+          position: 'absolute', right: '24px', top: '50%', transform: 'translateY(-50%)',
+          display: 'flex', alignItems: 'center', gap: '6px',
+        }}>
           <button onClick={() => setWeekOffset(w => w + 1)} style={weekNavBtnStyle} aria-label="Next week">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
               <path d="m9 18 6-6-6-6"/>
