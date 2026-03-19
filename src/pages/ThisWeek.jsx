@@ -705,8 +705,8 @@ export default function ThisWeek({ appUser }) {
       {/* ── Week Navigation ──────────────────────────────────────────────── */}
       <div style={{
         position: 'relative', zIndex: 1,
-        padding: '14px 24px 8px',
-        height: '100px',
+        padding: '14px 24px 24px',
+        height: '108px',
         animation: 'fadeUp 0.35s ease both',
       }}>
         {/* Back arrow — absolute left */}
