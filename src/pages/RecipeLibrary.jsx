@@ -27,24 +27,14 @@ const C = {
 }
 
 // ── Category pill → DB category mapping ───────────────────────────────────────
-const CAT_MAP = {
-  All:       null,
-  Breakfast: ['breakfast'],
-  Lunch:     ['lunch', 'appetizer'],
-  Dinner:    ['main', 'pasta'],
-  Soups:     ['soup'],
-  Salads:    ['salad'],
-  Sides:     ['side', 'bread', 'sauce'],
-  Desserts:  ['dessert'],
-}
-const CAT_PILLS    = ['All', 'Breakfast', 'Lunch', 'Dinner', 'Soups', 'Salads', 'Sides', 'Desserts']
+// CAT_PILLS and CAT_MAP are now dynamic — derived from fetched recipes
 const FILTER_PILLS = ['All', '★ Favorites', 'Recent', 'Quick ≤30m', 'Gluten Free', 'Vegetarian']
 
 // Human-readable label for each DB category
-const CAT_DISPLAY = {
-  main: 'Dinner', pasta: 'Pasta', soup: 'Soup', dessert: 'Dessert',
-  bread: 'Bread', sauce: 'Sauce', appetizer: 'Appetizer',
-  breakfast: 'Breakfast', lunch: 'Lunch', salad: 'Salad', side: 'Side',
+// Display category: capitalize first letter of the raw value
+function displayCategory(cat) {
+  if (!cat) return null
+  return cat.charAt(0).toUpperCase() + cat.slice(1)
 }
 
 const DAYS     = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -204,6 +194,13 @@ export default function RecipeLibrary({ appUser }) {
     setLoading(false)
   }
 
+  // ── Dynamic category pills from actual recipe data ──────────────────────────
+  const categoryPills = useMemo(() => {
+    const cats = new Set()
+    recipes.forEach(r => { if (r.category) cats.add(r.category) })
+    return ['All', ...[...cats].sort((a, b) => a.localeCompare(b))]
+  }, [recipes])
+
   // ── Filtered recipes (reactive) ──────────────────────────────────────────────
   const filteredRecipes = useMemo(() => {
     let r = recipes
@@ -214,8 +211,7 @@ export default function RecipeLibrary({ appUser }) {
     }
 
     if (activeCategory !== 'All') {
-      const cats = CAT_MAP[activeCategory] || []
-      r = r.filter(rec => cats.includes(rec.category))
+      r = r.filter(rec => rec.category === activeCategory)
     }
 
     if (!activeFilters.has('All')) {
@@ -338,7 +334,7 @@ export default function RecipeLibrary({ appUser }) {
         display: 'flex', gap: '6px', overflowX: 'auto',
         padding: '0 22px', position: 'relative', zIndex: 1,
       }}>
-        {CAT_PILLS.map(pill => {
+        {categoryPills.map(pill => {
           const isActive = activeCategory === pill
           return (
             <button
@@ -356,7 +352,7 @@ export default function RecipeLibrary({ appUser }) {
                 boxShadow: '0 1px 3px rgba(80,60,30,0.06)',
               }}
             >
-              {pill}
+              {pill === 'All' ? 'All' : displayCategory(pill)}
             </button>
           )
         })}
@@ -541,7 +537,7 @@ export default function RecipeLibrary({ appUser }) {
 function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWeek }) {
   const total    = getTotalMinutes(recipe)
   const timeStr  = total > 0 ? formatTime(total) : null
-  const catLabel = CAT_DISPLAY[recipe.category] || recipe.category || null
+  const catLabel = displayCategory(recipe.category)
   const note     = recipe.personal_notes || null
 
   const animDelay = `${0.04 + index * 0.03}s`
