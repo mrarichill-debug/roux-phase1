@@ -73,6 +73,37 @@
 
 ---
 
+## Week View — Day Cards & Header
+
+### Day Type Pills
+- Typographic only — **no icons, no emoji**.
+- Name in Jost 400, 10px, letter-spacing 0.8px, uppercase.
+- Background at 10% opacity of the day type's `color` field. No border, border-radius 4px, padding 2px 8px.
+- Color pulled from `day_types.color` record.
+
+### Week Header
+- Fixed three-row layout. Fixed height — never shifts.
+- **Row 1:** Week label ("THIS WEEK" / "PAST WEEK" / "NEXT WEEK") — Jost 300, 11px, uppercase, 1.2px letter-spacing, driftwood.
+- **Row 2:** Date range in Playfair Display 18px.
+- **Row 3:** Metadata row — always present, `min-height` maintained even when empty. Contains: status pill (Draft/Published, left), template pill (honey, right), status message line (italic Jost 300 11px driftwood) below pills.
+- Navigation arrows absolutely positioned left/right — independent of center content.
+
+### Slot Labels
+- `meal_type` → UI label mapping: `breakfast` → "Breakfast", `lunch` → "Lunch", `dinner` → "Dinner", `other` → "Everything else", `meal_prep` → hidden. Never show raw DB field values in UI.
+
+### Day/Day Type Row Layout
+- Two-column fixed-width layout for visual alignment uniformity.
+- Left column: `min-width: 120px`, `flex-shrink: 0`. Contains date number + day name.
+- Date number: `min-width: 24px`, `text-align: right` — so single and double digits align.
+- Right column: Day type pill, always starts at the same horizontal position.
+- Applied to both collapsed day cards on the week view and day type rows in Week Settings.
+
+### Reusable Components
+- `AddDayTypeSheet` (`src/components/AddDayTypeSheet.jsx`) — used in both This Week Settings and Household Defaults screens. Name input + color picker + save.
+- `AddToPlanSheet` (`src/components/AddToPlanSheet.jsx`) — week/day/slot picker for scheduling meals. Used in PlanMeal and SavedMeals.
+
+---
+
 ## Meals Hub Screen (`/meals`)
 
 - Forest green topbar with "Meals" heading.

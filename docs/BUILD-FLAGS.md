@@ -125,59 +125,71 @@ When a week plan is created or loaded, the app should check `household_tradition
 - A honey-colored tradition label displayed above the meal list for that day in the week view
 - If a previous occurrence exists (`tradition_occurrences`), surface a Sage-style nudge: *"Last [occasion name] you made [X meals]. Want to start from there?"*
 
-### Day Planner — Full Slot Support (Mar 18, 2026)
+### Week View — Day Cards (Mar 18, 2026)
 
-Every day in the week view supports all active meal slots: **Breakfast**, **Lunch**, **Dinner**, **Snack**, and **Everything else** (`other` in DB). `meal_prep` is hidden — do not surface it in the UI.
+- Day cards are **collapsible by default**. Today's card auto-expands. All others collapsed showing item count summary.
+- **Four active slots per day:** Breakfast, Lunch, Dinner, Everything else (`other` in DB). `snack` exists in DB constraint but has no UI slot. `meal_prep` hidden until future build.
+- **All slots support multiple items.** Each item is either a `meal_id`, `recipe_id`, or freeform text saved as a `recipe_type = 'quick'` record.
+- **Freeform slot items use autofill** — queries existing `recipe_type = 'quick'` recipes by `ILIKE`. Deduplicates on save via find-or-create pattern.
+- **Slot items are fully tappable** — tap to change or remove. No circle icon. Min 44px tap target.
+- **Slot label mapping:** `breakfast` → "Breakfast", `lunch` → "Lunch", `dinner` → "Dinner", `other` → "Everything else". Never show raw DB values.
+- **"Apply to other days" prompt** shows all 7 days — not filtered by empty slots (slots support multiple items).
+- **Back navigation boundary:** cannot navigate before `households.created_at`. Message at boundary: *"This is where it all started."*
+- **Forward navigation:** unrestricted.
+- **Week navigation arrows** are absolutely positioned — never shift regardless of content.
+- **Week header:** fixed three-row layout — PAST/THIS/NEXT WEEK label, date range, metadata row (status pill + template pill + status message). Fixed height always.
+- **Day type pills:** typographic only, no icons or emoji. Color from `day_types.color` field. 10% opacity background.
+- **Day/day type columns** use fixed-width two-column layout for alignment: left column `min-width: 120px`, date number `min-width: 24px` right-aligned.
 
-**Layout per day:**
+### Week Settings — Two Screen Architecture (Mar 18, 2026)
 
-- **Dinner** is the dominant slot — largest visual weight, always visible
-- **Breakfast** and **Lunch** are secondary — visible but compact
-- **Snack** and **Everything else** are collapsed by default — a quiet `+ Snack` and `+ Everything else` tap target at the bottom of each day expands them
+- **Screen 1:** This Week Settings (`/week-settings`) — day type assignments for this week only, relevant traditions (recurring + annual within 14 days), template apply/preview/undo, save as template, reset to defaults, link to Screen 2.
+- **Screen 2:** Household Defaults (`/week/defaults`) — default weekly pattern (saves to `household_weekly_pattern`), manage day types (list + add via `AddDayTypeSheet`), manage templates (list + delete).
+- **Template selection uses preview/confirm pattern** — visual preview first (day types change in UI), database write only on "Apply." "Undo" restores snapshot. Tapping an already-applied template offers removal + reset to defaults.
+- **`+ Add a day type`** accessible from both screens via shared `AddDayTypeSheet` component.
+- **Day types sorted A–Z** everywhere they appear in the app.
+- **Templates sorted A–Z** everywhere they appear.
 
-**`meal_type` → UI label mapping:**
+### Day Types (Mar 18, 2026)
 
-| DB value | UI label |
-|---|---|
-| `breakfast` | Breakfast |
-| `lunch` | Lunch |
-| `dinner` | Dinner |
-| `other` | Everything else |
-| `meal_prep` | *Hidden — not surfaced in UI* |
+- **Universal household defaults at creation:** Weekday (Mon–Fri) and Weekend (Sat–Sun) only. No school-specific types seeded by default.
+- **Hill House additionally has:** School Day, No School, Summer — household-specific, invisible to all other households.
+- All day types scoped to `household_id` — same table, siloed data, RLS enforced.
+- **Default weekly pattern** stored in `household_weekly_pattern` table — one row per day per household.
+- **Hill House default pattern:** School Day Mon–Fri, Weekend Sat–Sun.
+- **Per-week day type assignments** stored in `meal_plan_day_types` — separate from household defaults.
+- **New week plans auto-apply household default pattern** on creation.
+- Changing a day type on the current week only changes `meal_plan_day_types` for that week, not the household default.
 
-`snack` has been added to the `planned_meals` `meal_type` CHECK constraint.
+### Slot-to-Slot Move — Not Yet Built (Mar 18, 2026)
 
-Every slot uses the same universal picker — search recipes, search saved meals, or apply a tradition. The picker is identical regardless of which slot it's opened from. Never show raw DB values in the UI.
-
-### Slot-to-Slot Move (Mar 18, 2026)
-
-When a meal is placed in a slot, Lauren can move it to a different slot on the same day via a move icon on the meal chip. Opens a simple slot picker: *"Move to — Breakfast / Lunch / Dinner / Snack / Everything else."* Updates `meal_type` on the `planned_meals` row. No remove-and-re-add required.
+When a meal is placed in a slot, Lauren should be able to move it to a different slot on the same day. Opens a simple slot picker: *"Move to — Breakfast / Lunch / Dinner / Everything else."* Updates `meal_type` on the `planned_meals` row. No remove-and-re-add required. **Spec documented, UI not built yet.**
 
 ### Tradition Auto-Population — Slot Default (Mar 18, 2026)
 
-When a tradition is applied to a day (manually or via auto-scheduling), its anchor meals default to the `other` slot ("Everything else"). Lauren moves them to the correct slots using the slot-to-slot move interaction. Do not attempt to guess the right slot.
+When a tradition is applied to a day (manually or via auto-scheduling), its anchor meals default to the `other` slot ("Everything else"). Lauren moves them to the correct slots. Do not attempt to guess the right slot.
 
 ### Birthday Traditions — Auto-Creation (Mar 18, 2026)
 
-Birthday traditions are auto-created for all non-pet family members: `tradition_type = 'annual'`, `planning_lead_days = 7`. When a new family member is added with a `date_of_birth`, a birthday tradition should be auto-created at that time. Schema supports this via `occasion_date` + `occasion_month` on `household_traditions`.
+Birthday traditions are auto-created for all non-pet family members: `tradition_type = 'annual'`, `planning_lead_days = 7`. When a new family member is added with a `date_of_birth`, a birthday tradition should be auto-created at that time.
 
 ### Tradition Auto-Scheduling on Week View — Not Yet Built (Mar 18, 2026)
 
-Traditions must be applied via the slot picker which creates a `planned_meals` row with `tradition_id`. Do not auto-display traditions based on `day_of_week` matching alone — this bypasses the plan and cannot be removed or edited properly. The previous auto-display shortcut (matching `household_traditions.day_of_week` to show tradition names on day cards) has been removed. Traditions now only appear on day cards when a `planned_meals` row with a `tradition_id` exists for that day.
+Traditions must be applied via the slot picker which creates a `planned_meals` row with `tradition_id`. Do not auto-display traditions based on `day_of_week` matching alone. The previous auto-display shortcut has been removed.
 
 ### Weekly Proteins — Tier Placement (Mar 18, 2026)
 
-Basic weekly protein entry (protein name per week plan) is a **Free** feature. The intelligence layer — sale price tracking, spending trends, Sage using proteins for meal suggestions — is **Premium**. No tier enforcement is built yet; this documents the intended split.
+Basic weekly protein entry (protein name per week plan) is a **Free** feature. Sale price tracking, spending trends, Sage protein suggestions — **Premium**.
 
-### Default Weekly Pattern (Mar 18, 2026)
+### Schema Added Mar 17–18, 2026
 
-- Universal household defaults at creation: Weekday (Mon–Fri) and Weekend (Sat–Sun)
-- Household-specific defaults stored in `household_weekly_pattern` table — one row per day with `day_type_id` FK
-- Hill House default: School Day Mon–Fri, Weekend Sat–Sun
-- New households get Weekday + Weekend day types seeded at creation — School Day, No School, Summer are user-added types
-- When a new `meal_plans` row is created, the app auto-applies the household's default pattern to `meal_plan_day_types`
-- Lauren can change her default pattern in Week Settings → "Default Week Pattern" section — changes apply to all future weeks
-- Changing a day type on the current week only changes `meal_plan_day_types` for that week, not the household default
+- `meal_plan_day_types` — per-day day type assignments per week plan (`UNIQUE(meal_plan_id, day_of_week)`)
+- `meal_plan_traditions` — active traditions per week plan (`UNIQUE(meal_plan_id, tradition_id)`)
+- `household_weekly_pattern` — default day type per day of week per household (`UNIQUE(household_id, day_of_week)`)
+- `meal_plans.template_id` — proper FK to `meal_plan_templates`, replacing `notes` JSON workaround
+- `meal_recipe_alternatives` — alternative recipe options per meal component slot
+- `recipes.recipe_type` — `'full'` or `'quick'` (quick items stored as recipes for cost tracking)
+- `recipes.status` — `'draft'` or `'complete'`
 
 ---
 
