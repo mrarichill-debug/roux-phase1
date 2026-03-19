@@ -42,20 +42,34 @@ Roux is a premium family recipe library that also plans meals, built for Lauren 
 
 ## Current Build Status
 
-**Done:**
-- Supabase schema deployed (30 tables, RLS, grants, triggers)
+**Built:**
+- Supabase schema deployed (30+ tables, RLS, grants, triggers)
 - Auth flow working (signup → trigger → household + user record)
-- AppShell with top bar, drawer navigation, 5 routes
-- Recipe library Phase 1 (notecard list + expanded full-screen card)
+- AppShell with top bar, 5-tab bottom nav, routes
+- Recipe library Phase 2 (2-col grid, search, filter, category pills)
+- Recipe card Phase 2 (tabs, serves adjuster, Sage strip, Family Notes, pinned CTA)
+- Shopping list (3-state flow — Building/Shopping/Complete, manual items)
+- Meals hub (two-zone layout — action tiles + archive counters with tagline strip)
+- Plan a Meal (recipe picker, alternatives, quick add, autofill, edit mode)
+- Saved Meals (list with search, tap to edit, Add to plan via AddToPlanSheet)
+- This Week / Week view (collapsible day cards, four slots, multi-item, autofill quick items, week nav with boundary, fixed header, protein roster)
+- Week Settings — two-screen architecture: This Week Settings + Household Defaults
+- AddToPlanSheet (reusable week/day/slot picker with calendar for future weeks)
 - Design sprint complete — all 10 screen prototypes approved
 
-**Next (in order):**
-1. Welcome / onboarding flow (5 screens — prototypes in `/prototypes/`)
-2. Dashboard (cutting board design)
-3. This Week planner
-4. Recipe library Phase 2 (grid, search, filter)
-5. Recipe card Phase 2 (tabs, Sage strip, Family Notes)
-6. Shopping list (3-state flow)
+**Partially built:**
+- Dashboard (Home) — Tonight card, greeting, week strip, shortcuts exist. Missing: spending snapshot, Sage nudge, "By Ingredient" destination.
+- Shopping list — manual add works. Auto-generation from week plan not built.
+
+**Not yet built (in priority order):**
+1. Welcome / onboarding flow (5 screens — prototypes approved)
+2. Recipe import with Sage (chat-style input)
+3. Traditions screen (`/meals/traditions`) — schema live, routes to placeholder
+4. Sage screen (`/sage`) — placeholder only
+5. Settings screen (My Account + Our Kitchen sections)
+6. Family members management UI
+7. Tier enforcement layer (`useSubscription()` hook)
+8. Responsive design — tablet and desktop
 
 Full checklist with flags → `docs/BUILD-FLAGS.md`
 

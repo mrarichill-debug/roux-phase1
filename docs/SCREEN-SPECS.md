@@ -137,35 +137,36 @@
 
 ---
 
-## This Week (`roux-thisweek-style1-objects.html`)
+## This Week (`roux-thisweek-style1-objects.html`) — ✅ BUILT
 
-- **Layout:** Vertical scroll. One full-width day row per day, Mon–Sun.
-- **Week navigation:** Prev/next arrows + week range label centered.
-- **Plan status banner:** Amber = draft, green = published. "Share this week with the family" CTA. Future weeks auto-create new draft on navigation. Past weeks open read-only archived view.
+- **Layout:** Vertical scroll. Collapsible day cards — today auto-expands, all others collapsed.
+- **Week header:** Fixed three-row layout. Row 1: context label (THIS WEEK / PAST WEEK). Row 2: date range (Playfair 18px). Row 3: metadata — status pill + template pill + status message. Arrows absolutely positioned, never shift.
+- **Navigation boundary:** Cannot navigate before `households.created_at`. Message: *"This is where it all started."* Forward: unrestricted.
 - **Protein roster:** Collapsible card. Protein name + store + on-sale indicator.
+- **Week Settings:** Gear icon → two-screen architecture: This Week Settings (`/week-settings`) + Household Defaults (`/week/defaults`).
 
-### Day Rows
-- Left column: day name (10px caps) + date (Playfair) + tradition badge if applicable.
-- Right: day type badge (color-coded). Tradition badge is below date in left column — NOT beside day type badge.
-- Today row: `--forest` header background, white text.
+### Day Cards
+- **Collapsed:** Single row — date, day name, day type pill (typographic, no emoji), tradition badge (honey), item count summary, chevron.
+- **Expanded:** Four slots — Dinner (dominant), Breakfast + Lunch (side-by-side), Everything else. All slots support multiple items.
+- **Today:** `--forest` header background, white text, auto-expanded.
+- **Day type pills:** Jost 400, 10px, uppercase, color from `day_types.color`, 10% opacity background.
+- **Fixed-width columns:** Left `min-width: 120px`, date number `min-width: 24px` right-aligned.
 
-### Dinner Slot States
-- **Filled:** Meal name + assigned cook + status chip + notes dot + swap button (34px tap target confirmed).
-- **Empty:** Dashed border + italic "What's for dinner?" + "Ask Sage" nudge button + large green + circle.
-- **Open evening:** Soft green background + checkmark + "Open evening — no meal needed."
-- Tapping any empty or open slot opens the bottom sheet.
+### Slot States (all four slots)
+- **Filled:** Item name, fully tappable (min 44px height). Tap opens change/remove sheet. No circle icon.
+- **Empty (Dinner):** Dashed border + italic "What's for dinner?" + "Ask Sage" nudge.
+- **Empty (other slots):** Dashed "+ Add" button.
+- **Multiple items:** "+ Add another" appears below existing items.
+- **Freeform entry:** Autofill from `recipe_type = 'quick'` recipes via `ILIKE`. Saved as quick recipe records.
 
 ### Bottom Sheet
 - Rise: `translateY(100%)→translateY(0)`, `cubic-bezier(0.32,0.72,0,1)`, 320ms.
-- Overlay darkens with 40ms delay behind sheet rise.
-- Options: Let Sage suggest / Browse the library / Enter manually.
-- 4th option below divider: "Mark this evening as open — no meal needed."
-- When triggered from "Ask Sage" button: Sage option gets primary (green) treatment.
+- Options: Let Sage suggest / Browse the library / Enter manually / Mark as open evening.
+- "Apply to other days" prompt after adding — shows all 7 days (not filtered by empty slots).
 
 ### Publish Flow
-- Publish bar fixed above bottom nav in draft state. "Share this week with the family" — confirmed copy.
-- On publish: status dot amber→green (150ms), banner shifts (200ms), publish bar fades and slides down (300ms). 60ms offset chain.
-- **On publish, immediately surface a prompt to build the shopping list** — this is the most important workflow handoff in the app (see BUILD-FLAGS.md).
+- Status pill in header row (Draft amber / Published green). Status message below: *"Only you can see this plan"* / *"Family can see this plan"*.
+- **On publish, surface a prompt to build the shopping list** — most important workflow handoff.
 
 ---
 
@@ -252,3 +253,29 @@
 - Quantity clearly visible — "chicken breasts 4 lbs" not just "chicken breasts".
 - Recipe context shown — "for French Dip Night".
 - Location aware — if at Kroger, Kroger items shown first automatically.
+
+---
+
+## Meals Hub (`/meals`) — ✅ BUILT
+
+Two-zone layout with tagline strip. Zone 1 "Add something": Plan a Meal (forest green) + Add a Tradition (warm off-white). Tagline: *"Recipes become meals. Meals become your family's story."* Zone 2 "Your kitchen": Three archive tiles — Family Recipes (live count, draft badge), Saved Meals (live count), Traditions (live count). All counts refresh on focus.
+
+---
+
+## Plan a Meal (`/meals/plan`) — ✅ BUILT
+
+Forest green topbar. Meal name input (Playfair 26px). Recipe picker bottom sheet with search + quick add (autofill, type selector: Quick item / Recipe to finish later). Alternatives per recipe slot (honey left border, OR dividers). Reorder mode. Notes in Caveat. "Add to plan after saving" toggle (new meals) or "Add to plan" button (edit mode). AddToPlanSheet with week/day/slot picker including calendar for future weeks. Edit mode loads existing meal via URL param.
+
+---
+
+## Saved Meals (`/meals/saved`) — ✅ BUILT
+
+List of saved meals with recipe components joined by middle dots. Search bar (hidden at 0–1 meals). Each card: Playfair 18px name, Jost 12px recipe list, "Add to plan" link. Tap card → edit in PlanMeal. Empty state: *"Nothing built yet."* with link to Plan a Meal.
+
+---
+
+## Week Settings — ✅ BUILT (Two-Screen Architecture)
+
+**Screen 1 — This Week Settings** (`/week-settings`): Day type assignments for this week (tappable pills → bottom sheet picker), traditions toggle (filtered to relevant only), template apply with preview/confirm/undo, save as template, reset to defaults, link to Household Defaults.
+
+**Screen 2 — Household Defaults** (`/week/defaults`): Default weekly pattern (saves to `household_weekly_pattern`), manage day types (list + add via AddDayTypeSheet), manage templates (list + delete with confirmation). Intro: *"These settings apply to all future weeks."*

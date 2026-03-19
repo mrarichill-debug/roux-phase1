@@ -157,3 +157,30 @@ No format selection. No "how would you like to add this?" menu.
 
 - Scheme names in user-facing copy: **Garden** / **Slate** / **Walnut** / **Midnight** — always capitalized, no other descriptor needed.
 - Kitchen Theme picker label: **"Kitchen Theme"** in Profile → Our Kitchen section.
+
+---
+
+## Slot Labels
+
+- The database `meal_type` value `other` always displays as **"Everything else"** in user-facing copy — never "Other."
+- `meal_prep` is hidden — never surfaced in the UI.
+- All other `meal_type` values display with first letter capitalized: Breakfast, Lunch, Dinner.
+
+---
+
+## Week View Copy
+
+- **Week boundary message:** *"This is where it all started."* — shown when back navigation reaches the week containing `households.created_at`. Italic, driftwood, centered below the date range.
+- **Template preview:** *"Previewing — not saved yet"* — italic driftwood 11px below template name during preview state. Disappears on Apply or Undo.
+- **Week status messages** (italic Jost 300 11px driftwood, centered):
+  - Draft: *"Only you can see this plan"*
+  - Published (current or future week): *"Family can see this plan"*
+  - Published (past week): *"Family could see this plan"*
+
+---
+
+## Meals Hub Copy
+
+- Tagline strip: *"Recipes become meals. Meals become your family's story."* — centered between action tiles and archive tiles. Playfair italic 15px driftwood.
+- Plan a Meal subtext: *"Build it, add it to the week."*
+- Add a Tradition subtext: *"A meal your family keeps coming back to."*

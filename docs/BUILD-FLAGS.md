@@ -1,26 +1,40 @@
 # BUILD FLAGS & PROGRESS TRACKER
-*Roux Phase 2 — Last updated March 13, 2026*
+*Roux Phase 2 — Last updated March 18, 2026*
 
 ---
 
 ## Build Progress
 
 - [x] Complete database schema design
-- [x] Deploy Supabase schema SQL (30 tables, RLS policies, grants)
+- [x] Deploy Supabase schema SQL (30+ tables, RLS policies, grants)
 - [x] Load Hill family sample data (13 recipes via seed_recipes.sql)
 - [x] Verify foreign key relationships
 - [x] Build recipe library Phase 1 (card list + expanded view)
 - [x] Design sprint complete (all prototypes approved, build notes complete)
-- [ ] Build welcome / onboarding flow (5 screens — all prototypes approved)
-- [ ] Build dashboard (cutting board design — prototype approved)
-- [ ] Build This Week planner (prototype approved)
-- [x] Build recipe library Phase 2 (2-col grid, search, filter, category pills — see SCREEN-SPECS.md)
+- [x] Build recipe library Phase 2 (2-col grid, search, filter, category pills)
 - [x] Build recipe card Phase 2 (tabs, serves adjuster, Sage strip, Family Notes, pinned CTA)
-- [x] Build shopping list (3-state flow — prototype approved)
+- [x] Build shopping list (3-state flow — manual items, aisle sections, budget strip)
+- [x] Build Meals hub (two-zone layout — action tiles + archive counters + tagline strip)
+- [x] Build Plan a Meal (recipe picker, alternatives, quick add, autofill, edit mode)
+- [x] Build Saved Meals (list with search, tap to edit, Add to plan)
+- [x] Build This Week / week view (collapsible day cards, four slots, multi-item, autofill, nav boundary, fixed header)
+- [x] Build Week Settings — two-screen architecture (This Week Settings + Household Defaults)
+- [x] Build AddToPlanSheet (reusable week/day/slot picker with calendar)
+- [x] Build AddDayTypeSheet (reusable, used in both settings screens)
+- [ ] Build welcome / onboarding flow (5 screens — all prototypes approved)
+- [ ] Build dashboard improvements (spending snapshot, Sage nudge, "By Ingredient" destination)
 - [ ] Build recipe import with Sage (chat-style input)
-- [ ] Build household setup flow
-- [ ] Wire "By Ingredient" search (currently dead tap — must fix before launch)
+- [ ] Build Traditions screen (`/meals/traditions`) — schema live, routes to placeholder
+- [ ] Build Sage screen (`/sage`) — placeholder only
+- [ ] Build Settings screen (My Account + Our Kitchen)
+- [ ] Build family members management UI
+- [ ] Build shopping list auto-generation from week plan
+- [ ] Build slot-to-slot move
+- [ ] Build tradition slot picker workflow
+- [ ] Wire activity log writes (Sage intelligence blocked)
+- [ ] Wire "By Ingredient" search (currently dead tap)
 - [ ] Design child/view-only dashboard (required before onboarding ships)
+- [ ] Build tier enforcement layer (`useSubscription()` hook)
 - [ ] Responsive design — tablet and desktop
 
 ---
@@ -36,8 +50,8 @@ When Lauren publishes the plan, the app must immediately surface a prompt to bui
 ### 3. Tonight Card Empty State — Board Must Always Show
 The cutting board background must always be present regardless of plan status. Empty state = same wood grain + dashed groove + warm italic text. Never show a blank or unstyled container.
 
-### 4. Recipe Library Results Count — Currently Static
-The prototype shows "48 recipes" as a static string. Must update dynamically based on active filter and search state in the real build.
+### 4. Recipe Library Results Count — ✅ RESOLVED
+Meals hub archive tiles show live counts (recipes, meals, traditions) that refresh on window focus. Recipe library grid count may still need verification against active filter state.
 
 ### 5. Child-Scoped Dashboard (View Only Role) — Not Designed
 A child or "Just browsing" member landing on the full dashboard is a broken experience. Must be fully designed before the onboarding flow ships — the role exists in Screen 3b but the destination hasn't been designed.
@@ -50,8 +64,8 @@ Style: 10–11px, `--driftwood` color, below the sign-up button.
 ### 7. Tonight Card — "Who's Cooking" Stat Missing
 The Tonight card footer shows prep time only. The prototype has a second stat ("Aric cooking" + vertical divider). Requires an `assigned_to` field on `planned_meals` referencing `users`. Wire this during the This Week build — query and display the assigned member's first name in the tonight card at that time.
 
-### 8. This Week — Day Type Badge Only Has School + Weekend
-`getDayType()` in ThisWeek.jsx returns only `School` (Mon–Fri) or `Weekend` (Sat/Sun). The prototype defines 4 types: School (blue), Weekend (sage), No School (orange `#D4874A`), Summer (honey `#C49A3C`). Requires a `day_type` data source per day — likely a `household_schedule` table or a `day_type` field on `planned_meals` / `household_traditions`. Decide schema approach and implement when wiring the full This Week edit flow.
+### 8. This Week — Day Type System — ✅ RESOLVED
+Day types now use `meal_plan_day_types` table with FK to `day_types`. Household defaults stored in `household_weekly_pattern`. New week plans auto-apply defaults. All four types (School, Weekend, No School, Summer) supported. Day type pills are typographic only — no emoji. Two-screen Week Settings built.
 
 ### 9. "Household" in UI Copy — Global Audit Required
 All user-facing strings must use "home" not "household." Run a global find-and-replace across all JSX and string literals before launch. Database table names are unaffected.
@@ -212,7 +226,7 @@ Basic weekly protein entry (protein name per week plan) is a **Free** feature. S
 ### Post-MVP
 
 - [ ] **`notifications` table** — notification system not yet built. Required before archival confirmation flow and Sage nudge delivery system.
-- [ ] **`day_types` table normalization** — currently day types stored as JSON strings in `meal_plans.notes`. Normalize to proper FK relationship with `day_types` table when schema cleanup sprint happens.
+- [x] **`day_types` table normalization** — ✅ RESOLVED. Day types now stored in `meal_plan_day_types` table with FK to `day_types`. `meal_plans.notes` JSON workaround fully replaced.
 - [ ] **`meal_tags`, `meal_plan_rules` tables** — returned query errors during audit. Investigate and either build out or remove from schema if no longer needed.
 - [ ] **`family_members.role` stored in `notes` field as workaround** — add a proper `role TEXT` column to `family_members` table in a future schema cleanup sprint. When added, migrate existing role data from `notes` to the new column.
 - [ ] **Custom email domain for Supabase transactional emails** (password reset, invite notifications) — configure when Roux domain is purchased. Setting lives in Supabase Dashboard → Authentication → SMTP Settings. Suggested sender: `hello@[domain]` or `sage@[domain]`.
@@ -238,8 +252,11 @@ Basic weekly protein entry (protein name per week plan) is a **Free** feature. S
 - **Serves adjuster with quantity scaling** — affects the data model. Plan this early in the recipe card build.
 - **Welcome screen recipe box illustration** — the ghost recipe box SVG in the lower right corner of the welcome screen is a nice decorative element. This should become part of the watermark/decoration object system and appear on other screens as part of the active seasonal set. Wire it into WatermarkLayer so it rotates with the season like the other objects. Currently only exists on the welcome screen.
 - **Invite flow font audit** — the invite flow screens (code entry, invitation card, role selection, account creation, pending approval) should use the same Playfair Display / Jost / Caveat font system as the rest of the app. Do a font audit of WelcomeScreen3b.jsx and PendingApprovalScreen (in App.jsx) and ensure typography matches the design system exactly — no default browser fonts or inconsistent weights.
-- **Plan a Meal screen** (`/meals/plan`) — currently routes to Sage placeholder. Full design required. Build a meal composition screen where Lauren selects a recipe, names the meal, and assigns it to a day/slot. This is the primary action from the Meals hub.
-- **Traditions screen** (`/meals/traditions`) — currently routes to Sage placeholder. Should show household_traditions data with add/edit/delete. Links to WeekSettings traditions section but as a standalone browsable list.
+- ~~**Plan a Meal screen**~~ — ✅ Built. Recipe picker, quick add with autofill, alternatives, edit mode, AddToPlanSheet with calendar.
+- ~~**Saved Meals screen**~~ — ✅ Built. List with search, tap to edit via PlanMeal, Add to plan via AddToPlanSheet.
+- ~~**Meals hub**~~ — ✅ Built. Two-zone layout (action tiles + archive counters), tagline strip, live counts refreshing on focus.
+- ~~**Week Settings**~~ — ✅ Built. Two-screen architecture: This Week Settings (`/week-settings`) + Household Defaults (`/week/defaults`). Template preview/confirm, AddDayTypeSheet reusable.
+- **Traditions screen** (`/meals/traditions`) — currently routes to Sage placeholder. Schema live. Should show household_traditions with add/edit/delete.
 
 ---
 
@@ -292,79 +309,11 @@ The spending snapshot is the single most powerful retention feature in the app �
 
 ---
 
-## Subscription Tiers — Roadmap
+## Subscription Tiers
 
-*To be enforced before opening app beyond Hill family household. Build `useSubscription()` hook as a focused sprint at that time.*
+See **`docs/PRODUCT-TIERS.md`** for authoritative tier definitions (Free / Plus / Premium feature breakdown).
 
-### Tier Definitions (Locked)
-
-**Free**
-- Recipe library — up to 25 recipes
-- Basic weekly meal planning — dinner slot only
-- Manual shopping list — no auto-generation
-- One household member
-- No Sage AI
-- No budget tracking
-
-**Plus**
-- Unlimited recipes
-- Full weekly planning — all meal slots, day types, traditions
-- Shopping list auto-generation from meal plan
-- Basic spending tracking — estimated vs spent
-- Up to 5 household members
-- Sage reactive suggestions — on demand only
-- No receipt capture
-- No utilization tracking
-
-**Premium**
-- Everything in Plus
-- Unlimited household members
-- Sage AI nudges, observational notes, and proactive suggestions
-- Full budget intelligence — estimated vs spent vs utilization
-- Receipt capture and price history
-- Multiple shopping lists per week
-- Week templates — save and apply
-- Spending trend analysis — unlocks after 4 weeks
-- Sage full week planning — unlocks after 50 archived meals
-- Seasonal decoration sets — custom selection
-- Sage skip pattern detection — flags meals skipped 3+ times
-
-### Implementation Plan (When Ready)
-
-**Step 1 — `useSubscription()` hook**
-- Lives in `src/hooks/useSubscription.js`
-- Reads `subscription_tier` from `users` table for current logged-in user
-- Returns: `tier` string, `isPremium()`, `isPlus()`, `isFree()`, `canUse(featureName)`
-- `canUse()` checks a feature map object — single source of truth for what each tier can access
-- Must be lightweight — reads from `appUser` already in context, no extra DB call
-
-**Step 2 — Gated component pattern**
-- Premium-only features render with a soft lock overlay when tier doesn't match
-- Never hide features entirely — show them locked with upgrade prompt
-- Upgrade prompt copy: *"This is a Premium feature. Upgrade to unlock Sage's full intelligence."*
-- Warm, never pushy — one tap to learn more, easy to dismiss
-
-**Step 3 — Enforcement touchpoints**
-
-Apply `useSubscription()` check to these specific components:
-- Sage nudges and suggestions — Premium only
-- Spending snapshot utilization % — Premium only
-- Receipt capture flow — Premium only
-- Multiple shopping lists — Premium only
-- Week templates — Premium only
-- Sage full week planning — Premium only + 50 meal threshold
-- Spending trend analysis — Premium only + 4 week threshold
-- Recipe library beyond 25 — Plus and above
-- Shopping list auto-generation — Plus and above
-- Sage reactive suggestions — Plus and above
-
-**Step 4 — Stripe integration**
-- Not planned for Phase 1
-- Lauren is permanently Premium — hardcoded in her user record
-- Payment infrastructure to be designed as a separate sprint
-- For now: tier is set manually in Supabase `users` table
-
-### Current Status
+### Enforcement Status
 
 - `subscription_tier` field exists on users/households table ✓
 - Lauren Hill set to Premium permanently ✓
@@ -375,7 +324,7 @@ Apply `useSubscription()` check to these specific components:
 
 ### Trigger to Build
 
-Build the enforcement layer as a focused sprint immediately before inviting any non-Hill-family users to the app.
+Build the enforcement layer as a focused sprint immediately before inviting any non-Hill-family users to the app. Implementation plan: (1) `useSubscription()` hook reading from `appUser`, (2) gated component pattern with soft lock overlay, (3) enforcement touchpoints per PRODUCT-TIERS.md, (4) Stripe integration in a later phase.
 
 ---
 

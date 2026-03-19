@@ -58,17 +58,14 @@
 
 ## Bottom Navigation — 5 Tabs (Updated March 2026)
 
-- Height: **58px**. Background: `--cream`. Border-top: `1px solid --linen`. Overflow hidden.
-- 5 tabs: **Today / Week / Meals / Sage / Shop**
+- Height: **66px**. Background: `--cream`. Border-top: `1px solid --linen`.
+- 5 tabs: **Home / Week / Meals / Sage / Shop**
 - Routes: `/` `/thisweek` `/meals` `/sage` `/shopping`
-- Layout: paired spacing — left pair (Today+Week), center (Meals on green circle), right pair (Sage+Shop).
-- **Green circle**: 68px diameter `--forest` circle behind Meals tab, clips at top and bottom of nav.
-- **Meals icon**: Version A stacked recipe box, always cream color on green circle.
-- **Circle pulse**: `circlePulse` keyframe on tap — scale 1.0→1.04→1.0 over 200ms.
-- Active state (Today/Week/Sage/Shop): scheme primary color + font-weight 600 + 3px dot below label.
-- Inactive: `--driftwood` color.
-- Meals tab: always cream, never changes color — sits on the green circle.
-- Custom SVG icons: Today (calendar+dot), Week (calendar+grid), Meals (recipe box), Sage (chat+sparkle), Shop (list+bullets).
+- Layout: standard `repeat(5, 1fr)` grid — even spacing, no paired grouping, no green circle.
+- **Icons:** Home (house), Week (calendar with pegs), Meals (rounded rect with horizontal lines), Sage (sparkle), Shop (bullet list).
+- Active state: `--forest` color + font-weight 600 + 3px dot below label.
+- Inactive: `--driftwood` color, font-weight 400.
+- Labels: 9px Jost, 0.3px letter-spacing.
 - Shared component: `src/components/BottomNav.jsx` — used on every screen.
 
 ---
@@ -106,12 +103,24 @@
 
 ## Meals Hub Screen (`/meals`)
 
-- Forest green topbar with "Meals" heading.
-- Three stacked cards: **Plan a Meal** (forest green, dominant), **Family Recipes** (white), **Our Traditions** (white).
-- Plan a Meal routes to `/meals/plan` (placeholder).
-- Family Recipes routes to `/meals/recipes` (RecipeLibrary).
-- Our Traditions routes to `/meals/traditions` (placeholder).
-- Recipe count queries live from Supabase.
+Two-zone layout with tagline strip between zones.
+
+**Zone 1 — "Add something"** (zone label in small uppercase driftwood)
+- Two equal-height tiles side by side in a 2-column grid:
+  - **Plan a Meal** — forest green background, plus icon top-left, "Build it, add it to the week." Routes to `/meals/plan`.
+  - **Add a Tradition** — warm off-white `#F0EBE3`, honey star icon, "A meal your family keeps coming back to." Routes to `/meals/traditions/new`.
+
+**Tagline strip** — centered between zones:
+- *"Recipes become meals. Meals become your family's story."* — Playfair Display italic 15px, driftwood, line-height 1.6.
+- Three separator dots below: `#E4DDD2` / `#C4B8A8` / `#E4DDD2`, 3px each, 6px gap.
+
+**Zone 2 — "Your kitchen"** (zone label)
+- Three equal archive tiles in a 3-column grid:
+  - **Family Recipes** — live count of complete full recipes. Amber "X to finish" badge if draft recipes exist. Routes to `/meals/recipes`.
+  - **Saved Meals** — live count from meals table. Unit: "built". Routes to `/meals/saved`.
+  - **Traditions** — live count from household_traditions. Honey star accent. Unit: "kept". Routes to `/meals/traditions`.
+- Archive tile layout: icon (16px driftwood) → count (Playfair 22px forest green) → name (Jost 12px ink) → unit (Jost 10px driftwood).
+- All counts refresh on window focus.
 
 ---
 
