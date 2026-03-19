@@ -696,17 +696,17 @@ export default function ThisWeek({ appUser }) {
       {/* ── Week Navigation ──────────────────────────────────────────────── */}
       <div style={{
         position: 'relative', zIndex: 1,
-        padding: '18px 24px 10px',
-        minHeight: '56px',
+        padding: '14px 24px 8px',
+        height: '82px',
         animation: 'fadeUp 0.35s ease both',
       }}>
-        {/* Back arrow — fixed left */}
+        {/* Back arrow — absolute left */}
         <button
           onClick={atEarliestWeek ? undefined : () => setWeekOffset(w => w - 1)}
           disabled={atEarliestWeek}
           style={{
             ...weekNavBtnStyle,
-            position: 'absolute', left: '24px', top: '50%', transform: 'translateY(-50%)',
+            position: 'absolute', left: '24px', top: '28px',
             opacity: atEarliestWeek ? 0.3 : 1, cursor: atEarliestWeek ? 'default' : 'pointer',
           }}
           aria-label="Previous week"
@@ -716,46 +716,9 @@ export default function ThisWeek({ appUser }) {
           </svg>
         </button>
 
-        {/* Center content — absolutely centered */}
+        {/* Forward arrow + settings — absolute right */}
         <div style={{
-          position: 'absolute', left: '50%', top: '50%',
-          transform: 'translate(-50%, -50%)',
-          textAlign: 'center', whiteSpace: 'nowrap',
-        }}>
-          <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.sage, marginBottom: '2px' }}>
-            {weekOffset === 0 ? 'This Week' : weekOffset < 0 ? 'Past Week' : 'Next Week'}
-          </div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.ink, fontWeight: 500 }}>
-            {formatWeekRange(weekDates)}
-          </div>
-          {atEarliestWeek && (
-            <div style={{ fontSize: '12px', fontStyle: 'italic', color: C.driftwood, fontWeight: 300, marginTop: '4px' }}>
-              This is where it all started.
-            </div>
-          )}
-          {activeTemplateName && (
-            <button
-              onClick={() => navigate('/week-settings')}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: '4px',
-                marginTop: '4px', padding: '3px 9px', borderRadius: '12px',
-                background: 'rgba(196,154,60,0.12)', border: '1px solid rgba(196,154,60,0.30)',
-                color: C.honey, fontSize: '11px', fontWeight: 500,
-                fontFamily: "'Jost', sans-serif", cursor: 'pointer',
-              }}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 10, height: 10 }}>
-                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-                <line x1="7" y1="7" x2="7.01" y2="7"/>
-              </svg>
-              {activeTemplateName}
-            </button>
-          )}
-        </div>
-
-        {/* Forward arrow + settings — fixed right */}
-        <div style={{
-          position: 'absolute', right: '24px', top: '50%', transform: 'translateY(-50%)',
+          position: 'absolute', right: '24px', top: '28px',
           display: 'flex', alignItems: 'center', gap: '6px',
         }}>
           <button onClick={() => setWeekOffset(w => w + 1)} style={weekNavBtnStyle} aria-label="Next week">
@@ -769,6 +732,82 @@ export default function ThisWeek({ appUser }) {
               <circle cx="12" cy="12" r="3"/>
             </svg>
           </button>
+        </div>
+
+        {/* Center content — three fixed rows */}
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          paddingTop: '2px',
+        }}>
+          {/* Row 1 — Week label */}
+          <div style={{
+            fontSize: '11px', fontWeight: 300, letterSpacing: '1.2px',
+            textTransform: 'uppercase', color: C.driftwood,
+            fontFamily: "'Jost', sans-serif",
+            height: '16px', lineHeight: '16px',
+          }}>
+            {weekOffset === 0 ? 'This Week' : weekOffset < 0 ? 'Past Week' : 'Next Week'}
+          </div>
+
+          {/* Row 2 — Date range */}
+          <div style={{
+            fontFamily: "'Playfair Display', serif", fontSize: '18px',
+            color: C.ink, fontWeight: 500,
+            height: '24px', lineHeight: '24px',
+          }}>
+            {formatWeekRange(weekDates)}
+          </div>
+
+          {/* Row 3 — Metadata (fixed height, always present) */}
+          <div style={{
+            minHeight: '22px', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', gap: '8px', marginTop: '2px',
+          }}>
+            {atEarliestWeek && (
+              <span style={{
+                fontSize: '12px', fontStyle: 'italic', color: C.driftwood,
+                fontWeight: 300, fontFamily: "'Jost', sans-serif",
+              }}>
+                This is where it all started.
+              </span>
+            )}
+            {!atEarliestWeek && plan && !isPublished && (
+              <span style={{
+                fontSize: '9px', fontWeight: 500, letterSpacing: '0.6px',
+                textTransform: 'uppercase', padding: '2px 8px', borderRadius: '4px',
+                background: 'rgba(196,154,60,0.10)', color: C.honey,
+              }}>
+                Draft
+              </span>
+            )}
+            {!atEarliestWeek && isPublished && (
+              <span style={{
+                fontSize: '9px', fontWeight: 500, letterSpacing: '0.6px',
+                textTransform: 'uppercase', padding: '2px 8px', borderRadius: '4px',
+                background: 'rgba(61,107,79,0.10)', color: C.forest,
+              }}>
+                Published
+              </span>
+            )}
+            {activeTemplateName && (
+              <button
+                onClick={() => navigate('/week-settings')}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '4px',
+                  padding: '2px 8px', borderRadius: '10px',
+                  background: 'rgba(196,154,60,0.12)', border: 'none',
+                  color: C.honey, fontSize: '10px', fontWeight: 500,
+                  fontFamily: "'Jost', sans-serif", cursor: 'pointer',
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 9, height: 9 }}>
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                  <line x1="7" y1="7" x2="7.01" y2="7"/>
+                </svg>
+                {activeTemplateName}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
