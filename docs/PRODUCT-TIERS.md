@@ -14,6 +14,7 @@
 - Manual shopping list
 - Family Suggestions — household members can suggest meals to the planner
 - Day Types — default set only (School Day, Weekend, No School, Summer), editable but not custom
+- Default weekly pattern — set your household's default day-type pattern for new weeks
 - Weekly Proteins — basic entry (protein name per week plan)
 
 ---

@@ -194,7 +194,7 @@ export default function ThisWeek({ appUser }) {
 
       let activePlan = planRes.data
 
-      // Future weeks: create a draft on first navigation
+      // Future weeks: create a draft on first navigation with default day types
       if (!activePlan && weekOffset > 0) {
         const { data: newPlan } = await supabase
           .from('meal_plans')
@@ -207,6 +207,18 @@ export default function ThisWeek({ appUser }) {
           })
           .select('id, status, week_start_date, week_end_date, published_at')
           .single()
+        if (newPlan) {
+          // Apply household default day types
+          const { data: pattern } = await supabase
+            .from('household_weekly_pattern')
+            .select('day_of_week, day_type_id')
+            .eq('household_id', hid)
+          if (pattern && pattern.length > 0) {
+            await supabase.from('meal_plan_day_types').insert(
+              pattern.map(p => ({ meal_plan_id: newPlan.id, day_of_week: p.day_of_week, day_type_id: p.day_type_id }))
+            )
+          }
+        }
         activePlan = newPlan
       }
 
@@ -296,6 +308,19 @@ export default function ThisWeek({ appUser }) {
   }
 
   // Ensure a plan exists for the current week, creating a draft if needed
+  // Apply household default day types to a newly created plan
+  async function applyDefaultDayTypes(planId) {
+    const hid = appUser.household_id
+    const { data: pattern } = await supabase
+      .from('household_weekly_pattern')
+      .select('day_of_week, day_type_id')
+      .eq('household_id', hid)
+    if (pattern && pattern.length > 0) {
+      const rows = pattern.map(p => ({ meal_plan_id: planId, day_of_week: p.day_of_week, day_type_id: p.day_type_id }))
+      await supabase.from('meal_plan_day_types').insert(rows)
+    }
+  }
+
   async function ensurePlan() {
     if (plan) return plan
     const hid = appUser.household_id
@@ -310,6 +335,7 @@ export default function ThisWeek({ appUser }) {
       .select('id, status, week_start_date, week_end_date, published_at')
       .single()
     if (error) { console.error('[Roux] ensurePlan error:', error); return null }
+    await applyDefaultDayTypes(newPlan.id)
     setPlan(newPlan)
     return newPlan
   }

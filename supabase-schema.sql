@@ -448,7 +448,22 @@ CREATE TABLE meal_plans (
 );
 
 
--- ── Table 16b: meal_plan_day_types ───────────────────────────────────────────
+-- ── Table 16b: household_weekly_pattern ──────────────────────────────────────
+-- Default weekly day-type pattern for a household. Applied automatically to new
+-- week plans. Lauren can override individual days per week in meal_plan_day_types.
+
+CREATE TABLE household_weekly_pattern (
+  id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  household_id UUID        NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  day_of_week  TEXT        NOT NULL CHECK (day_of_week IN
+                 ('monday','tuesday','wednesday','thursday','friday','saturday','sunday')),
+  day_type_id  UUID        NOT NULL REFERENCES day_types(id) ON DELETE CASCADE,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(household_id, day_of_week)
+);
+
+
+-- ── Table 16c: meal_plan_day_types ───────────────────────────────────────────
 -- Per-day day-type assignment for a week plan. Replaces notes JSON storage.
 
 CREATE TABLE meal_plan_day_types (

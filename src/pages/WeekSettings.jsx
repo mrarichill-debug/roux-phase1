@@ -88,6 +88,9 @@ export default function WeekSettings({ appUser }) {
   const [savedTemplates, setSavedTemplates] = useState([])
   const [activeTemplateId, setActiveTemplateId] = useState(null)
   const [dtKeyToId, setDtKeyToId] = useState({})
+  const [defaultPattern, setDefaultPattern] = useState({ ...DEFAULT_DAY_TYPES })
+  const [savingDefault, setSavingDefault] = useState(false)
+  const [defaultPatternDirty, setDefaultPatternDirty] = useState(false)
   const [prevDayTypes, setPrevDayTypes] = useState(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState(null)
   const [applyConfirmId, setApplyConfirmId] = useState(null)
@@ -182,6 +185,20 @@ export default function WeekSettings({ appUser }) {
 
       setDtKeyToId(dtKeyToId)
 
+      // Load household default weekly pattern
+      const { data: patternRows } = await supabase
+        .from('household_weekly_pattern')
+        .select('day_of_week, day_type_id')
+        .eq('household_id', hid)
+      if (patternRows && patternRows.length > 0) {
+        const pat = { ...DEFAULT_DAY_TYPES }
+        patternRows.forEach(r => {
+          const key = dtNameToKey[r.day_type_id]
+          if (key) pat[r.day_of_week] = key
+        })
+        setDefaultPattern(pat)
+      }
+
       // Restore active template from template_id column
       if (activePlan?.template_id) setActiveTemplateId(activePlan.template_id)
     } catch (err) {
@@ -250,6 +267,29 @@ export default function WeekSettings({ appUser }) {
       setConfirmLeaveOpen(true)
     } else {
       navigate('/thisweek')
+    }
+  }
+
+  async function saveDefaultPattern() {
+    if (savingDefault) return
+    setSavingDefault(true)
+    try {
+      const hid = appUser.household_id
+      const DOW_ALL = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']
+      await supabase.from('household_weekly_pattern').delete().eq('household_id', hid)
+      const rows = DOW_ALL
+        .filter(dow => defaultPattern[dow] && dtKeyToId[defaultPattern[dow]])
+        .map(dow => ({ household_id: hid, day_of_week: dow, day_type_id: dtKeyToId[defaultPattern[dow]] }))
+      if (rows.length > 0) {
+        const { error } = await supabase.from('household_weekly_pattern').insert(rows)
+        if (error) throw error
+      }
+      setDefaultPatternDirty(false)
+      showToast('Default pattern saved')
+    } catch (err) {
+      console.error('[Roux] saveDefaultPattern error:', err)
+    } finally {
+      setSavingDefault(false)
     }
   }
 
@@ -510,6 +550,71 @@ export default function WeekSettings({ appUser }) {
                 </div>
               )
             })}
+          </div>
+
+          {/* ── Section 2: Default Week Pattern ──────────────────────────── */}
+          <div style={{ ...cardStyle, animation: 'fadeUp 0.35s ease 0.10s both' }}>
+            <div style={sectionHeaderStyle}>Default Week Pattern</div>
+            <div style={{
+              fontSize: '11px', color: C.driftwood, fontWeight: 300, fontStyle: 'italic',
+              marginBottom: '12px',
+            }}>
+              This is your default — changes apply to all future weeks.
+            </div>
+            {DAYS.map((day, i) => {
+              const dowKey = DOW_KEYS[i]
+              const activeType = defaultPattern[dowKey]
+              return (
+                <div key={`def-${dowKey}`} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '6px 0',
+                  borderBottom: i < 6 ? '1px solid rgba(200,185,160,0.20)' : 'none',
+                }}>
+                  <span style={{ fontSize: '13px', fontWeight: 400, color: C.ink, minWidth: '80px' }}>
+                    {day}
+                  </span>
+                  <div style={{ display: 'flex', gap: '5px' }}>
+                    {DAY_TYPE_OPTIONS.map(opt => {
+                      const isActive = activeType === opt.key
+                      return (
+                        <button
+                          key={opt.key}
+                          onClick={() => {
+                            setDefaultPattern(prev => ({ ...prev, [dowKey]: opt.key }))
+                            setDefaultPatternDirty(true)
+                          }}
+                          style={{
+                            padding: '3px 8px', fontSize: '10px',
+                            fontFamily: "'Jost', sans-serif", fontWeight: isActive ? 500 : 400,
+                            borderRadius: '12px', cursor: 'pointer',
+                            transition: 'all 0.15s', whiteSpace: 'nowrap',
+                            border: `1.5px solid ${opt.color}`,
+                            background: isActive ? opt.color : 'transparent',
+                            color: isActive ? 'white' : opt.color,
+                          }}
+                        >
+                          {opt.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+            {defaultPatternDirty && (
+              <button
+                onClick={saveDefaultPattern}
+                disabled={savingDefault}
+                style={{
+                  marginTop: '12px', width: '100%', padding: '10px',
+                  borderRadius: '10px', border: 'none', cursor: 'pointer',
+                  background: C.forest, color: 'white',
+                  fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
+                }}
+              >
+                {savingDefault ? 'Saving...' : 'Save default pattern'}
+              </button>
+            )}
           </div>
 
           {/* ── Section 3: Traditions ─────────────────────────────────────── */}

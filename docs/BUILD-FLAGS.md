@@ -169,6 +169,16 @@ Traditions must be applied via the slot picker which creates a `planned_meals` r
 
 Basic weekly protein entry (protein name per week plan) is a **Free** feature. The intelligence layer — sale price tracking, spending trends, Sage using proteins for meal suggestions — is **Premium**. No tier enforcement is built yet; this documents the intended split.
 
+### Default Weekly Pattern (Mar 18, 2026)
+
+- Universal household defaults at creation: Weekday (Mon–Fri) and Weekend (Sat–Sun)
+- Household-specific defaults stored in `household_weekly_pattern` table — one row per day with `day_type_id` FK
+- Hill House default: School Day Mon–Fri, Weekend Sat–Sun
+- New households get Weekday + Weekend day types seeded at creation — School Day, No School, Summer are user-added types
+- When a new `meal_plans` row is created, the app auto-applies the household's default pattern to `meal_plan_day_types`
+- Lauren can change her default pattern in Week Settings → "Default Week Pattern" section — changes apply to all future weeks
+- Changing a day type on the current week only changes `meal_plan_day_types` for that week, not the household default
+
 ---
 
 ## Database & Data Gaps
