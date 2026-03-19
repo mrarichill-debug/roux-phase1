@@ -87,6 +87,7 @@ export default function WeekSettings({ appUser }) {
   const [saving, setSaving] = useState(false)
   const [savedTemplates, setSavedTemplates] = useState([])
   const [activeTemplateId, setActiveTemplateId] = useState(null)
+  const [dtKeyToId, setDtKeyToId] = useState({})
   const [prevDayTypes, setPrevDayTypes] = useState(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState(null)
   const [applyConfirmId, setApplyConfirmId] = useState(null)
@@ -110,9 +111,9 @@ export default function WeekSettings({ appUser }) {
       const hid = appUser.household_id
       const weekStart = getWeekStartTZ(tz, 0)
 
-      const [planRes, tradRes, templatesRes] = await Promise.all([
+      const [planRes, tradRes, templatesRes, dayTypesRes] = await Promise.all([
         supabase.from('meal_plans')
-          .select('id, status, week_start_date, week_end_date, notes, template_id')
+          .select('id, status, week_start_date, week_end_date, template_id')
           .eq('household_id', hid)
           .eq('week_start_date', weekStart)
           .maybeSingle(),
@@ -123,6 +124,9 @@ export default function WeekSettings({ appUser }) {
           .select('id, name, source_plan_ids')
           .eq('household_id', hid)
           .order('created_at', { ascending: false }),
+        supabase.from('day_types')
+          .select('id, name')
+          .eq('household_id', hid),
       ])
 
       if (tradRes.data) {
@@ -134,21 +138,50 @@ export default function WeekSettings({ appUser }) {
       }
       if (templatesRes.data) setSavedTemplates(templatesRes.data)
 
+      // Build day type name→key mapping
+      const dtNameToKey = {}
+      const dtKeyToId = {}
+      if (dayTypesRes.data) {
+        for (const dt of dayTypesRes.data) {
+          const key = dt.name === 'School Day' ? 'school' : dt.name === 'No School' ? 'no_school' : dt.name.toLowerCase()
+          dtNameToKey[dt.id] = key
+          dtKeyToId[key] = dt.id
+        }
+      }
+
       const activePlan = planRes.data
       setPlan(activePlan)
 
-      // Restore saved week settings from meal_plans.notes if available
-      if (activePlan?.notes) {
-        try {
-          const config = JSON.parse(activePlan.notes)
-          if (config.day_types) setDayTypes(config.day_types)
-          if (config.active_traditions && tradRes.data) {
-            const toggles = {}
-            tradRes.data.forEach(t => { toggles[t.id] = config.active_traditions.includes(t.id) })
-            setTraditionToggles(toggles)
-          }
-        } catch { /* notes is plain text, not JSON — ignore */ }
+      // Restore day types from meal_plan_day_types table
+      if (activePlan) {
+        const { data: savedDT } = await supabase
+          .from('meal_plan_day_types')
+          .select('day_of_week, day_type_id')
+          .eq('meal_plan_id', activePlan.id)
+        if (savedDT && savedDT.length > 0) {
+          const restored = { ...DEFAULT_DAY_TYPES }
+          savedDT.forEach(row => {
+            const key = dtNameToKey[row.day_type_id]
+            if (key) restored[row.day_of_week] = key
+          })
+          setDayTypes(restored)
+        }
+
+        // Restore traditions from meal_plan_traditions table
+        const { data: savedTrad } = await supabase
+          .from('meal_plan_traditions')
+          .select('tradition_id')
+          .eq('meal_plan_id', activePlan.id)
+        if (savedTrad && tradRes.data) {
+          const activeIds = new Set(savedTrad.map(r => r.tradition_id))
+          const toggles = {}
+          tradRes.data.forEach(t => { toggles[t.id] = activeIds.has(t.id) })
+          setTraditionToggles(toggles)
+        }
       }
+
+      setDtKeyToId(dtKeyToId)
+
       // Restore active template from template_id column
       if (activePlan?.template_id) setActiveTemplateId(activePlan.template_id)
     } catch (err) {
@@ -239,22 +272,37 @@ export default function WeekSettings({ appUser }) {
         setPlan(activePlan)
       }
 
+      // Save template_id to meal_plans
+      const { error } = await supabase.from('meal_plans')
+        .update({ template_id: activeTemplateId || null })
+        .eq('id', activePlan.id)
+      if (error) throw error
+
+      // Upsert day types to meal_plan_day_types
+      const DOW_ALL = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']
+      const dtRows = DOW_ALL
+        .filter(dow => dayTypes[dow] && dtKeyToId[dayTypes[dow]])
+        .map(dow => ({
+          meal_plan_id: activePlan.id,
+          day_of_week: dow,
+          day_type_id: dtKeyToId[dayTypes[dow]],
+        }))
+      if (dtRows.length > 0) {
+        await supabase.from('meal_plan_day_types').delete().eq('meal_plan_id', activePlan.id)
+        const { error: dtErr } = await supabase.from('meal_plan_day_types').insert(dtRows)
+        if (dtErr) console.error('[Roux] save day types error:', dtErr)
+      }
+
+      // Save active traditions to meal_plan_traditions
       const activeTraditions = Object.entries(traditionToggles)
         .filter(([, on]) => on)
         .map(([id]) => id)
-
-      // Save day types + active traditions to notes, template_id to its own column
-      const weekConfig = {
-        day_types: dayTypes,
-        active_traditions: activeTraditions,
+      await supabase.from('meal_plan_traditions').delete().eq('meal_plan_id', activePlan.id)
+      if (activeTraditions.length > 0) {
+        const tradRows = activeTraditions.map(tid => ({ meal_plan_id: activePlan.id, tradition_id: tid }))
+        const { error: tradErr } = await supabase.from('meal_plan_traditions').insert(tradRows)
+        if (tradErr) console.error('[Roux] save traditions error:', tradErr)
       }
-      const { error } = await supabase.from('meal_plans')
-        .update({
-          notes: JSON.stringify(weekConfig),
-          template_id: activeTemplateId || null,
-        })
-        .eq('id', activePlan.id)
-      if (error) throw error
 
       setHasChanges(false)
       showToast('Week settings saved')

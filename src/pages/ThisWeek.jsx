@@ -184,7 +184,7 @@ export default function ThisWeek({ appUser }) {
           .select('id, name, day_of_week, tradition_type')
           .eq('household_id', hid),
         supabase.from('meal_plans')
-          .select('id, status, week_start_date, week_end_date, published_at, notes, template_id, meal_plan_templates(name)')
+          .select('id, status, week_start_date, week_end_date, published_at, template_id, meal_plan_templates(name)')
           .eq('household_id', hid)
           .eq('week_start_date', weekStart)
           .maybeSingle(),
@@ -212,12 +212,22 @@ export default function ThisWeek({ appUser }) {
 
       setPlan(activePlan)
 
-      // Parse saved day types from notes, template name from joined table
-      if (activePlan?.notes) {
-        try {
-          const config = JSON.parse(activePlan.notes)
-          setSavedDayTypes(config.day_types || null)
-        } catch { setSavedDayTypes(null) }
+      // Load day types from meal_plan_day_types table
+      if (activePlan) {
+        const { data: dtRows } = await supabase
+          .from('meal_plan_day_types')
+          .select('day_of_week, day_types(name)')
+          .eq('meal_plan_id', activePlan.id)
+        if (dtRows && dtRows.length > 0) {
+          const map = {}
+          dtRows.forEach(r => {
+            const name = r.day_types?.name
+            if (name) map[r.day_of_week] = name === 'School Day' ? 'school' : name === 'No School' ? 'no_school' : name.toLowerCase()
+          })
+          setSavedDayTypes(map)
+        } else {
+          setSavedDayTypes(null)
+        }
       } else {
         setSavedDayTypes(null)
       }

@@ -91,7 +91,7 @@ export default function Dashboard({ appUser }) {
       // ── Phase 1: Get the active plan ─────────────────────────────────
       console.time('[Roux] Phase 1: plan')
       const { data: plan } = await supabase.from('meal_plans')
-        .select('id, status, week_start_date, week_end_date, notes, template_id, meal_plan_templates(name)')
+        .select('id, status, week_start_date, week_end_date, template_id, meal_plan_templates(name)')
         .eq('household_id', hid)
         .eq('week_start_date', weekStart)
         .maybeSingle()

@@ -448,6 +448,32 @@ CREATE TABLE meal_plans (
 );
 
 
+-- ── Table 16b: meal_plan_day_types ───────────────────────────────────────────
+-- Per-day day-type assignment for a week plan. Replaces notes JSON storage.
+
+CREATE TABLE meal_plan_day_types (
+  id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  meal_plan_id UUID        NOT NULL REFERENCES meal_plans(id) ON DELETE CASCADE,
+  day_of_week  TEXT        NOT NULL CHECK (day_of_week IN
+                 ('monday','tuesday','wednesday','thursday','friday','saturday','sunday')),
+  day_type_id  UUID        NOT NULL REFERENCES day_types(id) ON DELETE CASCADE,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(meal_plan_id, day_of_week)
+);
+
+
+-- ── Table 16c: meal_plan_traditions ─────────────────────────────────────────
+-- Active traditions for a week plan. Replaces notes JSON storage.
+
+CREATE TABLE meal_plan_traditions (
+  id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  meal_plan_id UUID        NOT NULL REFERENCES meal_plans(id) ON DELETE CASCADE,
+  tradition_id UUID        NOT NULL REFERENCES household_traditions(id) ON DELETE CASCADE,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(meal_plan_id, tradition_id)
+);
+
+
 -- ── Table 17: planned_meals ───────────────────────────────────────────────────
 
 CREATE TABLE planned_meals (
