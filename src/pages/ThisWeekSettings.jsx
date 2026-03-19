@@ -19,10 +19,10 @@ const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sun
 const DOW_KEYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']
 
 const DAY_TYPE_OPTIONS = [
-  { key: 'school', label: 'School', color: '#5B8DD9' },
-  { key: 'weekend', label: 'Weekend', color: '#7A8C6E' },
   { key: 'no_school', label: 'No School', color: '#D4874A' },
+  { key: 'school', label: 'School', color: '#5B8DD9' },
   { key: 'summer', label: 'Summer', color: '#C49A3C' },
+  { key: 'weekend', label: 'Weekend', color: '#7A8C6E' },
 ]
 
 const DEFAULT_DAY_TYPES = {
@@ -113,7 +113,7 @@ export default function ThisWeekSettings({ appUser }) {
         setTraditionToggles(toggles)
       }
 
-      if (templatesRes.data) setSavedTemplates(templatesRes.data)
+      if (templatesRes.data) setSavedTemplates([...templatesRes.data].sort((a, b) => a.name.localeCompare(b.name)))
 
       const activePlan = planRes.data
       setPlan(activePlan)
@@ -262,7 +262,7 @@ export default function ThisWeekSettings({ appUser }) {
         source_plan_ids: { day_types: dayTypes, traditions: activeTraditions },
       }).select('id, name, source_plan_ids').single()
       if (error) throw error
-      setSavedTemplates(prev => [data, ...prev])
+      setSavedTemplates(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)))
       setSaveSheetOpen(false)
       showToast('Template saved')
     } catch (err) { console.error('[Roux] saveAsTemplate error:', err) }

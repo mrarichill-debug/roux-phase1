@@ -18,10 +18,10 @@ const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sun
 const DOW_KEYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']
 
 const DAY_TYPE_OPTIONS = [
-  { key: 'school', label: 'School', color: '#5B8DD9' },
-  { key: 'weekend', label: 'Weekend', color: '#7A8C6E' },
   { key: 'no_school', label: 'No School', color: '#D4874A' },
+  { key: 'school', label: 'School', color: '#5B8DD9' },
   { key: 'summer', label: 'Summer', color: '#C49A3C' },
+  { key: 'weekend', label: 'Weekend', color: '#7A8C6E' },
 ]
 
 const DEFAULT_DAY_TYPES = {
@@ -45,6 +45,10 @@ export default function HouseholdDefaults({ appUser }) {
   const [toastMsg, setToastMsg] = useState('')
   const [deleteConfirmId, setDeleteConfirmId] = useState(null)
   const [dtPickerDow, setDtPickerDow] = useState(null)
+  const [addDtOpen, setAddDtOpen] = useState(false)
+  const [newDtName, setNewDtName] = useState('')
+  const [newDtColor, setNewDtColor] = useState('#7A8C6E')
+  const [savingDt, setSavingDt] = useState(false)
 
   function showToast(msg) { setToastMsg(msg); setTimeout(() => setToastMsg(''), 2500) }
 
@@ -66,7 +70,7 @@ export default function HouseholdDefaults({ appUser }) {
       const dtNameToKey = {}
       const keyToId = {}
       if (dayTypesRes.data) {
-        setDayTypeRecords(dayTypesRes.data)
+        setDayTypeRecords([...dayTypesRes.data].sort((a, b) => a.name.localeCompare(b.name)))
         for (const dt of dayTypesRes.data) {
           const key = dt.name === 'School Day' ? 'school' : dt.name === 'No School' ? 'no_school' : dt.name.toLowerCase()
           dtNameToKey[dt.id] = key
@@ -81,7 +85,7 @@ export default function HouseholdDefaults({ appUser }) {
         setDefaultPattern(pat)
       }
 
-      if (templatesRes.data) setSavedTemplates(templatesRes.data)
+      if (templatesRes.data) setSavedTemplates([...templatesRes.data].sort((a, b) => a.name.localeCompare(b.name)))
     } catch (err) { console.error('[Roux] HouseholdDefaults load error:', err) }
     finally { setLoading(false) }
   }
@@ -95,6 +99,27 @@ export default function HouseholdDefaults({ appUser }) {
     await supabase.from('household_weekly_pattern').delete().eq('household_id', hid).eq('day_of_week', dowKey)
     await supabase.from('household_weekly_pattern').insert({ household_id: hid, day_of_week: dowKey, day_type_id: dtId })
     showToast('Default updated')
+  }
+
+  async function saveNewDayType() {
+    if (!newDtName.trim() || savingDt) return
+    setSavingDt(true)
+    try {
+      const { data, error } = await supabase.from('day_types').insert({
+        household_id: appUser.household_id,
+        name: newDtName.trim(),
+        color: newDtColor,
+      }).select('id, name, color').single()
+      if (error) throw error
+      setDayTypeRecords(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)))
+      // Update key mapping
+      const key = data.name.toLowerCase().replace(/\s+/g, '_')
+      setDtKeyToId(prev => ({ ...prev, [key]: data.id }))
+      setAddDtOpen(false)
+      setNewDtName('')
+      showToast('Day type added')
+    } catch (err) { console.error('[Roux] saveNewDayType error:', err) }
+    finally { setSavingDt(false) }
   }
 
   async function deleteTemplate(id) {
@@ -162,6 +187,13 @@ export default function HouseholdDefaults({ appUser }) {
                 </div>
               </div>
             ))}
+            <button onClick={() => { setNewDtName(''); setNewDtColor('#7A8C6E'); setAddDtOpen(true) }} style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: '13px', color: C.forest, fontWeight: 400, padding: '10px 0',
+              fontFamily: "'Jost', sans-serif", textAlign: 'left',
+            }}>
+              + Add a day type
+            </button>
           </div>
 
           {/* ── Templates ─────────────────────────────────────────────── */}
@@ -221,6 +253,45 @@ export default function HouseholdDefaults({ appUser }) {
                 </button>
               ))}
             </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Add Day Type Sheet ──────────────────────────────────────── */}
+      {addDtOpen && (
+        <>
+          <div onClick={() => setAddDtOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
+          <div style={{
+            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
+            padding: '20px 22px 40px', zIndex: 201,
+          }}>
+            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '0 auto 16px' }} />
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
+              New day type
+            </div>
+            <input type="text" value={newDtName} onChange={e => setNewDtName(e.target.value)} placeholder="Day type name"
+              autoFocus style={{
+                width: '100%', padding: '12px 14px', fontSize: '14px', fontFamily: "'Jost', sans-serif",
+                border: `1.5px solid ${C.linen}`, borderRadius: '10px', outline: 'none', color: C.ink,
+                boxSizing: 'border-box', marginBottom: '12px',
+              }} />
+            <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, marginBottom: '8px' }}>Color</div>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+              {['#5B8DD9','#7A8C6E','#D4874A','#C49A3C','#8B6F52','#A03030','#3D6B4F'].map(c => (
+                <button key={c} onClick={() => setNewDtColor(c)} style={{
+                  width: '28px', height: '28px', borderRadius: '50%', border: newDtColor === c ? '2px solid ' + C.ink : '2px solid transparent',
+                  background: c, cursor: 'pointer',
+                }} />
+              ))}
+            </div>
+            <button onClick={saveNewDayType} disabled={!newDtName.trim() || savingDt} style={{
+              width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
+              background: newDtName.trim() ? C.forest : C.linen, color: newDtName.trim() ? 'white' : C.driftwood,
+              fontSize: '14px', fontWeight: 500, fontFamily: "'Jost', sans-serif", cursor: newDtName.trim() ? 'pointer' : 'default',
+            }}>
+              {savingDt ? 'Saving...' : 'Add day type'}
+            </button>
           </div>
         </>
       )}
