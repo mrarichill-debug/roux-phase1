@@ -55,6 +55,9 @@ export default function ThisWeekSettings({ appUser }) {
   const [templateName, setTemplateName] = useState('')
   const [savingTemplate, setSavingTemplate] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
+  const [previewingId, setPreviewingId] = useState(null)
+  const [previousDayTypes, setPreviousDayTypes] = useState(null)
+  const [confirmRemoveTemplate, setConfirmRemoveTemplate] = useState(false)
 
   function showToast(msg) { setToastMsg(msg); setTimeout(() => setToastMsg(''), 2500) }
 
@@ -177,13 +180,38 @@ export default function ThisWeekSettings({ appUser }) {
     }
   }
 
-  async function applyTemplate(template) {
+  function handleTemplateTap(template) {
+    // Tapping the already-applied template → offer to remove
+    if (activeTemplateId === template.id && !previewingId) {
+      setConfirmRemoveTemplate(true)
+      return
+    }
+    // Undo any current preview first
+    if (previewingId) {
+      if (previousDayTypes) setDayTypes(previousDayTypes)
+      setPreviousDayTypes(null)
+      setPreviewingId(null)
+    }
+    // Start preview
+    setPreviousDayTypes({ ...dayTypes })
+    const config = template.source_plan_ids
+    if (config?.day_types) setDayTypes(config.day_types)
+    setPreviewingId(template.id)
+  }
+
+  function undoPreview() {
+    if (previousDayTypes) setDayTypes(previousDayTypes)
+    setPreviousDayTypes(null)
+    setPreviewingId(null)
+  }
+
+  async function confirmApply() {
+    const template = savedTemplates.find(t => t.id === previewingId)
+    if (!template) return
     const activePlan = await ensurePlan()
     if (!activePlan) return
-    // Apply day types from template
     const config = template.source_plan_ids
     if (config?.day_types) {
-      setDayTypes(config.day_types)
       await supabase.from('meal_plan_day_types').delete().eq('meal_plan_id', activePlan.id)
       const rows = DOW_KEYS.filter(dow => config.day_types[dow] && dtKeyToId[config.day_types[dow]])
         .map(dow => ({ meal_plan_id: activePlan.id, day_of_week: dow, day_type_id: dtKeyToId[config.day_types[dow]] }))
@@ -199,7 +227,28 @@ export default function ThisWeekSettings({ appUser }) {
     }
     setActiveTemplateId(template.id)
     await supabase.from('meal_plans').update({ template_id: template.id }).eq('id', activePlan.id)
+    setPreviewingId(null)
+    setPreviousDayTypes(null)
     showToast(`Applied "${template.name}"`)
+  }
+
+  async function removeAppliedTemplate() {
+    setConfirmRemoveTemplate(false)
+    setActiveTemplateId(null)
+    const activePlan = await ensurePlan()
+    if (!activePlan) return
+    await supabase.from('meal_plans').update({ template_id: null }).eq('id', activePlan.id)
+    // Reset to household defaults
+    const { data: pattern } = await supabase.from('household_weekly_pattern')
+      .select('day_of_week, day_type_id').eq('household_id', appUser.household_id)
+    if (pattern && pattern.length > 0) {
+      await supabase.from('meal_plan_day_types').delete().eq('meal_plan_id', activePlan.id)
+      await supabase.from('meal_plan_day_types').insert(
+        pattern.map(p => ({ meal_plan_id: activePlan.id, day_of_week: p.day_of_week, day_type_id: p.day_type_id }))
+      )
+    }
+    loadData()
+    showToast('Template removed')
   }
 
   async function saveAsTemplate() {
@@ -319,31 +368,56 @@ export default function ThisWeekSettings({ appUser }) {
           {/* ── Templates ─────────────────────────────────────────────── */}
           <div>
             <div style={zoneLabel}>Templates</div>
-            <button onClick={() => {}} style={{
-              display: 'block', background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: '13px', color: C.forest, fontWeight: 400, padding: '6px 0',
-              fontFamily: "'Jost', sans-serif", textAlign: 'left',
-            }}>
-              Apply a template to this week &rarr;
-            </button>
-            {savedTemplates.length > 0 && (
-              <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {savedTemplates.map(t => (
-                  <button key={t.id} onClick={() => applyTemplate(t)} style={{
-                    padding: '8px 12px', borderRadius: '8px', border: `1px solid ${C.linen}`,
-                    background: activeTemplateId === t.id ? 'rgba(61,107,79,0.08)' : 'white',
-                    cursor: 'pointer', textAlign: 'left', width: '100%',
-                    fontFamily: "'Jost', sans-serif", fontSize: '13px',
-                    color: activeTemplateId === t.id ? C.forest : C.ink, fontWeight: activeTemplateId === t.id ? 500 : 400,
-                  }}>
-                    {t.name} {activeTemplateId === t.id && '✓'}
-                  </button>
-                ))}
+            {savedTemplates.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {savedTemplates.map(t => {
+                  const isApplied = activeTemplateId === t.id && !previewingId
+                  const isPreviewing = previewingId === t.id
+                  return (
+                    <div key={t.id} style={{
+                      padding: '10px 12px', borderRadius: '10px',
+                      border: isPreviewing ? `1.5px solid ${C.forest}` : isApplied ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                      background: isPreviewing ? 'rgba(61,107,79,0.04)' : isApplied ? 'rgba(61,107,79,0.06)' : 'white',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <button onClick={() => handleTemplateTap(t)} style={{
+                          background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                          fontFamily: "'Jost', sans-serif", fontSize: '13px', textAlign: 'left',
+                          color: isApplied || isPreviewing ? C.forest : C.ink,
+                          fontWeight: isApplied || isPreviewing ? 500 : 400,
+                        }}>
+                          {t.name} {isApplied && '✓'}
+                        </button>
+                        {isPreviewing && (
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button onClick={confirmApply} style={{
+                              padding: '4px 12px', borderRadius: '8px', border: 'none',
+                              background: C.forest, color: 'white', fontSize: '12px', fontWeight: 500,
+                              fontFamily: "'Jost', sans-serif", cursor: 'pointer',
+                            }}>Apply</button>
+                            <button onClick={undoPreview} style={{
+                              padding: '4px 12px', borderRadius: '8px', border: 'none',
+                              background: 'none', color: C.driftwood, fontSize: '12px', fontWeight: 400,
+                              fontFamily: "'Jost', sans-serif", cursor: 'pointer',
+                            }}>Undo</button>
+                          </div>
+                        )}
+                      </div>
+                      {isPreviewing && (
+                        <div style={{ fontSize: '11px', fontStyle: 'italic', color: C.driftwood, fontWeight: 300, marginTop: '4px' }}>
+                          Previewing — not saved yet
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
+            ) : (
+              <div style={{ fontSize: '13px', fontStyle: 'italic', color: C.driftwood, marginBottom: '4px' }}>No templates saved yet.</div>
             )}
             <button onClick={() => { setTemplateName(''); setSaveSheetOpen(true) }} style={{
               display: 'block', background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: '13px', color: C.forest, fontWeight: 400, padding: '6px 0', marginTop: '8px',
+              fontSize: '13px', color: C.forest, fontWeight: 400, padding: '8px 0', marginTop: '4px',
               fontFamily: "'Jost', sans-serif", textAlign: 'left',
             }}>
               Save this week as a template &rarr;
@@ -439,6 +513,26 @@ export default function ThisWeekSettings({ appUser }) {
             <div style={{ display: 'flex', gap: '8px' }}>
               <button onClick={resetToDefaults} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: C.forest, color: 'white', border: 'none', fontSize: '13px', fontWeight: 500, fontFamily: "'Jost', sans-serif", cursor: 'pointer' }}>Reset</button>
               <button onClick={() => setConfirmReset(false)} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'none', color: C.driftwood, border: `1px solid ${C.linen}`, fontSize: '13px', fontWeight: 400, fontFamily: "'Jost', sans-serif", cursor: 'pointer' }}>Cancel</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Remove Template Confirmation ─────────────────────────────── */}
+      {confirmRemoveTemplate && (
+        <>
+          <div onClick={() => setConfirmRemoveTemplate(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
+          <div style={{
+            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
+            padding: '20px 22px 40px', zIndex: 201,
+          }}>
+            <div style={{ fontSize: '15px', color: C.ink, fontWeight: 400, marginBottom: '14px' }}>
+              Remove {savedTemplates.find(t => t.id === activeTemplateId)?.name || 'template'} and reset to defaults?
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={removeAppliedTemplate} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: C.forest, color: 'white', border: 'none', fontSize: '13px', fontWeight: 500, fontFamily: "'Jost', sans-serif", cursor: 'pointer' }}>Yes</button>
+              <button onClick={() => setConfirmRemoveTemplate(false)} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'none', color: C.driftwood, border: `1px solid ${C.linen}`, fontSize: '13px', fontWeight: 400, fontFamily: "'Jost', sans-serif", cursor: 'pointer' }}>Cancel</button>
             </div>
           </div>
         </>
