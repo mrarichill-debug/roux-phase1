@@ -291,7 +291,10 @@ export default function RecipeLibrary({ appUser }) {
       <WatermarkLayer />
 
       {/* ── Green zone: Row 1 (topbar 66px) + Row 2 (search 48px) ─────────── */}
-      <TopBar childrenHeight={48}>
+      <TopBar childrenHeight={48} leftAction={{
+        onClick: () => navigate('/meals'),
+        icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>,
+      }}>
         {/* Row 2: Search input — unified green zone */}
         <div style={{ padding: '0 22px 10px', position: 'relative' }}>
           <span style={{
