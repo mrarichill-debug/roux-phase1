@@ -294,6 +294,7 @@ export default function RecipeCard({ appUser }) {
         slim
         leftAction={{ onClick: () => navigate(backTo), label: 'Back' }}
         rightActions={[
+          { label: 'Add to Plan', onClick: () => setPlanSheetOpen(true), icon: <svg viewBox="0 0 24 24" fill="none" stroke="rgba(210,230,200,0.7)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg> },
           { label: favActive ? 'Unfavorite' : 'Favorite', onClick: toggleFav, icon: <span style={{ fontSize: '18px', color: favActive ? C.honey : 'rgba(210,230,200,0.55)' }}>{favActive ? '★' : '☆'}</span> },
         ]}
       />
@@ -683,30 +684,6 @@ export default function RecipeCard({ appUser }) {
           }}
         />
       )}
-
-      {/* ── Pinned CTA ──────────────────────────────────────────────────────── */}
-      <div style={{
-        position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
-        width: '100%', maxWidth: '430px',
-        padding: '10px 22px 12px', zIndex: 90,
-        background: C.cream, borderTop: `1px solid ${C.linen}`,
-        boxShadow: '0 -2px 12px rgba(80,60,30,0.08)',
-      }}>
-        <button
-          onClick={() => setPlanSheetOpen(true)}
-          style={{
-            width: '100%', background: C.forest, color: 'white', border: 'none',
-            borderRadius: '12px', padding: '14px',
-            fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
-            letterSpacing: '0.5px', cursor: 'pointer',
-            boxShadow: '0 2px 10px rgba(61,107,79,0.28)',
-            transition: 'background 0.15s',
-            animation: 'ctaSettle 0.35s ease-out 0.3s both',
-          }}
-        >
-          Add to Plan
-        </button>
-      </div>
 
       {/* ── Add to Plan Sheet ──────────────────────────────────────────────── */}
       <AddToPlanSheet

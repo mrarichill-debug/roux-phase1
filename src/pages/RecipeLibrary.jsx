@@ -11,6 +11,7 @@ import WatermarkLayer from '../components/WatermarkLayer'
 import { toLocalDateStr, getWeekStartTZ, getWeekDatesTZ } from '../lib/dateUtils'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
+import AddToPlanSheet from '../components/AddToPlanSheet'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -149,6 +150,7 @@ export default function RecipeLibrary({ appUser }) {
   const [activeFilters,   setActiveFilters]   = useState(new Set(['All']))
   const [gridVisible,     setGridVisible]     = useState(true)
   const [weekPickerRecipe,setWeekPickerRecipe]= useState(null)
+  const [planSheetRecipe, setPlanSheetRecipe] = useState(null)
   const [overlayVisible,  setOverlayVisible]  = useState(false)
   const [saveBtnActive,   setSaveBtnActive]   = useState(false)
 
@@ -469,7 +471,7 @@ export default function RecipeLibrary({ appUser }) {
             selectMode={selectMode}
             isPlanned={plannedIds.has(recipe.id)}
             onTap={selectMode ? () => selectRecipe(recipe) : () => navigate(`/recipe/${recipe.id}`, { state: { from: '/meals/recipes' } })}
-            onAddToWeek={selectMode ? () => selectRecipe(recipe) : () => openWeekPicker(recipe)}
+            onAddToWeek={selectMode ? () => selectRecipe(recipe) : () => setPlanSheetRecipe({ id: recipe.id, name: recipe.name })}
           />
         ))}
         {!loading && filteredRecipes.length === 0 && (
@@ -499,6 +501,15 @@ export default function RecipeLibrary({ appUser }) {
       {/* ── Bottom Nav ────────────────────────────────────────────────────────── */}
       <BottomNav activeTab="meals" />
 
+      <AddToPlanSheet
+        open={!!planSheetRecipe}
+        onClose={() => setPlanSheetRecipe(null)}
+        meal={planSheetRecipe}
+        appUser={appUser}
+        onSuccess={() => setPlanSheetRecipe(null)}
+        itemType="recipe"
+      />
+
       {/* ── + Week sheet overlay ──────────────────────────────────────────────── */}
       <div
         onClick={closeWeekPicker}
@@ -525,27 +536,16 @@ export default function RecipeLibrary({ appUser }) {
 
 // ── Recipe Grid Card ───────────────────────────────────────────────────────────
 function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWeek }) {
-  const [weekTapping, setWeekTapping] = useState(false)
-
   const total    = getTotalMinutes(recipe)
   const timeStr  = total > 0 ? formatTime(total) : null
   const catLabel = CAT_DISPLAY[recipe.category] || recipe.category || null
   const note     = recipe.personal_notes || null
-  const diet     = recipe.diet || []
-  const hasGF    = diet.includes('gluten_free')
-  const hasVeg   = diet.includes('vegetarian') || diet.includes('vegan')
-  const hasDF    = diet.includes('dairy_free')
 
-  // 30ms per card stagger
   const animDelay = `${0.04 + index * 0.03}s`
 
-  function handleWeekTap(e) {
+  function handlePlanTap(e) {
     e.stopPropagation()
-    setWeekTapping(true)
-    setTimeout(() => {
-      setWeekTapping(false)
-      onAddToWeek()
-    }, 120)
+    onAddToWeek()
   }
 
   return (
@@ -558,8 +558,7 @@ function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWe
         cursor:       'pointer',
         boxShadow:    '0 1px 4px rgba(80,60,30,0.07), 0 3px 12px rgba(80,60,30,0.05)',
         animation:    `fadeUp 0.35s ease ${animDelay} both`,
-        transition:   'box-shadow 0.15s',
-        ...(weekTapping ? { transform: 'scale(0.97)', transition: 'transform 0.12s ease' } : {}),
+        position:     'relative',
       }}
     >
       <div style={{ padding: '12px 12px 10px' }}>
@@ -596,55 +595,52 @@ function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWe
         {note && (
           <div style={{
             fontFamily: "'Caveat', cursive",
-            fontSize: '12px', color: C.walnut, opacity: 0.8, marginBottom: '8px',
+            fontSize: '12px', color: C.walnut, opacity: 0.8, marginBottom: '4px',
           }}>
             {note}
           </div>
         )}
 
         {/* Meta: time + servings */}
-        <div style={{ fontSize: '11px', color: C.driftwoodSm, display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-          {timeStr && <span>{timeStr}</span>}
-          {recipe.servings && <span>{recipe.servings} srv</span>}
-        </div>
-
-        {/* Footer: dietary dots + + Week */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          paddingTop: '8px', borderTop: `1px solid ${C.linen}`,
-        }}>
-          <div style={{ display: 'flex', gap: '4px' }}>
-            {hasGF && <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: C.honey }} />}
-            {hasVeg && <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: C.sage }} />}
-            {hasDF && <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: C.walnut }} />}
+        {(timeStr || recipe.servings) && (
+          <div style={{ fontSize: '11px', color: C.driftwoodSm, display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {timeStr && <span>{timeStr}</span>}
+            {recipe.servings && <span>{recipe.servings} srv</span>}
           </div>
-          {isPlanned && !selectMode ? (
-            <span style={{
-              fontSize: '10px', color: C.forest, fontWeight: 500,
-              letterSpacing: '0.3px', fontFamily: "'Jost', sans-serif",
-              display: 'flex', alignItems: 'center', gap: '3px',
-            }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 10, height: 10 }}>
-                <path d="m9 11 3 3L22 4"/>
-              </svg>
-              Planned
-            </span>
-          ) : (
-            <button
-              onClick={handleWeekTap}
-              style={{
-                fontSize: '10px', color: C.sage, fontWeight: 500,
-                letterSpacing: '0.3px', background: 'none', border: 'none',
-                cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-                padding: '2px 0',
-              }}
-            >
-              {selectMode ? 'Select' : '+ Week'}
-            </button>
-          )}
-        </div>
-
+        )}
       </div>
+
+      {/* Plan button — bottom right */}
+      {!selectMode && (
+        <button
+          onClick={handlePlanTap}
+          style={{
+            position: 'absolute', bottom: '8px', right: '8px',
+            width: '24px', height: '24px', borderRadius: '50%',
+            background: C.forest, border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 1px 4px rgba(30,55,35,0.25)',
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" style={{ width: 12, height: 12 }}>
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+      )}
+      {selectMode && (
+        <button
+          onClick={handlePlanTap}
+          style={{
+            position: 'absolute', bottom: '8px', right: '8px',
+            padding: '4px 10px', borderRadius: '10px',
+            background: C.forest, border: 'none', cursor: 'pointer',
+            fontSize: '10px', fontWeight: 500, color: 'white',
+            fontFamily: "'Jost', sans-serif",
+          }}
+        >
+          Select
+        </button>
+      )}
     </div>
   )
 }
