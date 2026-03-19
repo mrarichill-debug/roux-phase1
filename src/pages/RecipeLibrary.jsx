@@ -174,6 +174,8 @@ export default function RecipeLibrary({ appUser }) {
           servings, is_family_favorite, diet, created_at
         `)
         .eq('household_id', appUser.household_id)
+        .eq('recipe_type', 'full')
+        .eq('status', 'complete')
         .order('name'),
       supabase
         .from('meal_plans')
@@ -287,9 +289,7 @@ export default function RecipeLibrary({ appUser }) {
       <WatermarkLayer />
 
       {/* ── Green zone: Row 1 (topbar 66px) + Row 2 (search 48px) ─────────── */}
-      <TopBar childrenHeight={48} rightActions={[
-        { label: 'Search', onClick: () => document.querySelector('.library-search')?.focus(), icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> },
-      ]}>
+      <TopBar childrenHeight={48}>
         {/* Row 2: Search input — unified green zone */}
         <div style={{ padding: '0 22px 10px', position: 'relative' }}>
           <span style={{
@@ -529,7 +529,7 @@ function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWe
 
   const total    = getTotalMinutes(recipe)
   const timeStr  = total > 0 ? formatTime(total) : null
-  const catLabel = CAT_DISPLAY[recipe.category] || recipe.category || 'Recipe'
+  const catLabel = CAT_DISPLAY[recipe.category] || recipe.category || null
   const note     = recipe.personal_notes || null
   const diet     = recipe.diet || []
   const hasGF    = diet.includes('gluten_free')
@@ -566,16 +566,18 @@ function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWe
 
         {/* Top: category badge + fav star */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '6px' }}>
-          <div style={{
-            display: 'inline-block',
-            background: 'rgba(122,140,110,0.10)',
-            border: '1px solid rgba(122,140,110,0.2)',
-            borderRadius: '4px', padding: '2px 7px',
-            fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase',
-            color: C.forest,
-          }}>
-            {catLabel}
-          </div>
+          {catLabel ? (
+            <div style={{
+              display: 'inline-block',
+              background: 'rgba(122,140,110,0.10)',
+              border: '1px solid rgba(122,140,110,0.2)',
+              borderRadius: '4px', padding: '2px 7px',
+              fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase',
+              color: C.forest,
+            }}>
+              {catLabel}
+            </div>
+          ) : <div />}
           {recipe.is_family_favorite && (
             <span style={{ color: C.honey, fontSize: '15px', lineHeight: 1, flexShrink: 0, marginLeft: '4px' }}>★</span>
           )}

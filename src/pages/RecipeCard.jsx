@@ -11,6 +11,7 @@ import WatermarkLayer from '../components/WatermarkLayer'
 import { toLocalDateStr, getWeekStartTZ } from '../lib/dateUtils'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
+import AddToPlanSheet from '../components/AddToPlanSheet'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -121,6 +122,7 @@ export default function RecipeCard({ appUser }) {
   const [favActive,    setFavActive]    = useState(false)
 
   const [plannedThisWeek,   setPlannedThisWeek]   = useState(false)
+  const [planSheetOpen,     setPlanSheetOpen]     = useState(false)
   const [weekPickerOpen,    setWeekPickerOpen]    = useState(false)
   const [weekPickerOverlay, setWeekPickerOverlay] = useState(false)
   const overlayTimer = useRef(null)
@@ -690,49 +692,30 @@ export default function RecipeCard({ appUser }) {
         background: C.cream, borderTop: `1px solid ${C.linen}`,
         boxShadow: '0 -2px 12px rgba(80,60,30,0.08)',
       }}>
-        {plannedThisWeek ? (
-          <div
-            style={{
-              width: '100%', background: 'rgba(61,107,79,0.10)', color: C.forest,
-              border: `1px solid rgba(61,107,79,0.25)`,
-              borderRadius: '12px', padding: '14px',
-              fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
-              letterSpacing: '0.5px', textAlign: 'center',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-              animation: 'ctaSettle 0.35s ease-out 0.3s both',
-            }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-              <path d="m9 11 3 3L22 4"/>
-            </svg>
-            Planned this week
-          </div>
-        ) : (
-          <button
-            onClick={openWeekPicker}
-            style={{
-              width: '100%', background: C.forest, color: 'white', border: 'none',
-              borderRadius: '12px', padding: '14px',
-              fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
-              letterSpacing: '0.5px', cursor: 'pointer',
-              boxShadow: '0 2px 10px rgba(61,107,79,0.28)',
-              transition: 'background 0.15s',
-              animation: 'ctaSettle 0.35s ease-out 0.3s both',
-            }}
-          >
-            + Add to This Week's Plan
-          </button>
-        )}
+        <button
+          onClick={() => setPlanSheetOpen(true)}
+          style={{
+            width: '100%', background: C.forest, color: 'white', border: 'none',
+            borderRadius: '12px', padding: '14px',
+            fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
+            letterSpacing: '0.5px', cursor: 'pointer',
+            boxShadow: '0 2px 10px rgba(61,107,79,0.28)',
+            transition: 'background 0.15s',
+            animation: 'ctaSettle 0.35s ease-out 0.3s both',
+          }}
+        >
+          Add to Plan
+        </button>
       </div>
 
-      {/* ── Week Day Picker Sheet ────────────────────────────────────────────── */}
-      <WeekDayPickerSheet
-        isOpen={weekPickerOpen}
-        overlayVisible={weekPickerOverlay}
-        recipe={recipe}
+      {/* ── Add to Plan Sheet ──────────────────────────────────────────────── */}
+      <AddToPlanSheet
+        open={planSheetOpen}
+        onClose={() => setPlanSheetOpen(false)}
+        meal={{ id: recipe?.id, name: recipe?.name }}
         appUser={appUser}
-        onClose={closeWeekPicker}
+        onSuccess={() => setPlanSheetOpen(false)}
+        itemType="recipe"
       />
 
       {/* ── Bottom Nav ────────────────────────────────────────────────────── */}

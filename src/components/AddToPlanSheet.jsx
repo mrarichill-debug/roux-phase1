@@ -39,7 +39,7 @@ function weekOffsetFrom(targetMonday, tz) {
   return diff
 }
 
-export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess }) {
+export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess, itemType = 'meal' }) {
   const tz = appUser?.timezone || 'America/Chicago'
 
   const [weekOffset, setWeekOffset] = useState(0)
@@ -235,8 +235,8 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
           meal_plan_id: plan.id,
           day_of_week: dayKey,
           meal_type: mealSlot,
-          slot_type: 'meal',
-          meal_id: meal.id,
+          slot_type: itemType,
+          ...(itemType === 'recipe' ? { recipe_id: meal.id } : { meal_id: meal.id }),
         })
 
       if (pmErr) throw pmErr
