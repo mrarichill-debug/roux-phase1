@@ -98,11 +98,14 @@ export default function BottomNav({ activeTab }) {
   return (
     <nav style={{
       position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-      width: '100%', maxWidth: '430px', height: '66px',
+      width: '100%', maxWidth: '430px',
+      height: `calc(72px + env(safe-area-inset-bottom))`,
+      paddingBottom: 'env(safe-area-inset-bottom)',
       display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
       alignItems: 'center',
       zIndex: 100, background: C.cream,
       borderTop: `1px solid ${C.linen}`,
+      boxSizing: 'border-box',
     }}>
       {NAV_TABS.map(tab => {
         const active = tab.key === currentTab
