@@ -68,9 +68,24 @@ export default function Meals({ appUser }) {
 
       <div style={{ padding: '18px 16px 0', display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-        {/* ── Zone 1: Add something ──────────────────────────────────── */}
+        {/* ── Tagline strip ──────────────────────────────────────────── */}
+        <div style={{ textAlign: 'center', padding: '8px 0 20px' }}>
+          <div style={{
+            fontFamily: "'Playfair Display', serif", fontSize: '15px',
+            fontStyle: 'italic', color: '#8C7B6B', lineHeight: 1.6,
+          }}>
+            Recipes become meals.<br />
+            Meals become your family's story.
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '14px' }}>
+            <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#E4DDD2' }} />
+            <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#C4B8A8' }} />
+            <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#E4DDD2' }} />
+          </div>
+        </div>
+
+        {/* ── Action tiles ─────────────────────────────────────────────── */}
         <div>
-          <div style={zoneLabel}>Add something</div>
           <div style={{
             display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px',
             opacity: 0, animation: 'fadeUp 0.4s ease 0.05s forwards',
@@ -128,22 +143,6 @@ export default function Meals({ appUser }) {
                 </div>
               </div>
             </button>
-          </div>
-        </div>
-
-        {/* ── Tagline strip ──────────────────────────────────────────── */}
-        <div style={{ textAlign: 'center', padding: '28px 0' }}>
-          <div style={{
-            fontFamily: "'Playfair Display', serif", fontSize: '15px',
-            fontStyle: 'italic', color: '#8C7B6B', lineHeight: 1.6,
-          }}>
-            Recipes become meals.<br />
-            Meals become your family's story.
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '14px' }}>
-            <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#E4DDD2' }} />
-            <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#C4B8A8' }} />
-            <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#E4DDD2' }} />
           </div>
         </div>
 
