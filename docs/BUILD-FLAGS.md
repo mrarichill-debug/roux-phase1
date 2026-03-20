@@ -384,6 +384,16 @@ Build the enforcement layer as a focused sprint immediately before inviting any 
 
 ---
 
+## API Cost Management
+
+- Model constants defined in `src/lib/aiModels.js` — single source of truth for all model assignments
+- **Sonnet** (`claude-sonnet-4-20250514`) used for: Sage chat, week planning, recipe URL extraction — quality-sensitive user-facing conversations
+- **Haiku** (`claude-haiku-4-5-20251001`) used for: ingredient review, skip detection, reactive suggestions, shopping list generation — background structured tasks and high-frequency operations
+- **Never hardcode model strings** — always import from `aiModels.js` so model upgrades can be made in one place
+- Sage ingredient review does not count against `sage_usage` — it's background infrastructure
+
+---
+
 ## Design Decisions — Pending
 
 - **Day type badge redesign** — current colored pills feel too generic for the Roux aesthetic. Redesign direction: small contextual icon + Caveat handwritten label inside a warm stamp/tag shape. Applies to three surfaces: This Week day row header badges, Week Settings day type selector pills, and the active badge display. Full prototype to be provided before build. Do not change current implementation until spec is delivered.

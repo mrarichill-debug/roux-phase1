@@ -3,9 +3,9 @@
  * Fire-and-forget after recipe save. Does not count against sage_usage.
  */
 import { supabase } from './supabase'
+import { SAGE_INGREDIENT_REVIEW } from './aiModels'
 
 const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY
-const MODEL = 'claude-haiku-4-5-20251001'
 
 const SYSTEM_PROMPT = `You are Sage, a warm kitchen companion for the Roux meal planning app. Review this recipe's ingredient list for consistency issues that would cause problems with shopping list generation. Look for: ingredients that could be expressed more consistently (e.g. '3 cups shredded chicken' vs 'chicken breasts'), missing or ambiguous units, vague quantities like 'some' or 'a handful', ingredients that are the same thing expressed differently. Return ONLY a JSON array of suggestions. Each suggestion has: ingredient_name (string), issue (string, one sentence), suggestion (string, the recommended way to express it). If no issues found return an empty array. Be selective — only flag genuine inconsistencies, not stylistic preferences.`
 
@@ -29,7 +29,7 @@ export async function runSageIngredientReview(recipeId, ingredients) {
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
-        model: MODEL,
+        model: SAGE_INGREDIENT_REVIEW,
         max_tokens: 1024,
         system: SYSTEM_PROMPT,
         messages: [{
