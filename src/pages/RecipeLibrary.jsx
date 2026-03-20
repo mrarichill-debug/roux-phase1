@@ -143,6 +143,7 @@ export default function RecipeLibrary({ appUser }) {
   const [planSheetRecipe, setPlanSheetRecipe] = useState(null)
   const [overlayVisible,  setOverlayVisible]  = useState(false)
   const [saveBtnActive,   setSaveBtnActive]   = useState(false)
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false)
 
   const filterTimer   = useRef(null)
   const overlayTimer  = useRef(null)
@@ -200,6 +201,16 @@ export default function RecipeLibrary({ appUser }) {
     recipes.forEach(r => { if (r.category) cats.add(r.category) })
     return ['All', ...[...cats].sort((a, b) => a.localeCompare(b))]
   }, [recipes])
+
+  const hasActiveFilters = activeCategory !== 'All' || !activeFilters.has('All')
+  const filterSummary = useMemo(() => {
+    const parts = []
+    if (activeCategory !== 'All') parts.push(displayCategory(activeCategory))
+    if (!activeFilters.has('All')) {
+      ;[...activeFilters].filter(f => f !== 'All').forEach(f => parts.push(f))
+    }
+    return parts.join(' · ')
+  }, [activeCategory, activeFilters])
 
   // ── Filtered recipes (reactive) ──────────────────────────────────────────────
   const filteredRecipes = useMemo(() => {
@@ -291,107 +302,78 @@ export default function RecipeLibrary({ appUser }) {
         onClick: () => navigate('/meals'),
         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>,
       }}>
-        {/* Row 2: Search input — unified green zone */}
-        <div style={{ padding: '0 22px 10px', position: 'relative' }}>
-          <span style={{
-            position: 'absolute', left: '35px', top: '50%', transform: 'translateY(calc(-50% - 5px))',
-            color: 'rgba(210,230,200,0.6)', display: 'flex', alignItems: 'center',
-          }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ width: 15, height: 15 }}>
-              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-            </svg>
-          </span>
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search recipes…"
-            className="library-search"
+        {/* Row 2: Search input + filter icon — unified green zone */}
+        <div style={{ padding: '0 22px 10px', position: 'relative', display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ flex: 1, position: 'relative' }}>
+            <span style={{
+              position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)',
+              color: 'rgba(210,230,200,0.6)', display: 'flex', alignItems: 'center',
+            }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ width: 15, height: 15 }}>
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+            </span>
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search recipes…"
+              className="library-search"
+              style={{
+                width: '100%',
+                background: 'rgba(255,255,255,0.12)',
+                border: '1px solid rgba(255,255,255,0.18)',
+                borderRadius: '10px',
+                padding: '10px 14px 10px 36px',
+                fontFamily: "'Jost', sans-serif",
+                fontSize: '14px', fontWeight: 300,
+                color: 'rgba(250,247,242,0.92)', outline: 'none',
+                transition: 'background 0.15s, border-color 0.15s',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+          {/* Filter icon */}
+          <button
+            onClick={() => setFilterSheetOpen(true)}
             style={{
-              width: '100%',
-              background: 'rgba(255,255,255,0.12)',
-              border: '1px solid rgba(255,255,255,0.18)',
-              borderRadius: '10px',
-              padding: '10px 14px 10px 36px',
-              fontFamily: "'Jost', sans-serif",
-              fontSize: '14px', fontWeight: 300,
-              color: 'rgba(250,247,242,0.92)', outline: 'none',
-              transition: 'background 0.15s, border-color 0.15s',
-              boxSizing: 'border-box',
+              background: 'none', border: 'none', cursor: 'pointer',
+              position: 'relative', padding: '6px', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
-          />
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="rgba(210,230,200,0.7)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+              <line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/>
+              <line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/>
+              <line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/>
+              <line x1="1" x2="7" y1="14" y2="14"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="17" x2="23" y1="16" y2="16"/>
+            </svg>
+            {hasActiveFilters && (
+              <span style={{
+                position: 'absolute', top: '4px', right: '4px',
+                width: '6px', height: '6px', borderRadius: '50%',
+                background: C.honey,
+              }} />
+            )}
+          </button>
         </div>
       </TopBar>
 
-      {/* ── Browse By pills (cream body) ───────────────────────────────────── */}
-      <div style={{
-        fontSize: '9px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase',
-        color: C.driftwoodSm, padding: '14px 22px 6px', position: 'relative', zIndex: 1,
-      }}>
-        Browse by
-      </div>
-      <div className="no-scrollbar" style={{
-        display: 'flex', gap: '6px', overflowX: 'auto',
-        padding: '0 22px', position: 'relative', zIndex: 1,
-      }}>
-        {categoryPills.map(pill => {
-          const isActive = activeCategory === pill
-          return (
-            <button
-              key={pill}
-              onClick={() => setActiveCategory(pill)}
-              style={{
-                background:   isActive ? 'rgba(122,140,110,0.10)' : 'white',
-                border:       isActive ? `1px solid ${C.sage}` : '1px solid rgba(200,185,160,0.55)',
-                borderRadius: '20px', padding: '6px 13px',
-                fontSize: '12px', fontWeight: isActive ? 500 : 400,
-                color:        isActive ? C.forest : C.driftwoodSm,
-                cursor: 'pointer', whiteSpace: 'nowrap',
-                fontFamily: "'Jost', sans-serif",
-                transition: 'all 0.15s',
-                boxShadow: '0 1px 3px rgba(80,60,30,0.06)',
-              }}
-            >
-              {pill === 'All' ? 'All' : displayCategory(pill)}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* ── Filter row ───────────────────────────────────────────────────────── */}
-      <div style={{
-        fontSize: '9px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase',
-        color: C.driftwoodSm, padding: '14px 22px 6px', position: 'relative', zIndex: 1,
-      }}>
-        Filter by
-      </div>
-      <div className="no-scrollbar" style={{
-        display: 'flex', gap: '6px', overflowX: 'auto',
-        padding: '0 22px', position: 'relative', zIndex: 1,
-      }}>
-        {FILTER_PILLS.map(pill => {
-          const isActive = activeFilters.has(pill)
-          return (
-            <button
-              key={pill}
-              onClick={() => toggleFilter(pill)}
-              style={{
-                background:   isActive ? 'rgba(122,140,110,0.10)' : 'white',
-                border:       isActive ? `1px solid ${C.sage}` : '1px solid rgba(200,185,160,0.55)',
-                borderRadius: '20px', padding: '6px 13px',
-                fontSize: '11px', fontWeight: isActive ? 500 : 400,
-                color:        isActive ? C.forest : C.driftwoodSm,
-                cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-                fontFamily: "'Jost', sans-serif",
-                boxShadow: '0 1px 3px rgba(80,60,30,0.06)',
-                transition: 'all 0.15s',
-              }}
-            >
-              {pill}
-            </button>
-          )
-        })}
-      </div>
+      {/* ── Active filter summary ─────────────────────────────────────────── */}
+      {hasActiveFilters && filterSummary && (
+        <button
+          onClick={() => setFilterSheetOpen(true)}
+          style={{
+            display: 'block', width: '100%', textAlign: 'left',
+            padding: '8px 22px 0', background: 'none', border: 'none',
+            cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+            fontSize: '12px', fontWeight: 300, color: C.driftwood,
+            position: 'relative', zIndex: 1,
+          }}
+        >
+          {filterSummary}
+        </button>
+      )}
 
       {/* ── Save a Recipe button (cream body) ───────────────────────────────── */}
       {!selectMode && (
@@ -508,6 +490,93 @@ export default function RecipeLibrary({ appUser }) {
         onSuccess={() => setPlanSheetRecipe(null)}
         itemType="recipe"
       />
+
+      {/* ── Filter Sheet ────────────────────────────────────────────────────── */}
+      {filterSheetOpen && (
+        <>
+          <div onClick={() => setFilterSheetOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
+          <div onClick={e => e.stopPropagation()} style={{
+            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
+            padding: '0 0 34px', zIndex: 201, boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
+            maxHeight: '70vh', overflowY: 'auto',
+            animation: 'sheetRise 0.32s cubic-bezier(0.32,0.72,0,1) both',
+          }}>
+            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+            <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+
+              {/* Browse by category */}
+              <div>
+                <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '10px' }}>
+                  Browse by category
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {categoryPills.map(pill => {
+                    const isActive = activeCategory === pill
+                    return (
+                      <button key={pill} onClick={() => setActiveCategory(pill)} style={{
+                        padding: '6px 14px', borderRadius: '20px',
+                        border: isActive ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                        background: isActive ? 'rgba(61,107,79,0.08)' : 'white',
+                        color: isActive ? C.forest : C.ink,
+                        fontFamily: "'Jost', sans-serif", fontSize: '13px',
+                        fontWeight: isActive ? 500 : 400, cursor: 'pointer',
+                      }}>
+                        {pill === 'All' ? 'All' : displayCategory(pill)}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Filter by */}
+              <div>
+                <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '10px' }}>
+                  Filter by
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {FILTER_PILLS.map(pill => {
+                    const isActive = activeFilters.has(pill)
+                    return (
+                      <button key={pill} onClick={() => toggleFilter(pill)} style={{
+                        padding: '6px 14px', borderRadius: '20px',
+                        border: isActive ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                        background: isActive ? 'rgba(61,107,79,0.08)' : 'white',
+                        color: isActive ? C.forest : C.ink,
+                        fontFamily: "'Jost', sans-serif", fontSize: '13px',
+                        fontWeight: isActive ? 500 : 400, cursor: 'pointer',
+                      }}>
+                        {pill}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <button onClick={() => setFilterSheetOpen(false)} style={{
+                  width: '100%', padding: '14px', borderRadius: '12px',
+                  background: C.forest, color: 'white', border: 'none',
+                  fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
+                  cursor: 'pointer',
+                }}>
+                  Show recipes
+                </button>
+                {hasActiveFilters && (
+                  <button onClick={() => { setActiveCategory('All'); setActiveFilters(new Set(['All'])) }} style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    fontFamily: "'Jost', sans-serif", fontSize: '12px',
+                    color: C.driftwood, fontWeight: 300, padding: '4px',
+                  }}>
+                    Clear all
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ── + Week sheet overlay ──────────────────────────────────────────────── */}
       <div
