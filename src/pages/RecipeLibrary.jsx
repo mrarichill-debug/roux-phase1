@@ -375,25 +375,6 @@ export default function RecipeLibrary({ appUser }) {
         </button>
       )}
 
-      {/* ── Save a Recipe button (cream body) ───────────────────────────────── */}
-      {!selectMode && (
-        <div style={{ padding: '12px 22px 0', position: 'relative', zIndex: 1 }}>
-          <button
-            onClick={() => navigate('/save-recipe')}
-            style={{
-              width: '100%', padding: '12px',
-              fontSize: '13px', fontFamily: "'Jost', sans-serif", fontWeight: 500,
-              color: C.forest, background: 'white',
-              border: `1.5px solid rgba(61,107,79,0.35)`, borderRadius: '10px',
-              cursor: 'pointer', textAlign: 'center',
-              boxShadow: '0 1px 4px rgba(80,60,30,0.06)',
-              transition: 'background 0.15s',
-            }}
-          >
-            Save a Recipe
-          </button>
-        </div>
-      )}
 
       {/* ── Select mode banner ──────────────────────────────────────────────── */}
       {selectMode && (
@@ -480,6 +461,25 @@ export default function RecipeLibrary({ appUser }) {
       </div>
 
       {/* ── Bottom Nav ────────────────────────────────────────────────────────── */}
+      {/* ── FAB: Save a Recipe ─────────────────────────────────────────────── */}
+      {!selectMode && (
+        <button
+          onClick={() => navigate('/save-recipe')}
+          style={{
+            position: 'fixed', bottom: 'calc(90px + env(safe-area-inset-bottom, 8px))', right: '20px',
+            width: '56px', height: '56px', borderRadius: '50%',
+            background: C.forest, border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            zIndex: 50,
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" style={{ width: 24, height: 24 }}>
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+      )}
+
       <BottomNav activeTab="meals" />
 
       <AddToPlanSheet
