@@ -160,31 +160,44 @@ export default function RecipeCard({ appUser }) {
       />
 
       {/* ── Hero ──────────────────────────────────────────────────────── */}
-      <div style={{
-        margin: '0', width: '100%', height: '220px',
-        background: recipe.photo_url ? `url(${recipe.photo_url}) center/cover no-repeat` : C.cream,
-        position: 'relative', overflow: 'hidden',
-        animation: 'fadeUp 0.4s ease 0.05s both',
-      }}>
-        {!recipe.photo_url && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontStyle: 'italic', color: C.driftwood }}>
-              {catLabel || 'Recipe'}
-            </span>
-          </div>
-        )}
-        {catLabel && (
+      {recipe.photo_url ? (
+        <div style={{
+          width: '100%', height: '220px',
+          background: `url(${recipe.photo_url}) center/cover no-repeat`,
+          position: 'relative', overflow: 'hidden',
+          animation: 'fadeUp 0.4s ease 0.05s both',
+        }}>
+          {/* Dark gradient for pill readability */}
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '60px', background: 'linear-gradient(transparent, rgba(0,0,0,0.25))' }} />
+          {catLabel && (
+            <div style={{
+              position: 'absolute', bottom: '12px', left: '14px',
+              background: 'rgba(255,255,255,0.85)', border: 'none',
+              borderRadius: '4px', padding: '3px 8px',
+              fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px',
+              textTransform: 'uppercase', color: C.driftwoodSm,
+            }}>
+              {catLabel}
+            </div>
+          )}
+        </div>
+      ) : (
+        catLabel && (
           <div style={{
-            position: 'absolute', bottom: '12px', left: '14px',
-            background: 'transparent', border: '0.5px solid #C4B8A8',
-            borderRadius: '4px', padding: '3px 8px',
-            fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px',
-            textTransform: 'uppercase', color: C.driftwood,
+            height: '44px', display: 'flex', alignItems: 'center',
+            padding: '0 22px', borderBottom: '0.5px solid #E4DDD2',
           }}>
-            {catLabel}
+            <div style={{
+              background: 'transparent', border: '0.5px solid #C4B8A8',
+              borderRadius: '4px', padding: '3px 8px',
+              fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px',
+              textTransform: 'uppercase', color: C.driftwood,
+            }}>
+              {catLabel}
+            </div>
           </div>
-        )}
-      </div>
+        )
+      )}
 
       {/* ── Header Card ───────────────────────────────────────────────── */}
       <div style={{ padding: '20px 22px 0', animation: 'fadeUp 0.4s ease 0.10s both' }}>
