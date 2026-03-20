@@ -281,7 +281,7 @@ CREATE TABLE recipes (
   times_planned         INTEGER     NOT NULL DEFAULT 0,
   times_cooked          INTEGER     NOT NULL DEFAULT 0,
   sage_assist_offered   TEXT,
-  sage_assist_status    TEXT        CHECK (sage_assist_status IN ('pending', 'accepted', 'declined')),
+  sage_assist_status    TEXT        CHECK (sage_assist_status IN ('pending', 'accepted', 'declined', 'resolved')),
   sage_assist_content   TEXT,
   recipe_type           TEXT        NOT NULL DEFAULT 'full'
                           CHECK (recipe_type IN ('full', 'quick')),

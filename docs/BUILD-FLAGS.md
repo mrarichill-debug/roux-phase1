@@ -201,6 +201,17 @@ Traditions must be applied via the slot picker which creates a `planned_meals` r
 - Unit field uses a fixed picker (Volume/Weight/Count/Other categories) — no freeform units
 - Ingredient name autofills from household's pantry items via `ILIKE` query
 
+### Sage Ingredient Review (Mar 19, 2026)
+
+- **Async background call** after every recipe save (new or edit). Fire-and-forget — save completes immediately for the user.
+- Uses `claude-haiku-4-5-20251001` — fast and cost-efficient. Does **not** count against `sage_usage` limits.
+- Reviews ingredient list for consistency issues: ambiguous units, vague quantities, duplicated ingredients expressed differently.
+- Results saved to `recipes.sage_assist_content` (JSON array), `sage_assist_status` set to `'pending'`, `sage_assist_offered` set to timestamp.
+- If no issues found — empty array, no notification, no DB write.
+- On recipe detail: amber nudge appears when `sage_assist_status = 'pending'`. Opens a review sheet where Lauren accepts or dismisses each suggestion.
+- Accepting updates the ingredient row in the database. All resolved → `sage_assist_status` set to `'resolved'`, nudge disappears.
+- Columns `sage_assist_content`, `sage_assist_status`, `sage_assist_offered` already existed on the `recipes` table. `sage_assist_status` CHECK constraint updated to include `'resolved'`.
+
 ### Weekly Proteins — Tier Placement (Mar 18, 2026)
 
 Basic weekly protein entry (protein name per week plan) is a **Free** feature. Sale price tracking, spending trends, Sage protein suggestions — **Premium**.

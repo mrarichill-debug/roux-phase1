@@ -5,6 +5,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { runSageIngredientReview } from '../lib/sageReview'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 
@@ -243,6 +244,9 @@ export default function EditRecipe({ appUser }) {
         const { error: insErr } = await supabase.from('instructions').insert(insRows)
         if (insErr) throw insErr
       }
+
+      // Fire-and-forget Sage ingredient review
+      runSageIngredientReview(id, validIngs)
 
       setToast('Recipe saved.')
       setTimeout(() => navigate(`/recipe/${id}`), 1200)

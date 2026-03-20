@@ -77,6 +77,7 @@ export default function RecipeCard({ appUser }) {
   const [favActive, setFavActive] = useState(false)
   const [planSheetOpen, setPlanSheetOpen] = useState(false)
   const [descExpanded, setDescExpanded] = useState(false)
+  const [sageSheetOpen, setSageSheetOpen] = useState(false)
 
   useEffect(() => { if (id) fetchAll() }, [id])
 
@@ -87,7 +88,8 @@ export default function RecipeCard({ appUser }) {
         id, name, description, category, cuisine, method, difficulty,
         prep_time_minutes, cook_time_minutes, total_time_minutes,
         servings, is_family_favorite, diet, personal_notes, variations,
-        credited_to_name, author, photo_url, sage_assist_content,
+        credited_to_name, author, photo_url,
+        sage_assist_content, sage_assist_status,
         household_id, times_planned, times_cooked
       `).eq('id', id).single(),
       supabase.from('ingredients').select('*').eq('recipe_id', id).order('sort_order'),
@@ -229,6 +231,18 @@ export default function RecipeCard({ appUser }) {
               </span>
             ))}
           </div>
+        )}
+
+        {/* Sage ingredient nudge */}
+        {recipe.sage_assist_status === 'pending' && (
+          <button onClick={() => setSageSheetOpen(true)} style={{
+            display: 'block', marginTop: '10px', padding: 0,
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontFamily: "'Jost', sans-serif", fontSize: '12px',
+            fontWeight: 300, color: C.honey, textAlign: 'left',
+          }}>
+            Sage has a suggestion or two about your ingredients →
+          </button>
         )}
       </div>
 
@@ -428,6 +442,16 @@ export default function RecipeCard({ appUser }) {
         itemType="recipe"
       />
 
+      {/* ── Sage Review Sheet ─────────────────────────────────────────── */}
+      <SageReviewSheet
+        open={sageSheetOpen}
+        onClose={() => setSageSheetOpen(false)}
+        recipe={recipe}
+        recipeId={id}
+        appUser={appUser}
+        onResolved={() => setRecipe(prev => ({ ...prev, sage_assist_status: 'resolved' }))}
+      />
+
       <BottomNav activeTab="meals" />
     </div>
   )
@@ -439,4 +463,100 @@ const servesBtn = {
   background: '#FAF7F2', cursor: 'pointer',
   fontSize: '16px', color: '#2C2417',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
+}
+
+// ── Sage Review Sheet ───────────────────────────────────────────────────────
+function SageReviewSheet({ open, onClose, recipe, recipeId, appUser, onResolved }) {
+  const [resolved, setResolved] = useState(new Set())
+
+  if (!open || !recipe?.sage_assist_content) return null
+
+  let suggestions = []
+  try { suggestions = JSON.parse(recipe.sage_assist_content) } catch { return null }
+  if (!Array.isArray(suggestions) || suggestions.length === 0) return null
+
+  const firstName = appUser?.name?.split(' ')[0] || 'there'
+  const allResolved = suggestions.every((_, i) => resolved.has(i))
+
+  async function accept(idx, suggestion) {
+    // Update ingredient in DB
+    const { data: ings } = await supabase.from('ingredients').select('id, name')
+      .eq('recipe_id', recipeId).ilike('name', `%${suggestion.ingredient_name}%`).limit(1)
+    if (ings?.[0]) {
+      // Parse the suggestion to extract the recommended name
+      await supabase.from('ingredients').update({ name: suggestion.suggestion }).eq('id', ings[0].id)
+    }
+    setResolved(prev => new Set([...prev, idx]))
+    checkAllDone(new Set([...resolved, idx]))
+  }
+
+  function dismiss(idx) {
+    setResolved(prev => new Set([...prev, idx]))
+    checkAllDone(new Set([...resolved, idx]))
+  }
+
+  async function checkAllDone(res) {
+    if (res.size >= suggestions.length) {
+      await supabase.from('recipes').update({ sage_assist_status: 'resolved' }).eq('id', recipeId)
+      onResolved()
+      setTimeout(onClose, 600)
+    }
+  }
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
+      <div onClick={e => e.stopPropagation()} style={{
+        position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+        width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
+        padding: '0 0 40px', zIndex: 201, boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
+        maxHeight: '75vh', overflowY: 'auto',
+        animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
+      }}>
+        <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+        <div style={{ padding: '16px 22px' }}>
+          <div style={{
+            fontSize: '13px', color: C.driftwood, fontWeight: 300, fontStyle: 'italic',
+            lineHeight: 1.5, marginBottom: '16px',
+          }}>
+            Hey {firstName} — I noticed a few things while reviewing your ingredients. Mind if I clarify? It'll help your shopping list.
+          </div>
+
+          {suggestions.map((s, i) => {
+            const done = resolved.has(i)
+            return (
+              <div key={i} style={{
+                padding: '14px 0', borderBottom: i < suggestions.length - 1 ? `1px solid ${C.linen}` : 'none',
+                opacity: done ? 0.4 : 1, transition: 'opacity 0.2s',
+              }}>
+                <div style={{ fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500, color: C.ink, marginBottom: '4px' }}>
+                  {s.ingredient_name}
+                </div>
+                <div style={{ fontSize: '13px', color: C.driftwood, fontWeight: 300, marginBottom: '6px', lineHeight: 1.4 }}>
+                  {s.issue}
+                </div>
+                <div style={{ fontSize: '13px', color: C.forest, fontWeight: 400, marginBottom: '8px' }}>
+                  → {s.suggestion}
+                </div>
+                {!done && (
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={() => accept(i, s)} style={{
+                      padding: '6px 14px', borderRadius: '8px', border: 'none',
+                      background: C.forest, color: 'white', fontSize: '12px', fontWeight: 500,
+                      fontFamily: "'Jost', sans-serif", cursor: 'pointer',
+                    }}>Accept</button>
+                    <button onClick={() => dismiss(i)} style={{
+                      padding: '6px 14px', borderRadius: '8px', border: 'none',
+                      background: 'none', color: C.driftwood, fontSize: '12px', fontWeight: 300,
+                      fontFamily: "'Jost', sans-serif", cursor: 'pointer',
+                    }}>Keep mine</button>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </>
+  )
 }
