@@ -498,6 +498,10 @@ function SageReviewSheet({ open, onClose, recipe, recipeId, appUser, onResolved 
   async function checkAllDone(res) {
     if (res.size >= suggestions.length) {
       await supabase.from('recipes').update({ sage_assist_status: 'resolved' }).eq('id', recipeId)
+      // Mark related notification as acted on
+      supabase.from('notifications').update({ is_acted_on: true, acted_on_at: new Date().toISOString() })
+        .eq('target_id', recipeId).eq('type', 'sage_ingredient_review')
+        .then(() => {})
       onResolved()
       setTimeout(onClose, 600)
     }

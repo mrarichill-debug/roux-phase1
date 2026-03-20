@@ -246,7 +246,7 @@ export default function EditRecipe({ appUser }) {
       }
 
       // Fire-and-forget Sage ingredient review
-      runSageIngredientReview(id, validIngs)
+      runSageIngredientReview(id, validIngs, { recipeName: name.trim(), userId: appUser?.id })
 
       setToast('Recipe saved.')
       setTimeout(() => navigate(`/recipe/${id}`), 1200)

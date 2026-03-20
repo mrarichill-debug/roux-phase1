@@ -67,6 +67,7 @@ export default function Dashboard({ appUser }) {
   const [activeTemplateName, setActiveTemplateName] = useState(null)
   const [loading, setLoading]               = useState(true)  // Phase 1+2 loading
   const [sageOpen, setSageOpen]             = useState(false)
+  const [pendingReviews, setPendingReviews] = useState([])
 
   const tz         = appUser?.timezone ?? 'America/Chicago'
   const weekDates  = getWeekDatesTZ(tz)                     // [Mon..Sun]
@@ -194,6 +195,13 @@ export default function Dashboard({ appUser }) {
           })
         }
       }
+      // Fetch pending Sage ingredient reviews
+      const { data: pendingRes } = await supabase.from('recipes')
+        .select('id, name')
+        .eq('household_id', hid)
+        .eq('sage_assist_status', 'pending')
+        .limit(5)
+      if (pendingRes) setPendingReviews(pendingRes)
     } catch (err) {
       console.error('Dashboard load error:', err)
     } finally {
@@ -309,6 +317,43 @@ export default function Dashboard({ appUser }) {
             todayMbIdx={todayMbIdx}
             onFullPlan={() => navigate('/thisweek')}
           />
+        )}
+
+        {/* ── Sage Ingredient Review Nudge ─────────────────────────────── */}
+        {pendingReviews.length > 0 && (
+          <div
+            onClick={() => navigate(`/recipe/${pendingReviews[0].id}`)}
+            style={{
+              margin: '0 22px 14px', background: 'white',
+              border: '1px solid rgba(200,185,160,0.55)',
+              borderLeft: `3px solid ${C.honey}`,
+              borderRadius: '14px', padding: '14px 16px',
+              cursor: 'pointer', display: 'flex', gap: '12px', alignItems: 'flex-start',
+              boxShadow: '0 1px 4px rgba(80,60,30,0.06)',
+              animation: 'fadeUp 0.4s ease 0.12s both',
+              position: 'relative', zIndex: 1,
+            }}
+          >
+            <div style={{
+              width: '28px', height: '28px', borderRadius: '50%',
+              background: 'rgba(196,154,60,0.10)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke={C.honey} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+              </svg>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '13px', color: C.ink, lineHeight: 1.45, marginBottom: '6px' }}>
+                {pendingReviews.length === 1
+                  ? `I took a look at ${pendingReviews[0].name} after you saved it — I have a suggestion or two about the ingredients.`
+                  : `I reviewed ${pendingReviews.length} recipes you recently saved and have some ingredient suggestions.`}
+              </div>
+              <span style={{ fontSize: '12px', color: C.forest, fontWeight: 400 }}>
+                See suggestions →
+              </span>
+            </div>
+          </div>
         )}
 
         {/* ── Sage Nudge ────────────────────────────────────────────────── */}
