@@ -191,6 +191,16 @@ Birthday traditions are auto-created for all non-pet family members: `tradition_
 
 Traditions must be applied via the slot picker which creates a `planned_meals` row with `tradition_id`. Do not auto-display traditions based on `day_of_week` matching alone. The previous auto-display shortcut has been removed.
 
+### Pantry Items — Ingredient Dictionary (Mar 19, 2026)
+
+- `pantry_items` table is live — 76 items seeded from existing Hill House recipe ingredients
+- `ingredients.pantry_item_id` FK is live — all existing ingredients linked to pantry items
+- Every ingredient saved via Edit Recipe is linked to a pantry item (find-or-create on save)
+- Pantry items are the foundation for shopping list consolidation and future pantry management
+- **Future:** `always_on_hand` flag on pantry items — Lauren marks staples, shopping list skips them automatically
+- Unit field uses a fixed picker (Volume/Weight/Count/Other categories) — no freeform units
+- Ingredient name autofills from household's pantry items via `ILIKE` query
+
 ### Weekly Proteins — Tier Placement (Mar 18, 2026)
 
 Basic weekly protein entry (protein name per week plan) is a **Free** feature. Sale price tracking, spending trends, Sage protein suggestions — **Premium**.

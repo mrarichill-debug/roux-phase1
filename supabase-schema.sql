@@ -294,9 +294,24 @@ CREATE TABLE recipes (
 
 -- ── Table 9: ingredients ──────────────────────────────────────────────────────
 
+-- ── Table 8b: pantry_items ──────────────────────────────────────────────────
+-- Household ingredient dictionary. Every ingredient links to a pantry item.
+
+CREATE TABLE pantry_items (
+  id             UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  household_id   UUID        NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  name           TEXT        NOT NULL,
+  default_unit   TEXT,
+  always_on_hand BOOLEAN     NOT NULL DEFAULT FALSE,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(household_id, name)
+);
+
+
 CREATE TABLE ingredients (
   id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   recipe_id        UUID        NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
+  pantry_item_id   UUID        REFERENCES pantry_items(id) ON DELETE SET NULL,
   section_name     TEXT,
   sort_order       INTEGER     NOT NULL DEFAULT 0,
   name             TEXT        NOT NULL,

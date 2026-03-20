@@ -28,6 +28,14 @@ const inputStyle = {
   boxSizing: 'border-box', background: 'white',
 }
 
+const UNIT_OPTIONS = [
+  { group: 'Volume', units: ['tsp','tbsp','cup','fl oz','ml','l'] },
+  { group: 'Weight', units: ['oz','lb','g','kg'] },
+  { group: 'Count', units: ['piece','clove','can','bag','bunch','package','slice','sheet','sprig','stalk','head','pinch','dash'] },
+  { group: 'Other', units: ['to taste','as needed'] },
+]
+const ALL_UNITS = UNIT_OPTIONS.flatMap(g => g.units)
+
 let idCounter = 0
 function tempId() { return `_new_${++idCounter}` }
 
@@ -59,6 +67,11 @@ export default function EditRecipe({ appUser }) {
   // Ingredients & instructions
   const [ingredients, setIngredients] = useState([])
   const [instructions, setInstructions] = useState([])
+  const [unitPickerKey, setUnitPickerKey] = useState(null) // _key of ingredient showing unit picker
+  const [unitSearch, setUnitSearch] = useState('')
+  const [pantrySuggestions, setPantrySuggestions] = useState([])
+  const [pantryFocusKey, setPantryFocusKey] = useState(null)
+  const debounceRef = useRef(null)
   const [categories, setCategories] = useState([])
 
   const fileRef = useRef(null)
@@ -115,13 +128,35 @@ export default function EditRecipe({ appUser }) {
 
   // Ingredient helpers
   function addIngredient() {
-    setIngredients(prev => [...prev, { _key: tempId(), quantity: '', unit: '', name: '', sort_order: prev.length }])
+    setIngredients(prev => [...prev, { _key: tempId(), quantity: '', unit: 'piece', name: '', sort_order: prev.length, pantry_item_id: null }])
   }
   function updateIngredient(key, field, value) {
     setIngredients(prev => prev.map(i => i._key === key ? { ...i, [field]: value } : i))
   }
   function removeIngredient(key) {
     setIngredients(prev => prev.filter(i => i._key !== key))
+  }
+
+  // Pantry autofill
+  function handleIngNameChange(key, value) {
+    updateIngredient(key, 'name', value)
+    setPantryFocusKey(key)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (value.trim().length < 2) { setPantrySuggestions([]); return }
+    debounceRef.current = setTimeout(async () => {
+      const { data } = await supabase.from('pantry_items').select('id, name, default_unit')
+        .ilike('name', `%${value.trim()}%`).limit(6)
+      setPantrySuggestions(data || [])
+    }, 200)
+  }
+
+  function selectPantryItem(key, item) {
+    setIngredients(prev => prev.map(i => {
+      if (i._key !== key) return i
+      return { ...i, name: item.name, pantry_item_id: item.id, unit: i.unit === 'piece' && item.default_unit ? item.default_unit : i.unit }
+    }))
+    setPantrySuggestions([])
+    setPantryFocusKey(null)
   }
 
   // Instruction helpers
@@ -162,14 +197,32 @@ export default function EditRecipe({ appUser }) {
       }).eq('id', id)
       if (recErr) throw recErr
 
-      // 2. Upsert ingredients — delete all, re-insert
+      // 2. Ensure pantry items exist for all ingredients, then upsert ingredients
       await supabase.from('ingredients').delete().eq('recipe_id', id)
-      const ingRows = ingredients.filter(i => i.name?.trim()).map((i, idx) => ({
+      const validIngs = ingredients.filter(i => i.name?.trim())
+      for (const ing of validIngs) {
+        if (!ing.pantry_item_id) {
+          // Find or create pantry item
+          const nameLower = ing.name.trim().toLowerCase()
+          let { data: existing } = await supabase.from('pantry_items').select('id')
+            .eq('household_id', appUser.household_id).ilike('name', nameLower).maybeSingle()
+          if (existing) {
+            ing.pantry_item_id = existing.id
+          } else {
+            const { data: created } = await supabase.from('pantry_items').insert({
+              household_id: appUser.household_id, name: nameLower, default_unit: ing.unit || 'piece',
+            }).select('id').single()
+            if (created) ing.pantry_item_id = created.id
+          }
+        }
+      }
+      const ingRows = validIngs.map((i, idx) => ({
         recipe_id: id,
         sort_order: idx,
         name: i.name.trim(),
         quantity: i.quantity?.trim() || null,
         unit: i.unit?.trim() || null,
+        pantry_item_id: i.pantry_item_id || null,
         preparation_note: i.preparation_note?.trim() || null,
         is_optional: i.is_optional || false,
       }))
@@ -347,25 +400,80 @@ export default function EditRecipe({ appUser }) {
         {/* ── 5. Ingredients ─────────────────────────────────────────── */}
         <div>
           <div style={label}>Ingredients</div>
-          {ingredients.map((ing, i) => (
-            <div key={ing._key} style={{ display: 'flex', gap: '6px', marginBottom: '8px', alignItems: 'center' }}>
-              <input type="text" value={ing.quantity || ''} onChange={e => updateIngredient(ing._key, 'quantity', e.target.value)}
-                placeholder="Qty" style={{ ...inputStyle, width: '50px', textAlign: 'center', padding: '8px 4px', fontSize: '12px' }} />
-              <input type="text" value={ing.unit || ''} onChange={e => updateIngredient(ing._key, 'unit', e.target.value)}
-                placeholder="Unit" style={{ ...inputStyle, width: '50px', padding: '8px 4px', fontSize: '12px' }} />
-              <input type="text" value={ing.name || ''} onChange={e => updateIngredient(ing._key, 'name', e.target.value)}
-                placeholder="Ingredient name" style={{ ...inputStyle, flex: 1, padding: '8px 10px', fontSize: '13px' }} />
-              <button onClick={() => removeIngredient(ing._key)} style={{
-                width: '26px', height: '26px', borderRadius: '50%', border: `1px solid ${C.linen}`,
-                background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: C.driftwood, flexShrink: 0,
-              }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}>
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-            </div>
-          ))}
+          {ingredients.map((ing, i) => {
+            const filteredUnits = unitSearch.trim() && unitPickerKey === ing._key
+              ? ALL_UNITS.filter(u => u.includes(unitSearch.toLowerCase()))
+              : ALL_UNITS
+            return (
+              <div key={ing._key} style={{ marginBottom: '10px' }}>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <input type="text" value={ing.quantity || ''} onChange={e => updateIngredient(ing._key, 'quantity', e.target.value)}
+                    placeholder="Qty" style={{ ...inputStyle, width: '50px', textAlign: 'center', padding: '8px 4px', fontSize: '12px' }} />
+                  {/* Unit picker button */}
+                  <button onClick={() => { setUnitPickerKey(unitPickerKey === ing._key ? null : ing._key); setUnitSearch('') }}
+                    style={{
+                      ...inputStyle, width: '56px', padding: '8px 4px', fontSize: '11px', textAlign: 'center',
+                      cursor: 'pointer', color: ing.unit ? C.ink : C.driftwood,
+                      background: unitPickerKey === ing._key ? 'rgba(61,107,79,0.06)' : 'white',
+                      border: unitPickerKey === ing._key ? `1.5px solid ${C.forest}` : `1.5px solid ${C.linen}`,
+                    }}>
+                    {ing.unit || 'unit'}
+                  </button>
+                  {/* Name with pantry autofill */}
+                  <div style={{ flex: 1, position: 'relative' }}>
+                    <input type="text" value={ing.name || ''} onChange={e => handleIngNameChange(ing._key, e.target.value)}
+                      onFocus={() => setPantryFocusKey(ing._key)} onBlur={() => setTimeout(() => setPantryFocusKey(null), 200)}
+                      placeholder="Ingredient name" style={{ ...inputStyle, padding: '8px 10px', fontSize: '13px' }} />
+                    {pantryFocusKey === ing._key && pantrySuggestions.length > 0 && (
+                      <div style={{
+                        position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+                        background: 'white', border: `1px solid ${C.linen}`, borderRadius: '0 0 8px 8px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.08)', maxHeight: '160px', overflowY: 'auto',
+                      }}>
+                        {pantrySuggestions.map(p => (
+                          <button key={p.id} onMouseDown={() => selectPantryItem(ing._key, p)} style={{
+                            display: 'block', width: '100%', padding: '8px 10px', background: 'none',
+                            border: 'none', borderTop: `1px solid ${C.linen}`, cursor: 'pointer',
+                            textAlign: 'left', fontSize: '13px', color: C.ink, fontFamily: "'Jost', sans-serif",
+                          }}>
+                            {p.name}
+                            {p.default_unit && <span style={{ fontSize: '10px', color: C.driftwood, marginLeft: '6px' }}>{p.default_unit}</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <button onClick={() => removeIngredient(ing._key)} style={{
+                    width: '26px', height: '26px', borderRadius: '50%', border: `1px solid ${C.linen}`,
+                    background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: C.driftwood, flexShrink: 0,
+                  }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}>
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </div>
+                {/* Unit picker dropdown */}
+                {unitPickerKey === ing._key && (
+                  <div style={{ marginTop: '4px', padding: '8px', background: 'white', border: `1px solid ${C.linen}`, borderRadius: '8px' }}>
+                    <input type="text" value={unitSearch} onChange={e => setUnitSearch(e.target.value)} placeholder="Search units..."
+                      autoFocus style={{ ...inputStyle, fontSize: '12px', padding: '6px 10px', marginBottom: '6px' }} />
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxHeight: '120px', overflowY: 'auto' }}>
+                      {filteredUnits.map(u => (
+                        <button key={u} onClick={() => { updateIngredient(ing._key, 'unit', u); setUnitPickerKey(null) }} style={{
+                          padding: '4px 10px', borderRadius: '12px', fontSize: '11px',
+                          border: ing.unit === u ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                          background: ing.unit === u ? 'rgba(61,107,79,0.08)' : 'white',
+                          color: ing.unit === u ? C.forest : C.ink, cursor: 'pointer',
+                          fontFamily: "'Jost', sans-serif",
+                        }}>{u}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
           <button onClick={addIngredient} style={{
             background: 'none', border: 'none', cursor: 'pointer',
             fontSize: '13px', color: C.forest, fontWeight: 400, padding: '6px 0',
