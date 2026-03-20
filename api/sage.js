@@ -1,6 +1,7 @@
 /**
  * /api/sage.js — General Sage chat and completions proxy.
  * Calls Anthropic API server-side using ANTHROPIC_API_KEY.
+ * Migrated from client-side direct calls on 2026-03-20.
  */
 
 export default async function handler(req, res) {
