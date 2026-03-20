@@ -37,7 +37,7 @@ export default function SavedMeals({ appUser }) {
     <div style={{
       background: C.cream, minHeight: '100vh', maxWidth: '430px',
       margin: '0 auto', fontFamily: "'Jost', sans-serif",
-      paddingBottom: '80px',
+      paddingBottom: 'calc(88px + env(safe-area-inset-bottom, 8px))',
     }}>
       <TopBar
         leftAction={{

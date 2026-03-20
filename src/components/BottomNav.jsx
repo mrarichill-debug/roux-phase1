@@ -99,14 +99,15 @@ export default function BottomNav({ activeTab }) {
     <nav style={{
       position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
       width: '100%', maxWidth: '430px',
-      height: `calc(72px + env(safe-area-inset-bottom))`,
-      paddingBottom: 'env(safe-area-inset-bottom)',
-      display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
-      alignItems: 'center',
       zIndex: 100, background: C.cream,
       borderTop: `1px solid ${C.linen}`,
-      boxSizing: 'border-box',
+      paddingBottom: 'env(safe-area-inset-bottom, 8px)',
     }}>
+      <div style={{
+        height: '80px',
+        display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
+        alignItems: 'center',
+      }}>
       {NAV_TABS.map(tab => {
         const active = tab.key === currentTab
         return (
@@ -135,13 +136,14 @@ export default function BottomNav({ activeTab }) {
             </span>
             {active && (
               <span style={{
-                position: 'absolute', bottom: '6px', left: '50%', transform: 'translateX(-50%)',
+                position: 'absolute', bottom: '8px', left: '50%', transform: 'translateX(-50%)',
                 width: '3px', height: '3px', borderRadius: '50%', background: C.forest,
               }} />
             )}
           </button>
         )
       })}
+      </div>
     </nav>
   )
 }

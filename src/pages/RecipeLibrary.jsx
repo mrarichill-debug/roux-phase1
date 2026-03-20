@@ -290,7 +290,7 @@ export default function RecipeLibrary({ appUser }) {
       minHeight:     '100vh',
       maxWidth:      '430px',
       margin:        '0 auto',
-      paddingBottom: '88px',
+      paddingBottom: 'calc(96px + env(safe-area-inset-bottom, 8px))',
       position:      'relative',
       overflowX:     'hidden',
     }}>

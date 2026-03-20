@@ -229,7 +229,7 @@ export default function Dashboard({ appUser }) {
       display: 'flex',
       flexDirection: 'column',
       position: 'relative',
-      paddingBottom: '96px',
+      paddingBottom: 'calc(96px + env(safe-area-inset-bottom, 8px))',
     }}>
 
       <WatermarkLayer />
