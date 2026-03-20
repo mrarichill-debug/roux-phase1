@@ -54,7 +54,8 @@ export default function SaveRecipe({ appUser }) {
   const [urlInput, setUrlInput] = useState('')
   const [extracting, setExtracting] = useState(false)
   const [extractError, setExtractError] = useState(null)
-  const [urlBlocked, setUrlBlocked] = useState(false)
+  // Typed URL error: null | { type: 'blocked_domain', site } | { type: 'fetch_failed' } | { type: 'parse_failed' }
+  const [urlError, setUrlError] = useState(null)
 
   // Multi-photo capture state
   const [capturedPhotos, setCapturedPhotos] = useState([]) // [{ file, preview, id }]
@@ -126,7 +127,7 @@ export default function SaveRecipe({ appUser }) {
     if (!urlInput.trim() || extracting) return
     setExtracting(true)
     setExtractError(null)
-    setUrlBlocked(false)
+    setUrlError(null)
     try {
       const model = await getSageModel()
       const response = await fetch('/api/extract-recipe', {
@@ -136,9 +137,9 @@ export default function SaveRecipe({ appUser }) {
       })
       const data = await response.json()
       if (!response.ok || !data.success) {
-        if (data.error === 'blocked') {
-          setUrlBlocked(true)
-          setExtractError(null)
+        const errType = data.error
+        if (errType === 'blocked_domain' || errType === 'fetch_failed' || errType === 'parse_failed') {
+          setUrlError({ type: errType, site: data.site || null })
           setExtracting(false)
           return
         }
@@ -147,7 +148,7 @@ export default function SaveRecipe({ appUser }) {
       applyExtractedRecipe(data.recipe, urlInput.trim())
     } catch (err) {
       console.error('[SaveRecipe] URL extraction error:', err)
-      setExtractError("Couldn't extract that recipe. Try pasting the recipe text directly, or enter it manually.")
+      setUrlError({ type: 'fetch_failed' })
       setExtracting(false)
     }
   }
@@ -430,7 +431,7 @@ export default function SaveRecipe({ appUser }) {
       setStep('choose')
       setExtractError(null)
       setExtracting(false)
-      setUrlBlocked(false)
+      setUrlError(null)
     } else {
       navigate('/meals/recipes')
     }
@@ -531,41 +532,54 @@ export default function SaveRecipe({ appUser }) {
           <input
             type="url"
             value={urlInput}
-            onChange={e => { setUrlInput(e.target.value); setUrlBlocked(false) }}
+            onChange={e => { setUrlInput(e.target.value); setUrlError(null) }}
             placeholder="https://..."
             autoFocus
             style={{ ...inputStyle, fontSize: '15px' }}
             onKeyDown={e => { if (e.key === 'Enter') handleUrlExtract() }}
           />
+          {!urlError && !extracting && (
+            <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, fontStyle: 'italic', marginTop: '-10px' }}>
+              Works best with food blogs and smaller recipe sites. Major sites like AllRecipes block direct import.
+            </div>
+          )}
 
           {extractError && (
             <div style={{ fontSize: '13px', color: C.red, lineHeight: 1.5 }}>{extractError}</div>
           )}
 
-          {/* Blocked site message with quick actions */}
-          {urlBlocked && (
+          {/* Typed error messages with quick actions */}
+          {urlError && (
             <div style={{
               padding: '16px', background: 'white', borderRadius: '12px',
               borderLeft: `3px solid ${C.honey}`,
             }}>
               <div style={{ fontSize: '14px', color: C.ink, lineHeight: 1.6, marginBottom: '14px' }}>
-                That site doesn't allow direct import. Try taking a photo of the recipe or enter it manually.
+                {urlError.type === 'blocked_domain' && (
+                  <>{urlError.site} doesn't allow apps to import recipes directly — it's their policy, not a bug. Here are two easy workarounds:</>
+                )}
+                {urlError.type === 'fetch_failed' && (
+                  <>Sage couldn't reach that page — the link may be broken or the site may be temporarily down. Double-check the URL and try again, or use one of these instead:</>
+                )}
+                {urlError.type === 'parse_failed' && (
+                  <>Sage found the page but had trouble reading the recipe format. Try a photo of the recipe or enter it manually.</>
+                )}
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
-                <button onClick={() => { setSourceType('photo'); setUrlBlocked(false); setStep('photo') }} style={{
+                <button onClick={() => { setSourceType('photo'); setUrlError(null); setStep('photo') }} style={{
                   flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
                   background: C.forest, color: 'white',
                   fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
                 }}>
-                  Take a photo
+                  Take a photo instead →
                 </button>
-                <button onClick={() => { setUrlBlocked(false); startManual() }} style={{
+                <button onClick={() => { setUrlError(null); startManual() }} style={{
                   flex: 1, padding: '10px', borderRadius: '10px', cursor: 'pointer',
                   background: 'transparent', color: C.forest,
                   border: `1.5px solid ${C.forest}`,
                   fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
                 }}>
-                  Type it in
+                  Enter it manually →
                 </button>
               </div>
             </div>
@@ -578,7 +592,7 @@ export default function SaveRecipe({ appUser }) {
                 Sage is reading the recipe...
               </div>
             </div>
-          ) : !urlBlocked && (
+          ) : !urlError && (
             <button onClick={handleUrlExtract} disabled={!urlInput.trim()} style={{
               padding: '16px', borderRadius: '14px', border: 'none', cursor: urlInput.trim() ? 'pointer' : 'default',
               background: urlInput.trim() ? C.forest : C.linen,

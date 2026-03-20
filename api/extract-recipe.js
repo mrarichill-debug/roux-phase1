@@ -1,7 +1,22 @@
 /**
  * /api/extract-recipe.js — Recipe URL extraction via Anthropic API.
  * Fetches the URL server-side, strips noise, sends to Claude for structured extraction.
+ * Known-blocked domains short-circuit before fetch. Bot protection detected post-fetch.
  */
+
+const BLOCKED_DOMAINS = [
+  'allrecipes.com',
+  'foodnetwork.com',
+  'cooking.nytimes.com',
+  'tasty.co',
+  'delish.com',
+  'epicurious.com',
+  'bonappetit.com',
+  'food.com',
+  'yummly.com',
+  'pillsbury.com',
+  'bettycrocker.com',
+]
 
 const EXTRACTION_PROMPT = `You are Sage, a recipe extraction assistant for the Roux family meal planning app. Extract a structured recipe from the provided web page content. Return ONLY valid JSON with these fields:
 {
@@ -21,6 +36,32 @@ const EXTRACTION_PROMPT = `You are Sage, a recipe extraction assistant for the R
   "personal_notes": "string or null"
 }
 Be thorough with ingredients — include quantities and standard units. Convert vague measurements to standard units when possible. For instructions, break into clear numbered steps. If information is missing, use null rather than guessing.`
+
+function getBlockedDomain(url) {
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./, '')
+    return BLOCKED_DOMAINS.find(d => hostname === d || hostname.endsWith('.' + d)) || null
+  } catch {
+    return null
+  }
+}
+
+function friendlySiteName(domain) {
+  const names = {
+    'allrecipes.com': 'AllRecipes',
+    'foodnetwork.com': 'Food Network',
+    'cooking.nytimes.com': 'NYT Cooking',
+    'tasty.co': 'Tasty',
+    'delish.com': 'Delish',
+    'epicurious.com': 'Epicurious',
+    'bonappetit.com': 'Bon Appétit',
+    'food.com': 'Food.com',
+    'yummly.com': 'Yummly',
+    'pillsbury.com': 'Pillsbury',
+    'bettycrocker.com': 'Betty Crocker',
+  }
+  return names[domain] || domain
+}
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
@@ -46,6 +87,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, error: 'url string required' })
     }
 
+    // Check known-blocked domains before fetching
+    const blockedDomain = getBlockedDomain(url)
+    if (blockedDomain) {
+      return res.status(422).json({
+        success: false,
+        error: 'blocked_domain',
+        site: friendlySiteName(blockedDomain),
+      })
+    }
+
     // Fetch the recipe page server-side with realistic browser headers
     let pageContent
     try {
@@ -63,35 +114,23 @@ export default async function handler(req, res) {
       if (!pageRes.ok) throw new Error(`HTTP ${pageRes.status}`)
       const contentType = pageRes.headers.get('content-type') || ''
       if (!contentType.includes('text/html') && !contentType.includes('application/xhtml')) {
-        return res.status(422).json({
-          success: false,
-          error: 'blocked',
-          message: "This site doesn't allow direct recipe import. Try copying the recipe text and using manual entry, or take a photo instead.",
-        })
+        return res.status(422).json({ success: false, error: 'fetch_failed' })
       }
       pageContent = await pageRes.text()
     } catch (fetchErr) {
-      return res.status(422).json({
-        success: false,
-        error: 'blocked',
-        message: "This site doesn't allow direct recipe import. Try copying the recipe text and using manual entry, or take a photo instead.",
-      })
+      return res.status(422).json({ success: false, error: 'fetch_failed' })
     }
 
     // Detect bot protection pages (Cloudflare challenge, login walls, etc.)
     const lowerContent = pageContent.toLowerCase()
     const isBlocked = (
-      (lowerContent.includes('cf-browser-verification') || lowerContent.includes('cloudflare') && lowerContent.includes('challenge')) ||
+      (lowerContent.includes('cf-browser-verification') || (lowerContent.includes('cloudflare') && lowerContent.includes('challenge'))) ||
       (lowerContent.includes('just a moment') && pageContent.length < 5000) ||
       (lowerContent.includes('access denied') && pageContent.length < 3000) ||
       (lowerContent.includes('please verify') && lowerContent.includes('human') && pageContent.length < 5000)
     )
     if (isBlocked) {
-      return res.status(422).json({
-        success: false,
-        error: 'blocked',
-        message: "This site doesn't allow direct recipe import. Try copying the recipe text and using manual entry, or take a photo instead.",
-      })
+      return res.status(422).json({ success: false, error: 'fetch_failed' })
     }
 
     // Strip scripts, styles, nav, footer, ads to reduce token usage
@@ -134,19 +173,22 @@ export default async function handler(req, res) {
     })
 
     if (!response.ok) {
-      return res.status(502).json({ success: false, error: 'Recipe extraction failed. Try again.' })
+      return res.status(502).json({ success: false, error: 'parse_failed' })
     }
 
     const data = await response.json()
     const text = data.content?.[0]?.text || ''
 
     // Parse JSON from response
-    const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    const recipe = JSON.parse(cleaned)
-    recipe.source_url = url
-
-    return res.status(200).json({ success: true, recipe })
+    try {
+      const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+      const recipe = JSON.parse(cleaned)
+      recipe.source_url = url
+      return res.status(200).json({ success: true, recipe })
+    } catch {
+      return res.status(422).json({ success: false, error: 'parse_failed' })
+    }
   } catch (error) {
-    return res.status(500).json({ success: false, error: 'Could not extract recipe. Try entering it manually.' })
+    return res.status(500).json({ success: false, error: 'parse_failed' })
   }
 }
