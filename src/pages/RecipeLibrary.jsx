@@ -409,12 +409,15 @@ export default function RecipeLibrary({ appUser }) {
         </div>
       )}
 
-      {/* ── Results count ────────────────────────────────────────────────────── */}
+      {/* ── Header line ──────────────────────────────────────────────────────── */}
       <div style={{
-        padding: '14px 22px 10px', fontSize: '12px', color: C.driftwoodSm,
-        position: 'relative', zIndex: 1,
+        padding: '12px 22px', position: 'relative', zIndex: 1,
+        fontFamily: "'Playfair Display', serif", fontSize: '14px',
+        fontStyle: 'italic', color: C.driftwood,
       }}>
-        {loading ? '…' : `${filteredRecipes.length} recipe${filteredRecipes.length !== 1 ? 's' : ''}`}
+        {loading ? '…' : hasActiveFilters || search.trim()
+          ? `${filteredRecipes.length} recipe${filteredRecipes.length !== 1 ? 's' : ''} match`
+          : `${filteredRecipes.length} recipes from your kitchen`}
       </div>
 
       {/* ── Card grid ────────────────────────────────────────────────────────── */}
