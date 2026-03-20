@@ -90,9 +90,9 @@ body {
 
 /* Combined tonight card entrance: fadeUp then scale-settle */
 @keyframes tonightEntrance {
-  0%   { opacity: 0; transform: translateY(10px) scale(1.012); }
-  55%  { opacity: 1; transform: translateY(0)    scale(1.012); }
-  100% { opacity: 1; transform: translateY(0)    scale(1); }
+  0%   { opacity: 0; transform: translateY(24px) scale(0.97); }
+  60%  { opacity: 1; transform: translateY(0px)  scale(0.97); }
+  100% { opacity: 1; transform: translateY(0px)  scale(1); }
 }
 
 @keyframes sgpulse {
@@ -236,7 +236,7 @@ body {
     0 20px 48px rgba(70,32,8,0.10),
     0 1px 0px rgba(225,170,105,0.20) inset;
 
-  animation: tonightEntrance 0.75s cubic-bezier(0.22,1,0.36,1) 0.05s both;
+  animation: tonightEntrance 0.75s cubic-bezier(0.22,1,0.36,1) 0.12s both;
 }
 
 .tonight-board:active {
