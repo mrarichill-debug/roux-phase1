@@ -16,6 +16,7 @@
 - Day Types — default set only (Weekday, Weekend), editable but not custom
 - Default weekly pattern — set your household's default day-type pattern for new weeks
 - Weekly Proteins — basic entry (protein name per week plan)
+- Recipe photo upload (single photo per recipe)
 - Recipe sharing — share code, public recipes, borrow
 - Meal browse sharing
 - Tradition browse sharing
@@ -36,6 +37,7 @@
 - Linked recipe updates notify borrowers, see who borrowed
 - Occasion tradition year-over-year history visible to shared users
 - Sage — reactive suggestions, 100 interactions/month
+- Sage ingredient review suggestions (note: review runs for all tiers — this is infrastructure, not gated)
 
 ---
 
@@ -67,3 +69,5 @@
 - Lauren Hill is permanently Premium regardless of tier logic
 - Sage interaction limits tracked in `sage_usage` table with immutable historical rates
 - Day Type defaults seeded per household at creation — Weekday + Weekend only. School Day, No School, Summer are household-specific additions.
+- Sage ingredient review runs for all tiers (infrastructure) — suggestion surfacing runs for all tiers
+- Multiple recipe photos — future build, requires `recipe_photos` table. Single `photo_url` is current implementation.

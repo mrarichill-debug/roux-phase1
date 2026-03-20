@@ -45,31 +45,54 @@ Roux is a premium family recipe library that also plans meals, built for Lauren 
 **Built:**
 - Supabase schema deployed (30+ tables, RLS, grants, triggers)
 - Auth flow working (signup → trigger → household + user record)
-- AppShell with top bar, 5-tab bottom nav, routes
-- Recipe library Phase 2 (2-col grid, search, filter, category pills)
-- Recipe card Phase 2 (tabs, serves adjuster, Sage strip, Family Notes, pinned CTA)
+- AppShell with top bar, 5-tab bottom nav (80px + safe area inset), routes
+- Recipe library (`/meals/recipes`) — 2-col grid, filter sheet, FAB, dynamic categories, warm header, back arrow, card hierarchy (17px name, whisper pill)
+- Recipe detail screen — collapsed/full hero, SVG stat icons, serves calculator, edit link, Sage amber nudge, AddToPlanSheet
+- Edit Recipe (`/recipe/:id/edit`) — photo upload, all fields, pantry autofill, unit picker, ingredients/instructions editor
 - Shopping list (3-state flow — Building/Shopping/Complete, manual items)
-- Meals hub (two-zone layout — action tiles + archive counters with tagline strip)
+- Meals hub — tagline at top, action tiles, "Your kitchen" archive zone with live counts
 - Plan a Meal (recipe picker, alternatives, quick add, autofill, edit mode)
 - Saved Meals (list with search, tap to edit, Add to plan via AddToPlanSheet)
 - This Week / Week view (collapsible day cards, four slots, multi-item, autofill quick items, week nav with boundary, fixed header, protein roster)
 - Week Settings — two-screen architecture: This Week Settings + Household Defaults
-- AddToPlanSheet (reusable week/day/slot picker with calendar for future weeks)
+- AddToPlanSheet (reusable week/day/slot picker with calendar, feeds count for recipes)
+- AddDayTypeSheet (reusable, used in both settings screens)
+- Sage ingredient review — async Haiku check on recipe save, surfaces on Home + notifications + recipe detail
+- AI model constants (`/src/lib/aiModels.js`) — Sonnet for chat, Haiku for background
+- Pantry items system — 76 items seeded, ingredient autofill + unit picker
+- Micro-animation system — unified easing, prefers-reduced-motion
 - Design sprint complete — all 10 screen prototypes approved
 
 **Partially built:**
-- Dashboard (Home) — Tonight card, greeting, week strip, shortcuts exist. Missing: spending snapshot, Sage nudge, "By Ingredient" destination.
+- Dashboard (Home) — Tonight card, greeting, week strip, shortcuts, Sage ingredient review card exist. Missing: spending snapshot, general Sage nudge content, "By Ingredient" destination.
 - Shopping list — manual add works. Auto-generation from week plan not built.
 
 **Not yet built (in priority order):**
-1. Welcome / onboarding flow (5 screens — prototypes approved)
-2. Recipe import with Sage (chat-style input)
+1. **Save a Recipe flow** — FAB on library screen navigates here. Photo capture, URL extraction, manual entry. See session handoff note below.
+2. Welcome / onboarding flow (5 screens — prototypes approved)
 3. Traditions screen (`/meals/traditions`) — schema live, routes to placeholder
 4. Sage screen (`/sage`) — placeholder only
 5. Settings screen (My Account + Our Kitchen sections)
 6. Family members management UI
-7. Tier enforcement layer (`useSubscription()` hook)
-8. Responsive design — tablet and desktop
+7. Weekly wrap-up — end-of-week confirmation flow (Premium)
+8. Tier enforcement layer (`useSubscription()` hook)
+9. Responsive design — tablet and desktop
+
+---
+
+## Next Session Priority: Save a Recipe Flow
+
+The FAB on `/meals/recipes` navigates to the Save a Recipe flow which is not yet built. Three entry methods in priority order:
+
+1. **Photo capture** — user takes photo of physical recipe card with phone camera
+2. **URL paste** — user pastes a recipe URL, Sage extracts structured data
+3. **Manual entry** — user types everything manually (softly discouraged — other methods pre-catch ingredient inconsistencies that Sage post-save review looks for)
+
+**UX principle:** Make photo and URL feel fast and magical. Make manual feel complete but slightly more effort. Never block manual — just position the other methods first.
+
+- Model for URL extraction: `claude-sonnet-4-20250514` (`AI_MODELS.RECIPE_URL_EXTRACTION`)
+- Model for photo parsing: `claude-sonnet-4-20250514` (same)
+- After save: Sage ingredient review fires automatically (`AI_MODELS.SAGE_INGREDIENT_REVIEW`)
 
 Full checklist with flags → `docs/BUILD-FLAGS.md`
 

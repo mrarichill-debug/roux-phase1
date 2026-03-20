@@ -170,42 +170,54 @@
 
 ---
 
-## Recipe Library (`roux-library-style1-objects.html`)
+## Recipe Library (`/meals/recipes`) — ✅ BUILT & REFINED
 
-- Green topbar with inline search: translucent white-on-green input, search icon left.
-- "Browse by" label (sage-tinted white, 9px caps) above category pills.
-- Category pills (horizontally scrollable): All / Breakfast / Lunch / Dinner / Soups / Salads / Sides / Desserts.
-- "Filter by" label in cream body area above filter pills.
-- Filter pills: All / ★ Favorites / Recent / Quick ≤30m / Gluten Free / Vegetarian.
-- Add recipe button copy: **"Save a Recipe"** — not "+ Add Recipe".
-- Results count bar: "48 recipes" — must be reactive to active search/filter state in real build (currently static in prototype).
+- Green topbar with back arrow (→ /meals), inline search input, filter icon (driftwood sliders) with honey dot when filters active.
+- **Filter sheet** (bottom sheet): Section 1 "Browse by category" — dynamic pills from actual recipe data, A–Z. Section 2 "Filter by" — Favorites, Recent, Quick ≤30m, Gluten Free, Vegetarian. "Show recipes" CTA + "Clear all" link.
+- **Active filter summary line** below search when filters applied — e.g. "Main · Favorites" in driftwood Jost 300 12px. Tappable to reopen sheet.
+- **Warm header:** *"N recipes from your kitchen"* in Playfair italic 14px driftwood. Updates to *"N recipes match"* when filtered/searching.
 - **2-column card grid.** White cards, `border-radius: 16px`.
+- **FAB:** Forest green circle 56px, white + icon, fixed bottom-right above nav. Navigates to Save a Recipe flow.
+- Only shows `recipe_type = 'full'` AND `status = 'complete'` recipes. Quick items invisible.
 
 ### Recipe Card (Library Grid)
-- Category badge (10px, forest green, light green bg).
+- Category pill: transparent bg, `0.5px solid #C4B8A8` border, driftwood text, 9px uppercase. Whisper style — not dominant.
 - Favorite star (honey) top-right if favorited.
-- Recipe name: Playfair Display 14px.
+- Recipe name: **Playfair Display 17px** — dominant element on the card.
 - Optional Caveat handwritten note (walnut, 80% opacity).
 - Time + servings meta (driftwood, 11px).
-- Dietary dots at bottom-left: GF (honey) / Veg (sage) / DF (walnut).
-- "+ Week" add-to-plan link bottom-right.
+- "+ Plan" text link bottom-right (Jost 300 11px forest green) — opens AddToPlanSheet. `stopPropagation()` prevents card tap.
+- `.recipe-card-tap:active` — `scale(0.98)` press feel.
 
 ---
 
-## Recipe Card (`roux-recipe-card-style1-objects.html`)
+## Recipe Detail (`/recipe/:id`) — ✅ BUILT & REDESIGNED
 
-- **Slim topbar (58px):** Back arrow → library. Logo. Favorite star (honey).
-- **Hero:** 220px, 22px margins, 16px border radius. Category badge overlay (bottom-left, white bg, blur).
-- **Title card (white, 22px margins, 16px radius):** Recipe name (Playfair 28px) + Caveat handwritten note + 4-stat grid (Prep/Cook/Serves/Level) + dietary tags.
-- **Action row:** "Add to Shopping List" outline button only. "Add to This Week's Plan" lives as the pinned CTA only — not duplicated here.
-- **Sage strip:** Forest green background, collapsed by default. Expand/collapse with chevron. Sparkle icon (✦) + Sage badge + pulse dot. Message in italic Playfair on expand.
-- **Tabs:** Ingredients / Directions. Sticky at `top: 58px` (below slim topbar). 200ms crossfade (panelFade).
-- **Ingredients panel:** Serves adjuster (+/−, Playfair 22px count). Section headers (10px sage caps). Tap-to-check: checkPulse scale(1.22), 180ms. Checked = strikethrough + linen color.
-- **Directions panel:** Step cards cycle idle → active (sage border + tinted bg) → done (faded). `.completing` opacity dip to ~0.5, 180ms. Tips: italic Playfair, walnut left border.
-- **Family Notes:** Caveat 20px heading + starred note items (honey star). Brand signature moment.
-- **Related recipes:** "Goes Well With" section with related recipe cards.
-- **Pinned CTA:** "Add to This Week's Plan" — fixed above bottom nav.
-- **Serves adjuster is non-trivial:** quantity scaling affects data model. Plan this early in build (see BUILD-FLAGS.md).
+- **Topbar (58px slim):** Back arrow → library. Calendar+plus icon (→ AddToPlanSheet). Favorite star (honey/hollow).
+- **Hero:** Conditional. **With photo:** 220px full-width, `object-fit: cover`, dark gradient overlay at bottom, category pill overlaid bottom-left (white semi-transparent bg). **Without photo:** 44px slim bar, cream bg, `0.5px solid #E4DDD2` bottom border, category pill left-aligned. If no category either — nothing renders.
+- **Header:** Recipe name (Playfair 22px). Attribution "By [author]" if available (Jost 300 12px driftwood). Description with 100-char truncation + "more" expand. Dietary tags as quiet driftwood-bordered pills.
+- **Sage amber nudge:** When `sage_assist_status = 'pending'` — *"Sage has a suggestion or two about your ingredients →"* in honey 12px. Tapping opens SageReviewSheet.
+- **Stat row:** 4-column grid. SVG icons: clock (Prep), flame (Cook), people (Serves), signal bars (Level). Jost 400 15px value + Jost 300 9px uppercase label. No emoji.
+- **Action row:** "+ Add to Shopping List" outline button.
+- **Tabs:** Ingredients / Directions. Smooth sliding underline (CSS transition 200ms). Active: forest green underline + ink text. Inactive: no underline + driftwood text.
+- **Ingredients panel:** Serves adjuster — stateless calculator, labeled *"Adjust to scale ingredients"*. Saves nothing. Ingredient checkboxes with `checkPulse` animation. Section headers in sage caps.
+- **Directions panel:** Step number in forest green Playfair. Step text in Jost 300. Step cycling: idle → active → completing → done.
+- **Below tabs:** Personal notes (Caveat "My notes" header). Variations section. Recipe history ("Planned X times · Cooked X times"). "Edit recipe" link → `/recipe/:id/edit`.
+
+---
+
+## Edit Recipe (`/recipe/:id/edit`) — ✅ BUILT
+
+- **Topbar:** "Edit Recipe" centered. Back arrow → recipe detail.
+- **Photo:** Photo preview with "Change photo" overlay, or dashed "Add a photo" upload area with camera icon. Uploads to Supabase Storage.
+- **Basic info:** Recipe name (Playfair 20px input), description textarea, author + source URL side by side.
+- **Details:** Category (dynamic pills from household data + freeform input). Cuisine text input. Method (6 pill options). Difficulty (3 pill options).
+- **Timing & servings:** Prep time + cook time (number inputs + "min") + servings (free text).
+- **Ingredients:** Pantry autofill (ILIKE from `pantry_items`, 6 suggestions). Unit picker (searchable, Volume/Weight/Count/Other). Qty + unit + name per row. Add/remove buttons.
+- **Instructions:** Numbered textarea list. Add/remove, auto-renumber.
+- **Notes:** Personal notes (Caveat font), variations.
+- **Save:** Upserts recipe, delete/re-insert ingredients and instructions. Creates pantry items for new ingredient names. Fires Sage ingredient review async.
+- **Pinned CTA:** "Save changes" forest green, fixed above nav.
 
 ---
 

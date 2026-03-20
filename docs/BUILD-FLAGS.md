@@ -198,8 +198,37 @@ Traditions must be applied via the slot picker which creates a `planned_meals` r
 - Every ingredient saved via Edit Recipe is linked to a pantry item (find-or-create on save)
 - Pantry items are the foundation for shopping list consolidation and future pantry management
 - **Future:** `always_on_hand` flag on pantry items — Lauren marks staples, shopping list skips them automatically
-- Unit field uses a fixed picker (Volume/Weight/Count/Other categories) — no freeform units
-- Ingredient name autofills from household's pantry items via `ILIKE` query
+- Unit field uses a fixed picker — Volume (tsp, tbsp, cup, fl oz, ml, l), Weight (oz, lb, g, kg), Count (piece, clove, can, etc.), Other (to taste, as needed). No freeform.
+- Ingredient name autofills from household's pantry items via `ILIKE` query, min 2 chars, 6 suggestions max
+- New ingredient names auto-create pantry items on save with the selected unit as `default_unit`
+
+### Recipe Library — Refined (Mar 19, 2026)
+
+- Quick items (`recipe_type = 'quick'`) correctly filtered from library — **RESOLVED**
+- FAB pattern: forest green circle, 56px, fixed bottom-right above nav. Replaces full-width "Save a Recipe" button.
+- Filter sheet: all filters behind filter icon in search bar. Active filter summary line when filters applied. "Show recipes" CTA + "Clear all" link.
+- Category labels: dynamic from actual recipe data, sorted A–Z. No hardcoded pill list.
+- Card hierarchy: name 17px Playfair dominant, category pill whisper style (transparent bg, `0.5px solid #C4B8A8`, driftwood text)
+- Warm header: *"N recipes from your kitchen"* in Playfair italic 14px driftwood. Updates to *"N recipes match"* when filtered/searching.
+- Dietary legend footer removed — covered by filter sheet.
+
+### Recipe Detail Screen — Redesigned (Mar 19, 2026)
+
+- Hero: 44px collapsed slim bar when no `photo_url` (category pill only). 220px full height with photo (dark gradient overlay for pill readability).
+- Stat row: SVG icons only (clock, flame, people, signal bars) — no emoji.
+- Serves adjuster: stateless calculator — labeled *"Adjust to scale ingredients"*. Saves nothing to DB.
+- Serving selection for planning: lives in AddToPlanSheet as Step 4 "Feeds" — saves to `planned_meals.serves_members`.
+- Edit recipe: link at bottom of detail → `/recipe/:id/edit`.
+- Sage ingredient review: amber nudge below title when `sage_assist_status = 'pending'`.
+
+### Edit Recipe Screen — Built (Mar 19, 2026)
+
+- Route: `/recipe/:id/edit`. Back arrow → recipe detail.
+- Full editor: photo upload (Supabase Storage), recipe name, description, author, source URL, category (dynamic pills + freeform), cuisine, method (6 pills), difficulty (3 pills), prep/cook time, servings.
+- Ingredients: pantry autofill, unit picker, add/remove rows.
+- Instructions: numbered steps, add/remove, auto-renumber.
+- Notes: personal notes (Caveat font), variations.
+- Save: upserts recipe + delete/re-insert ingredients and instructions. Fires Sage ingredient review async.
 
 ### Sage Ingredient Review (Mar 19, 2026)
 
