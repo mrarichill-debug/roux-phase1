@@ -7,7 +7,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { getSageModel, SAGE_INGREDIENT_REVIEW } from '../lib/aiModels'
+import { getSageModel } from '../lib/aiModels'
 import { runSageIngredientReview } from '../lib/sageReview'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
@@ -42,46 +42,6 @@ const MAX_PHOTOS = 6
 
 let idCounter = 0
 function tempId() { return `_new_${++idCounter}` }
-
-const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY
-
-const EXTRACTION_PROMPT = `You are Sage, a recipe extraction assistant for the Roux family meal planning app. Extract a structured recipe from the provided content. Return ONLY valid JSON with these fields:
-{
-  "name": "string (recipe title)",
-  "description": "string (1-2 sentence summary, what makes it special)",
-  "author": "string or null",
-  "source_url": "string or null (original URL if provided)",
-  "category": "string or null (e.g. Main, Side, Dessert, Appetizer, Breakfast, Soup, Salad, Snack, Drink, Bread, Sauce)",
-  "cuisine": "string or null (e.g. Italian, Mexican, American)",
-  "method": "string or null (one of: stovetop, baked, slow cooker, no-cook, grilled, other)",
-  "difficulty": "string or null (one of: easy, medium, advanced)",
-  "prep_time_minutes": "number or null",
-  "cook_time_minutes": "number or null",
-  "servings": "string or null (e.g. '4-6')",
-  "ingredients": [{"quantity": "string", "unit": "string (tsp/tbsp/cup/oz/lb/g/piece/etc)", "name": "string"}],
-  "instructions": [{"step_number": 1, "instruction": "string"}],
-  "personal_notes": "string or null"
-}
-Be thorough with ingredients — include quantities and standard units. Convert vague measurements to standard units when possible. For instructions, break into clear numbered steps. If information is missing, use null rather than guessing.`
-
-const MULTI_PHOTO_PROMPT = `You are Sage, a recipe extraction assistant for the Roux family meal planning app. These images are multiple pages or sides of the same recipe. Combine all ingredients and instructions across all images into a single unified recipe. Do not duplicate ingredients that appear on multiple pages. Return ONLY valid JSON with these fields:
-{
-  "name": "string (recipe title)",
-  "description": "string (1-2 sentence summary, what makes it special)",
-  "author": "string or null",
-  "source_url": "string or null",
-  "category": "string or null (e.g. Main, Side, Dessert, Appetizer, Breakfast, Soup, Salad, Snack, Drink, Bread, Sauce)",
-  "cuisine": "string or null (e.g. Italian, Mexican, American)",
-  "method": "string or null (one of: stovetop, baked, slow cooker, no-cook, grilled, other)",
-  "difficulty": "string or null (one of: easy, medium, advanced)",
-  "prep_time_minutes": "number or null",
-  "cook_time_minutes": "number or null",
-  "servings": "string or null (e.g. '4-6')",
-  "ingredients": [{"quantity": "string", "unit": "string (tsp/tbsp/cup/oz/lb/g/piece/etc)", "name": "string"}],
-  "instructions": [{"step_number": 1, "instruction": "string"}],
-  "personal_notes": "string or null"
-}
-Be thorough with ingredients — include quantities and standard units. Convert vague measurements to standard units when possible. For instructions, break into clear numbered steps. If information is missing, use null rather than guessing.`
 
 export default function SaveRecipe({ appUser }) {
   const navigate = useNavigate()
@@ -167,28 +127,16 @@ export default function SaveRecipe({ appUser }) {
     setExtractError(null)
     try {
       const model = await getSageModel()
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('/api/extract-recipe', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': API_KEY,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: 4096,
-          system: EXTRACTION_PROMPT,
-          messages: [{
-            role: 'user',
-            content: `Extract the recipe from this URL. Fetch and parse the page content:\n\n${urlInput.trim()}`,
-          }],
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: urlInput.trim(), model }),
       })
-      if (!response.ok) throw new Error(`API error: ${response.status}`)
       const data = await response.json()
-      const text = data.content?.[0]?.text || ''
-      applyExtractedData(text, urlInput.trim())
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Extraction failed')
+      }
+      applyExtractedRecipe(data.recipe, urlInput.trim())
     } catch (err) {
       console.error('[SaveRecipe] URL extraction error:', err)
       setExtractError("Couldn't extract that recipe. Try pasting the recipe text directly, or enter it manually.")
@@ -203,48 +151,30 @@ export default function SaveRecipe({ appUser }) {
     setExtractError(null)
     try {
       // Convert all photos to base64
-      const imageBlocks = await Promise.all(capturedPhotos.map(async (photo) => {
+      const images = []
+      const mediaTypes = []
+      for (const photo of capturedPhotos) {
         const base64 = await new Promise((resolve, reject) => {
           const reader = new FileReader()
           reader.onload = () => resolve(reader.result.split(',')[1])
           reader.onerror = reject
           reader.readAsDataURL(photo.file)
         })
-        return {
-          type: 'image',
-          source: { type: 'base64', media_type: photo.file.type || 'image/jpeg', data: base64 },
-        }
-      }))
-
-      const isMulti = capturedPhotos.length > 1
-      const systemPrompt = isMulti ? MULTI_PHOTO_PROMPT : EXTRACTION_PROMPT
-      const userText = isMulti
-        ? `Extract the recipe from these ${capturedPhotos.length} photos. They are multiple pages or sides of the same recipe.`
-        : 'Extract the recipe from this photo of a recipe card or cookbook page.'
+        images.push(base64)
+        mediaTypes.push(photo.file.type || 'image/jpeg')
+      }
 
       const model = await getSageModel()
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('/api/extract-recipe-photo', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': API_KEY,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: 4096,
-          system: systemPrompt,
-          messages: [{
-            role: 'user',
-            content: [...imageBlocks, { type: 'text', text: userText }],
-          }],
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ images, mediaTypes, model }),
       })
-      if (!response.ok) throw new Error(`API error: ${response.status}`)
       const data = await response.json()
-      const text = data.content?.[0]?.text || ''
-      applyExtractedData(text, null)
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Photo extraction failed')
+      }
+      applyExtractedRecipe(data.recipe, null)
     } catch (err) {
       console.error('[SaveRecipe] Photo extraction error:', err)
       setExtractError("Couldn't read the photo clearly. Try a clearer photo, or enter the recipe manually.")
@@ -252,50 +182,41 @@ export default function SaveRecipe({ appUser }) {
     }
   }
 
-  // ── Apply extracted JSON to form ─────────────────────────────
-  function applyExtractedData(text, url) {
-    try {
-      const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-      const parsed = JSON.parse(cleaned)
+  // ── Apply extracted recipe object to form ────────────────────
+  function applyExtractedRecipe(recipe, url) {
+    setName(recipe.name || '')
+    setDescription(recipe.description || '')
+    setAuthor(recipe.author || '')
+    setSourceUrl(url || recipe.source_url || '')
+    setCategory(recipe.category || '')
+    setCuisine(recipe.cuisine || '')
+    setMethod(recipe.method || '')
+    setDifficulty(recipe.difficulty || '')
+    setPrepTime(recipe.prep_time_minutes ? String(recipe.prep_time_minutes) : '')
+    setCookTime(recipe.cook_time_minutes ? String(recipe.cook_time_minutes) : '')
+    setServings(recipe.servings || '')
+    setPersonalNotes(recipe.personal_notes || '')
 
-      setName(parsed.name || '')
-      setDescription(parsed.description || '')
-      setAuthor(parsed.author || '')
-      setSourceUrl(url || parsed.source_url || '')
-      setCategory(parsed.category || '')
-      setCuisine(parsed.cuisine || '')
-      setMethod(parsed.method || '')
-      setDifficulty(parsed.difficulty || '')
-      setPrepTime(parsed.prep_time_minutes ? String(parsed.prep_time_minutes) : '')
-      setCookTime(parsed.cook_time_minutes ? String(parsed.cook_time_minutes) : '')
-      setServings(parsed.servings || '')
-      setPersonalNotes(parsed.personal_notes || '')
-
-      if (Array.isArray(parsed.ingredients)) {
-        setIngredients(parsed.ingredients.map((ing, i) => ({
-          _key: tempId(),
-          quantity: ing.quantity || '',
-          unit: ing.unit || 'piece',
-          name: ing.name || '',
-          sort_order: i,
-          pantry_item_id: null,
-        })))
-      }
-      if (Array.isArray(parsed.instructions)) {
-        setInstructions(parsed.instructions.map((ins) => ({
-          _key: tempId(),
-          instruction: ins.instruction || '',
-          step_number: ins.step_number || 1,
-        })))
-      }
-
-      setExtracting(false)
-      setStep('form')
-    } catch (err) {
-      console.error('[SaveRecipe] Parse error:', err)
-      setExtractError("Sage had trouble reading that. Try again or enter the recipe manually.")
-      setExtracting(false)
+    if (Array.isArray(recipe.ingredients)) {
+      setIngredients(recipe.ingredients.map((ing, i) => ({
+        _key: tempId(),
+        quantity: ing.quantity || '',
+        unit: ing.unit || 'piece',
+        name: ing.name || '',
+        sort_order: i,
+        pantry_item_id: null,
+      })))
     }
+    if (Array.isArray(recipe.instructions)) {
+      setInstructions(recipe.instructions.map((ins) => ({
+        _key: tempId(),
+        instruction: ins.instruction || '',
+        step_number: ins.step_number || 1,
+      })))
+    }
+
+    setExtracting(false)
+    setStep('form')
   }
 
   // ── Go to manual form ────────────────────────────────────────

@@ -1,0 +1,117 @@
+/**
+ * /api/extract-recipe.js — Recipe URL extraction via Anthropic API.
+ * Fetches the URL server-side, strips noise, sends to Claude for structured extraction.
+ */
+
+const EXTRACTION_PROMPT = `You are Sage, a recipe extraction assistant for the Roux family meal planning app. Extract a structured recipe from the provided web page content. Return ONLY valid JSON with these fields:
+{
+  "name": "string (recipe title)",
+  "description": "string (1-2 sentence summary, what makes it special)",
+  "author": "string or null",
+  "source_url": "string or null (original URL if provided)",
+  "category": "string or null (e.g. Main, Side, Dessert, Appetizer, Breakfast, Soup, Salad, Snack, Drink, Bread, Sauce)",
+  "cuisine": "string or null (e.g. Italian, Mexican, American)",
+  "method": "string or null (one of: stovetop, baked, slow cooker, no-cook, grilled, other)",
+  "difficulty": "string or null (one of: easy, medium, advanced)",
+  "prep_time_minutes": "number or null",
+  "cook_time_minutes": "number or null",
+  "servings": "string or null (e.g. '4-6')",
+  "ingredients": [{"quantity": "string", "unit": "string (tsp/tbsp/cup/oz/lb/g/piece/etc)", "name": "string"}],
+  "instructions": [{"step_number": 1, "instruction": "string"}],
+  "personal_notes": "string or null"
+}
+Be thorough with ingredients — include quantities and standard units. Convert vague measurements to standard units when possible. For instructions, break into clear numbered steps. If information is missing, use null rather than guessing.`
+
+export default async function handler(req, res) {
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*')
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+    return res.status(200).end()
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, error: 'Method not allowed' })
+  }
+
+  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
+  if (!ANTHROPIC_API_KEY) {
+    return res.status(500).json({ success: false, error: 'Server configuration error' })
+  }
+
+  try {
+    const { url, model } = req.body
+
+    if (!url || typeof url !== 'string') {
+      return res.status(400).json({ success: false, error: 'url string required' })
+    }
+
+    // Fetch the recipe page server-side
+    let pageContent
+    try {
+      const pageRes = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Roux Recipe Saver)' },
+        signal: AbortSignal.timeout(15000),
+      })
+      if (!pageRes.ok) throw new Error(`HTTP ${pageRes.status}`)
+      pageContent = await pageRes.text()
+    } catch (fetchErr) {
+      return res.status(422).json({ success: false, error: 'Could not fetch that URL. Check the link and try again.' })
+    }
+
+    // Strip scripts, styles, nav, footer, ads to reduce token usage
+    pageContent = pageContent
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+      .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+      .replace(/<header[\s\S]*?<\/header>/gi, '')
+      .replace(/<aside[\s\S]*?<\/aside>/gi, '')
+      .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
+      .replace(/<noscript[\s\S]*?<\/noscript>/gi, '')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s{2,}/g, ' ')
+      .trim()
+
+    // Truncate to avoid token limits
+    if (pageContent.length > 30000) {
+      pageContent = pageContent.slice(0, 30000)
+    }
+
+    // Call Anthropic API
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: model || 'claude-sonnet-4-20250514',
+        max_tokens: 4096,
+        system: EXTRACTION_PROMPT,
+        messages: [{
+          role: 'user',
+          content: `Extract the recipe from this web page content. The original URL is: ${url}\n\n---\n\n${pageContent}`,
+        }],
+      }),
+    })
+
+    if (!response.ok) {
+      return res.status(502).json({ success: false, error: 'Recipe extraction failed. Try again.' })
+    }
+
+    const data = await response.json()
+    const text = data.content?.[0]?.text || ''
+
+    // Parse JSON from response
+    const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    const recipe = JSON.parse(cleaned)
+    recipe.source_url = url
+
+    return res.status(200).json({ success: true, recipe })
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Could not extract recipe. Try entering it manually.' })
+  }
+}
