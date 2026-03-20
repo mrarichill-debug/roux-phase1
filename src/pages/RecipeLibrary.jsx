@@ -628,11 +628,11 @@ function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWe
           {catLabel ? (
             <div style={{
               display: 'inline-block',
-              background: 'rgba(122,140,110,0.10)',
-              border: '1px solid rgba(122,140,110,0.2)',
+              background: 'transparent',
+              border: '0.5px solid #C4B8A8',
               borderRadius: '4px', padding: '2px 7px',
               fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase',
-              color: C.forest,
+              color: C.driftwood,
             }}>
               {catLabel}
             </div>
@@ -645,7 +645,7 @@ function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWe
         {/* Recipe name */}
         <div style={{
           fontFamily: "'Playfair Display', serif",
-          fontSize: '14px', fontWeight: 500, color: C.ink,
+          fontSize: '17px', fontWeight: 500, color: C.ink,
           lineHeight: 1.3, marginBottom: '4px',
         }}>
           {recipe.name}
