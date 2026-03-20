@@ -446,20 +446,6 @@ export default function RecipeLibrary({ appUser }) {
         )}
       </div>
 
-      {/* ── Dietary legend ───────────────────────────────────────────────────── */}
-      <div style={{ padding: '4px 22px 18px', display: 'flex', gap: '14px', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
-        {[
-          { color: C.honey,  label: 'Gluten Free' },
-          { color: C.sage,   label: 'Vegetarian' },
-          { color: C.walnut, label: 'Dairy Free' },
-        ].map(({ color, label }) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '10px', color: C.driftwoodSm }}>
-            <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: color, flexShrink: 0 }} />
-            {label}
-          </div>
-        ))}
-      </div>
-
       {/* ── Bottom Nav ────────────────────────────────────────────────────────── */}
       {/* ── FAB: Save a Recipe ─────────────────────────────────────────────── */}
       {!selectMode && (
