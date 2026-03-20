@@ -250,10 +250,10 @@ export default function HouseholdDefaults({ appUser }) {
 
       {toastMsg && (
         <div style={{
-          position: 'fixed', top: '80px', left: '50%', transform: 'translateX(-50%)',
+          position: 'fixed', top: '80px', left: '50%',
           background: C.forest, color: 'white', padding: '10px 22px', borderRadius: '10px',
           fontSize: '14px', fontWeight: 500, zIndex: 300, boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-          opacity: 0, animation: 'fadeUp 0.3s ease forwards',
+          animation: 'toastIn 0.25s cubic-bezier(0.22,1,0.36,1) forwards',
         }}>
           {toastMsg}
         </div>

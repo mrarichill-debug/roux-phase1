@@ -269,7 +269,7 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
           zIndex: 200,
           opacity: open ? 1 : 0,
           pointerEvents: open ? 'all' : 'none',
-          transition: 'opacity 0.25s ease',
+          transition: 'opacity 0.28s cubic-bezier(0.22,1,0.36,1)',
         }}
       />
       {/* Sheet */}
@@ -282,7 +282,7 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
           background: 'white', borderRadius: '20px 20px 0 0',
           padding: '0 0 34px', zIndex: 201,
           boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-          transition: 'transform 0.32s cubic-bezier(0.32,0.72,0,1)',
+          transition: 'transform 0.28s cubic-bezier(0.22,1,0.36,1)',
           display: 'flex', flexDirection: 'column',
           maxHeight: '85vh', overflowY: 'auto',
         }}

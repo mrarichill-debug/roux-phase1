@@ -461,6 +461,7 @@ export default function RecipeLibrary({ appUser }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
             zIndex: 50,
+            animation: 'fabIn 0.35s cubic-bezier(0.22,1,0.36,1) 0.1s both',
           }}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" style={{ width: 24, height: 24 }}>
@@ -489,7 +490,7 @@ export default function RecipeLibrary({ appUser }) {
             width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
             padding: '0 0 34px', zIndex: 201, boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
             maxHeight: '70vh', overflowY: 'auto',
-            animation: 'sheetRise 0.32s cubic-bezier(0.32,0.72,0,1) both',
+            animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
           }}>
             <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
             <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
@@ -608,12 +609,14 @@ function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWe
   return (
     <div
       onClick={onTap}
+      className="recipe-card-tap"
       style={{
         background:   'white',
         border:       '1px solid rgba(200,185,160,0.55)',
         borderRadius: '16px', overflow: 'hidden',
         cursor:       'pointer',
         boxShadow:    '0 1px 4px rgba(80,60,30,0.07), 0 3px 12px rgba(80,60,30,0.05)',
+        transition:   'transform 100ms ease',
         animation:    `fadeUp 0.35s ease ${animDelay} both`,
         position:     'relative',
       }}
