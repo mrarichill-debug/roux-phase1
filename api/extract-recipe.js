@@ -46,17 +46,52 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, error: 'url string required' })
     }
 
-    // Fetch the recipe page server-side
+    // Fetch the recipe page server-side with realistic browser headers
     let pageContent
     try {
       const pageRes = await fetch(url, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Roux Recipe Saver)' },
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Cache-Control': 'no-cache',
+        },
+        redirect: 'follow',
         signal: AbortSignal.timeout(15000),
       })
       if (!pageRes.ok) throw new Error(`HTTP ${pageRes.status}`)
+      const contentType = pageRes.headers.get('content-type') || ''
+      if (!contentType.includes('text/html') && !contentType.includes('application/xhtml')) {
+        return res.status(422).json({
+          success: false,
+          error: 'blocked',
+          message: "This site doesn't allow direct recipe import. Try copying the recipe text and using manual entry, or take a photo instead.",
+        })
+      }
       pageContent = await pageRes.text()
     } catch (fetchErr) {
-      return res.status(422).json({ success: false, error: 'Could not fetch that URL. Check the link and try again.' })
+      return res.status(422).json({
+        success: false,
+        error: 'blocked',
+        message: "This site doesn't allow direct recipe import. Try copying the recipe text and using manual entry, or take a photo instead.",
+      })
+    }
+
+    // Detect bot protection pages (Cloudflare challenge, login walls, etc.)
+    const lowerContent = pageContent.toLowerCase()
+    const isBlocked = (
+      (lowerContent.includes('cf-browser-verification') || lowerContent.includes('cloudflare') && lowerContent.includes('challenge')) ||
+      (lowerContent.includes('just a moment') && pageContent.length < 5000) ||
+      (lowerContent.includes('access denied') && pageContent.length < 3000) ||
+      (lowerContent.includes('please verify') && lowerContent.includes('human') && pageContent.length < 5000)
+    )
+    if (isBlocked) {
+      return res.status(422).json({
+        success: false,
+        error: 'blocked',
+        message: "This site doesn't allow direct recipe import. Try copying the recipe text and using manual entry, or take a photo instead.",
+      })
     }
 
     // Strip scripts, styles, nav, footer, ads to reduce token usage

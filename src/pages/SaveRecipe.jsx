@@ -54,6 +54,7 @@ export default function SaveRecipe({ appUser }) {
   const [urlInput, setUrlInput] = useState('')
   const [extracting, setExtracting] = useState(false)
   const [extractError, setExtractError] = useState(null)
+  const [urlBlocked, setUrlBlocked] = useState(false)
 
   // Multi-photo capture state
   const [capturedPhotos, setCapturedPhotos] = useState([]) // [{ file, preview, id }]
@@ -125,6 +126,7 @@ export default function SaveRecipe({ appUser }) {
     if (!urlInput.trim() || extracting) return
     setExtracting(true)
     setExtractError(null)
+    setUrlBlocked(false)
     try {
       const model = await getSageModel()
       const response = await fetch('/api/extract-recipe', {
@@ -134,6 +136,12 @@ export default function SaveRecipe({ appUser }) {
       })
       const data = await response.json()
       if (!response.ok || !data.success) {
+        if (data.error === 'blocked') {
+          setUrlBlocked(true)
+          setExtractError(null)
+          setExtracting(false)
+          return
+        }
         throw new Error(data.error || 'Extraction failed')
       }
       applyExtractedRecipe(data.recipe, urlInput.trim())
@@ -422,6 +430,7 @@ export default function SaveRecipe({ appUser }) {
       setStep('choose')
       setExtractError(null)
       setExtracting(false)
+      setUrlBlocked(false)
     } else {
       navigate('/meals/recipes')
     }
@@ -522,7 +531,7 @@ export default function SaveRecipe({ appUser }) {
           <input
             type="url"
             value={urlInput}
-            onChange={e => setUrlInput(e.target.value)}
+            onChange={e => { setUrlInput(e.target.value); setUrlBlocked(false) }}
             placeholder="https://..."
             autoFocus
             style={{ ...inputStyle, fontSize: '15px' }}
@@ -533,6 +542,35 @@ export default function SaveRecipe({ appUser }) {
             <div style={{ fontSize: '13px', color: C.red, lineHeight: 1.5 }}>{extractError}</div>
           )}
 
+          {/* Blocked site message with quick actions */}
+          {urlBlocked && (
+            <div style={{
+              padding: '16px', background: 'white', borderRadius: '12px',
+              borderLeft: `3px solid ${C.honey}`,
+            }}>
+              <div style={{ fontSize: '14px', color: C.ink, lineHeight: 1.6, marginBottom: '14px' }}>
+                That site doesn't allow direct import. Try taking a photo of the recipe or enter it manually.
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={() => { setSourceType('photo'); setUrlBlocked(false); setStep('photo') }} style={{
+                  flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+                  background: C.forest, color: 'white',
+                  fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
+                }}>
+                  Take a photo
+                </button>
+                <button onClick={() => { setUrlBlocked(false); startManual() }} style={{
+                  flex: 1, padding: '10px', borderRadius: '10px', cursor: 'pointer',
+                  background: 'transparent', color: C.forest,
+                  border: `1.5px solid ${C.forest}`,
+                  fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
+                }}>
+                  Type it in
+                </button>
+              </div>
+            </div>
+          )}
+
           {extracting ? (
             <div style={{ textAlign: 'center', padding: '32px 0' }}>
               <div style={{ display: 'inline-block', width: '32px', height: '32px', border: `3px solid ${C.linen}`, borderTop: `3px solid ${C.forest}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
@@ -540,7 +578,7 @@ export default function SaveRecipe({ appUser }) {
                 Sage is reading the recipe...
               </div>
             </div>
-          ) : (
+          ) : !urlBlocked && (
             <button onClick={handleUrlExtract} disabled={!urlInput.trim()} style={{
               padding: '16px', borderRadius: '14px', border: 'none', cursor: urlInput.trim() ? 'pointer' : 'default',
               background: urlInput.trim() ? C.forest : C.linen,

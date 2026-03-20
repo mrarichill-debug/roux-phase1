@@ -252,6 +252,13 @@ Traditions must be applied via the slot picker which creates a `planned_meals` r
 - `recipes.photo_url` is now legacy — new recipes use `recipe_photos` table exclusively. Existing recipes still read `photo_url` as fallback.
 - RLS: `recipe_photos` accessible via recipe household ownership (`get_my_household_id()` through recipes join).
 
+### URL Extraction — Bot Protection (Mar 20, 2026)
+
+- Major recipe sites (AllRecipes, Food Network, NYT Cooking) use bot protection (Cloudflare, etc.) that blocks server-side fetching. URL extraction works best with smaller food blogs and sites without aggressive bot protection.
+- Server-side fetch uses realistic browser headers (Chrome UA, Accept, etc.) to improve compatibility.
+- When a site blocks the request, the client shows a warm "blocked" message with quick action buttons to switch to Photo or Manual entry — no dead end.
+- **Photo capture is the recommended method for recipes from protected sites.**
+
 ### Sage Ingredient Review (Mar 19, 2026)
 
 - **Async background call** after every recipe save (new or edit). Fire-and-forget — save completes immediately for the user.
