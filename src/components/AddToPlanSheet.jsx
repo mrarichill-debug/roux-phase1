@@ -48,6 +48,7 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
   const [saving, setSaving] = useState(false)
   const [conflict, setConflict] = useState(null)
   const [toast, setToast] = useState(null)
+  const [feedsCount, setFeedsCount] = useState(4)
 
   // Calendar state
   const [calendarOpen, setCalendarOpen] = useState(false)
@@ -78,6 +79,13 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
       setCalSelectedDate(null)
       setCalMonth(now.getMonth())
       setCalYear(now.getFullYear())
+      // Reset feeds count — try to parse from meal's servings if available
+      if (itemType === 'recipe' && meal?.servings) {
+        const parsed = parseInt(meal.servings)
+        setFeedsCount(!isNaN(parsed) && parsed > 0 ? parsed : 4)
+      } else {
+        setFeedsCount(4)
+      }
     }
   }, [open])
 
@@ -237,6 +245,7 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
           meal_type: mealSlot,
           slot_type: itemType,
           ...(itemType === 'recipe' ? { recipe_id: meal.id } : { meal_id: meal.id }),
+          ...(itemType === 'recipe' ? { serves_members: JSON.stringify(feedsCount) } : {}),
         })
 
       if (pmErr) throw pmErr
@@ -532,6 +541,33 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
               })}
             </div>
           </div>
+
+          {/* Feeds adjuster — only for recipes */}
+          {itemType === 'recipe' && selectedDay !== null && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '0 2px',
+            }}>
+              <span style={{ fontSize: '13px', color: C.driftwood }}>Feeds</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button onClick={() => setFeedsCount(p => Math.max(1, p - 1))} style={{
+                  width: '28px', height: '28px', borderRadius: '50%',
+                  border: `1px solid ${C.linen}`, background: C.cream,
+                  cursor: 'pointer', fontSize: '15px', color: C.ink,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>−</button>
+                <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.ink, minWidth: '20px', textAlign: 'center' }}>
+                  {feedsCount}
+                </span>
+                <button onClick={() => setFeedsCount(p => Math.min(24, p + 1))} style={{
+                  width: '28px', height: '28px', borderRadius: '50%',
+                  border: `1px solid ${C.linen}`, background: C.cream,
+                  cursor: 'pointer', fontSize: '15px', color: C.ink,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>+</button>
+              </div>
+            </div>
+          )}
 
           {/* Conflict warning */}
           {conflict && (

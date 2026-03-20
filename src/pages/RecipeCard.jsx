@@ -298,7 +298,7 @@ export default function RecipeCard({ appUser }) {
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               background: 'white', border: '1px solid rgba(200,185,160,0.55)',
-              borderRadius: '10px', padding: '12px 16px', marginBottom: '18px',
+              borderRadius: '10px', padding: '12px 16px', marginBottom: '4px',
             }}>
               <span style={{ fontSize: '13px', color: C.driftwood }}>Serves</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -306,6 +306,9 @@ export default function RecipeCard({ appUser }) {
                 <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', color: C.ink, minWidth: '24px', textAlign: 'center' }}>{serves}</span>
                 <button onClick={() => adjustServes(1)} style={servesBtn}>+</button>
               </div>
+            </div>
+            <div style={{ fontSize: '11px', fontStyle: 'italic', color: C.driftwood, fontWeight: 300, marginBottom: '18px', paddingLeft: '2px' }}>
+              Adjust to scale ingredients
             </div>
 
             {groupedIngredients.map(({ section, items }) => (
@@ -419,7 +422,7 @@ export default function RecipeCard({ appUser }) {
       <AddToPlanSheet
         open={planSheetOpen}
         onClose={() => setPlanSheetOpen(false)}
-        meal={{ id: recipe?.id, name: recipe?.name }}
+        meal={{ id: recipe?.id, name: recipe?.name, servings: recipe?.servings }}
         appUser={appUser}
         onSuccess={() => setPlanSheetOpen(false)}
         itemType="recipe"

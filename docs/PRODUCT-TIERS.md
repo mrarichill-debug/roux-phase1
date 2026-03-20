@@ -51,6 +51,7 @@
 - Spending trend analysis
 - Utilization tracking — what gets cooked vs. bought
 - Weekly Proteins — sale price tracking, spending trends, Sage protein suggestions
+- Weekly wrap-up — confirm what was cooked, archive the week, feeds spending and Sage intelligence
 
 ---
 

@@ -267,6 +267,22 @@ Basic weekly protein entry (protein name per week plan) is a **Free** feature. S
 
 ---
 
+## Weekly Wrap-Up — Not Yet Built
+
+The weekly wrap-up is the end-of-week moment that closes the planning loop. Triggered when Lauren navigates away from a published week that has passed, or via a manual "Wrap up this week" action.
+
+**Flow:**
+
+1. For each planned meal that week — confirm: Was this cooked? (Yes / No / Modified)
+2. If modified: adjust serving count if different from planned
+3. On confirmation: increment `recipes.times_cooked`, update `planned_meals.status` to `'completed'` or `'skipped'`, confirm ingredient quantities used for spending metrics
+4. Archive the week: set `meal_plans.status` to `'archived'`, seal any `tradition_occurrences` from that week (`is_sealed = true`)
+5. Surface a warm summary moment: *"This week your family ate X meals. You cooked Y new recipes."* — Sage delivers this
+
+**Premium feature.** Required before spending trends and Sage skip detection can work accurately. Dependencies: activity log writes, shopping list completion tracking.
+
+---
+
 ## ⚑ Roadmap — Post-MVP Features
 
 - **Multiple shopping lists per week** — one-to-many relationship between `meal_plans` and `shopping_lists`. Each list has its own receipt capture. Budget and utilization aggregate across all lists for the week.
