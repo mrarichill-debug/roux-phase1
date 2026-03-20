@@ -23,7 +23,7 @@
 - [x] Build AddDayTypeSheet (reusable, used in both settings screens)
 - [ ] Build welcome / onboarding flow (5 screens — all prototypes approved)
 - [ ] Build dashboard improvements (spending snapshot, Sage nudge, "By Ingredient" destination)
-- [ ] Build recipe import with Sage (chat-style input)
+- [x] Build Save a Recipe flow (Photo capture + URL extraction + Manual entry, Sage ingredient review on save)
 - [ ] Build Traditions screen (`/meals/traditions`) — schema live, routes to placeholder
 - [ ] Build Sage screen (`/sage`) — placeholder only
 - [ ] Build Settings screen (My Account + Our Kitchen)
@@ -230,6 +230,28 @@ Traditions must be applied via the slot picker which creates a `planned_meals` r
 - Notes: personal notes (Caveat font), variations.
 - Save: upserts recipe + delete/re-insert ingredients and instructions. Fires Sage ingredient review async.
 
+### Save a Recipe Flow — Built (Mar 20, 2026)
+
+- Route: `/save-recipe`. FAB on recipe library navigates here.
+- Three entry methods: Photo capture (primary), URL extraction, Manual entry (softly discouraged).
+- **Photo capture** supports multiple photos (up to 6) — front/back of index cards, multi-page cookbook recipes. Horizontal scrollable thumbnail row with remove (×) on each. "Primary" badge on first photo.
+- All photos sent to Sage (Sonnet, runtime-configurable via `getSageModel()`) in a single API call as multiple image content blocks. Multi-photo system prompt instructs Sage to combine ingredients/instructions across all images.
+- **URL extraction** — paste a URL, Sage extracts structured recipe data via Sonnet.
+- **Manual entry** — blank form, same fields as Edit Recipe.
+- Extracted data pre-fills a review form. Sage confirmation strip: "Sage filled in what she could."
+- Save: INSERTs recipe with `source_type` ('photo'/'url'/'manual'), creates pantry items, inserts ingredients/instructions.
+- **Photo storage:** After save, all captured photos uploaded permanently to Supabase Storage at `recipe-photos/{household_id}/{recipe_id}/`. Rows inserted to `recipe_photos` table with `sort_order`, `is_primary` (first photo), `source_type = 'camera'`. First photo also set as `recipes.photo_url` for backward compatibility.
+- Fire-and-forget `runSageIngredientReview()` after save.
+
+### Recipe Photos (Mar 20, 2026)
+
+- `recipe_photos` table live. Multiple photos per recipe supported.
+- Stored permanently in Supabase Storage at `recipe-photos/{household_id}/{recipe_id}/`.
+- Primary photo (`is_primary = true`) drives hero display on recipe detail.
+- Secondary photos show as horizontally scrollable thumbnail strip below hero. Tappable for full-size lightbox view.
+- `recipes.photo_url` is now legacy — new recipes use `recipe_photos` table exclusively. Existing recipes still read `photo_url` as fallback.
+- RLS: `recipe_photos` accessible via recipe household ownership (`get_my_household_id()` through recipes join).
+
 ### Sage Ingredient Review (Mar 19, 2026)
 
 - **Async background call** after every recipe save (new or edit). Fire-and-forget — save completes immediately for the user.
@@ -416,9 +438,9 @@ Build the enforcement layer as a focused sprint immediately before inviting any 
 ## API Cost Management
 
 - Model constants defined in `src/lib/aiModels.js` — single source of truth for all model assignments
-- **Sonnet** (`claude-sonnet-4-20250514`) used for: Sage chat, week planning, recipe URL extraction — quality-sensitive user-facing conversations
-- **Haiku** (`claude-haiku-4-5-20251001`) used for: ingredient review, skip detection, reactive suggestions, shopping list generation — background structured tasks and high-frequency operations
-- **Never hardcode model strings** — always import from `aiModels.js` so model upgrades can be made in one place
+- **Primary Sage model** is runtime-configurable via `app_config.sage_model`. `aiModels.js` exports `getSageModel()` (async) which reads this value with a 5-minute cache. Covers: Sage chat, week planning, recipe URL extraction. Change the model in `app_config` without a code deploy.
+- **Haiku** (`claude-haiku-4-5-20251001`) assignments are intentional cost decisions and stay hardcoded in `aiModels.js`: ingredient review, skip detection, reactive suggestions, shopping list generation — background structured tasks and high-frequency operations
+- **Callers of the primary model** must `await getSageModel()` (or the aliases `getSageChatModel`, `getSageWeekPlanningModel`, `getRecipeUrlExtractionModel`) instead of importing a static constant
 - Sage ingredient review does not count against `sage_usage` — it's background infrastructure
 
 ---

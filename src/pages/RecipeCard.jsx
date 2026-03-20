@@ -78,12 +78,14 @@ export default function RecipeCard({ appUser }) {
   const [planSheetOpen, setPlanSheetOpen] = useState(false)
   const [descExpanded, setDescExpanded] = useState(false)
   const [sageSheetOpen, setSageSheetOpen] = useState(false)
+  const [recipePhotos, setRecipePhotos] = useState([])
+  const [lightboxPhoto, setLightboxPhoto] = useState(null)
 
   useEffect(() => { if (id) fetchAll() }, [id])
 
   async function fetchAll() {
     setLoading(true)
-    const [recipeRes, ingRes, insRes] = await Promise.all([
+    const [recipeRes, ingRes, insRes, photosRes] = await Promise.all([
       supabase.from('recipes').select(`
         id, name, description, category, cuisine, method, difficulty,
         prep_time_minutes, cook_time_minutes, total_time_minutes,
@@ -94,6 +96,7 @@ export default function RecipeCard({ appUser }) {
       `).eq('id', id).single(),
       supabase.from('ingredients').select('*').eq('recipe_id', id).order('sort_order'),
       supabase.from('instructions').select('*').eq('recipe_id', id).order('step_number'),
+      supabase.from('recipe_photos').select('id, url, sort_order, is_primary').eq('recipe_id', id).order('sort_order'),
     ])
     const rec = recipeRes.data
     if (rec) {
@@ -104,6 +107,7 @@ export default function RecipeCard({ appUser }) {
     }
     setIngredients(ingRes.data ?? [])
     setInstructions(insRes.data ?? [])
+    setRecipePhotos(photosRes.data ?? [])
     setLoading(false)
   }
 
@@ -130,6 +134,8 @@ export default function RecipeCard({ appUser }) {
   const catLabel = recipe ? displayCategory(recipe.category) : null
   const attribution = recipe?.author || recipe?.credited_to_name || null
   const hasHistory = recipe && ((recipe.times_planned || 0) > 0 || (recipe.times_cooked || 0) > 0)
+  const primaryPhoto = recipePhotos.find(p => p.is_primary)
+  const heroUrl = primaryPhoto?.url || recipe?.photo_url || null
 
   if (loading) return (
     <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
@@ -162,10 +168,10 @@ export default function RecipeCard({ appUser }) {
       />
 
       {/* ── Hero ──────────────────────────────────────────────────────── */}
-      {recipe.photo_url ? (
+      {heroUrl ? (
         <div style={{
           width: '100%', height: '220px',
-          background: `url(${recipe.photo_url}) center/cover no-repeat`,
+          background: `url(${heroUrl}) center/cover no-repeat`,
           position: 'relative', overflow: 'hidden',
           animation: 'fadeUp 0.4s ease 0.05s both',
         }}>
@@ -199,6 +205,24 @@ export default function RecipeCard({ appUser }) {
             </div>
           </div>
         )
+      )}
+
+      {/* ── Photo Strip (secondary photos) ──────────────────────────── */}
+      {recipePhotos.length > 1 && (
+        <div style={{
+          padding: '10px 22px 0', display: 'flex', gap: '8px',
+          overflowX: 'auto', WebkitOverflowScrolling: 'touch',
+        }}>
+          {recipePhotos.filter(p => !p.is_primary).map(photo => (
+            <button key={photo.id} onClick={() => setLightboxPhoto(photo.url)} style={{
+              flexShrink: 0, width: '64px', height: '64px', borderRadius: '8px',
+              overflow: 'hidden', border: `1px solid ${C.linen}`,
+              padding: 0, cursor: 'pointer', background: 'none',
+            }}>
+              <img src={photo.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </button>
+          ))}
+        </div>
       )}
 
       {/* ── Header Card ───────────────────────────────────────────────── */}
@@ -451,6 +475,33 @@ export default function RecipeCard({ appUser }) {
         appUser={appUser}
         onResolved={() => setRecipe(prev => ({ ...prev, sage_assist_status: 'resolved' }))}
       />
+
+      {/* ── Photo Lightbox ─────────────────────────────────────────── */}
+      {lightboxPhoto && (
+        <>
+          <div onClick={() => setLightboxPhoto(null)} style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
+            zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer',
+          }}>
+            <img src={lightboxPhoto} alt="" style={{
+              maxWidth: '95vw', maxHeight: '85vh', objectFit: 'contain',
+              borderRadius: '8px',
+            }} />
+            <button onClick={() => setLightboxPhoto(null)} style={{
+              position: 'absolute', top: '16px', right: '16px',
+              width: '36px', height: '36px', borderRadius: '50%', border: 'none',
+              background: 'rgba(255,255,255,0.2)', color: 'white', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '18px',
+            }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+        </>
+      )}
 
       <BottomNav activeTab="meals" />
     </div>
