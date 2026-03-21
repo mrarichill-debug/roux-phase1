@@ -6,7 +6,7 @@
 ## Free
 
 - Recipe library — up to 25 full recipes
-- Save a Recipe — manual entry only
+- Save a Recipe — photo capture and manual entry only
 - Plan a Meal — build and save meals with recipe components and alternatives
 - Saved Meals library — browse, search, edit
 - Add to Plan — schedule meals to any week
@@ -27,7 +27,7 @@
 
 - Everything in Free
 - Unlimited recipes
-- Save a Recipe via URL extraction (Sage parses recipe URLs)
+- Save a Recipe via URL extraction (Sage web search — finds and parses recipe pages)
 - Auto-generate shopping list from week plan
 - Basic spending tracking
 - Week templates

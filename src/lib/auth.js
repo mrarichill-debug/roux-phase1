@@ -15,7 +15,7 @@ export async function loadAppUser(authUserId) {
   // is defaulted here and synced separately in App.jsx.
   const { data, error } = await supabase
     .from('users')
-    .select('id, name, email, role, household_id, avatar_url, membership_status')
+    .select('id, name, email, role, household_id, avatar_url, membership_status, households(subscription_tier)')
     .eq('auth_id', authUserId)
     .maybeSingle()
 
@@ -26,6 +26,8 @@ export async function loadAppUser(authUserId) {
 
   return {
     ...data,
+    subscription_tier: data.households?.subscription_tier || 'free',
+    households: undefined,
     timezone: 'America/Chicago',
   }
 }

@@ -252,12 +252,14 @@ Traditions must be applied via the slot picker which creates a `planned_meals` r
 - `recipes.photo_url` is now legacy — new recipes use `recipe_photos` table exclusively. Existing recipes still read `photo_url` as fallback.
 - RLS: `recipe_photos` accessible via recipe household ownership (`get_my_household_id()` through recipes join).
 
-### URL Extraction — Bot Protection (Mar 20, 2026)
+### URL Extraction — Anthropic Web Search (Mar 20, 2026)
 
-- Major recipe sites (AllRecipes, Food Network, NYT Cooking) use bot protection (Cloudflare, etc.) that blocks server-side fetching. URL extraction works best with smaller food blogs and sites without aggressive bot protection.
-- Server-side fetch uses realistic browser headers (Chrome UA, Accept, etc.) to improve compatibility.
-- When a site blocks the request, the client shows a warm "blocked" message with quick action buttons to switch to Photo or Manual entry — no dead end.
-- **Photo capture is the recommended method for recipes from protected sites.**
+- URL extraction uses Anthropic `web_search_20250305` tool — Claude fetches and parses recipe pages directly via built-in web search. No server-side HTTP fetch needed.
+- **Gated to Plus/Premium tiers** to manage cost (~3-5x more expensive than plain API calls due to web search tool usage).
+- Free users see the "Paste a URL" option with a "Plus" badge. Attempting extraction returns a warm upgrade prompt with "Take a photo →" and "Learn about Plus →" actions.
+- Uses `@anthropic-ai/sdk` npm package in the serverless function.
+- Error handling: `tier_required` (Free users), `fetch_failed` (web search couldn't reach page), `parse_failed` (couldn't parse recipe from response). Every error provides a clear next step.
+- `subscription_tier` read from `households` table, loaded into `appUser` via `loadAppUser()`.
 
 ### Sage Ingredient Review (Mar 19, 2026)
 

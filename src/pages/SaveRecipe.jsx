@@ -131,13 +131,13 @@ export default function SaveRecipe({ appUser }) {
       const response = await fetch('/api/extract-recipe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: urlInput.trim() }),
+        body: JSON.stringify({ url: urlInput.trim(), tier: appUser?.subscription_tier || 'free' }),
       })
       const data = await response.json()
       if (!response.ok || !data.success) {
         const errType = data.error
-        if (errType === 'blocked_domain' || errType === 'fetch_failed' || errType === 'parse_failed') {
-          setUrlError({ type: errType, site: data.site || null })
+        if (errType === 'tier_required' || errType === 'fetch_failed' || errType === 'parse_failed') {
+          setUrlError({ type: errType })
           setExtracting(false)
           return
         }
@@ -500,9 +500,17 @@ export default function SaveRecipe({ appUser }) {
                   <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
                 </svg>
               </div>
-              <div>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, marginBottom: '4px' }}>
-                  Paste a URL
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500 }}>
+                    Paste a URL
+                  </span>
+                  {appUser?.subscription_tier === 'free' && (
+                    <span style={{
+                      fontSize: '9px', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase',
+                      background: C.sage, color: 'white', padding: '2px 6px', borderRadius: '4px',
+                    }}>Plus</span>
+                  )}
                 </div>
                 <div style={{ fontSize: '13px', color: C.driftwood, fontWeight: 300 }}>
                   Share a link and Sage grabs everything
@@ -549,11 +557,11 @@ export default function SaveRecipe({ appUser }) {
           {urlError && (
             <div style={{
               padding: '16px', background: 'white', borderRadius: '12px',
-              borderLeft: `3px solid ${C.honey}`,
+              borderLeft: `3px solid ${urlError.type === 'tier_required' ? C.sage : C.honey}`,
             }}>
               <div style={{ fontSize: '14px', color: C.ink, lineHeight: 1.6, marginBottom: '14px' }}>
-                {urlError.type === 'blocked_domain' && (
-                  <>{urlError.site} doesn't allow apps to import recipes directly — it's their policy, not a bug. Here are two easy workarounds:</>
+                {urlError.type === 'tier_required' && (
+                  <>URL import is a Plus feature. Take a photo instead, or upgrade to Plus.</>
                 )}
                 {urlError.type === 'fetch_failed' && (
                   <>Sage couldn't reach that page — the link may be broken or the site may be temporarily down. Double-check the URL and try again, or use one of these instead:</>
@@ -568,16 +576,27 @@ export default function SaveRecipe({ appUser }) {
                   background: C.forest, color: 'white',
                   fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
                 }}>
-                  Take a photo instead →
+                  Take a photo →
                 </button>
-                <button onClick={() => { setUrlError(null); startManual() }} style={{
-                  flex: 1, padding: '10px', borderRadius: '10px', cursor: 'pointer',
-                  background: 'transparent', color: C.forest,
-                  border: `1.5px solid ${C.forest}`,
-                  fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
-                }}>
-                  Enter it manually →
-                </button>
+                {urlError.type === 'tier_required' ? (
+                  <button onClick={() => { /* TODO: navigate to upgrade */ }} style={{
+                    flex: 1, padding: '10px', borderRadius: '10px', cursor: 'pointer',
+                    background: 'transparent', color: C.forest,
+                    border: `1.5px solid ${C.forest}`,
+                    fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
+                  }}>
+                    Learn about Plus →
+                  </button>
+                ) : (
+                  <button onClick={() => { setUrlError(null); startManual() }} style={{
+                    flex: 1, padding: '10px', borderRadius: '10px', cursor: 'pointer',
+                    background: 'transparent', color: C.forest,
+                    border: `1.5px solid ${C.forest}`,
+                    fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
+                  }}>
+                    Enter it manually →
+                  </button>
+                )}
               </div>
             </div>
           )}
