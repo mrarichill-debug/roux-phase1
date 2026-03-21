@@ -80,6 +80,7 @@ export default function RecipeCard({ appUser }) {
   const [sageSheetOpen, setSageSheetOpen] = useState(false)
   const [recipePhotos, setRecipePhotos] = useState([])
   const [lightboxPhoto, setLightboxPhoto] = useState(null)
+  const [recipeTags, setRecipeTags] = useState([])
   const [ingAlts, setIngAlts] = useState({}) // { ingredientId: [alt, ...] }
   const [expandedAlts, setExpandedAlts] = useState(new Set())
 
@@ -107,6 +108,10 @@ export default function RecipeCard({ appUser }) {
       const parsed = parseInt(rec.servings)
       if (!isNaN(parsed) && parsed > 0) { setServes(parsed); setBaseServes(parsed) }
     }
+    // Fetch recipe tags
+    const { data: tagJoins } = await supabase.from('recipe_tags').select('tag_id, recipe_tag_definitions(name)').eq('recipe_id', id)
+    setRecipeTags((tagJoins || []).map(t => t.recipe_tag_definitions?.name).filter(Boolean))
+
     const ings = ingRes.data ?? []
     setIngredients(ings)
     setInstructions(insRes.data ?? [])
@@ -191,32 +196,33 @@ export default function RecipeCard({ appUser }) {
         }}>
           {/* Dark gradient for pill readability */}
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '60px', background: 'linear-gradient(transparent, rgba(0,0,0,0.25))' }} />
-          {catLabel && (
-            <div style={{
-              position: 'absolute', bottom: '12px', left: '14px',
-              background: 'rgba(255,255,255,0.85)', border: 'none',
-              borderRadius: '4px', padding: '3px 8px',
-              fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px',
-              textTransform: 'uppercase', color: C.driftwoodSm,
-            }}>
-              {catLabel}
+          {recipeTags.length > 0 && (
+            <div style={{ position: 'absolute', bottom: '10px', left: '14px', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+              {recipeTags.map(tag => (
+                <div key={tag} style={{
+                  background: 'rgba(255,255,255,0.85)', border: 'none',
+                  borderRadius: '4px', padding: '3px 8px',
+                  fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px',
+                  textTransform: 'uppercase', color: C.driftwoodSm,
+                }}>{tag}</div>
+              ))}
             </div>
           )}
         </div>
       ) : (
-        catLabel && (
+        recipeTags.length > 0 && (
           <div style={{
-            height: '44px', display: 'flex', alignItems: 'center',
-            padding: '0 22px', borderBottom: '0.5px solid #E4DDD2',
+            minHeight: '44px', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap',
+            padding: '8px 22px', borderBottom: '0.5px solid #E4DDD2',
           }}>
-            <div style={{
-              background: 'transparent', border: '0.5px solid #C4B8A8',
-              borderRadius: '4px', padding: '3px 8px',
-              fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px',
-              textTransform: 'uppercase', color: C.driftwood,
-            }}>
-              {catLabel}
-            </div>
+            {recipeTags.map(tag => (
+              <div key={tag} style={{
+                background: 'transparent', border: '0.5px solid #C4B8A8',
+                borderRadius: '4px', padding: '3px 8px',
+                fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px',
+                textTransform: 'uppercase', color: C.driftwood,
+              }}>{tag}</div>
+            ))}
           </div>
         )
       )}

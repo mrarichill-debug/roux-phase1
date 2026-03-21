@@ -75,8 +75,10 @@ export default function EditRecipe({ appUser }) {
   const [pantrySuggestions, setPantrySuggestions] = useState([])
   const [pantryFocusKey, setPantryFocusKey] = useState(null)
   const debounceRef = useRef(null)
-  const [categories, setCategories] = useState([])
-  const [customCatOpen, setCustomCatOpen] = useState(false)
+  const [tagDefs, setTagDefs] = useState([]) // all tag definitions for household
+  const [selectedTagIds, setSelectedTagIds] = useState(new Set())
+  const [newTagOpen, setNewTagOpen] = useState(false)
+  const [newTagName, setNewTagName] = useState('')
   const [altFormKey, setAltFormKey] = useState(null) // _key of ingredient showing alt form
   const [altQty, setAltQty] = useState('')
   const [altUnit, setAltUnit] = useState('piece')
@@ -89,11 +91,12 @@ export default function EditRecipe({ appUser }) {
 
   async function loadRecipe() {
     setLoading(true)
-    const [recRes, ingRes, insRes, catRes] = await Promise.all([
+    const [recRes, ingRes, insRes, tagDefsRes, recipeTagsRes] = await Promise.all([
       supabase.from('recipes').select('*').eq('id', id).single(),
       supabase.from('ingredients').select('*').eq('recipe_id', id).order('sort_order'),
       supabase.from('instructions').select('*').eq('recipe_id', id).order('step_number'),
-      supabase.from('recipes').select('category').eq('household_id', appUser.household_id).eq('recipe_type', 'full'),
+      supabase.from('recipe_tag_definitions').select('*').eq('household_id', appUser.household_id).order('sort_order'),
+      supabase.from('recipe_tags').select('tag_id').eq('recipe_id', id),
     ])
     // Fetch alternatives for all ingredients
     const ingIds = (ingRes.data || []).map(i => i.id)
@@ -124,12 +127,8 @@ export default function EditRecipe({ appUser }) {
     }
     setIngredients((ingRes.data || []).map(i => ({ ...i, _key: i.id, alternatives: altsByIng[i.id] || [] })))
     setInstructions((insRes.data || []).map(i => ({ ...i, _key: i.id })))
-    // Build dynamic category list
-    if (catRes.data) {
-      const cats = new Set()
-      catRes.data.forEach(r => { if (r.category) cats.add(r.category) })
-      setCategories([...cats].sort())
-    }
+    setTagDefs(tagDefsRes.data || [])
+    setSelectedTagIds(new Set((recipeTagsRes.data || []).map(t => t.tag_id)))
     setLoading(false)
   }
 
@@ -195,6 +194,23 @@ export default function EditRecipe({ appUser }) {
       return { ...i, alternatives: (i.alternatives || []).filter(a => a._key !== altKey) }
     }))
     dirty.markDirty()
+  }
+
+  // Tag helpers
+  async function handleCreateTag() {
+    if (!newTagName.trim()) return
+    const { data } = await supabase.from('recipe_tag_definitions').insert({
+      household_id: appUser.household_id,
+      name: newTagName.trim(),
+      sort_order: tagDefs.length + 1,
+    }).select('*').single()
+    if (data) {
+      setTagDefs(prev => [...prev, data])
+      setSelectedTagIds(prev => new Set([...prev, data.id]))
+      dirty.markDirty()
+    }
+    setNewTagName('')
+    setNewTagOpen(false)
   }
 
   // Instruction helpers
@@ -318,6 +334,14 @@ export default function EditRecipe({ appUser }) {
         if (insErr) throw insErr
       }
 
+      // 4. Save tags — delete and re-insert
+      await supabase.from('recipe_tags').delete().eq('recipe_id', id)
+      if (selectedTagIds.size > 0) {
+        await supabase.from('recipe_tags').insert(
+          [...selectedTagIds].map(tagId => ({ recipe_id: id, tag_id: tagId }))
+        )
+      }
+
       // Fire-and-forget Sage ingredient review
       runSageIngredientReview(id, validIngs, { recipeName: s(name), userId: appUser?.id })
 
@@ -404,44 +428,39 @@ export default function EditRecipe({ appUser }) {
 
         {/* ── 3. Details ────────────────────────────────────────────── */}
         <div>
-          <div style={label}>Category</div>
+          <div style={label}>Tags</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
-            {categories.map(c => (
-              <button key={c} onClick={() => { setCategory(c); setCustomCatOpen(false) }} style={{
-                padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
-                border: category === c ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
-                background: category === c ? 'rgba(61,107,79,0.08)' : 'white',
-                color: category === c ? C.forest : C.ink, cursor: 'pointer',
-                fontFamily: "'Jost', sans-serif", fontWeight: category === c ? 500 : 400,
-              }}>{c.charAt(0).toUpperCase() + c.slice(1)}</button>
-            ))}
-            {/* Show custom category as a pill if it's not in the standard list */}
-            {category && !categories.includes(category) && (
-              <button onClick={() => {}} style={{
-                padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
-                border: `1.5px solid ${C.forest}`, background: 'rgba(61,107,79,0.08)',
-                color: C.forest, cursor: 'default',
-                fontFamily: "'Jost', sans-serif", fontWeight: 500,
-              }}>{category.charAt(0).toUpperCase() + category.slice(1)}</button>
-            )}
+            {tagDefs.map(tag => {
+              const active = selectedTagIds.has(tag.id)
+              return (
+                <button key={tag.id} onClick={() => { setSelectedTagIds(prev => { const n = new Set(prev); n.has(tag.id) ? n.delete(tag.id) : n.add(tag.id); return n }); dirty.markDirty() }} style={{
+                  padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
+                  border: active ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                  background: active ? 'rgba(61,107,79,0.08)' : 'white',
+                  color: active ? C.forest : C.ink, cursor: 'pointer',
+                  fontFamily: "'Jost', sans-serif", fontWeight: active ? 500 : 400,
+                }}>{tag.name}</button>
+              )
+            })}
           </div>
-          {customCatOpen ? (
+          {newTagOpen ? (
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-              <input type="text" value={category && !categories.includes(category) ? category : ''} onChange={e => setCategory(e.target.value)}
-                placeholder="Type a custom category..." autoFocus
-                style={{ ...inputStyle, fontSize: '12px', flex: 1 }} />
-              <button onClick={() => setCustomCatOpen(false)} style={{
+              <input type="text" value={newTagName} onChange={e => setNewTagName(e.target.value)}
+                placeholder="Type a tag name..." autoFocus
+                style={{ ...inputStyle, fontSize: '12px', flex: 1 }}
+                onKeyDown={e => { if (e.key === 'Enter') handleCreateTag() }} />
+              <button onClick={handleCreateTag} disabled={!newTagName.trim()} style={{
                 padding: '6px 12px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 500,
-                background: category && !categories.includes(category) ? C.forest : C.linen,
-                color: category && !categories.includes(category) ? 'white' : C.driftwood,
-                cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-              }}>Done</button>
+                background: newTagName.trim() ? C.forest : C.linen,
+                color: newTagName.trim() ? 'white' : C.driftwood,
+                cursor: newTagName.trim() ? 'pointer' : 'default', fontFamily: "'Jost', sans-serif",
+              }}>Add</button>
             </div>
           ) : (
-            <button onClick={() => { setCustomCatOpen(true); if (categories.includes(category)) setCategory('') }} style={{
+            <button onClick={() => setNewTagOpen(true)} style={{
               background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
               fontSize: '12px', color: C.driftwood, fontWeight: 300, fontFamily: "'Jost', sans-serif",
-            }}>+ Add custom category</button>
+            }}>+ Add a tag</button>
           )}
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>

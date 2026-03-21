@@ -79,10 +79,12 @@ export default function SaveRecipe({ appUser }) {
   const [photoUrl, setPhotoUrl] = useState('')
   const [ingredients, setIngredients] = useState([])
   const [instructions, setInstructions] = useState([])
-  const [categories, setCategories] = useState([])
+  const [tagDefs, setTagDefs] = useState([])
+  const [selectedTagIds, setSelectedTagIds] = useState(new Set())
+  const [newTagOpen, setNewTagOpen] = useState(false)
+  const [newTagName, setNewTagName] = useState('')
 
   // Form helpers
-  const [customCatOpen, setCustomCatOpen] = useState(false)
   const [unitPickerKey, setUnitPickerKey] = useState(null)
   const [unitSearch, setUnitSearch] = useState('')
   const [pantrySuggestions, setPantrySuggestions] = useState([])
@@ -98,16 +100,11 @@ export default function SaveRecipe({ appUser }) {
   // Unsaved changes guard
   const dirty = useUnsavedChanges()
 
-  // Load dynamic categories
+  // Load tag definitions
   useEffect(() => {
     if (!appUser?.household_id) return
-    supabase.from('recipes').select('category').eq('household_id', appUser.household_id).eq('recipe_type', 'full')
-      .then(({ data }) => {
-        if (!data) return
-        const cats = new Set()
-        data.forEach(r => { if (r.category) cats.add(r.category) })
-        setCategories([...cats].sort())
-      })
+    supabase.from('recipe_tag_definitions').select('*').eq('household_id', appUser.household_id).order('sort_order')
+      .then(({ data }) => setTagDefs(data || []))
   }, [appUser?.household_id])
 
   // ── Multi-photo capture ──────────────────────────────────────
@@ -201,7 +198,8 @@ export default function SaveRecipe({ appUser }) {
     setDescription(recipe.description || '')
     setAuthor(recipe.author || '')
     setSourceUrl(url || recipe.source_url || '')
-    setCategory(recipe.category || '')
+    // Match category to tag system
+    if (recipe.category) matchCategoryToTags(recipe.category)
     setCuisine(recipe.cuisine || '')
     setMethod(recipe.method || '')
     setDifficulty(recipe.difficulty || '')
@@ -241,6 +239,43 @@ export default function SaveRecipe({ appUser }) {
     setExtracting(false)
     setStep('form')
     dirty.markDirty()
+  }
+
+  // ── Tag helpers ───────────────────────────────────────────────
+  async function handleCreateTag() {
+    if (!newTagName.trim()) return
+    const { data } = await supabase.from('recipe_tag_definitions').insert({
+      household_id: appUser.household_id,
+      name: newTagName.trim(),
+      sort_order: tagDefs.length + 1,
+    }).select('*').single()
+    if (data) {
+      setTagDefs(prev => [...prev, data])
+      setSelectedTagIds(prev => new Set([...prev, data.id]))
+    }
+    setNewTagName('')
+    setNewTagOpen(false)
+  }
+
+  async function matchCategoryToTags(categoryStr) {
+    if (!categoryStr) return
+    const cat = String(categoryStr).trim().toLowerCase()
+    // Check existing tags for a case-insensitive match
+    const match = tagDefs.find(t => t.name.toLowerCase() === cat)
+    if (match) {
+      setSelectedTagIds(prev => new Set([...prev, match.id]))
+      return
+    }
+    // Create a new tag definition
+    const { data } = await supabase.from('recipe_tag_definitions').insert({
+      household_id: appUser.household_id,
+      name: categoryStr.trim(),
+      sort_order: tagDefs.length + 1,
+    }).select('*').single()
+    if (data) {
+      setTagDefs(prev => [...prev, data])
+      setSelectedTagIds(prev => new Set([...prev, data.id]))
+    }
   }
 
   // ── Go to manual form ────────────────────────────────────────
@@ -450,6 +485,13 @@ export default function SaveRecipe({ appUser }) {
       if (insRows.length > 0) {
         const { error: insErr } = await supabase.from('instructions').insert(insRows)
         if (insErr) throw insErr
+      }
+
+      // 3b. Save tags
+      if (selectedTagIds.size > 0) {
+        await supabase.from('recipe_tags').insert(
+          [...selectedTagIds].map(tagId => ({ recipe_id: recipeId, tag_id: tagId }))
+        )
       }
 
       // 4. Upload captured photos permanently to recipe_photos
@@ -889,43 +931,39 @@ export default function SaveRecipe({ appUser }) {
 
           {/* ── Details ────────────────────────────────────────── */}
           <div>
-            <div style={labelStyle}>Category</div>
+            <div style={labelStyle}>Tags</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
-              {categories.map(c => (
-                <button key={c} onClick={() => { setCategory(c); setCustomCatOpen(false) }} style={{
-                  padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
-                  border: category === c ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
-                  background: category === c ? 'rgba(61,107,79,0.08)' : 'white',
-                  color: category === c ? C.forest : C.ink, cursor: 'pointer',
-                  fontFamily: "'Jost', sans-serif", fontWeight: category === c ? 500 : 400,
-                }}>{c.charAt(0).toUpperCase() + c.slice(1)}</button>
-              ))}
-              {category && !categories.includes(category) && (
-                <button onClick={() => {}} style={{
-                  padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
-                  border: `1.5px solid ${C.forest}`, background: 'rgba(61,107,79,0.08)',
-                  color: C.forest, cursor: 'default',
-                  fontFamily: "'Jost', sans-serif", fontWeight: 500,
-                }}>{category.charAt(0).toUpperCase() + category.slice(1)}</button>
-              )}
+              {tagDefs.map(tag => {
+                const active = selectedTagIds.has(tag.id)
+                return (
+                  <button key={tag.id} onClick={() => setSelectedTagIds(prev => { const n = new Set(prev); n.has(tag.id) ? n.delete(tag.id) : n.add(tag.id); return n })} style={{
+                    padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
+                    border: active ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                    background: active ? 'rgba(61,107,79,0.08)' : 'white',
+                    color: active ? C.forest : C.ink, cursor: 'pointer',
+                    fontFamily: "'Jost', sans-serif", fontWeight: active ? 500 : 400,
+                  }}>{tag.name}</button>
+                )
+              })}
             </div>
-            {customCatOpen ? (
+            {newTagOpen ? (
               <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                <input type="text" value={category && !categories.includes(category) ? category : ''} onChange={e => setCategory(e.target.value)}
-                  placeholder="Type a custom category..." autoFocus
-                  style={{ ...inputStyle, fontSize: '12px', flex: 1 }} />
-                <button onClick={() => setCustomCatOpen(false)} style={{
+                <input type="text" value={newTagName} onChange={e => setNewTagName(e.target.value)}
+                  placeholder="Type a tag name..." autoFocus
+                  style={{ ...inputStyle, fontSize: '12px', flex: 1 }}
+                  onKeyDown={e => { if (e.key === 'Enter') handleCreateTag() }} />
+                <button onClick={handleCreateTag} disabled={!newTagName.trim()} style={{
                   padding: '6px 12px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 500,
-                  background: category && !categories.includes(category) ? C.forest : C.linen,
-                  color: category && !categories.includes(category) ? 'white' : C.driftwood,
-                  cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-                }}>Done</button>
+                  background: newTagName.trim() ? C.forest : C.linen,
+                  color: newTagName.trim() ? 'white' : C.driftwood,
+                  cursor: newTagName.trim() ? 'pointer' : 'default', fontFamily: "'Jost', sans-serif",
+                }}>Add</button>
               </div>
             ) : (
-              <button onClick={() => { setCustomCatOpen(true); if (categories.includes(category)) setCategory('') }} style={{
+              <button onClick={() => setNewTagOpen(true)} style={{
                 background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
                 fontSize: '12px', color: C.driftwood, fontWeight: 300, fontFamily: "'Jost', sans-serif",
-              }}>+ Add custom category</button>
+              }}>+ Add a tag</button>
             )}
           </div>
           <div>

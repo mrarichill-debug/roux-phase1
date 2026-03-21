@@ -261,6 +261,19 @@ Traditions must be applied via the slot picker which creates a `planned_meals` r
 - Error handling: `tier_required` (Free users), `fetch_failed` (web search couldn't reach page), `parse_failed` (couldn't parse recipe from response). Every error provides a clear next step.
 - `subscription_tier` read from `households` table, loaded into `appUser` via `loadAppUser()`.
 
+### Recipe Tags (Mar 20, 2026)
+
+- Recipe tags replace single category — `recipe_tag_definitions` + `recipe_tags` tables live.
+- Default tags: Entry, Appetizer, Dessert (`is_default = true`, cannot be removed).
+- Custom tags: household-specific, created inline via "+ Add a tag" on Edit/Save Recipe screens.
+- Multi-select: recipes can have any number of tags. Active tags show in forest green.
+- **Edit/Save Recipe:** tag selector replaces category picker. Multi-select pills + inline tag creation.
+- **Recipe detail:** all tags shown as quiet pills in hero bar (replaces single category pill).
+- **Recipe library filter:** "Browse by tag" replaces "Browse by category". Multi-select with AND logic — recipes must match ALL selected tags.
+- **Recipe library card:** first tag (lowest sort_order) shown as primary pill on card.
+- **Sage extraction:** `category` field from extraction matched case-insensitively against existing tag definitions. Creates new tag if no match.
+- `recipes.category` column preserved for backward compat but no longer primary — new recipes use tags exclusively.
+
 ### Ingredient Alternatives (Mar 20, 2026)
 
 - `ingredient_alternatives` table live. Each alternative links to a `primary_ingredient_id` with its own name, quantity, unit, preparation_note, sort_order.

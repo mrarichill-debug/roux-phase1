@@ -136,7 +136,9 @@ export default function RecipeLibrary({ appUser }) {
   const [plannedIds,      setPlannedIds]      = useState(new Set())
   const [loading,         setLoading]         = useState(true)
   const [search,          setSearch]          = useState('')
-  const [activeCategory,  setActiveCategory]  = useState('All')
+  const [activeTags,      setActiveTags]      = useState(new Set())
+  const [tagDefs,         setTagDefs]         = useState([])
+  const [recipeTags,      setRecipeTags]      = useState({}) // { recipeId: [tagName, ...] }
   const [activeFilters,   setActiveFilters]   = useState(new Set(['All']))
   const [gridVisible,     setGridVisible]     = useState(true)
   const [weekPickerRecipe,setWeekPickerRecipe]= useState(null)
@@ -180,6 +182,21 @@ export default function RecipeLibrary({ appUser }) {
 
     setRecipes(recipesRes.data ?? [])
 
+    // Fetch tag definitions + recipe tags for filtering
+    const [tdRes, rtRes] = await Promise.all([
+      supabase.from('recipe_tag_definitions').select('*').eq('household_id', appUser.household_id).order('sort_order'),
+      supabase.from('recipe_tags').select('recipe_id, tag_id, recipe_tag_definitions(name)'),
+    ])
+    setTagDefs(tdRes.data || [])
+    const tagMap = {}
+    for (const rt of (rtRes.data || [])) {
+      const name = rt.recipe_tag_definitions?.name
+      if (!name) continue
+      if (!tagMap[rt.recipe_id]) tagMap[rt.recipe_id] = []
+      tagMap[rt.recipe_id].push(name)
+    }
+    setRecipeTags(tagMap)
+
     // Fetch recipe_ids already planned this week
     if (planRes.data) {
       const { data: meals } = await supabase
@@ -195,22 +212,15 @@ export default function RecipeLibrary({ appUser }) {
     setLoading(false)
   }
 
-  // ── Dynamic category pills from actual recipe data ──────────────────────────
-  const categoryPills = useMemo(() => {
-    const cats = new Set()
-    recipes.forEach(r => { if (r.category) cats.add(r.category) })
-    return ['All', ...[...cats].sort((a, b) => a.localeCompare(b))]
-  }, [recipes])
-
-  const hasActiveFilters = activeCategory !== 'All' || !activeFilters.has('All')
+  const hasActiveFilters = activeTags.size > 0 || !activeFilters.has('All')
   const filterSummary = useMemo(() => {
     const parts = []
-    if (activeCategory !== 'All') parts.push(displayCategory(activeCategory))
+    activeTags.forEach(t => parts.push(t))
     if (!activeFilters.has('All')) {
       ;[...activeFilters].filter(f => f !== 'All').forEach(f => parts.push(f))
     }
     return parts.join(' · ')
-  }, [activeCategory, activeFilters])
+  }, [activeTags, activeFilters])
 
   // ── Filtered recipes (reactive) ──────────────────────────────────────────────
   const filteredRecipes = useMemo(() => {
@@ -221,8 +231,11 @@ export default function RecipeLibrary({ appUser }) {
       r = r.filter(rec => rec.name.toLowerCase().includes(q))
     }
 
-    if (activeCategory !== 'All') {
-      r = r.filter(rec => rec.category === activeCategory)
+    if (activeTags.size > 0) {
+      r = r.filter(rec => {
+        const tags = recipeTags[rec.id] || []
+        return [...activeTags].every(t => tags.includes(t))
+      })
     }
 
     if (!activeFilters.has('All')) {
@@ -435,6 +448,7 @@ export default function RecipeLibrary({ appUser }) {
             index={i}
             selectMode={selectMode}
             isPlanned={plannedIds.has(recipe.id)}
+            primaryTag={(recipeTags[recipe.id] || [])[0] || null}
             onTap={selectMode ? () => selectRecipe(recipe) : () => navigate(`/recipe/${recipe.id}`, { state: { from: '/meals/recipes' } })}
             onAddToWeek={selectMode ? () => selectRecipe(recipe) : () => setPlanSheetRecipe({ id: recipe.id, name: recipe.name })}
           />
@@ -495,16 +509,16 @@ export default function RecipeLibrary({ appUser }) {
             <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
             <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
-              {/* Browse by category */}
+              {/* Browse by tag */}
               <div>
                 <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '10px' }}>
-                  Browse by category
+                  Browse by tag
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {categoryPills.map(pill => {
-                    const isActive = activeCategory === pill
+                  {tagDefs.map(tag => {
+                    const isActive = activeTags.has(tag.name)
                     return (
-                      <button key={pill} onClick={() => setActiveCategory(pill)} style={{
+                      <button key={tag.id} onClick={() => setActiveTags(prev => { const n = new Set(prev); n.has(tag.name) ? n.delete(tag.name) : n.add(tag.name); return n })} style={{
                         padding: '6px 14px', borderRadius: '20px',
                         border: isActive ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
                         background: isActive ? 'rgba(61,107,79,0.08)' : 'white',
@@ -512,7 +526,7 @@ export default function RecipeLibrary({ appUser }) {
                         fontFamily: "'Jost', sans-serif", fontSize: '13px',
                         fontWeight: isActive ? 500 : 400, cursor: 'pointer',
                       }}>
-                        {pill === 'All' ? 'All' : displayCategory(pill)}
+                        {tag.name}
                       </button>
                     )
                   })}
@@ -554,7 +568,7 @@ export default function RecipeLibrary({ appUser }) {
                   Show recipes
                 </button>
                 {hasActiveFilters && (
-                  <button onClick={() => { setActiveCategory('All'); setActiveFilters(new Set(['All'])) }} style={{
+                  <button onClick={() => { setActiveTags(new Set()); setActiveFilters(new Set(['All'])) }} style={{
                     background: 'none', border: 'none', cursor: 'pointer',
                     fontFamily: "'Jost', sans-serif", fontSize: '12px',
                     color: C.driftwood, fontWeight: 300, padding: '4px',
@@ -593,10 +607,10 @@ export default function RecipeLibrary({ appUser }) {
 }
 
 // ── Recipe Grid Card ───────────────────────────────────────────────────────────
-function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWeek }) {
+function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWeek, primaryTag }) {
   const total    = getTotalMinutes(recipe)
   const timeStr  = total > 0 ? formatTime(total) : null
-  const catLabel = displayCategory(recipe.category)
+  const catLabel = primaryTag || displayCategory(recipe.category)
   const note     = recipe.personal_notes || null
 
   const animDelay = `${0.04 + index * 0.03}s`
