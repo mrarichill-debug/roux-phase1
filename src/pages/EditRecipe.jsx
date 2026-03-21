@@ -6,6 +6,8 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { runSageIngredientReview } from '../lib/sageReview'
+import useUnsavedChanges from '../hooks/useUnsavedChanges'
+import UnsavedChangesSheet from '../components/UnsavedChangesSheet'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 
@@ -76,6 +78,10 @@ export default function EditRecipe({ appUser }) {
   const [categories, setCategories] = useState([])
 
   const fileRef = useRef(null)
+  const { isDirty, markDirty, markClean, blocker } = useUnsavedChanges()
+
+  // Wrap any setter to also mark dirty on change
+  function dirty(setter) { return (v) => { setter(v); markDirty() } }
 
   useEffect(() => { if (id && appUser?.household_id) loadRecipe() }, [id, appUser?.household_id])
 
@@ -248,6 +254,7 @@ export default function EditRecipe({ appUser }) {
       // Fire-and-forget Sage ingredient review
       runSageIngredientReview(id, validIngs, { recipeName: name.trim(), userId: appUser?.id })
 
+      markClean()
       setToast('Recipe saved.')
       setTimeout(() => navigate(`/recipe/${id}`), 1200)
     } catch (err) {
@@ -274,7 +281,7 @@ export default function EditRecipe({ appUser }) {
         centerContent={<span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>Edit Recipe</span>}
       />
 
-      <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div onChangeCapture={markDirty} style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
         {/* ── 1. Photo ──────────────────────────────────────────────── */}
         <div>
@@ -562,6 +569,14 @@ export default function EditRecipe({ appUser }) {
           animation: 'toastIn 0.25s cubic-bezier(0.22,1,0.36,1) forwards',
         }}>{toast}</div>
       )}
+
+      <UnsavedChangesSheet
+        blocker={blocker}
+        title="Unsaved changes"
+        message="Your edits haven't been saved yet."
+        stayLabel="Keep editing"
+        leaveLabel="Leave anyway"
+      />
 
       <BottomNav activeTab="meals" />
     </div>

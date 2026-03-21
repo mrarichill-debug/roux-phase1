@@ -8,6 +8,8 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { runSageIngredientReview } from '../lib/sageReview'
+import useUnsavedChanges from '../hooks/useUnsavedChanges'
+import UnsavedChangesSheet from '../components/UnsavedChangesSheet'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 
@@ -92,6 +94,9 @@ export default function SaveRecipe({ appUser }) {
   const [error, setError] = useState(null)
   const [toast, setToast] = useState(null)
 
+  // Unsaved changes guard
+  const { isDirty, markDirty, markClean, blocker } = useUnsavedChanges()
+
   // Load dynamic categories
   useEffect(() => {
     if (!appUser?.household_id) return
@@ -108,6 +113,7 @@ export default function SaveRecipe({ appUser }) {
   function handlePhotoCaptured(e) {
     const file = e.target.files?.[0]
     if (!file || capturedPhotos.length >= MAX_PHOTOS) return
+    markDirty()
     const reader = new FileReader()
     reader.onload = (ev) => {
       setCapturedPhotos(prev => [...prev, { file, preview: ev.target.result, id: tempId() }])
@@ -223,6 +229,7 @@ export default function SaveRecipe({ appUser }) {
 
     setExtracting(false)
     setStep('form')
+    markDirty()
   }
 
   // ── Go to manual form ────────────────────────────────────────
@@ -231,6 +238,7 @@ export default function SaveRecipe({ appUser }) {
     setIngredients([{ _key: tempId(), quantity: '', unit: 'piece', name: '', sort_order: 0, pantry_item_id: null }])
     setInstructions([{ _key: tempId(), instruction: '', step_number: 1 }])
     setStep('form')
+    markDirty()
   }
 
   // ── Ingredient helpers ───────────────────────────────────────
@@ -411,6 +419,7 @@ export default function SaveRecipe({ appUser }) {
       // 5. Fire-and-forget Sage ingredient review
       runSageIngredientReview(recipeId, validIngs, { recipeName: name.trim(), userId: appUser?.id })
 
+      markClean()
       setToast('Recipe saved.')
       setTimeout(() => navigate(`/recipe/${recipeId}`), 1200)
     } catch (err) {
@@ -1072,6 +1081,14 @@ export default function SaveRecipe({ appUser }) {
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
       `}</style>
+
+      <UnsavedChangesSheet
+        blocker={blocker}
+        title="Step away from the stove?"
+        message="You found a recipe — want to save it first?"
+        stayLabel="Keep cooking"
+        leaveLabel="Leave anyway"
+      />
 
       <BottomNav activeTab="meals" />
     </div>

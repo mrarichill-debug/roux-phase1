@@ -6,6 +6,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import useUnsavedChanges from '../hooks/useUnsavedChanges'
+import UnsavedChangesSheet from '../components/UnsavedChangesSheet'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import AddToPlanSheet from '../components/AddToPlanSheet'
@@ -417,6 +419,9 @@ export default function PlanMeal({ appUser }) {
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null)
 
+  // Unsaved changes guard
+  const { isDirty, markDirty, markClean, blocker } = useUnsavedChanges()
+
   // ── Load existing meal in edit mode ─────────────────────────────────
   useEffect(() => {
     if (!editMealId) return
@@ -501,6 +506,7 @@ export default function PlanMeal({ appUser }) {
       isDraft: recipe.isDraft || false,
       alternatives: [],
     }])
+    markDirty()
   }, [altPickerSlot])
 
   const handleRemoveRecipe = useCallback((recipeId) => {
@@ -641,6 +647,7 @@ export default function PlanMeal({ appUser }) {
         return
       }
 
+      markClean()
       setToast('Meal saved.')
       setTimeout(() => navigate(isEditMode ? '/meals/saved' : '/meals'), 1200)
 
@@ -680,7 +687,7 @@ export default function PlanMeal({ appUser }) {
           <div className="shimmer-block" style={{ height: '44px', borderRadius: '12px' }} />
         </div>
       ) : (
-      <div style={{ padding: '20px 18px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div onChangeCapture={markDirty} style={{ padding: '20px 18px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
         {/* ── Section 1: Meal Name ──────────────────────────────────────── */}
         <div style={{ opacity: 0, animation: 'fadeUp 0.4s ease 0.05s forwards' }}>
@@ -1050,6 +1057,14 @@ export default function PlanMeal({ appUser }) {
         meal={savedMealForPlan}
         appUser={appUser}
         onSuccess={() => navigate(isEditMode ? '/meals/saved' : '/meals')}
+      />
+
+      <UnsavedChangesSheet
+        blocker={blocker}
+        title="Leave this meal?"
+        message="You've started building something."
+        stayLabel="Keep cooking"
+        leaveLabel="Leave anyway"
       />
 
       <BottomNav activeTab="meals" />

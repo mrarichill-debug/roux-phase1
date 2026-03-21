@@ -344,7 +344,7 @@ Basic weekly protein entry (protein name per week plan) is a **Free** feature. S
 
 ## Small UX Touches to Add
 
-- **Exit confirmation on Plan a Meal screen** — when user taps back or navigates away mid-meal with unsaved changes, show a warm confirmation dialog. Copy options to consider: "Leave before saving?" / "Your meal isn't done yet" / "Step away from the stove?" with buttons "Keep cooking" (stay) and "Leave" (exit). Trigger only if meal name or at least one recipe has been entered.
+- ~~**Exit confirmation on Plan a Meal screen**~~ — ✅ BUILT. Reusable `useUnsavedChanges` hook + `UnsavedChangesSheet` component. Applied to SaveRecipe, EditRecipe, and PlanMeal. Uses React Router `useBlocker` to intercept navigation when form is dirty. Warm copy per screen.
 
 ---
 
