@@ -8,6 +8,53 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { getSageModelServer } from './_lib/getSageModel.js'
 
+const RECIPE_PROMPT = (url) => `Find and extract this recipe: ${url}
+
+Return ONLY a valid JSON object with: name, description, author, source_url (set to "${url}"), category (e.g. Main, Side, Dessert, Appetizer, Breakfast, Soup, Salad, Snack, Drink, Bread, Sauce), cuisine (e.g. Italian, Mexican, American), method (one of: stovetop, baked, slow cooker, no-cook, grilled, other), difficulty (one of: easy, medium, advanced), prep_time_minutes, cook_time_minutes, servings, ingredients (array of {name, quantity, unit, preparation_note}), instructions (array of {step_number, instruction}), personal_notes. Set unknown fields to null. No markdown, no explanation — just the JSON object.`
+
+const RETRY_PROMPT = (url) => `Find and extract this recipe: ${url}
+
+IMPORTANT: Respond with ONLY a raw JSON object. No markdown, no explanation, no backticks. Start your response with { and end with }.
+
+Fields: name, description, author, source_url (set to "${url}"), category, cuisine, method (stovetop/baked/slow cooker/no-cook/grilled/other), difficulty (easy/medium/advanced), prep_time_minutes, cook_time_minutes, servings, ingredients (array of {name, quantity, unit, preparation_note}), instructions (array of {step_number, instruction}), personal_notes. Set unknown fields to null.`
+
+function extractJsonFromResponse(text) {
+  if (!text) return null
+
+  // Remove markdown fences
+  let cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+
+  // Try direct parse first
+  try { return JSON.parse(cleaned) } catch {}
+
+  // Try finding JSON object anywhere in the text
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
+  if (jsonMatch) {
+    try { return JSON.parse(jsonMatch[0]) } catch {}
+  }
+
+  // Try finding just the recipe object if response has extra wrapper
+  const recipeMatch = cleaned.match(/"name"\s*:\s*"[^"]+"/)
+  if (recipeMatch) {
+    const start = cleaned.indexOf('{', Math.max(0, cleaned.indexOf(recipeMatch[0]) - 50))
+    if (start !== -1) {
+      try { return JSON.parse(cleaned.substring(start)) } catch {}
+    }
+  }
+
+  return null
+}
+
+function extractTextFromResponse(response) {
+  let text = ''
+  for (const block of response.content) {
+    if (block.type === 'text') {
+      text = block.text
+    }
+  }
+  return text
+}
+
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*')
@@ -21,7 +68,6 @@ export default async function handler(req, res) {
   }
 
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
-  console.log('[extract-recipe] API key prefix:', ANTHROPIC_API_KEY?.substring(0, 10))
   if (!ANTHROPIC_API_KEY) {
     return res.status(500).json({ success: false, error: 'Server configuration error' })
   }
@@ -42,47 +88,46 @@ export default async function handler(req, res) {
       })
     }
 
-    // Resolve model server-side
     const model = await getSageModelServer()
-
-    // Use Anthropic SDK with web search tool
     const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
 
+    // First attempt
     const response = await anthropic.messages.create({
       model,
       max_tokens: 4096,
       tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      messages: [{
-        role: 'user',
-        content: `Find and extract this recipe: ${url}
-
-Return ONLY a valid JSON object with: name, description, author, source_url (set to "${url}"), category (e.g. Main, Side, Dessert, Appetizer, Breakfast, Soup, Salad, Snack, Drink, Bread, Sauce), cuisine (e.g. Italian, Mexican, American), method (one of: stovetop, baked, slow cooker, no-cook, grilled, other), difficulty (one of: easy, medium, advanced), prep_time_minutes, cook_time_minutes, servings, ingredients (array of {name, quantity, unit, preparation_note}), instructions (array of {step_number, instruction}), personal_notes. Set unknown fields to null. No markdown, no explanation — just the JSON object.`,
-      }],
+      messages: [{ role: 'user', content: RECIPE_PROMPT(url) }],
     })
 
-    // Extract the final text block from the response
-    let text = ''
-    for (const block of response.content) {
-      if (block.type === 'text') {
-        text = block.text
-      }
-    }
+    const text = extractTextFromResponse(response)
+    const recipe = extractJsonFromResponse(text)
 
-    if (!text) {
-      return res.status(422).json({ success: false, error: 'parse_failed' })
-    }
-
-    // Parse JSON — handle markdown code blocks
-    try {
-      const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-      const recipe = JSON.parse(cleaned)
+    if (recipe) {
       recipe.source_url = url
       return res.status(200).json({ success: true, recipe })
-    } catch {
-      return res.status(422).json({ success: false, error: 'parse_failed' })
     }
+
+    // Retry once with stronger formatting instruction
+    console.log('[extract-recipe] First parse failed, retrying with strict prompt')
+    const retryResponse = await anthropic.messages.create({
+      model,
+      max_tokens: 4096,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+      messages: [{ role: 'user', content: RETRY_PROMPT(url) }],
+    })
+
+    const retryText = extractTextFromResponse(retryResponse)
+    const retryRecipe = extractJsonFromResponse(retryText)
+
+    if (retryRecipe) {
+      retryRecipe.source_url = url
+      return res.status(200).json({ success: true, recipe: retryRecipe })
+    }
+
+    console.error('[extract-recipe] Both parse attempts failed')
+    return res.status(422).json({ success: false, error: 'parse_failed' })
   } catch (error) {
-    console.error('[extract-recipe] Error:', error.message, error.status, error.error)
-    return res.status(500).json({ success: false, error: 'parse_failed', debug: error.message, status: error.status || null })
+    console.error('[extract-recipe] Error:', error.message)
+    return res.status(500).json({ success: false, error: 'parse_failed' })
   }
 }
