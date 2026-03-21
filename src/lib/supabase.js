@@ -18,18 +18,6 @@ export const getCurrentUser = async () => {
   return user
 }
 
-// Helper to get user's household
-export const getUserHousehold = async (userId) => {
-  const { data, error } = await supabase
-    .from('users')
-    .select('household_id, households(*)')
-    .eq('id', userId)
-    .single()
-
-  if (error) throw error
-  return data
-}
-
 // Helper to check if user has completed tutorial
 export const hasTutorialCompleted = async (userId) => {
   const { data, error } = await supabase
