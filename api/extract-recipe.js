@@ -101,8 +101,11 @@ export default async function handler(req, res) {
     }
 
     // Fetch the recipe page server-side with realistic browser headers
+    console.log('[extract-recipe] Attempting fetch:', url)
     let pageContent
     try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 15000)
       const pageRes = await fetch(url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -112,16 +115,21 @@ export default async function handler(req, res) {
           'Cache-Control': 'no-cache',
         },
         redirect: 'follow',
-        signal: AbortSignal.timeout(15000),
+        signal: controller.signal,
       })
+      clearTimeout(timeout)
+      console.log('[extract-recipe] Fetch response:', pageRes.status, pageRes.headers.get('content-type'))
       if (!pageRes.ok) throw new Error(`HTTP ${pageRes.status}`)
       const contentType = pageRes.headers.get('content-type') || ''
       if (!contentType.includes('text/html') && !contentType.includes('application/xhtml')) {
-        return res.status(422).json({ success: false, error: 'fetch_failed' })
+        console.log('[extract-recipe] Non-HTML content-type:', contentType)
+        return res.status(422).json({ success: false, error: 'fetch_failed', debug: `Non-HTML content-type: ${contentType}` })
       }
       pageContent = await pageRes.text()
+      console.log('[extract-recipe] Page content length:', pageContent.length)
     } catch (fetchErr) {
-      return res.status(422).json({ success: false, error: 'fetch_failed' })
+      console.error('[extract-recipe] Fetch error:', fetchErr.message, fetchErr.code)
+      return res.status(422).json({ success: false, error: 'fetch_failed', debug: fetchErr.message, code: fetchErr.code || null })
     }
 
     // Detect bot protection pages (Cloudflare challenge, login walls, etc.)
