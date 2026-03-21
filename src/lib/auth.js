@@ -15,7 +15,7 @@ export async function loadAppUser(authUserId) {
   // is defaulted here and synced separately in App.jsx.
   const { data, error } = await supabase
     .from('users')
-    .select('id, name, email, role, household_id, avatar_url, membership_status, households(subscription_tier)')
+    .select('id, name, email, role, household_id, avatar_url, membership_status')
     .eq('auth_id', authUserId)
     .maybeSingle()
 
@@ -24,10 +24,20 @@ export async function loadAppUser(authUserId) {
   if (error) throw new Error(`Failed to load user: ${error.message}`)
   if (!data)  return null
 
+  // Fetch subscription tier separately to avoid FK ambiguity on users→households
+  let subscriptionTier = 'free'
+  if (data.household_id) {
+    const { data: household } = await supabase
+      .from('households')
+      .select('subscription_tier')
+      .eq('id', data.household_id)
+      .single()
+    subscriptionTier = household?.subscription_tier ?? 'free'
+  }
+
   return {
     ...data,
-    subscription_tier: data.households?.subscription_tier || 'free',
-    households: undefined,
+    subscription_tier: subscriptionTier,
     timezone: 'America/Chicago',
   }
 }
