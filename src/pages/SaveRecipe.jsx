@@ -331,8 +331,11 @@ export default function SaveRecipe({ appUser }) {
   }
 
   // ── Save recipe ──────────────────────────────────────────────
+  // Safe string coercion — Sage may return numbers or null for string fields
+  const s = (val) => (val == null ? '' : String(val).trim())
+
   async function handleSave() {
-    if (!name.trim() || saving) return
+    if (!s(name) || saving) return
     setSaving(true)
     setError(null)
     try {
@@ -343,21 +346,21 @@ export default function SaveRecipe({ appUser }) {
       const { data: newRecipe, error: recErr } = await supabase.from('recipes').insert({
         household_id: appUser.household_id,
         added_by: appUser.id,
-        name: name.trim(),
-        description: description.trim() || null,
-        author: author.trim() || null,
+        name: s(name),
+        description: s(description) || null,
+        author: s(author) || null,
         source_type: sourceType,
-        source_url: sourceUrl.trim() || null,
-        category: category.trim() || null,
-        cuisine: cuisine.trim() || null,
-        method: method || null,
-        difficulty: difficulty || null,
+        source_url: s(sourceUrl) || null,
+        category: s(category) || null,
+        cuisine: s(cuisine) || null,
+        method: s(method) || null,
+        difficulty: s(difficulty) || null,
         prep_time_minutes: prep,
         cook_time_minutes: cook,
         total_time_minutes: (prep || 0) + (cook || 0) || null,
-        servings: servings.trim() || null,
-        personal_notes: personalNotes.trim() || null,
-        variations: variations.trim() || null,
+        servings: s(servings) || null,
+        personal_notes: s(personalNotes) || null,
+        variations: s(variations) || null,
         photo_url: photoUrl || null,
         recipe_type: 'full',
         status: 'complete',
@@ -368,17 +371,17 @@ export default function SaveRecipe({ appUser }) {
       const recipeId = newRecipe.id
 
       // 2. Ensure pantry items + insert ingredients
-      const validIngs = ingredients.filter(i => i.name?.trim())
+      const validIngs = ingredients.filter(i => s(i.name))
       for (const ing of validIngs) {
         if (!ing.pantry_item_id) {
-          const nameLower = ing.name.trim().toLowerCase()
+          const nameLower = s(ing.name).toLowerCase()
           let { data: existing } = await supabase.from('pantry_items').select('id')
             .eq('household_id', appUser.household_id).ilike('name', nameLower).maybeSingle()
           if (existing) {
             ing.pantry_item_id = existing.id
           } else {
             const { data: created } = await supabase.from('pantry_items').insert({
-              household_id: appUser.household_id, name: nameLower, default_unit: ing.unit || 'piece',
+              household_id: appUser.household_id, name: nameLower, default_unit: s(ing.unit) || 'piece',
             }).select('id').single()
             if (created) ing.pantry_item_id = created.id
           }
@@ -387,11 +390,11 @@ export default function SaveRecipe({ appUser }) {
       const ingRows = validIngs.map((i, idx) => ({
         recipe_id: recipeId,
         sort_order: idx,
-        name: i.name.trim(),
-        quantity: i.quantity?.trim() || null,
-        unit: i.unit?.trim() || null,
+        name: s(i.name),
+        quantity: s(i.quantity) || null,
+        unit: s(i.unit) || null,
         pantry_item_id: i.pantry_item_id || null,
-        preparation_note: i.preparation_note?.trim() || null,
+        preparation_note: s(i.preparation_note) || null,
         is_optional: i.is_optional || false,
       }))
       if (ingRows.length > 0) {
@@ -400,11 +403,11 @@ export default function SaveRecipe({ appUser }) {
       }
 
       // 3. Insert instructions
-      const insRows = instructions.filter(i => i.instruction?.trim()).map((i, idx) => ({
+      const insRows = instructions.filter(i => s(i.instruction)).map((i, idx) => ({
         recipe_id: recipeId,
         step_number: idx + 1,
-        instruction: i.instruction.trim(),
-        tip: i.tip?.trim() || null,
+        instruction: s(i.instruction),
+        tip: s(i.tip) || null,
       }))
       if (insRows.length > 0) {
         const { error: insErr } = await supabase.from('instructions').insert(insRows)
