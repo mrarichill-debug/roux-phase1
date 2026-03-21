@@ -78,10 +78,7 @@ export default function EditRecipe({ appUser }) {
   const [categories, setCategories] = useState([])
 
   const fileRef = useRef(null)
-  const { isDirty, markDirty, markClean, blocker } = useUnsavedChanges()
-
-  // Wrap any setter to also mark dirty on change
-  function dirty(setter) { return (v) => { setter(v); markDirty() } }
+  const dirty = useUnsavedChanges()
 
   useEffect(() => { if (id && appUser?.household_id) loadRecipe() }, [id, appUser?.household_id])
 
@@ -254,7 +251,7 @@ export default function EditRecipe({ appUser }) {
       // Fire-and-forget Sage ingredient review
       runSageIngredientReview(id, validIngs, { recipeName: name.trim(), userId: appUser?.id })
 
-      markClean()
+      dirty.markClean()
       setToast('Recipe saved.')
       setTimeout(() => navigate(`/recipe/${id}`), 1200)
     } catch (err) {
@@ -277,11 +274,11 @@ export default function EditRecipe({ appUser }) {
   return (
     <div style={{ background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', paddingBottom: '140px' }}>
       <TopBar slim
-        leftAction={{ onClick: () => navigate(`/recipe/${id}`), icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg> }}
+        leftAction={{ onClick: () => dirty.guardNavigation(() => navigate(`/recipe/${id}`)), icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg> }}
         centerContent={<span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>Edit Recipe</span>}
       />
 
-      <div onChangeCapture={markDirty} style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div onChangeCapture={dirty.markDirty} style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
         {/* ── 1. Photo ──────────────────────────────────────────────── */}
         <div>
@@ -571,14 +568,16 @@ export default function EditRecipe({ appUser }) {
       )}
 
       <UnsavedChangesSheet
-        blocker={blocker}
+        open={dirty.showConfirm}
+        onStay={dirty.cancelLeave}
+        onLeave={dirty.confirmLeave}
         title="Unsaved changes"
         message="Your edits haven't been saved yet."
         stayLabel="Keep editing"
         leaveLabel="Leave anyway"
       />
 
-      <BottomNav activeTab="meals" />
+      <BottomNav activeTab="meals" onBeforeNavigate={dirty.guardNavigation} />
     </div>
   )
 }

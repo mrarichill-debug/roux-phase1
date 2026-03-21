@@ -89,11 +89,19 @@ function getTabFromPath(pathname) {
   return 'today'
 }
 
-export default function BottomNav({ activeTab }) {
+export default function BottomNav({ activeTab, onBeforeNavigate }) {
   const navigate = useNavigate()
   const location = useLocation()
 
   const currentTab = activeTab || getTabFromPath(location.pathname)
+
+  function handleNavClick(path) {
+    if (onBeforeNavigate) {
+      onBeforeNavigate(() => navigate(path))
+    } else {
+      navigate(path)
+    }
+  }
 
   return (
     <nav style={{
@@ -113,7 +121,7 @@ export default function BottomNav({ activeTab }) {
         return (
           <button
             key={tab.key}
-            onClick={() => navigate(tab.path)}
+            onClick={() => handleNavClick(tab.path)}
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               justifyContent: 'center', gap: '3px',

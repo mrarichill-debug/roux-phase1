@@ -420,7 +420,7 @@ export default function PlanMeal({ appUser }) {
   const [toast, setToast] = useState(null)
 
   // Unsaved changes guard
-  const { isDirty, markDirty, markClean, blocker } = useUnsavedChanges()
+  const dirty = useUnsavedChanges()
 
   // ── Load existing meal in edit mode ─────────────────────────────────
   useEffect(() => {
@@ -506,7 +506,7 @@ export default function PlanMeal({ appUser }) {
       isDraft: recipe.isDraft || false,
       alternatives: [],
     }])
-    markDirty()
+    dirty.markDirty()
   }, [altPickerSlot])
 
   const handleRemoveRecipe = useCallback((recipeId) => {
@@ -647,7 +647,7 @@ export default function PlanMeal({ appUser }) {
         return
       }
 
-      markClean()
+      dirty.markClean()
       setToast('Meal saved.')
       setTimeout(() => navigate(isEditMode ? '/meals/saved' : '/meals'), 1200)
 
@@ -671,7 +671,7 @@ export default function PlanMeal({ appUser }) {
               <path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/>
             </svg>
           ),
-          onClick: () => navigate(isEditMode ? '/meals/saved' : '/meals'),
+          onClick: () => dirty.guardNavigation(() => navigate(isEditMode ? '/meals/saved' : '/meals')),
         }}
         centerContent={
           <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>
@@ -687,7 +687,7 @@ export default function PlanMeal({ appUser }) {
           <div className="shimmer-block" style={{ height: '44px', borderRadius: '12px' }} />
         </div>
       ) : (
-      <div onChangeCapture={markDirty} style={{ padding: '20px 18px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div onChangeCapture={dirty.markDirty} style={{ padding: '20px 18px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
         {/* ── Section 1: Meal Name ──────────────────────────────────────── */}
         <div style={{ opacity: 0, animation: 'fadeUp 0.4s ease 0.05s forwards' }}>
@@ -1060,14 +1060,16 @@ export default function PlanMeal({ appUser }) {
       />
 
       <UnsavedChangesSheet
-        blocker={blocker}
+        open={dirty.showConfirm}
+        onStay={dirty.cancelLeave}
+        onLeave={dirty.confirmLeave}
         title="Leave this meal?"
         message="You've started building something."
         stayLabel="Keep cooking"
         leaveLabel="Leave anyway"
       />
 
-      <BottomNav activeTab="meals" />
+      <BottomNav activeTab="meals" onBeforeNavigate={dirty.guardNavigation} />
     </div>
   )
 }

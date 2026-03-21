@@ -95,7 +95,7 @@ export default function SaveRecipe({ appUser }) {
   const [toast, setToast] = useState(null)
 
   // Unsaved changes guard
-  const { isDirty, markDirty, markClean, blocker } = useUnsavedChanges()
+  const dirty = useUnsavedChanges()
 
   // Load dynamic categories
   useEffect(() => {
@@ -113,7 +113,7 @@ export default function SaveRecipe({ appUser }) {
   function handlePhotoCaptured(e) {
     const file = e.target.files?.[0]
     if (!file || capturedPhotos.length >= MAX_PHOTOS) return
-    markDirty()
+    dirty.markDirty()
     const reader = new FileReader()
     reader.onload = (ev) => {
       setCapturedPhotos(prev => [...prev, { file, preview: ev.target.result, id: tempId() }])
@@ -229,7 +229,7 @@ export default function SaveRecipe({ appUser }) {
 
     setExtracting(false)
     setStep('form')
-    markDirty()
+    dirty.markDirty()
   }
 
   // ── Go to manual form ────────────────────────────────────────
@@ -238,7 +238,7 @@ export default function SaveRecipe({ appUser }) {
     setIngredients([{ _key: tempId(), quantity: '', unit: 'piece', name: '', sort_order: 0, pantry_item_id: null }])
     setInstructions([{ _key: tempId(), instruction: '', step_number: 1 }])
     setStep('form')
-    markDirty()
+    dirty.markDirty()
   }
 
   // ── Ingredient helpers ───────────────────────────────────────
@@ -419,7 +419,7 @@ export default function SaveRecipe({ appUser }) {
       // 5. Fire-and-forget Sage ingredient review
       runSageIngredientReview(recipeId, validIngs, { recipeName: name.trim(), userId: appUser?.id })
 
-      markClean()
+      dirty.markClean()
       setToast('Recipe saved.')
       setTimeout(() => navigate(`/recipe/${recipeId}`), 1200)
     } catch (err) {
@@ -430,7 +430,7 @@ export default function SaveRecipe({ appUser }) {
   }
 
   // ── Back handler ─────────────────────────────────────────────
-  function handleBack() {
+  function doBack() {
     if (step === 'form') {
       setStep('choose')
     } else if (step === 'url' || step === 'photo') {
@@ -441,6 +441,9 @@ export default function SaveRecipe({ appUser }) {
     } else {
       navigate('/meals/recipes')
     }
+  }
+  function handleBack() {
+    dirty.guardNavigation(doBack)
   }
 
   const topBarTitle = step === 'choose' ? 'Save a Recipe'
@@ -1083,14 +1086,16 @@ export default function SaveRecipe({ appUser }) {
       `}</style>
 
       <UnsavedChangesSheet
-        blocker={blocker}
+        open={dirty.showConfirm}
+        onStay={dirty.cancelLeave}
+        onLeave={dirty.confirmLeave}
         title="Step away from the stove?"
         message="You found a recipe — want to save it first?"
         stayLabel="Keep cooking"
         leaveLabel="Leave anyway"
       />
 
-      <BottomNav activeTab="meals" />
+      <BottomNav activeTab="meals" onBeforeNavigate={dirty.guardNavigation} />
     </div>
   )
 }

@@ -1,13 +1,14 @@
 /**
  * UnsavedChangesSheet — warm confirmation bottom sheet for unsaved changes.
- * Rendered alongside useUnsavedChanges hook.
  *
  * Props:
- *   blocker — from useUnsavedChanges().blocker
+ *   open — boolean, whether to show the sheet
+ *   onStay — called when user taps "Keep cooking" / stay
+ *   onLeave — called when user taps "Leave anyway"
  *   title — e.g. "Step away from the stove?"
  *   message — e.g. "You found a recipe — want to save it first?"
- *   stayLabel — e.g. "Keep cooking" (default)
- *   leaveLabel — e.g. "Leave anyway" (default)
+ *   stayLabel — e.g. "Keep cooking"
+ *   leaveLabel — e.g. "Leave anyway"
  */
 
 const C = {
@@ -16,19 +17,21 @@ const C = {
 }
 
 export default function UnsavedChangesSheet({
-  blocker,
+  open,
+  onStay,
+  onLeave,
   title = 'Unsaved changes',
   message = "You have unsaved work on this page.",
   stayLabel = 'Keep cooking',
   leaveLabel = 'Leave anyway',
 }) {
-  if (!blocker || blocker.state !== 'blocked') return null
+  if (!open) return null
 
   return (
     <>
       {/* Overlay */}
       <div
-        onClick={() => blocker.reset()}
+        onClick={onStay}
         style={{
           position: 'fixed', inset: 0,
           background: 'rgba(44,36,23,0.45)', zIndex: 200,
@@ -74,7 +77,7 @@ export default function UnsavedChangesSheet({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {/* Stay — primary */}
             <button
-              onClick={() => blocker.reset()}
+              onClick={onStay}
               style={{
                 width: '100%', padding: '15px', borderRadius: '14px',
                 background: C.forest, color: 'white', border: 'none',
@@ -88,7 +91,7 @@ export default function UnsavedChangesSheet({
 
             {/* Leave — secondary */}
             <button
-              onClick={() => blocker.proceed()}
+              onClick={onLeave}
               style={{
                 width: '100%', padding: '15px', borderRadius: '14px',
                 background: 'transparent', color: C.driftwood, border: 'none',
