@@ -112,7 +112,7 @@ export default function BottomNav({ activeTab, onBeforeNavigate }) {
       paddingBottom: 'env(safe-area-inset-bottom, 8px)',
     }}>
       <div style={{
-        height: '60px',
+        height: '48px',
         display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
         alignItems: 'center',
       }}>

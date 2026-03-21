@@ -29,7 +29,7 @@ export const SEASONS = {
 export const SLOT_POS = {
   'top-right': { top: '220px',   right: '-18px', bottom: 'auto', left: 'auto' },
   'mid-left':  { top: '52%',     left:  '-20px', bottom: 'auto', right: 'auto' },
-  'bot-right': { bottom: '76px', right: '-18px', top:    'auto', left: 'auto' },
+  'bot-right': { bottom: '64px', right: '-18px', top:    'auto', left: 'auto' },
 }
 
 // Parallax scroll rate per slot (fraction of scrollY to translate upward)

@@ -156,7 +156,7 @@ export default function RecipeCard({ appUser }) {
   )
 
   return (
-    <div style={{ background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', paddingBottom: 'calc(76px + env(safe-area-inset-bottom, 8px))' }}>
+    <div style={{ background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 8px))' }}>
 
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <TopBar slim
