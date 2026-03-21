@@ -21,6 +21,7 @@ export default async function handler(req, res) {
   }
 
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
+  console.log('[extract-recipe] API key prefix:', ANTHROPIC_API_KEY?.substring(0, 10))
   if (!ANTHROPIC_API_KEY) {
     return res.status(500).json({ success: false, error: 'Server configuration error' })
   }
@@ -81,7 +82,7 @@ Return ONLY a valid JSON object with: name, description, author, source_url (set
       return res.status(422).json({ success: false, error: 'parse_failed' })
     }
   } catch (error) {
-    console.error('[extract-recipe] Error:', error.message)
-    return res.status(500).json({ success: false, error: 'parse_failed' })
+    console.error('[extract-recipe] Error:', error.message, error.status, error.error)
+    return res.status(500).json({ success: false, error: 'parse_failed', debug: error.message, status: error.status || null })
   }
 }
