@@ -135,13 +135,6 @@ export default function BottomNav({ activeTab, onBeforeNavigate }) {
             }}
           >
             {tab.icon}
-            {active ? (
-              <span style={{
-                width: '4px', height: '4px', borderRadius: '50%', background: C.forest,
-              }} />
-            ) : (
-              <span style={{ width: '4px', height: '4px' }} />
-            )}
             <span style={{
               fontSize: '9px',
               fontWeight: active ? 600 : 400,
@@ -149,6 +142,13 @@ export default function BottomNav({ activeTab, onBeforeNavigate }) {
             }}>
               {tab.label}
             </span>
+            {active ? (
+              <span style={{
+                width: '4px', height: '4px', borderRadius: '50%', background: C.forest,
+              }} />
+            ) : (
+              <span style={{ width: '4px', height: '4px' }} />
+            )}
           </button>
         )
       })}
