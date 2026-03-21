@@ -2,7 +2,10 @@
  * /api/extract-recipe.js — Recipe URL extraction via Anthropic API.
  * Fetches the URL server-side, strips noise, sends to Claude for structured extraction.
  * Known-blocked domains short-circuit before fetch. Bot protection detected post-fetch.
+ * Reads sage_model from app_config via service role key.
  */
+
+import { getSageModelServer } from './_lib/getSageModel.js'
 
 const BLOCKED_DOMAINS = [
   'allrecipes.com',
@@ -81,7 +84,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { url, model } = req.body
+    const { url } = req.body
 
     if (!url || typeof url !== 'string') {
       return res.status(400).json({ success: false, error: 'url string required' })
@@ -153,6 +156,9 @@ export default async function handler(req, res) {
       pageContent = pageContent.slice(0, 30000)
     }
 
+    // Resolve model server-side from app_config
+    const model = await getSageModelServer()
+
     // Call Anthropic API
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -162,7 +168,7 @@ export default async function handler(req, res) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: model || 'claude-sonnet-4-20250514',
+        model,
         max_tokens: 4096,
         system: EXTRACTION_PROMPT,
         messages: [{

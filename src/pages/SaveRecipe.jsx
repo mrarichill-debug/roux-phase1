@@ -7,7 +7,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { getSageModel } from '../lib/aiModels'
 import { runSageIngredientReview } from '../lib/sageReview'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
@@ -129,11 +128,10 @@ export default function SaveRecipe({ appUser }) {
     setExtractError(null)
     setUrlError(null)
     try {
-      const model = await getSageModel()
       const response = await fetch('/api/extract-recipe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: urlInput.trim(), model }),
+        body: JSON.stringify({ url: urlInput.trim() }),
       })
       const data = await response.json()
       if (!response.ok || !data.success) {
@@ -173,11 +171,10 @@ export default function SaveRecipe({ appUser }) {
         mediaTypes.push(photo.file.type || 'image/jpeg')
       }
 
-      const model = await getSageModel()
       const response = await fetch('/api/extract-recipe-photo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ images, mediaTypes, model }),
+        body: JSON.stringify({ images, mediaTypes }),
       })
       const data = await response.json()
       if (!response.ok || !data.success) {

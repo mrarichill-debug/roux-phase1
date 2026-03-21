@@ -1,8 +1,11 @@
 /**
  * /api/sage.js — General Sage chat and completions proxy.
  * Calls Anthropic API server-side using ANTHROPIC_API_KEY.
+ * Reads sage_model from app_config via service role key.
  * Migrated from client-side direct calls on 2026-03-20.
  */
+
+import { getSageModelServer } from './_lib/getSageModel.js'
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
@@ -22,11 +25,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { messages, system, model, max_tokens } = req.body
+    const { messages, system, max_tokens } = req.body
 
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'messages array required' })
     }
+
+    const model = await getSageModelServer()
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -36,7 +41,7 @@ export default async function handler(req, res) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: model || 'claude-sonnet-4-20250514',
+        model,
         max_tokens: max_tokens || 1000,
         system: system || getDefaultSystemPrompt(),
         messages,

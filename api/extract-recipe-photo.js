@@ -1,7 +1,10 @@
 /**
  * /api/extract-recipe-photo.js — Recipe photo extraction via Anthropic vision API.
  * Accepts base64 images, sends to Claude for structured extraction.
+ * Reads sage_model from app_config via service role key.
  */
+
+import { getSageModelServer } from './_lib/getSageModel.js'
 
 const SINGLE_PROMPT = `You are Sage, a recipe extraction assistant for the Roux family meal planning app. Extract a structured recipe from the provided content. Return ONLY valid JSON with these fields:
 {
@@ -63,7 +66,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { images, mediaTypes, model } = req.body
+    const { images, mediaTypes } = req.body
 
     if (!images || !Array.isArray(images) || images.length === 0) {
       return res.status(400).json({ success: false, error: 'images array required' })
@@ -90,6 +93,8 @@ export default async function handler(req, res) {
       ? `Extract the recipe from these ${images.length} photos. They are multiple pages or sides of the same recipe.`
       : 'Extract the recipe from this photo of a recipe card or cookbook page.'
 
+    const model = await getSageModelServer()
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -98,7 +103,7 @@ export default async function handler(req, res) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: model || 'claude-sonnet-4-20250514',
+        model,
         max_tokens: 4096,
         system: systemPrompt,
         messages: [{

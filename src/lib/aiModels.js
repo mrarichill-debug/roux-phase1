@@ -4,6 +4,9 @@
  * upgrades can be made in one place.
  *
  * Primary Sage model (Sonnet) is runtime-configurable via app_config.sage_model.
+ * Server-side functions read app_config directly via service role key.
+ * Client-side getSageModel() exists for any future client-only use but
+ * current Anthropic calls all go through serverless functions.
  * Haiku assignments for background tasks are intentional cost decisions and stay hardcoded.
  */
 
@@ -19,6 +22,7 @@ const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 /**
  * Fetches the primary Sage model from app_config.sage_model.
  * Caches for 5 minutes so repeated calls don't hit the DB.
+ * Retries once after 500ms on auth errors (session not yet ready).
  * Falls back to hardcoded Sonnet if the query fails.
  */
 export async function getSageModel() {
@@ -27,15 +31,26 @@ export async function getSageModel() {
     return _cachedSageModel
   }
 
-  try {
+  async function queryAppConfig() {
     const { data, error } = await supabase
       .from('app_config')
       .select('value')
       .eq('key', 'sage_model')
       .single()
+    return { data, error }
+  }
 
-    if (!error && data?.value) {
-      _cachedSageModel = data.value
+  try {
+    let result = await queryAppConfig()
+
+    // Retry once after 500ms if auth not ready (403 or PGRST error)
+    if (result.error) {
+      await new Promise(r => setTimeout(r, 500))
+      result = await queryAppConfig()
+    }
+
+    if (!result.error && result.data?.value) {
+      _cachedSageModel = result.data.value
       _cacheTimestamp = now
       return _cachedSageModel
     }
