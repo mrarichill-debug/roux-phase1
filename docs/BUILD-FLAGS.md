@@ -261,6 +261,15 @@ Traditions must be applied via the slot picker which creates a `planned_meals` r
 - Error handling: `tier_required` (Free users), `fetch_failed` (web search couldn't reach page), `parse_failed` (couldn't parse recipe from response). Every error provides a clear next step.
 - `subscription_tier` read from `households` table, loaded into `appUser` via `loadAppUser()`.
 
+### Ingredient Alternatives (Mar 20, 2026)
+
+- `ingredient_alternatives` table live. Each alternative links to a `primary_ingredient_id` with its own name, quantity, unit, preparation_note, sort_order.
+- **Edit Recipe:** "+ Add alternative" tap target below each ingredient row. Inline form: qty + unit + name. Multiple alternatives per ingredient. Honey `or` prefix and left border. Remove with ×.
+- **Recipe Detail:** Ingredients with alternatives show a honey `+N alt(s)` pill. Tapping expands to show alternatives inline as `or 3 lb boneless steak`. Collapsed by default.
+- **Save a Recipe:** "X or Y" ingredient names from Sage extraction auto-parsed into primary + alternative. Primary is first item, alternative is second.
+- Same UX pattern as meal recipe alternatives in PlanMeal.
+- RLS: accessible via ingredients → recipes → household ownership chain.
+
 ### Sage Ingredient Review (Mar 19, 2026)
 
 - **Async background call** after every recipe save (new or edit). Fire-and-forget — save completes immediately for the user.

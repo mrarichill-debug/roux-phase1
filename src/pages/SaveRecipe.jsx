@@ -210,14 +210,24 @@ export default function SaveRecipe({ appUser }) {
     setPersonalNotes(recipe.personal_notes || '')
 
     if (Array.isArray(recipe.ingredients)) {
-      setIngredients(recipe.ingredients.map((ing, i) => ({
-        _key: tempId(),
-        quantity: ing.quantity || '',
-        unit: ing.unit || 'piece',
-        name: ing.name || '',
-        sort_order: i,
-        pantry_item_id: null,
-      })))
+      setIngredients(recipe.ingredients.map((ing, i) => {
+        const rawName = String(ing.name || '')
+        // Parse "X or Y" into primary + alternative
+        const orMatch = rawName.match(/^(.+?)\s+or\s+(.+)$/i)
+        const alternatives = orMatch ? [{
+          _key: tempId(), quantity: ing.quantity || '', unit: ing.unit || 'piece',
+          name: orMatch[2].trim(), sort_order: 0,
+        }] : []
+        return {
+          _key: tempId(),
+          quantity: ing.quantity || '',
+          unit: ing.unit || 'piece',
+          name: orMatch ? orMatch[1].trim() : rawName,
+          sort_order: i,
+          pantry_item_id: null,
+          alternatives,
+        }
+      }))
     }
     if (Array.isArray(recipe.instructions)) {
       setInstructions(recipe.instructions.map((ins) => ({
@@ -401,6 +411,32 @@ export default function SaveRecipe({ appUser }) {
       if (ingRows.length > 0) {
         const { error: ingErr } = await supabase.from('ingredients').insert(ingRows)
         if (ingErr) throw ingErr
+      }
+
+      // 2b. Save ingredient alternatives
+      const altsForIngs = validIngs.filter(i => (i.alternatives || []).length > 0)
+      if (altsForIngs.length > 0) {
+        const { data: savedIngs } = await supabase.from('ingredients').select('id, name').eq('recipe_id', recipeId)
+        if (savedIngs) {
+          const altRows = []
+          for (const orig of altsForIngs) {
+            const match = savedIngs.find(si => s(si.name).toLowerCase() === s(orig.name).toLowerCase())
+            if (!match) continue
+            for (const alt of orig.alternatives) {
+              altRows.push({
+                primary_ingredient_id: match.id,
+                name: s(alt.name),
+                quantity: s(alt.quantity) || null,
+                unit: s(alt.unit) || null,
+                preparation_note: s(alt.preparation_note) || null,
+                sort_order: alt.sort_order || 0,
+              })
+            }
+          }
+          if (altRows.length > 0) {
+            await supabase.from('ingredient_alternatives').insert(altRows)
+          }
+        }
       }
 
       // 3. Insert instructions

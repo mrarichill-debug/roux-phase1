@@ -76,6 +76,10 @@ export default function EditRecipe({ appUser }) {
   const [pantryFocusKey, setPantryFocusKey] = useState(null)
   const debounceRef = useRef(null)
   const [categories, setCategories] = useState([])
+  const [altFormKey, setAltFormKey] = useState(null) // _key of ingredient showing alt form
+  const [altQty, setAltQty] = useState('')
+  const [altUnit, setAltUnit] = useState('piece')
+  const [altName, setAltName] = useState('')
 
   const fileRef = useRef(null)
   const dirty = useUnsavedChanges()
@@ -90,6 +94,11 @@ export default function EditRecipe({ appUser }) {
       supabase.from('instructions').select('*').eq('recipe_id', id).order('step_number'),
       supabase.from('recipes').select('category').eq('household_id', appUser.household_id).eq('recipe_type', 'full'),
     ])
+    // Fetch alternatives for all ingredients
+    const ingIds = (ingRes.data || []).map(i => i.id)
+    const altRes = ingIds.length > 0
+      ? await supabase.from('ingredient_alternatives').select('*').in('primary_ingredient_id', ingIds).order('sort_order')
+      : { data: [] }
     const r = recRes.data
     if (r) {
       setName(r.name || '')
@@ -107,7 +116,12 @@ export default function EditRecipe({ appUser }) {
       setVariations(r.variations || '')
       setPhotoUrl(r.photo_url || '')
     }
-    setIngredients((ingRes.data || []).map(i => ({ ...i, _key: i.id })))
+    const altsByIng = {}
+    for (const alt of (altRes.data || [])) {
+      if (!altsByIng[alt.primary_ingredient_id]) altsByIng[alt.primary_ingredient_id] = []
+      altsByIng[alt.primary_ingredient_id].push({ ...alt, _key: alt.id })
+    }
+    setIngredients((ingRes.data || []).map(i => ({ ...i, _key: i.id, alternatives: altsByIng[i.id] || [] })))
     setInstructions((insRes.data || []).map(i => ({ ...i, _key: i.id })))
     // Build dynamic category list
     if (catRes.data) {
@@ -132,7 +146,7 @@ export default function EditRecipe({ appUser }) {
 
   // Ingredient helpers
   function addIngredient() {
-    setIngredients(prev => [...prev, { _key: tempId(), quantity: '', unit: 'piece', name: '', sort_order: prev.length, pantry_item_id: null }])
+    setIngredients(prev => [...prev, { _key: tempId(), quantity: '', unit: 'piece', name: '', sort_order: prev.length, pantry_item_id: null, alternatives: [] }])
   }
   function updateIngredient(key, field, value) {
     setIngredients(prev => prev.map(i => i._key === key ? { ...i, [field]: value } : i))
@@ -161,6 +175,25 @@ export default function EditRecipe({ appUser }) {
     }))
     setPantrySuggestions([])
     setPantryFocusKey(null)
+  }
+
+  // Alternative helpers
+  function addAlternative(ingKey) {
+    if (!s(altName)) return
+    setIngredients(prev => prev.map(i => {
+      if (i._key !== ingKey) return i
+      const alts = i.alternatives || []
+      return { ...i, alternatives: [...alts, { _key: tempId(), quantity: altQty, unit: altUnit, name: altName, sort_order: alts.length }] }
+    }))
+    setAltQty(''); setAltUnit('piece'); setAltName(''); setAltFormKey(null)
+    dirty.markDirty()
+  }
+  function removeAlternative(ingKey, altKey) {
+    setIngredients(prev => prev.map(i => {
+      if (i._key !== ingKey) return i
+      return { ...i, alternatives: (i.alternatives || []).filter(a => a._key !== altKey) }
+    }))
+    dirty.markDirty()
   }
 
   // Instruction helpers
@@ -236,6 +269,39 @@ export default function EditRecipe({ appUser }) {
       if (ingRows.length > 0) {
         const { error: ingErr } = await supabase.from('ingredients').insert(ingRows)
         if (ingErr) throw ingErr
+      }
+
+      // 2b. Save ingredient alternatives
+      // Collect alt data keyed by ingredient name for re-linking after insert
+      const altsByIngName = {}
+      for (const ing of validIngs) {
+        if (ing.alternatives?.length > 0) {
+          altsByIngName[s(ing.name).toLowerCase()] = ing.alternatives
+        }
+      }
+      // Fetch newly inserted ingredient IDs to link alternatives
+      if (Object.keys(altsByIngName).length > 0) {
+        const { data: newIngs } = await supabase.from('ingredients').select('id, name').eq('recipe_id', id)
+        if (newIngs) {
+          const altRows = []
+          for (const ni of newIngs) {
+            const alts = altsByIngName[s(ni.name).toLowerCase()]
+            if (!alts) continue
+            for (const alt of alts) {
+              altRows.push({
+                primary_ingredient_id: ni.id,
+                name: s(alt.name),
+                quantity: s(alt.quantity) || null,
+                unit: s(alt.unit) || null,
+                preparation_note: s(alt.preparation_note) || null,
+                sort_order: alt.sort_order || 0,
+              })
+            }
+          }
+          if (altRows.length > 0) {
+            await supabase.from('ingredient_alternatives').insert(altRows)
+          }
+        }
       }
 
       // 3. Upsert instructions — delete all, re-insert
@@ -481,6 +547,48 @@ export default function EditRecipe({ appUser }) {
                       ))}
                     </div>
                   </div>
+                )}
+                {/* Alternatives */}
+                {(ing.alternatives || []).map(alt => (
+                  <div key={alt._key} style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '4px', paddingLeft: '16px', borderLeft: `2px solid ${C.honey}` }}>
+                    <span style={{ fontSize: '11px', color: C.honey, fontWeight: 500, flexShrink: 0 }}>or</span>
+                    <span style={{ fontSize: '12px', color: C.driftwood, flex: 1 }}>
+                      {[alt.quantity, alt.unit, alt.name].filter(Boolean).join(' ')}
+                    </span>
+                    <button onClick={() => removeAlternative(ing._key, alt._key)} style={{
+                      width: '20px', height: '20px', borderRadius: '50%', border: `1px solid ${C.linen}`,
+                      background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: C.driftwood, flexShrink: 0,
+                    }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 10, height: 10 }}>
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+                {altFormKey === ing._key ? (
+                  <div style={{ marginTop: '6px', paddingLeft: '16px', borderLeft: `2px solid ${C.honey}` }}>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <input type="text" value={altQty} onChange={e => setAltQty(e.target.value)} placeholder="Qty"
+                        style={{ ...inputStyle, width: '44px', textAlign: 'center', padding: '6px 4px', fontSize: '11px' }} />
+                      <input type="text" value={altUnit} onChange={e => setAltUnit(e.target.value)} placeholder="unit"
+                        style={{ ...inputStyle, width: '50px', padding: '6px 4px', fontSize: '11px' }} />
+                      <input type="text" value={altName} onChange={e => setAltName(e.target.value)} placeholder="Alternative ingredient"
+                        autoFocus style={{ ...inputStyle, flex: 1, padding: '6px 8px', fontSize: '12px' }} />
+                      <button onClick={() => addAlternative(ing._key)} disabled={!altName.trim()} style={{
+                        padding: '6px 10px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 500,
+                        background: altName.trim() ? C.forest : C.linen, color: altName.trim() ? 'white' : C.driftwood,
+                        cursor: altName.trim() ? 'pointer' : 'default', fontFamily: "'Jost', sans-serif",
+                      }}>Add</button>
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={() => { setAltFormKey(ing._key); setAltQty(''); setAltUnit('piece'); setAltName('') }} style={{
+                    background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0 0 16px',
+                    fontSize: '11px', color: C.driftwood, fontWeight: 300, fontFamily: "'Jost', sans-serif",
+                  }}>
+                    {(ing.alternatives || []).length > 0 ? '+ Add another alternative' : '+ Add alternative'}
+                  </button>
                 )}
               </div>
             )

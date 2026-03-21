@@ -80,6 +80,8 @@ export default function RecipeCard({ appUser }) {
   const [sageSheetOpen, setSageSheetOpen] = useState(false)
   const [recipePhotos, setRecipePhotos] = useState([])
   const [lightboxPhoto, setLightboxPhoto] = useState(null)
+  const [ingAlts, setIngAlts] = useState({}) // { ingredientId: [alt, ...] }
+  const [expandedAlts, setExpandedAlts] = useState(new Set())
 
   useEffect(() => { if (id) fetchAll() }, [id])
 
@@ -105,9 +107,21 @@ export default function RecipeCard({ appUser }) {
       const parsed = parseInt(rec.servings)
       if (!isNaN(parsed) && parsed > 0) { setServes(parsed); setBaseServes(parsed) }
     }
-    setIngredients(ingRes.data ?? [])
+    const ings = ingRes.data ?? []
+    setIngredients(ings)
     setInstructions(insRes.data ?? [])
     setRecipePhotos(photosRes.data ?? [])
+    // Fetch ingredient alternatives
+    const ingIds = ings.map(i => i.id)
+    if (ingIds.length > 0) {
+      const { data: altsData } = await supabase.from('ingredient_alternatives').select('*').in('primary_ingredient_id', ingIds).order('sort_order')
+      const grouped = {}
+      for (const alt of (altsData || [])) {
+        if (!grouped[alt.primary_ingredient_id]) grouped[alt.primary_ingredient_id] = []
+        grouped[alt.primary_ingredient_id].push(alt)
+      }
+      setIngAlts(grouped)
+    }
     setLoading(false)
   }
 
@@ -357,27 +371,51 @@ export default function RecipeCard({ appUser }) {
                   const scaledQty = scaleQty(ing.quantity, scale)
                   const amountStr = [scaledQty, ing.unit].filter(Boolean).join(' ')
                   const nameStr = [ing.name, ing.preparation_note].filter(Boolean).join(', ')
+                  const alts = ingAlts[ing.id] || []
+                  const hasAlts = alts.length > 0
+                  const isExpanded = expandedAlts.has(ing.id)
                   return (
-                    <div key={ing.id} onClick={() => toggleChecked(ing.id)} style={{
-                      display: 'flex', alignItems: 'center', gap: '12px',
-                      padding: '11px 0', borderBottom: idx < items.length - 1 ? '1px solid rgba(200,185,160,0.4)' : 'none',
-                      cursor: 'pointer', opacity: isChecked ? 0.7 : 1, transition: 'opacity 0.15s',
-                    }}>
-                      <div style={{
-                        width: '22px', height: '22px', borderRadius: '6px',
-                        border: isChecked ? 'none' : '1.5px solid rgba(200,185,160,0.7)',
-                        flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: isChecked ? C.sage : 'white', fontSize: '12px', color: 'white',
-                        animation: isChecked ? 'checkPulse 0.2s ease' : 'none',
-                        transition: 'background 0.15s, transform 0.1s',
+                    <div key={ing.id} style={{ borderBottom: idx < items.length - 1 ? '1px solid rgba(200,185,160,0.4)' : 'none' }}>
+                      <div onClick={() => hasAlts ? setExpandedAlts(prev => { const n = new Set(prev); n.has(ing.id) ? n.delete(ing.id) : n.add(ing.id); return n }) : toggleChecked(ing.id)} style={{
+                        display: 'flex', alignItems: 'center', gap: '12px',
+                        padding: '11px 0',
+                        cursor: 'pointer', opacity: isChecked ? 0.7 : 1, transition: 'opacity 0.15s',
                       }}>
-                        {isChecked ? '✓' : ''}
+                        <div onClick={e => { e.stopPropagation(); toggleChecked(ing.id) }} style={{
+                          width: '22px', height: '22px', borderRadius: '6px',
+                          border: isChecked ? 'none' : '1.5px solid rgba(200,185,160,0.7)',
+                          flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: isChecked ? C.sage : 'white', fontSize: '12px', color: 'white',
+                          animation: isChecked ? 'checkPulse 0.2s ease' : 'none',
+                          transition: 'background 0.15s, transform 0.1s',
+                        }}>
+                          {isChecked ? '✓' : ''}
+                        </div>
+                        {amountStr && <div style={{ fontSize: '13px', fontWeight: 500, color: C.forest, minWidth: '58px', flexShrink: 0 }}>{amountStr}</div>}
+                        <div style={{ fontSize: '14px', color: isChecked ? C.linen : C.ink, lineHeight: 1.4, textDecoration: isChecked ? 'line-through' : 'none', transition: 'color 0.15s', flex: 1 }}>
+                          {nameStr}
+                          {ing.is_optional && <span style={{ fontSize: '11px', color: C.driftwoodSm, marginLeft: '6px' }}>(optional)</span>}
+                        </div>
+                        {hasAlts && (
+                          <span style={{
+                            fontSize: '10px', fontWeight: 500, color: C.honey,
+                            background: 'rgba(196,154,60,0.1)', padding: '2px 6px', borderRadius: '4px',
+                            flexShrink: 0,
+                          }}>
+                            +{alts.length} alt{alts.length > 1 ? 's' : ''}
+                          </span>
+                        )}
                       </div>
-                      {amountStr && <div style={{ fontSize: '13px', fontWeight: 500, color: C.forest, minWidth: '58px', flexShrink: 0 }}>{amountStr}</div>}
-                      <div style={{ fontSize: '14px', color: isChecked ? C.linen : C.ink, lineHeight: 1.4, textDecoration: isChecked ? 'line-through' : 'none', transition: 'color 0.15s' }}>
-                        {nameStr}
-                        {ing.is_optional && <span style={{ fontSize: '11px', color: C.driftwoodSm, marginLeft: '6px' }}>(optional)</span>}
-                      </div>
+                      {hasAlts && isExpanded && (
+                        <div style={{ paddingLeft: '34px', paddingBottom: '8px' }}>
+                          {alts.map(alt => (
+                            <div key={alt.id} style={{ fontSize: '13px', color: C.driftwood, lineHeight: 1.6, padding: '2px 0' }}>
+                              <span style={{ color: C.honey, fontWeight: 500, marginRight: '4px' }}>or</span>
+                              {[alt.quantity, alt.unit, alt.name].filter(Boolean).join(' ')}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )
                 })}
