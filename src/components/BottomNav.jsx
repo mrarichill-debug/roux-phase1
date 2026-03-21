@@ -124,7 +124,7 @@ export default function BottomNav({ activeTab, onBeforeNavigate }) {
             onClick={() => handleNavClick(tab.path)}
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
-              justifyContent: 'center', gap: '3px',
+              justifyContent: 'center', gap: '1px',
               cursor: 'pointer', padding: 0,
               background: 'none', border: 'none',
               color: active ? C.forest : C.driftwood,
@@ -135,6 +135,13 @@ export default function BottomNav({ activeTab, onBeforeNavigate }) {
             }}
           >
             {tab.icon}
+            {active ? (
+              <span style={{
+                width: '4px', height: '4px', borderRadius: '50%', background: C.forest,
+              }} />
+            ) : (
+              <span style={{ width: '4px', height: '4px' }} />
+            )}
             <span style={{
               fontSize: '9px',
               fontWeight: active ? 600 : 400,
@@ -142,12 +149,6 @@ export default function BottomNav({ activeTab, onBeforeNavigate }) {
             }}>
               {tab.label}
             </span>
-            {active && (
-              <span style={{
-                position: 'absolute', bottom: '8px', left: '50%', transform: 'translateX(-50%)',
-                width: '3px', height: '3px', borderRadius: '50%', background: C.forest,
-              }} />
-            )}
           </button>
         )
       })}
