@@ -290,7 +290,7 @@ export default function RecipeLibrary({ appUser }) {
       minHeight:     '100vh',
       maxWidth:      '430px',
       margin:        '0 auto',
-      paddingBottom: 'calc(96px + env(safe-area-inset-bottom, 8px))',
+      paddingBottom: 'calc(76px + env(safe-area-inset-bottom, 8px))',
       position:      'relative',
       overflowX:     'hidden',
     }}>
@@ -455,7 +455,7 @@ export default function RecipeLibrary({ appUser }) {
         <button
           onClick={() => navigate('/save-recipe')}
           style={{
-            position: 'fixed', bottom: 'calc(90px + env(safe-area-inset-bottom, 8px))', right: '20px',
+            position: 'fixed', bottom: 'calc(70px + env(safe-area-inset-bottom, 8px))', right: '20px',
             width: '56px', height: '56px', borderRadius: '50%',
             background: C.forest, border: 'none', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',

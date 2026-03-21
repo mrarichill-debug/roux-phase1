@@ -358,7 +358,7 @@ export default function ShoppingList({ appUser }) {
   // ── No list state ────────────────────────────────────────────────────────────
   if (noList) {
     return (
-      <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif", paddingBottom: '96px' }}>
+      <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif", paddingBottom: '76px' }}>
         <WatermarkLayer />
         <ShoppingTopbar shoppingState="building" />
         <div style={{ padding: '48px 32px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
@@ -397,7 +397,7 @@ export default function ShoppingList({ appUser }) {
     <div style={{
       background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300,
       minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
-      paddingBottom: '96px', position: 'relative', overflowX: 'hidden',
+      paddingBottom: '76px', position: 'relative', overflowX: 'hidden',
     }}>
 
       <WatermarkLayer />

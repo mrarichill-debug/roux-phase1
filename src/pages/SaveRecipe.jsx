@@ -1055,7 +1055,7 @@ export default function SaveRecipe({ appUser }) {
       {/* ── Pinned Save Button (form step only) ────────────────── */}
       {step === 'form' && (
         <div style={{
-          position: 'fixed', bottom: 'calc(80px + env(safe-area-inset-bottom, 8px))', left: '50%', transform: 'translateX(-50%)',
+          position: 'fixed', bottom: 'calc(60px + env(safe-area-inset-bottom, 8px))', left: '50%', transform: 'translateX(-50%)',
           width: '100%', maxWidth: '430px', padding: '12px 22px', background: C.cream,
           borderTop: `1px solid ${C.linen}`, zIndex: 50, boxSizing: 'border-box',
         }}>

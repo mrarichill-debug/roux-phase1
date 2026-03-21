@@ -58,7 +58,7 @@
 
 ## Bottom Navigation — 5 Tabs (Updated March 2026)
 
-- Height: **80px** content area + `env(safe-area-inset-bottom, 8px)` padding below. Background: `--cream`. Border-top: `1px solid --linen`. `viewport-fit=cover` required in HTML meta tag.
+- Height: **60px** content area + `env(safe-area-inset-bottom, 8px)` padding below. Background: `--cream`. Border-top: `1px solid --linen`. `viewport-fit=cover` required in HTML meta tag.
 - 5 tabs: **Home / Week / Meals / Sage / Shop**
 - Routes: `/` `/thisweek` `/meals` `/sage` `/shopping`
 - Layout: standard `repeat(5, 1fr)` grid — even spacing, no paired grouping, no green circle.
