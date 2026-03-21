@@ -335,7 +335,8 @@ export default function SaveRecipe({ appUser }) {
   const s = (val) => (val == null ? '' : String(val).trim())
 
   async function handleSave() {
-    if (!s(name) || saving) return
+    const safeName = s(name)
+    if (!safeName || saving) return
     setSaving(true)
     setError(null)
     try {
@@ -420,7 +421,7 @@ export default function SaveRecipe({ appUser }) {
       }
 
       // 5. Fire-and-forget Sage ingredient review
-      runSageIngredientReview(recipeId, validIngs, { recipeName: name.trim(), userId: appUser?.id })
+      runSageIngredientReview(recipeId, validIngs, { recipeName: s(name), userId: appUser?.id })
 
       dirty.markClean()
       setToast('Recipe saved.')
@@ -1058,13 +1059,13 @@ export default function SaveRecipe({ appUser }) {
           width: '100%', maxWidth: '430px', padding: '12px 22px', background: C.cream,
           borderTop: `1px solid ${C.linen}`, zIndex: 50, boxSizing: 'border-box',
         }}>
-          <button onClick={handleSave} disabled={!name.trim() || saving} style={{
+          <button onClick={handleSave} disabled={!s(name) || saving} style={{
             width: '100%', padding: '16px', borderRadius: '14px',
-            background: name.trim() && !saving ? C.forest : C.linen,
-            color: name.trim() && !saving ? 'white' : C.driftwood,
-            border: 'none', cursor: name.trim() && !saving ? 'pointer' : 'default',
+            background: s(name) && !saving ? C.forest : C.linen,
+            color: s(name) && !saving ? 'white' : C.driftwood,
+            border: 'none', cursor: s(name) && !saving ? 'pointer' : 'default',
             fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
-            boxShadow: name.trim() && !saving ? '0 4px 16px rgba(30,55,35,0.25)' : 'none',
+            boxShadow: s(name) && !saving ? '0 4px 16px rgba(30,55,35,0.25)' : 'none',
           }}>
             {saving ? 'Saving...' : 'Save recipe'}
           </button>
