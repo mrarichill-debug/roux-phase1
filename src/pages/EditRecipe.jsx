@@ -174,8 +174,11 @@ export default function EditRecipe({ appUser }) {
     setInstructions(prev => prev.filter(i => i._key !== key).map((i, idx) => ({ ...i, step_number: idx + 1 })))
   }
 
+  // Safe string coercion — fields may be non-string types
+  const s = (val) => (val == null ? '' : String(val).trim())
+
   async function handleSave() {
-    if (!name.trim() || saving) return
+    if (!s(name) || saving) return
     setSaving(true)
     setError(null)
     try {
@@ -183,38 +186,38 @@ export default function EditRecipe({ appUser }) {
       const prep = parseInt(prepTime) || null
       const cook = parseInt(cookTime) || null
       const { error: recErr } = await supabase.from('recipes').update({
-        name: name.trim(),
-        description: description.trim() || null,
-        author: author.trim() || null,
-        source_url: sourceUrl.trim() || null,
-        category: category.trim() || null,
-        cuisine: cuisine.trim() || null,
-        method: method || null,
-        difficulty: difficulty || null,
+        name: s(name),
+        description: s(description) || null,
+        author: s(author) || null,
+        source_url: s(sourceUrl) || null,
+        category: s(category) || null,
+        cuisine: s(cuisine) || null,
+        method: s(method) || null,
+        difficulty: s(difficulty) || null,
         prep_time_minutes: prep,
         cook_time_minutes: cook,
         total_time_minutes: (prep || 0) + (cook || 0) || null,
-        servings: servings.trim() || null,
-        personal_notes: personalNotes.trim() || null,
-        variations: variations.trim() || null,
+        servings: s(servings) || null,
+        personal_notes: s(personalNotes) || null,
+        variations: s(variations) || null,
         photo_url: photoUrl || null,
       }).eq('id', id)
       if (recErr) throw recErr
 
       // 2. Ensure pantry items exist for all ingredients, then upsert ingredients
       await supabase.from('ingredients').delete().eq('recipe_id', id)
-      const validIngs = ingredients.filter(i => i.name?.trim())
+      const validIngs = ingredients.filter(i => s(i.name))
       for (const ing of validIngs) {
         if (!ing.pantry_item_id) {
           // Find or create pantry item
-          const nameLower = ing.name.trim().toLowerCase()
+          const nameLower = s(ing.name).toLowerCase()
           let { data: existing } = await supabase.from('pantry_items').select('id')
             .eq('household_id', appUser.household_id).ilike('name', nameLower).maybeSingle()
           if (existing) {
             ing.pantry_item_id = existing.id
           } else {
             const { data: created } = await supabase.from('pantry_items').insert({
-              household_id: appUser.household_id, name: nameLower, default_unit: ing.unit || 'piece',
+              household_id: appUser.household_id, name: nameLower, default_unit: s(ing.unit) || 'piece',
             }).select('id').single()
             if (created) ing.pantry_item_id = created.id
           }
@@ -223,11 +226,11 @@ export default function EditRecipe({ appUser }) {
       const ingRows = validIngs.map((i, idx) => ({
         recipe_id: id,
         sort_order: idx,
-        name: i.name.trim(),
-        quantity: i.quantity?.trim() || null,
-        unit: i.unit?.trim() || null,
+        name: s(i.name),
+        quantity: s(i.quantity) || null,
+        unit: s(i.unit) || null,
         pantry_item_id: i.pantry_item_id || null,
-        preparation_note: i.preparation_note?.trim() || null,
+        preparation_note: s(i.preparation_note) || null,
         is_optional: i.is_optional || false,
       }))
       if (ingRows.length > 0) {
@@ -237,11 +240,11 @@ export default function EditRecipe({ appUser }) {
 
       // 3. Upsert instructions — delete all, re-insert
       await supabase.from('instructions').delete().eq('recipe_id', id)
-      const insRows = instructions.filter(i => i.instruction?.trim()).map((i, idx) => ({
+      const insRows = instructions.filter(i => s(i.instruction)).map((i, idx) => ({
         recipe_id: id,
         step_number: idx + 1,
-        instruction: i.instruction.trim(),
-        tip: i.tip?.trim() || null,
+        instruction: s(i.instruction),
+        tip: s(i.tip) || null,
       }))
       if (insRows.length > 0) {
         const { error: insErr } = await supabase.from('instructions').insert(insRows)
@@ -249,7 +252,7 @@ export default function EditRecipe({ appUser }) {
       }
 
       // Fire-and-forget Sage ingredient review
-      runSageIngredientReview(id, validIngs, { recipeName: name.trim(), userId: appUser?.id })
+      runSageIngredientReview(id, validIngs, { recipeName: s(name), userId: appUser?.id })
 
       dirty.markClean()
       setToast('Recipe saved.')
@@ -544,13 +547,13 @@ export default function EditRecipe({ appUser }) {
         width: '100%', maxWidth: '430px', padding: '12px 22px', background: C.cream,
         borderTop: `1px solid ${C.linen}`, zIndex: 50, boxSizing: 'border-box',
       }}>
-        <button onClick={handleSave} disabled={!name.trim() || saving} style={{
+        <button onClick={handleSave} disabled={!s(name) || saving} style={{
           width: '100%', padding: '16px', borderRadius: '14px',
-          background: name.trim() && !saving ? C.forest : C.linen,
-          color: name.trim() && !saving ? 'white' : C.driftwood,
-          border: 'none', cursor: name.trim() && !saving ? 'pointer' : 'default',
+          background: s(name) && !saving ? C.forest : C.linen,
+          color: s(name) && !saving ? 'white' : C.driftwood,
+          border: 'none', cursor: s(name) && !saving ? 'pointer' : 'default',
           fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
-          boxShadow: name.trim() && !saving ? '0 4px 16px rgba(30,55,35,0.25)' : 'none',
+          boxShadow: s(name) && !saving ? '0 4px 16px rgba(30,55,35,0.25)' : 'none',
         }}>
           {saving ? 'Saving...' : 'Save changes'}
         </button>

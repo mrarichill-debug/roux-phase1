@@ -96,7 +96,7 @@ export default function RecipeCard({ appUser }) {
       `).eq('id', id).single(),
       supabase.from('ingredients').select('*').eq('recipe_id', id).order('sort_order'),
       supabase.from('instructions').select('*').eq('recipe_id', id).order('step_number'),
-      supabase.from('recipe_photos').select('id, url, sort_order, is_primary').eq('recipe_id', id).order('sort_order'),
+      supabase.from('recipe_photos').select('*').eq('recipe_id', id).order('sort_order'),
     ])
     const rec = recipeRes.data
     if (rec) {
