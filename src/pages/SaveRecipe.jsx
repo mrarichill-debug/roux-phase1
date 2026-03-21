@@ -82,6 +82,7 @@ export default function SaveRecipe({ appUser }) {
   const [categories, setCategories] = useState([])
 
   // Form helpers
+  const [customCatOpen, setCustomCatOpen] = useState(false)
   const [unitPickerKey, setUnitPickerKey] = useState(null)
   const [unitSearch, setUnitSearch] = useState('')
   const [pantrySuggestions, setPantrySuggestions] = useState([])
@@ -891,7 +892,7 @@ export default function SaveRecipe({ appUser }) {
             <div style={labelStyle}>Category</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
               {categories.map(c => (
-                <button key={c} onClick={() => setCategory(c)} style={{
+                <button key={c} onClick={() => { setCategory(c); setCustomCatOpen(false) }} style={{
                   padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
                   border: category === c ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
                   background: category === c ? 'rgba(61,107,79,0.08)' : 'white',
@@ -899,8 +900,33 @@ export default function SaveRecipe({ appUser }) {
                   fontFamily: "'Jost', sans-serif", fontWeight: category === c ? 500 : 400,
                 }}>{c.charAt(0).toUpperCase() + c.slice(1)}</button>
               ))}
+              {category && !categories.includes(category) && (
+                <button onClick={() => {}} style={{
+                  padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
+                  border: `1.5px solid ${C.forest}`, background: 'rgba(61,107,79,0.08)',
+                  color: C.forest, cursor: 'default',
+                  fontFamily: "'Jost', sans-serif", fontWeight: 500,
+                }}>{category.charAt(0).toUpperCase() + category.slice(1)}</button>
+              )}
             </div>
-            <input type="text" value={category} onChange={e => setCategory(e.target.value)} placeholder="Or type a new category" style={{ ...inputStyle, fontSize: '12px' }} />
+            {customCatOpen ? (
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                <input type="text" value={category && !categories.includes(category) ? category : ''} onChange={e => setCategory(e.target.value)}
+                  placeholder="Type a custom category..." autoFocus
+                  style={{ ...inputStyle, fontSize: '12px', flex: 1 }} />
+                <button onClick={() => setCustomCatOpen(false)} style={{
+                  padding: '6px 12px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 500,
+                  background: category && !categories.includes(category) ? C.forest : C.linen,
+                  color: category && !categories.includes(category) ? 'white' : C.driftwood,
+                  cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+                }}>Done</button>
+              </div>
+            ) : (
+              <button onClick={() => { setCustomCatOpen(true); if (categories.includes(category)) setCategory('') }} style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
+                fontSize: '12px', color: C.driftwood, fontWeight: 300, fontFamily: "'Jost', sans-serif",
+              }}>+ Add custom category</button>
+            )}
           </div>
           <div>
             <div style={labelStyle}>Cuisine</div>
