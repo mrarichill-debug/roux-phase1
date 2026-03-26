@@ -52,6 +52,8 @@ export default async function handler(req, res) {
 
     let events = []
 
+    console.log('[calendar-sync] Creds type:', typeof creds, 'keys:', Object.keys(creds || {}), 'hasRefreshToken:', !!creds?.refreshToken)
+
     if (user.calendar_provider === 'apple') {
       events = await fetchAppleCalendar(creds, startDate, endDate)
     } else if (user.calendar_provider === 'google') {
