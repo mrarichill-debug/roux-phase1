@@ -40,6 +40,8 @@ export default async function handler(req, res) {
     const users = await userRes.json()
     const user = users?.[0]
 
+    console.log('[calendar-sync] User found:', !!user, 'provider:', user?.calendar_provider, 'enabled:', user?.calendar_sync_enabled, 'has creds:', !!user?.calendar_credentials)
+
     if (!user || !user.calendar_sync_enabled || !user.calendar_credentials) {
       return res.status(200).json({ events: [] })
     }
@@ -56,6 +58,7 @@ export default async function handler(req, res) {
       events = await fetchGoogleCalendar(creds, startDate, endDate)
     }
 
+    console.log('[calendar-sync] Returning', events.length, 'events')
     return res.status(200).json({ events })
   } catch (error) {
     console.error('[calendar-sync] Error:', error.message)
@@ -157,6 +160,7 @@ async function fetchAppleCalendar(creds, startDate, endDate) {
  */
 async function fetchGoogleCalendar(creds, startDate, endDate) {
   const { refreshToken } = creds
+  console.log('[calendar-sync] Google fetch:', 'hasRefreshToken:', !!refreshToken, 'hasClientId:', !!process.env.GOOGLE_CLIENT_ID, 'hasClientSecret:', !!process.env.GOOGLE_CLIENT_SECRET)
   if (!refreshToken) return []
 
   try {
