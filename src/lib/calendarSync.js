@@ -17,13 +17,9 @@ export async function fetchCalendarEvents(appUser, weekDates) {
       body: JSON.stringify({ userId: appUser.id, startDate, endDate }),
     })
 
-    const data = await response.json()
-    if (!response.ok) {
-      console.warn('[CalendarSync] API error:', response.status, data)
-      return []
-    }
-    console.log('[CalendarSync] Fetched', (data.events || []).length, 'events')
-    return data.events || []
+    if (!response.ok) return []
+    const { events } = await response.json()
+    return events || []
   } catch (err) {
     console.warn('[CalendarSync] Failed:', err.message)
     return []

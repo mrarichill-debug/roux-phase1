@@ -27,7 +27,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'userId, startDate, endDate required' })
     }
 
-    // Fetch user credentials server-side via service role
     const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY
     if (!url || !key) {
@@ -40,10 +39,7 @@ export default async function handler(req, res) {
     const users = await userRes.json()
     const user = users?.[0]
 
-    console.log('[calendar-sync] User found:', !!user, 'provider:', user?.calendar_provider, 'enabled:', user?.calendar_sync_enabled, 'has creds:', !!user?.calendar_credentials)
-
     if (!user || !user.calendar_sync_enabled || !user.calendar_credentials) {
-      console.log('[calendar-sync] Early exit — missing user, sync disabled, or no creds')
       return res.status(200).json({ events: [] })
     }
 
@@ -52,9 +48,7 @@ export default async function handler(req, res) {
       creds = typeof user.calendar_credentials === 'string'
         ? JSON.parse(user.calendar_credentials)
         : user.calendar_credentials
-      console.log('[calendar-sync] Creds parsed ok, keys:', Object.keys(creds || {}))
-    } catch (parseErr) {
-      console.error('[calendar-sync] Creds parse CRASH:', parseErr.message)
+    } catch {
       return res.status(200).json({ events: [] })
     }
 
@@ -63,90 +57,62 @@ export default async function handler(req, res) {
     if (user.calendar_provider === 'apple') {
       events = await fetchAppleCalendar(creds, startDate, endDate)
     } else if (user.calendar_provider === 'google') {
-      console.log('[calendar-sync] Calling fetchGoogleCalendar...')
       try {
         events = await fetchGoogleCalendar(creds, startDate, endDate)
       } catch (gErr) {
-        console.error('[calendar-sync] Google Calendar error:', gErr.message, gErr.code, gErr.errors)
+        console.error('[calendar-sync] Google Calendar error:', gErr.message)
         events = []
       }
-    } else {
-      console.log('[calendar-sync] Unknown provider:', user.calendar_provider)
     }
 
-    console.log('[calendar-sync] Returning', events.length, 'events')
     return res.status(200).json({ events })
   } catch (error) {
-    console.error('[calendar-sync] CRASH:', error.message, error.stack?.split('\n').slice(0, 3).join(' | '))
-    return res.status(500).json({ error: error.message, events: [] })
+    console.error('[calendar-sync] Error:', error.message)
+    return res.status(500).json({ error: 'Calendar sync failed', events: [] })
   }
 }
 
 /**
  * Apple CalDAV — TEST ONLY
- * Uses basic auth with app-specific password against iCloud CalDAV.
  */
 async function fetchAppleCalendar(creds, startDate, endDate) {
   const { email, appPassword } = creds
   if (!email || !appPassword) return []
 
   try {
-    // CalDAV REPORT request for events in date range
     const calUrl = `https://caldav.icloud.com/${encodeURIComponent(email)}/calendars/`
     const auth = Buffer.from(`${email}:${appPassword}`).toString('base64')
 
-    // First, discover calendars via PROPFIND
     const propfindRes = await fetch(calUrl, {
       method: 'PROPFIND',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/xml',
-        'Depth': '1',
-      },
+      headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/xml', 'Depth': '1' },
       body: `<?xml version="1.0" encoding="utf-8"?>
         <d:propfind xmlns:d="DAV:" xmlns:cs="http://calendarserver.org/ns/" xmlns:c="urn:ietf:params:xml:ns:caldav">
           <d:prop><d:displayname/><d:resourcetype/></d:prop>
         </d:propfind>`,
     })
-
-    if (!propfindRes.ok) {
-      console.error('[calendar-sync] Apple PROPFIND failed:', propfindRes.status)
-      return []
-    }
-
-    // For now, try to fetch the default calendar's events
-    const reportBody = `<?xml version="1.0" encoding="utf-8"?>
-      <c:calendar-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">
-        <d:prop><d:getetag/><c:calendar-data/></d:prop>
-        <c:filter>
-          <c:comp-filter name="VCALENDAR">
-            <c:comp-filter name="VEVENT">
-              <c:time-range start="${startDate.replace(/-/g, '')}T000000Z" end="${endDate.replace(/-/g, '')}T235959Z"/>
-            </c:comp-filter>
-          </c:comp-filter>
-        </c:filter>
-      </c:calendar-query>`
+    if (!propfindRes.ok) return []
 
     const reportRes = await fetch(calUrl, {
       method: 'REPORT',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/xml',
-        'Depth': '1',
-      },
-      body: reportBody,
+      headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/xml', 'Depth': '1' },
+      body: `<?xml version="1.0" encoding="utf-8"?>
+        <c:calendar-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">
+          <d:prop><d:getetag/><c:calendar-data/></d:prop>
+          <c:filter>
+            <c:comp-filter name="VCALENDAR">
+              <c:comp-filter name="VEVENT">
+                <c:time-range start="${startDate.replace(/-/g, '')}T000000Z" end="${endDate.replace(/-/g, '')}T235959Z"/>
+              </c:comp-filter>
+            </c:comp-filter>
+          </c:filter>
+        </c:calendar-query>`,
     })
-
-    if (!reportRes.ok) {
-      console.error('[calendar-sync] Apple REPORT failed:', reportRes.status)
-      return []
-    }
+    if (!reportRes.ok) return []
 
     const xml = await reportRes.text()
-    // Extract iCal data from XML response and parse
     const icalMatches = xml.match(/BEGIN:VCALENDAR[\s\S]*?END:VCALENDAR/g) || []
     const events = []
-
     for (const icalStr of icalMatches) {
       const parsed = ical.sync.parseICS(icalStr)
       for (const [, event] of Object.entries(parsed)) {
@@ -163,7 +129,6 @@ async function fetchAppleCalendar(creds, startDate, endDate) {
         })
       }
     }
-
     return events
   } catch (err) {
     console.error('[calendar-sync] Apple error:', err.message)
@@ -172,11 +137,10 @@ async function fetchAppleCalendar(creds, startDate, endDate) {
 }
 
 /**
- * Google Calendar — OAuth2 with refresh token.
+ * Google Calendar — OAuth2 with refresh token. Fetches ALL calendars.
  */
 async function fetchGoogleCalendar(creds, startDate, endDate) {
   const { refreshToken } = creds
-  console.log('[calendar-sync] Google fetch:', 'hasRefreshToken:', !!refreshToken, 'hasClientId:', !!process.env.GOOGLE_CLIENT_ID, 'hasClientSecret:', !!process.env.GOOGLE_CLIENT_SECRET)
   if (!refreshToken) return []
 
   try {
@@ -186,41 +150,32 @@ async function fetchGoogleCalendar(creds, startDate, endDate) {
     )
     oauth2Client.setCredentials({ refresh_token: refreshToken })
 
-    // Force token refresh and log result
+    // Force token refresh
     try {
-      const { credentials } = await oauth2Client.refreshAccessToken()
-      console.log('[calendar-sync] Token refresh result: hasAccessToken:', !!credentials?.access_token, 'expiry:', credentials?.expiry_date)
+      await oauth2Client.refreshAccessToken()
     } catch (refreshErr) {
-      console.error('[calendar-sync] Token refresh FAILED:', refreshErr.message)
+      console.error('[calendar-sync] Token refresh failed:', refreshErr.message)
       return []
     }
 
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
-
-    // First list all calendars to find subscribed ones
     const calListRes = await calendar.calendarList.list()
     const allCalendars = calListRes.data.items || []
-    console.log('[calendar-sync] Calendars found:', allCalendars.length, allCalendars.map(c => `${c.summary} (${c.id})`))
 
     const timeMin = `${startDate}T00:00:00Z`
     const timeMax = `${endDate}T23:59:59Z`
-    console.log('[calendar-sync] Fetching range:', timeMin, 'to', timeMax)
 
-    // Fetch events from ALL calendars, not just primary
     let allEvents = []
     for (const cal of allCalendars) {
       try {
         const res = await calendar.events.list({
           calendarId: cal.id,
-          timeMin,
-          timeMax,
+          timeMin, timeMax,
           singleEvents: true,
           orderBy: 'startTime',
           maxResults: 50,
         })
-        const items = res.data.items || []
-        console.log('[calendar-sync] Calendar', cal.summary, ':', items.length, 'events')
-        for (const event of items) {
+        for (const event of (res.data.items || [])) {
           allEvents.push({
             id: event.id,
             title: event.summary || 'Untitled',
@@ -230,12 +185,11 @@ async function fetchGoogleCalendar(creds, startDate, endDate) {
             calendar: cal.summary || 'Google',
           })
         }
-      } catch (calErr) {
-        console.warn('[calendar-sync] Calendar', cal.summary, 'fetch error:', calErr.message)
+      } catch {
+        // Skip inaccessible calendars silently
       }
     }
 
-    console.log('[calendar-sync] Raw events total:', allEvents.length)
     return allEvents
   } catch (err) {
     console.error('[calendar-sync] Google error:', err.message)

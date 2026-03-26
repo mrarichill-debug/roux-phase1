@@ -159,8 +159,8 @@ export default function CalendarConnect({ appUser }) {
           <div style={{ marginTop: '12px', fontSize: '14px', color: C.driftwood, fontStyle: 'italic' }}>
             Connecting to Google Calendar...
           </div>
-          {import.meta.env.DEV && debugError && (
-            <div style={{ marginTop: '12px', fontSize: '11px', color: C.red, fontFamily: 'monospace', wordBreak: 'break-all' }}>{debugError}</div>
+          {debugError && (
+            <div style={{ marginTop: '12px', fontSize: '13px', color: C.red, lineHeight: 1.5 }}>{debugError}</div>
           )}
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
@@ -244,10 +244,11 @@ export default function CalendarConnect({ appUser }) {
         </div>
       )}
 
-      {import.meta.env.DEV && debugError && !connecting && (
-        <div style={{ margin: '0 22px 14px', padding: '12px', background: 'rgba(160,48,48,0.06)', borderRadius: '10px', border: `1px solid rgba(160,48,48,0.15)` }}>
-          <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', color: C.red, marginBottom: '4px' }}>Debug Error</div>
-          <div style={{ fontSize: '11px', color: C.red, fontFamily: 'monospace', wordBreak: 'break-all', lineHeight: 1.5 }}>{debugError}</div>
+      {debugError && !connecting && (
+        <div style={{ margin: '0 22px 14px', padding: '14px 16px', background: 'white', borderRadius: '12px', borderLeft: `3px solid ${C.red}` }}>
+          <div style={{ fontSize: '13px', color: C.ink, lineHeight: 1.5 }}>
+            Something went wrong connecting your calendar. Try again or check your Google account permissions.
+          </div>
         </div>
       )}
 
