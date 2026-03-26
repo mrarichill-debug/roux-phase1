@@ -55,7 +55,15 @@ export default async function handler(req, res) {
     if (user.calendar_provider === 'apple') {
       events = await fetchAppleCalendar(creds, startDate, endDate)
     } else if (user.calendar_provider === 'google') {
-      events = await fetchGoogleCalendar(creds, startDate, endDate)
+      console.log('[calendar-sync] Calling fetchGoogleCalendar...')
+      try {
+        events = await fetchGoogleCalendar(creds, startDate, endDate)
+      } catch (gErr) {
+        console.error('[calendar-sync] Google Calendar error:', gErr.message, gErr.code, gErr.errors)
+        events = []
+      }
+    } else {
+      console.log('[calendar-sync] Unknown provider:', user.calendar_provider)
     }
 
     console.log('[calendar-sync] Returning', events.length, 'events')
@@ -171,6 +179,7 @@ async function fetchGoogleCalendar(creds, startDate, endDate) {
     oauth2Client.setCredentials({ refresh_token: refreshToken })
 
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
+    console.log('[calendar-sync] Calling Google Calendar API, range:', startDate, 'to', endDate)
     const res = await calendar.events.list({
       calendarId: 'primary',
       timeMin: `${startDate}T00:00:00Z`,
