@@ -4,6 +4,7 @@
  */
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { logActivity } from '../lib/activityLog'
 import { getWeekDatesTZ, getWeekStartTZ, toLocalDateStr } from '../lib/dateUtils'
 
 const C = {
@@ -250,6 +251,7 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
 
       if (pmErr) throw pmErr
 
+      logActivity({ user: appUser, actionType: 'recipe_planned', targetType: itemType, targetId: meal.id, targetName: meal.name, metadata: { meal_slot: mealSlot, week_start: selectedWeek } })
       setToast(`Added to ${dayLabel} ${slotLabel.toLowerCase()}`)
       setTimeout(() => {
         onClose()

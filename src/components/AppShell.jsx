@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import SageChat from '../pages/SageChat'
+// SageChat removed — Sage interactions are structured, not chat-based
 import Family from '../pages/Family'
 
 // BrowserRouter lives in App.jsx — Shell just uses the router context
@@ -14,8 +14,8 @@ export function Shell({ appUser }) {
     { label: 'Home',          path: '/',          icon: <CalendarIcon /> },
     { label: 'This Week',     path: '/thisweek',  icon: <CalendarIcon /> },
     { label: 'Meals',         path: '/meals',     icon: <RecipesIcon /> },
-    { label: 'Shopping List', path: '/shopping',  icon: <ShoppingIcon /> },
-    { label: 'Sage',          path: '/sage',      icon: <SageIcon /> },
+    { label: 'Pantry', path: '/pantry',  icon: <ShoppingIcon /> },
+    // Sage removed from drawer — accessed via topbar sparkle icon
     { label: 'Family',        path: '/family',    icon: <FamilyIcon /> },
   ]
 
@@ -45,7 +45,7 @@ export function Shell({ appUser }) {
       {/* ── Page content ─────────────────────────────────────────── */}
       <main className="flex-1 overflow-y-auto">
         <Routes>
-          <Route path="/sage"     element={<SageChat   appUser={appUser} />} />
+          {/* /sage route removed */}
           <Route path="/family"   element={<Family     appUser={appUser} />} />
         </Routes>
       </main>

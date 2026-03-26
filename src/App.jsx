@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import React, { useEffect, useState, useCallback, useRef, Suspense, lazy } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { loadAppUser } from './lib/auth'
 import { getBrowserTimezone } from './lib/dateUtils'
@@ -18,14 +18,23 @@ import RecipeLibrary  from './pages/RecipeLibrary'
 import RecipeCard     from './pages/RecipeCard'
 import SaveRecipe     from './pages/SaveRecipe'
 import ShoppingList from './pages/ShoppingList'
-import Sage         from './pages/Sage'
+import Pantry from './pages/Pantry'
+import PantryList from './pages/PantryList'
+import PantryTrip from './pages/PantryTrip'
+// Sage page removed — Sage interactions are structured, not chat-based
 import PlanMeal     from './pages/PlanMeal'
 import SavedMeals   from './pages/SavedMeals'
-import WeekSettings from './pages/WeekSettings'
+// WeekSettings unused — ThisWeekSettings handles /week-settings
 import ThisWeekSettings from './pages/ThisWeekSettings'
 import HouseholdDefaults from './pages/HouseholdDefaults'
 import EditRecipe from './pages/EditRecipe'
 import Profile from './pages/Profile'
+import Onboarding from './pages/Onboarding'
+import CalendarConnect from './pages/CalendarConnect'
+// DevReset — only loaded in dev, never bundled in production
+const DevReset = import.meta.env.DEV
+  ? lazy(() => import('./pages/DevReset'))
+  : () => null
 import ProfileSheet from './components/ProfileSheet'
 import { Shell } from './components/AppShell'
 
@@ -37,20 +46,30 @@ export default function App() {
   const initialCheckDone = useRef(false)
 
   useEffect(() => {
+    // Check for existing session first — prevents flash of welcome screen
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      console.log('[Roux] getSession:', existingSession ? 'has session' : 'no session')
+      if (existingSession) {
+        fetchAppUser(existingSession.user.id, existingSession)
+      } else {
+        // No persisted session — safe to show welcome
+        setSession(null)
+        setAppUser(null)
+        initialCheckDone.current = true
+        setAuthLoading(false)
+      }
+    })
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sess) => {
       console.log('[Roux] onAuthStateChange:', _event, sess ? 'has session' : 'no session')
 
       if (sess) {
         fetchAppUser(sess.user.id, sess)
-      } else {
-        // Only route to welcome screen after the initial check confirms no session.
-        // Before that, keep showing the cream loading state.
+      } else if (initialCheckDone.current) {
+        // Only clear session after initial check is done (sign-out events)
         setSession(null)
         setAppUser(null)
-        if (!initialCheckDone.current) {
-          initialCheckDone.current = true
-          setAuthLoading(false)
-        }
+        setAuthLoading(false)
       }
     })
 
@@ -171,8 +190,18 @@ export default function App() {
     }
   }
 
-  // Auth still loading — plain cream background, never show welcome or dashboard
-  if (authLoading) return <div style={{ minHeight: '100vh', background: '#FAF7F2' }} />
+  // Auth still loading — branded splash, never show welcome or dashboard
+  if (authLoading) return (
+    <div style={{
+      minHeight: '100vh', background: '#FAF7F2',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <span style={{
+        fontFamily: "'Slabo 27px', serif", fontSize: '27px', fontWeight: 400,
+        color: '#3D6B4F',
+      }}>Roux.</span>
+    </div>
+  )
 
   return (
     <BrowserRouter>
@@ -188,7 +217,9 @@ export default function App() {
         </Routes>
       ) : !appUser ? (
         // ── Session loaded, waiting on user record ────────────────────────
-        <div style={{ minHeight: '100vh', background: '#FAF7F2' }} />
+        <div style={{ minHeight: '100vh', background: '#FAF7F2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontFamily: "'Slabo 27px', serif", fontSize: '27px', fontWeight: 400, color: '#3D6B4F' }}>Roux.</span>
+        </div>
       ) : appUser.membership_status === 'pending' ? (
         // ── Pending approval — warm holding screen ────────────────────────
         <PendingApprovalScreen appUser={appUser} onApproved={() => {
@@ -208,7 +239,11 @@ export default function App() {
 
 // ── Authenticated shell — global avatar + ProfileSheet ──────────────────────
 function AuthenticatedApp({ appUser }) {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const isOnboarding = location.pathname === '/onboarding'
   const [profileOpen, setProfileOpen] = useState(false)
+  const [sageSheetOpen, setSageSheetOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [approvalRoles, setApprovalRoles] = useState({}) // notifId → selected role
@@ -265,39 +300,45 @@ function AuthenticatedApp({ appUser }) {
   return (
     <>
       <Routes>
-        <Route path="/"              element={<Dashboard     appUser={appUser} />} />
+        <Route path="/"              element={appUser.has_planned_first_meal === false ? <Navigate to="/onboarding" replace /> : <Dashboard appUser={appUser} />} />
         <Route path="/thisweek"     element={<ThisWeek      appUser={appUser} />} />
         <Route path="/meals"         element={<Meals          appUser={appUser} />} />
         <Route path="/meals/recipes" element={<RecipeLibrary appUser={appUser} />} />
         <Route path="/meals/plan"    element={<PlanMeal       appUser={appUser} />} />
         <Route path="/meals/plan/:id" element={<PlanMeal       appUser={appUser} />} />
-        <Route path="/meals/traditions" element={<Sage        appUser={appUser} />} />
-        <Route path="/meals/traditions/new" element={<Sage  appUser={appUser} />} />
+        <Route path="/meals/traditions" element={<div style={{ background: '#FAF7F2', minHeight: '100vh', maxWidth: '430px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Jost', sans-serif", color: '#8C7B6B', fontStyle: 'italic' }}>Traditions — coming soon</div>} />
+        <Route path="/meals/traditions/new" element={<div style={{ background: '#FAF7F2', minHeight: '100vh', maxWidth: '430px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Jost', sans-serif", color: '#8C7B6B', fontStyle: 'italic' }}>Traditions — coming soon</div>} />
         <Route path="/meals/saved"     element={<SavedMeals   appUser={appUser} />} />
         <Route path="/recipes"      element={<RecipeLibrary appUser={appUser} />} />
         <Route path="/recipe/:id"   element={<RecipeCard    appUser={appUser} />} />
         <Route path="/recipe/:id/edit" element={<EditRecipe  appUser={appUser} />} />
         <Route path="/save-recipe"  element={<SaveRecipe    appUser={appUser} />} />
-        <Route path="/shopping"      element={<ShoppingList  appUser={appUser} />} />
-        <Route path="/sage"          element={<Sage          appUser={appUser} />} />
+        <Route path="/pantry"         element={<Pantry         appUser={appUser} />} />
+        <Route path="/pantry/list"    element={<PantryList    appUser={appUser} />} />
+        <Route path="/pantry/trip/:id" element={<PantryTrip  appUser={appUser} />} />
+        <Route path="/shopping"       element={<ShoppingList  appUser={appUser} />} />
+        {/* /sage route removed — Sage has no standalone page */}
         <Route path="/week-settings" element={<ThisWeekSettings appUser={appUser} />} />
         <Route path="/week/defaults" element={<HouseholdDefaults appUser={appUser} />} />
         <Route path="/profile"       element={<Profile        appUser={appUser} />} />
+        <Route path="/onboarding"   element={<Onboarding     appUser={appUser} />} />
+        <Route path="/settings/calendar" element={<CalendarConnect appUser={appUser} />} />
+        {import.meta.env.DEV && <Route path="/dev/reset" element={<Suspense fallback={null}><DevReset appUser={appUser} /></Suspense>} />}
         <Route path="/*"             element={<Shell          appUser={appUser} />} />
       </Routes>
 
-      {/* ── Global topbar icons — search, bell, avatar — z-index 150 ──── */}
-      <div style={{
+      {/* ── Global topbar icons — sage, bell, avatar — z-index 150 ──── */}
+      {!isOnboarding && <div style={{
         position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)',
         width: '100%', maxWidth: '430px', height: '66px',
         display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
         padding: '0 14px', gap: '2px',
         zIndex: 150, pointerEvents: 'none',
       }}>
-        {/* Search */}
+        {/* Sage */}
         <button
-          onClick={() => {}}
-          aria-label="Search"
+          onClick={() => setSageSheetOpen(true)}
+          aria-label="Sage"
           style={{
             pointerEvents: 'auto',
             width: '32px', height: '32px', borderRadius: '50%',
@@ -306,8 +347,8 @@ function AuthenticatedApp({ appUser }) {
             color: 'rgba(210,230,200,0.7)',
           }}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 19, height: 19 }}>
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 19, height: 19 }}>
+            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
           </svg>
         </button>
         {/* Bell */}
@@ -351,7 +392,7 @@ function AuthenticatedApp({ appUser }) {
         >
           {firstName.charAt(0).toUpperCase() || '?'}
         </button>
-      </div>
+      </div>}
 
       {/* ── Global ProfileSheet ──────────────────────────────────────────── */}
       <ProfileSheet
@@ -359,6 +400,46 @@ function AuthenticatedApp({ appUser }) {
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
       />
+
+      {/* ── Sage Summary Sheet ─────────────────────────────────────────── */}
+      {sageSheetOpen && (
+        <>
+          <div onClick={() => setSageSheetOpen(false)} style={{
+            position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)',
+            zIndex: 200, animation: 'fadeIn 0.2s ease',
+          }} />
+          <div onClick={e => e.stopPropagation()} style={{
+            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
+            padding: '0 0 env(safe-area-inset-bottom, 24px)', zIndex: 201,
+            boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
+            maxHeight: '70vh', overflowY: 'auto',
+            animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
+          }}>
+            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+            <div style={{ padding: '20px 22px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(122,140,110,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#7A8C6E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+                    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: '#2C2417' }}>Sage</div>
+                  <div style={{ fontSize: '11px', color: '#8C7B6B', fontWeight: 300 }}>Your kitchen companion</div>
+                </div>
+              </div>
+
+              {/* Sage nudges will be populated here from notifications/activity data */}
+              <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                <div style={{ fontSize: '14px', color: '#8C7B6B', fontStyle: 'italic', lineHeight: 1.6, fontFamily: "'Jost', sans-serif", fontWeight: 300 }}>
+                  Nothing new right now, {firstName}. I'll surface suggestions as you plan and cook this week.
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ── Notification Sheet ────────────────────────────────────────────── */}
       {notifOpen && (

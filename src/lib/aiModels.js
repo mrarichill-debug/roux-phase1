@@ -64,7 +64,6 @@ export async function getSageModel() {
 }
 
 // Convenience aliases — all resolve to the same runtime-configurable model
-export const getSageChatModel = getSageModel
 export const getSageWeekPlanningModel = getSageModel
 export const getRecipeUrlExtractionModel = getSageModel
 

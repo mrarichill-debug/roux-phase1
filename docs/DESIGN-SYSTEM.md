@@ -56,17 +56,32 @@
 
 ---
 
-## Bottom Navigation — 5 Tabs (Updated March 2026)
+## Bottom Navigation — 4 Tabs (Updated March 2026)
 
 - Height: **48px** content area + `env(safe-area-inset-bottom, 8px)` padding below. Background: `--cream`. Border-top: `1px solid --linen`. `viewport-fit=cover` required in HTML meta tag.
-- 5 tabs: **Home / Week / Meals / Sage / Shop**
-- Routes: `/` `/thisweek` `/meals` `/sage` `/shopping`
-- Layout: standard `repeat(5, 1fr)` grid — even spacing, no paired grouping, no green circle.
-- **Icons:** Home (house), Week (calendar with pegs), Meals (rounded rect with horizontal lines), Sage (sparkle), Shop (bullet list).
+- 4 tabs: **Home / Week / Meals / Pantry**
+- Routes: `/` `/thisweek` `/meals` `/pantry`
+- Layout: standard `repeat(4, 1fr)` grid — even spacing.
+- **Icons:** Home (house), Week (calendar with pegs), Meals (rounded rect with horizontal lines), Pantry (bullet list).
+- **Sage access:** ✦ sparkle icon in topbar (global, every screen) → opens Sage summary sheet.
 - Active state: `--forest` color + font-weight 600 + 3px dot below label.
 - Inactive: `--driftwood` color, font-weight 400.
 - Labels: 9px Jost, 0.3px letter-spacing.
 - Shared component: `src/components/BottomNav.jsx` — used on every screen.
+
+---
+
+## Meal Entry States
+
+Three states for planned meals on the Menu Planner:
+
+| State | `entry_type` | Behavior | Visual |
+|---|---|---|---|
+| **Ghost** | `ghost` | `custom_name` only, no recipe linked | Plain text, no icon |
+| **Linked** | `linked` | `recipe_id` set, connected to a recipe | Small recipe book icon |
+| **Manual** | `manual` | Shopping items added directly | Small list icon |
+
+Ghost → Linked transition: Sage meal match surfaces recipe suggestions inline. Lauren taps to link. Or she links manually via the recipe picker.
 
 ---
 

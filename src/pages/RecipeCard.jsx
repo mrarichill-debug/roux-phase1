@@ -5,6 +5,7 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { logActivity } from '../lib/activityLog'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import AddToPlanSheet from '../components/AddToPlanSheet'
@@ -57,6 +58,9 @@ const FlameIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood
 const PeopleIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
 const SignalIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><rect x="4" y="14" width="4" height="6" rx="1"/><rect x="10" y="10" width="4" height="10" rx="1"/><rect x="16" y="6" width="4" height="14" rx="1"/></svg>
 
+// Session-scoped set to debounce recipe_viewed logging (one per recipe per session)
+const viewedThisSession = new Set()
+
 // ── Main ────────────────────────────────────────────────────────────────────
 export default function RecipeCard({ appUser }) {
   const { id } = useParams()
@@ -108,9 +112,15 @@ export default function RecipeCard({ appUser }) {
       const parsed = parseInt(rec.servings)
       if (!isNaN(parsed) && parsed > 0) { setServes(parsed); setBaseServes(parsed) }
     }
-    // Fetch recipe tags
-    const { data: tagJoins } = await supabase.from('recipe_tags').select('tag_id, recipe_tag_definitions(name)').eq('recipe_id', id)
-    setRecipeTags((tagJoins || []).map(t => t.recipe_tag_definitions?.name).filter(Boolean))
+    // Fetch recipe tags (no embedded join)
+    const { data: tagRows } = await supabase.from('recipe_tags').select('tag_id').eq('recipe_id', id)
+    if (tagRows?.length) {
+      const tagIds = tagRows.map(t => t.tag_id)
+      const { data: tagNames } = await supabase.from('recipe_tag_definitions').select('id, name').in('id', tagIds)
+      setRecipeTags((tagNames || []).map(t => t.name))
+    } else {
+      setRecipeTags([])
+    }
 
     const ings = ingRes.data ?? []
     setIngredients(ings)
@@ -128,6 +138,12 @@ export default function RecipeCard({ appUser }) {
       setIngAlts(grouped)
     }
     setLoading(false)
+
+    // Log recipe view (once per recipe per session)
+    if (rec && !viewedThisSession.has(id)) {
+      viewedThisSession.add(id)
+      logActivity({ user: appUser, actionType: 'recipe_viewed', targetType: 'recipe', targetId: id, targetName: rec.name })
+    }
   }
 
   async function toggleFav() { const next = !favActive; setFavActive(next); await supabase.from('recipes').update({ is_family_favorite: next }).eq('id', id) }
@@ -181,7 +197,7 @@ export default function RecipeCard({ appUser }) {
       <TopBar slim
         leftAction={{ onClick: () => navigate(backTo), label: 'Back' }}
         rightActions={[
-          { label: 'Add to Plan', onClick: () => setPlanSheetOpen(true), icon: <svg viewBox="0 0 24 24" fill="none" stroke="rgba(210,230,200,0.7)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg> },
+          { label: 'Add to Plan', onClick: () => { setPlanSheetOpen(true); logActivity({ user: appUser, actionType: 'recipe_plan_tapped', targetType: 'recipe', targetId: id, targetName: recipe?.name }) }, icon: <svg viewBox="0 0 24 24" fill="none" stroke="rgba(210,230,200,0.7)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg> },
           { label: favActive ? 'Unfavorite' : 'Favorite', onClick: toggleFav, icon: <span style={{ fontSize: '18px', color: favActive ? C.honey : 'rgba(210,230,200,0.55)' }}>{favActive ? '★' : '☆'}</span> },
         ]}
       />

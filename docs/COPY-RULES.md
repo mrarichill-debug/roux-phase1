@@ -124,7 +124,7 @@ Sage makes one-time offers to help with specific things. If declined, Sage never
 ## Sage Upsell Pattern
 
 Sage surfaces upgrade prompts contextually — never aggressively.
-> 🌿 *"I can see a cold week coming and I have some perfect comfort food suggestions — this feature is available on Roux Plus. Want to unlock it?"*
+> 🌿 *"I can see a cold week coming and I have some perfect comfort food suggestions. Want to keep going?"*
 
 ---
 

@@ -137,36 +137,62 @@
 
 ---
 
-## This Week (`roux-thisweek-style1-objects.html`) — ✅ BUILT
+## Menu Planner (`/thisweek`) — ✅ REBUILT March 2026
 
-- **Layout:** Vertical scroll. Collapsible day cards — today auto-expands, all others collapsed.
-- **Week header:** Fixed three-row layout. Row 1: context label (THIS WEEK / PAST WEEK). Row 2: date range (Playfair 18px). Row 3: metadata — status pill + template pill + status message. Arrows absolutely positioned, never shift.
-- **Navigation boundary:** Cannot navigate before `households.created_at`. Message: *"This is where it all started."* Forward: unrestricted.
-- **Protein roster:** Collapsible card. Protein name + store + on-sale indicator.
-- **Week Settings:** Gear icon → two-screen architecture: This Week Settings (`/week-settings`) + Household Defaults (`/week/defaults`).
+The week is a blank canvas menu. No pre-defined slots. Lauren types what she's making.
+
+### Week Header (3 rows, fixed)
+- **Row 1:** Context label "THIS WEEK'S MENU" + week navigation arrows (absolutely positioned)
+- **Row 2:** Date range (Playfair 17px)
+- **Row 3:** Status — "X of 7 nights planned"
+
+### Week Strip
+- 7 day tabs (Mon–Sun), horizontal scroll, today highlighted in forest green with shadow
+- Pip dot below each tab: sage = has meals, transparent = empty
+- Tapping a day scrolls to that day's card
 
 ### Day Cards
-- **Collapsed:** Single row — date, day name, day type pill (typographic, no emoji), tradition badge (honey), item count summary, chevron.
-- **Expanded:** Four slots — Dinner (dominant), Breakfast + Lunch (side-by-side), Everything else. All slots support multiple items.
-- **Today:** `--forest` header background, white text, auto-expanded.
-- **Day type pills:** Jost 400, 10px, uppercase, color from `day_types.color`, 10% opacity background.
-- **Fixed-width columns:** Left `min-width: 120px`, date number `min-width: 24px` right-aligned.
+- One per day, stacked vertically. White card, rounded 14px, forest green border on today.
+- **Header:** Day name + date + day type pill (quiet, typographic)
+- **Meal list:** Each planned meal as a simple row — name + meal type badge (DINNER/LUNCH/etc) + state icon
+- **Empty state:** Dashed "+ Add to [Day]" button
+- **With meals:** Small "+ Add another" text link at bottom
+- **Calendar event pills:** Honey dot + event title (truncated 20 chars) + time. Max 3 per day, "+N more" overflow.
 
-### Slot States (all four slots)
-- **Filled:** Item name, fully tappable (min 44px height). Tap opens change/remove sheet. No circle icon.
-- **Empty (Dinner):** Dashed border + italic "What's for dinner?" + "Ask Sage" nudge.
-- **Empty (other slots):** Dashed "+ Add" button.
-- **Multiple items:** "+ Add another" appears below existing items.
-- **Freeform entry:** Autofill from `recipe_type = 'quick'` recipes via `ILIKE`. Saved as quick recipe records.
+### Add Meal Sheet (bottom sheet)
+- Large text input "What are you making?" — autofocus
+- Recipe suggestions from library appear as user types (ILIKE, min 2 chars)
+- Pick a recipe → `entry_type = 'linked'`, `recipe_id` set
+- Just type and submit → `entry_type = 'ghost'`, `custom_name` set
+- Meal type pills: Dinner (default) / Lunch / Breakfast / Other
+- "Add to menu" CTA — forest green, full width
 
-### Bottom Sheet
-- Rise: `translateY(100%)→translateY(0)`, `cubic-bezier(0.32,0.72,0,1)`, 320ms.
-- Options: Let Sage suggest / Browse the library / Enter manually / Mark as open evening.
-- "Apply to other days" prompt after adding — shows all 7 days (not filtered by empty slots).
+### Sage Meal Match (async, after ghost add)
+- Fires `sageMealMatch()` in background — normalizes name (Title Case, fix spelling) + searches recipe library
+- Surfaces inline suggestion card below the meal row when results arrive (poll every 3s)
+- Recipe buttons + "Save new recipe" + "Keep as-is"
 
-### Publish Flow
-- Status pill in header row (Draft amber / Published green). Status message below: *"Only you can see this plan"* / *"Family can see this plan"*.
-- **On publish, surface a prompt to build the shopping list** — most important workflow handoff.
+### Ghost Bridge Card
+- Appears at bottom of week view when ghost entries exist
+- *"✦ Some meals don't have recipes yet — want Sage to help with your shopping list?"*
+- Two buttons: "Add recipes" → library, "Add items manually" → pantry list
+
+### First-Time Hint Card
+- Shows once for new users (has_planned_first_meal = false, zero planned meals globally)
+- Sage icon + "Think of this as your family's weekly menu." + description
+- "Got it →" dismisses permanently
+
+---
+
+## Onboarding (`/onboarding`) — ✅ BUILT, COPY PENDING
+
+4-screen flow shown after account creation or dev reset. Redirects to `/` if `has_planned_first_meal = true`.
+
+- **Screen 1 — Welcome:** Forest green bg, Roux wordmark, "Welcome to Roux, [name]." Subtext: "Your family's kitchen companion." CTA: "Let's get started →"
+- **Screen 2 — Meet Sage:** Sage sparkle icon, explains what Sage does. CTA: "Sounds good →"
+- **Screen 3 — How it works:** Three icon+text rows (build menu, Sage builds list, recipe box grows). CTA: "I'm ready →". *Pending redesign: make interactive — let Lauren add first meal inline.*
+- **Screen 4 — Your first week:** "Let's build your first menu." Sage hint. CTA: "Go to my menu →" → navigates to `/thisweek`.
+- Progress dots (4), back chevron (screens 2-4), animated transitions.
 
 ---
 
@@ -268,9 +294,13 @@
 
 ---
 
-## Meals Hub (`/meals`) — ✅ BUILT
+## Meals Hub (`/meals`) — ✅ BUILT, REDESIGN PLANNED
 
-Two-zone layout with tagline strip. Zone 1 "Add something": Plan a Meal (forest green) + Add a Tradition (warm off-white). Tagline: *"Recipes become meals. Meals become your family's story."* Zone 2 "Your kitchen": Three archive tiles — Family Recipes (live count, draft badge), Saved Meals (live count), Traditions (live count). All counts refresh on focus.
+Currently: Two-zone layout with tagline strip. Zone 1 "Add something": Plan a Meal (forest green) + Add a Tradition (warm off-white). Tagline: *"Recipes become meals. Meals become your family's story."* Zone 2 "Your kitchen": Three archive tiles — Family Recipes (live count, draft badge), Saved Meals (live count), Traditions (live count). All counts refresh on focus.
+
+**Planned redesign:** Tabbed view replacing the hub. Two tabs:
+- **Our Meals** — deduplicated list of every meal planned from `planned_meals` history. Sorted by most recently planned. Shows: meal name, last planned date, times planned, recipe linked indicator. Zero setup — grows as Lauren plans.
+- **Recipe Box** — existing Recipe Library, unchanged.
 
 ---
 

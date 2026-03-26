@@ -28,7 +28,7 @@ const C = {
 
 // ── Category pill → DB category mapping ───────────────────────────────────────
 // CAT_PILLS and CAT_MAP are now dynamic — derived from fetched recipes
-const FILTER_PILLS = ['All', '★ Favorites', 'Recent', 'Quick ≤30m', 'Gluten Free', 'Vegetarian']
+const SYSTEM_PILLS = ['★ Favorites', 'Quick ≤30m']
 
 // Human-readable label for each DB category
 // Display category: capitalize first letter of the raw value
@@ -182,15 +182,20 @@ export default function RecipeLibrary({ appUser }) {
 
     setRecipes(recipesRes.data ?? [])
 
-    // Fetch tag definitions + recipe tags for filtering
+    // Fetch tag definitions + recipe tags for filtering (no embedded joins)
+    const recipeIds = (recipesRes.data ?? []).map(r => r.id)
     const [tdRes, rtRes] = await Promise.all([
-      supabase.from('recipe_tag_definitions').select('*').eq('household_id', appUser.household_id).order('sort_order'),
-      supabase.from('recipe_tags').select('recipe_id, tag_id, recipe_tag_definitions(name)'),
+      supabase.from('recipe_tag_definitions').select('id, name, is_default, sort_order').eq('household_id', appUser.household_id).order('sort_order'),
+      recipeIds.length > 0
+        ? supabase.from('recipe_tags').select('recipe_id, tag_id').in('recipe_id', recipeIds)
+        : Promise.resolve({ data: [] }),
     ])
-    setTagDefs(tdRes.data || [])
+    const defs = tdRes.data || []
+    setTagDefs(defs)
+    const defMap = Object.fromEntries(defs.map(t => [t.id, t.name]))
     const tagMap = {}
     for (const rt of (rtRes.data || [])) {
-      const name = rt.recipe_tag_definitions?.name
+      const name = defMap[rt.tag_id]
       if (!name) continue
       if (!tagMap[rt.recipe_id]) tagMap[rt.recipe_id] = []
       tagMap[rt.recipe_id].push(name)
@@ -243,16 +248,10 @@ export default function RecipeLibrary({ appUser }) {
         r = r.filter(rec => rec.is_family_favorite)
       if (activeFilters.has('Quick ≤30m'))
         r = r.filter(rec => getTotalMinutes(rec) > 0 && getTotalMinutes(rec) <= 30)
-      if (activeFilters.has('Gluten Free'))
-        r = r.filter(rec => rec.diet?.includes('gluten_free'))
-      if (activeFilters.has('Vegetarian'))
-        r = r.filter(rec => rec.diet?.includes('vegetarian') || rec.diet?.includes('vegan'))
-      if (activeFilters.has('Recent'))
-        r = [...r].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     }
 
     return r
-  }, [recipes, search, activeCategory, activeFilters])
+  }, [recipes, search, activeTags, activeFilters, recipeTags])
 
   // ── Filter change animation ─────────────────────────────────────────────────
   const filterKey = [...activeFilters].sort().join(',')
@@ -264,7 +263,7 @@ export default function RecipeLibrary({ appUser }) {
     setGridVisible(false)
     clearTimeout(filterTimer.current)
     filterTimer.current = setTimeout(() => setGridVisible(true), 150)
-  }, [search, activeCategory, filterKey])
+  }, [search, activeTags, filterKey])
 
   function toggleFilter(pill) {
     if (pill === 'All') {
@@ -509,13 +508,14 @@ export default function RecipeLibrary({ appUser }) {
             <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
             <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
-              {/* Browse by tag */}
+              {/* Browse by tag — unified section */}
               <div>
                 <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '10px' }}>
                   Browse by tag
                 </div>
+                {/* Default tags */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {tagDefs.map(tag => {
+                  {tagDefs.filter(t => t.is_default).map(tag => {
                     const isActive = activeTags.has(tag.name)
                     return (
                       <button key={tag.id} onClick={() => setActiveTags(prev => { const n = new Set(prev); n.has(tag.name) ? n.delete(tag.name) : n.add(tag.name); return n })} style={{
@@ -525,33 +525,44 @@ export default function RecipeLibrary({ appUser }) {
                         color: isActive ? C.forest : C.ink,
                         fontFamily: "'Jost', sans-serif", fontSize: '13px',
                         fontWeight: isActive ? 500 : 400, cursor: 'pointer',
-                      }}>
-                        {tag.name}
-                      </button>
+                      }}>{tag.name}</button>
                     )
                   })}
                 </div>
-              </div>
-
-              {/* Filter by */}
-              <div>
-                <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '10px' }}>
-                  Filter by
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {FILTER_PILLS.map(pill => {
+                {/* Custom household tags */}
+                {tagDefs.some(t => !t.is_default) && (
+                  <>
+                    <div style={{ fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 300, margin: '12px 0 8px', fontFamily: "'Jost', sans-serif" }}>Your tags</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {tagDefs.filter(t => !t.is_default).map(tag => {
+                        const isActive = activeTags.has(tag.name)
+                        return (
+                          <button key={tag.id} onClick={() => setActiveTags(prev => { const n = new Set(prev); n.has(tag.name) ? n.delete(tag.name) : n.add(tag.name); return n })} style={{
+                            padding: '6px 14px', borderRadius: '20px',
+                            border: isActive ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                            background: isActive ? 'rgba(61,107,79,0.08)' : 'white',
+                            color: isActive ? C.forest : C.ink,
+                            fontFamily: "'Jost', sans-serif", fontSize: '13px',
+                            fontWeight: isActive ? 500 : 400, cursor: 'pointer',
+                          }}>{tag.name}</button>
+                        )
+                      })}
+                    </div>
+                  </>
+                )}
+                {/* System pills — Favorites + Quick */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '12px' }}>
+                  {SYSTEM_PILLS.map(pill => {
                     const isActive = activeFilters.has(pill)
                     return (
                       <button key={pill} onClick={() => toggleFilter(pill)} style={{
                         padding: '6px 14px', borderRadius: '20px',
-                        border: isActive ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                        border: isActive ? `1.5px solid ${C.forest}` : `1px solid ${C.honey}`,
                         background: isActive ? 'rgba(61,107,79,0.08)' : 'white',
                         color: isActive ? C.forest : C.ink,
                         fontFamily: "'Jost', sans-serif", fontSize: '13px',
                         fontWeight: isActive ? 500 : 400, cursor: 'pointer',
-                      }}>
-                        {pill}
-                      </button>
+                      }}>{pill}</button>
                     )
                   })}
                 </div>

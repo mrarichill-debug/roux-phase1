@@ -1,9 +1,9 @@
 # CLAUDE.md — Roux Phase 2
-*Last updated: March 20, 2026*
+*Last updated: March 22, 2026*
 
 ## What Is Roux
 
-Roux is a premium family recipe library + meal planner for the Hill family (7 members, Hendersonville, TN). Lauren Hill is the primary user (Premium). Aric Hill built it (Member Admin). Sage is the AI assistant — modeled on Joanna Gaines in the kitchen. Not a tutorial app, not a social network, not a calorie counter.
+Roux is a family meal planner + recipe library for the Hill family (7 members, Hendersonville, TN). Lauren Hill is the primary user (Full Plan). Aric Hill built it (Member Admin). Sage is the AI kitchen companion. Not a tutorial app, not a social network, not a calorie counter.
 
 ## Tech Stack
 
@@ -12,14 +12,14 @@ Roux is a premium family recipe library + meal planner for the Hill family (7 me
 | **Frontend** | React + Vite + Tailwind CSS |
 | **Backend** | Supabase (auth + database + storage) |
 | **AI** | Anthropic Claude API — all calls via `/api/` serverless functions. Model configured in `app_config.sage_model`. |
-| **Hosting** | Vercel — deploy only when Aric explicitly requests. Dev/test on `localhost:3000`. |
+| **Hosting** | Vercel — deploy only when Aric explicitly requests. Dev/test on `localhost:5173`. |
 | **Node** | Prefix bash commands with `export PATH="$HOME/.nvm/versions/node/v22.22.1/bin:$PATH" &&` |
 | **Credentials** | `.env` file only — never hardcode keys. API key is server-side only (`ANTHROPIC_API_KEY`). |
 
 **Supabase:** `https://goivrbphdqleqgjfqbtb.supabase.co`
 **Lauren's IDs:** household `53f6a197-544a-48e6-9a46-23d7252399c2` / user `18c38c61-fb49-4c29-a4c2-e8907a554dac`
 
-## Top 9 Rules
+## Top 10 Rules
 
 1. **Prototypes are law.** `/prototypes/` are the visual source of truth. Match exactly.
 2. **"Home" not "household"** in all user-facing copy. DB table stays `households`.
@@ -28,21 +28,17 @@ Roux is a premium family recipe library + meal planner for the Hill family (7 me
 5. **Lauren decides. The system advances automatically.** She publishes plans and finalizes lists.
 6. **Sage is a helper, not a planner.** Observes, nudges, suggests — never acts unilaterally.
 7. **No swipe-only actions.** Destructive actions must have visible UI (icons, menus). Swipe = shortcut only.
-8. **5 tabs: Today / Week / Meals / Sage / Shop.** Routes: `/` `/thisweek` `/meals` `/sage` `/shopping`. Never reorder.
-9. **Color tokens from `colorSchemes.js` + `useColorScheme()` hook.** Never hardcode color values.
+8. **4 tabs: Home / Week / Meals / Pantry.** Routes: `/` `/thisweek` `/meals` `/pantry`. Sage accessible via ✦ sparkle icon in topbar. Never reorder tabs.
+9. **Subscription tiers are `'free'` and `'full'` only.** No other tier names anywhere in the codebase. Hill House = `'full'`.
+10. **Sage has no free-form chat.** All interactions are app-triggered. Users respond with taps only. App always constructs the API prompt.
 
 ## Deployment Rule
 
-Only deploy to Vercel at the explicit close of a build session when Aric asks. All development and testing during a session runs on localhost (`npm run dev`). Never push to trigger a Vercel deployment mid-session unless Aric specifically requests it.
+Only deploy to Vercel at the explicit close of a build session when Aric asks. All development and testing during a session runs on localhost (`npm run dev`). Never push mid-session unless Aric specifically requests it.
 
-## Next Session Priorities
+## Activity Log
 
-1. Test recipe tags end-to-end — tag selector on EditRecipe/SaveRecipe, filter on RecipeLibrary
-2. Test meal detail screen and meal tags on PlanMeal
-3. Test ingredient alternatives UI on EditRecipe and RecipeCard
-4. Traditions screen (`/meals/traditions`) — schema fully ready, UI is placeholder
-5. Activity log writes — zero activity being logged, blocks Sage intelligence
-6. Onboarding flow — 5 screens approved, none built, blocks new users
+Active. All meaningful user actions write to `activity_log` via `src/lib/activityLog.js`. Every new feature must wire in a `logActivity()` call — fire-and-forget, after primary action succeeds, never blocking UI.
 
 ## Documentation Index
 
@@ -52,7 +48,7 @@ Only deploy to Vercel at the explicit close of a build session when Aric asks. A
 | `docs/SCREEN-SPECS.md` | Building any screen — full specs, states, interactions |
 | `docs/COPY-RULES.md` | Writing any user-facing string — Sage voice, tone, copy |
 | `docs/BUILD-FLAGS.md` | Starting any task — what's done, what's next, current build status |
-| `docs/PRODUCT-TIERS.md` | Tier decisions — Free / Plus / Premium breakdown |
+| `docs/PRODUCT-TIERS.md` | Tier decisions — Free / Full Plan breakdown |
 | `docs/USER-EDUCATION.md` | Pre-launch — empty states, tooltips, Sage nudges |
 
 ## Database Quick Reference

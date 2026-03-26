@@ -7,6 +7,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import useUnsavedChanges from '../hooks/useUnsavedChanges'
+import { logActivity } from '../lib/activityLog'
 import UnsavedChangesSheet from '../components/UnsavedChangesSheet'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
@@ -648,6 +649,7 @@ export default function PlanMeal({ appUser }) {
       }
 
       dirty.markClean()
+      logActivity({ user: appUser, actionType: 'meal_planned', targetType: 'meal', targetId: mealId, targetName: mealName.trim() })
       setToast('Meal saved.')
       setTimeout(() => navigate(isEditMode ? '/meals/saved' : '/meals'), 1200)
 

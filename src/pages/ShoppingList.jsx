@@ -350,7 +350,7 @@ export default function ShoppingList({ appUser }) {
           <div className="shimmer-block" style={{ height: '120px', borderRadius: '14px', marginBottom: '12px' }} />
           <div className="shimmer-block" style={{ height: '100px', borderRadius: '14px' }} />
         </div>
-        <BottomNav activeTab="shop" />
+        <BottomNav activeTab="pantry" />
       </div>
     )
   }
@@ -384,7 +384,7 @@ export default function ShoppingList({ appUser }) {
             Go to This Week
           </button>
         </div>
-        <BottomNav activeTab="shop" />
+        <BottomNav activeTab="pantry" />
       </div>
     )
   }
@@ -778,7 +778,7 @@ export default function ShoppingList({ appUser }) {
       )}
 
       {/* ── Bottom nav ──────────────────────────────────────────────────────── */}
-      <BottomNav activeTab="shop" />
+      <BottomNav activeTab="pantry" />
 
       {/* ── Receipt capture overlay ──────────────────────────────────────────── */}
       {receiptSheetOpen && (

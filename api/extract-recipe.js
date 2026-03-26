@@ -1,7 +1,7 @@
 /**
  * /api/extract-recipe.js — Recipe URL extraction via Anthropic web search tool.
  * Uses Claude's built-in web search to fetch and parse recipe pages.
- * Gated to Plus/Premium tiers — Free users get a warm upgrade prompt.
+ * Free users get 3 extractions/month. Full Plan users get unlimited.
  * Reads sage_model from app_config via service role key.
  */
 
@@ -79,14 +79,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, error: 'url string required' })
     }
 
-    // Tier gate — URL extraction is Plus/Premium only
-    if (!tier || tier === 'free') {
-      return res.status(403).json({
-        success: false,
-        error: 'tier_required',
-        message: 'URL import is available on Plus and Premium plans.',
-      })
-    }
+    // Free users: URL extraction allowed (3/month limit enforced client-side)
+    // No server-side tier gate — both free and full can call this endpoint
 
     const model = await getSageModelServer()
     const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })

@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabase'
 import { getWeekDatesTZ, getWeekStartTZ, toLocalDateStr } from '../lib/dateUtils'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
-import AddDayTypeSheet from '../components/AddDayTypeSheet'
+// AddDayTypeSheet removed — day type creation lives in Household Defaults only
 
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
@@ -59,15 +59,9 @@ export default function ThisWeekSettings({ appUser }) {
   const [previewingId, setPreviewingId] = useState(null)
   const [previousDayTypes, setPreviousDayTypes] = useState(null)
   const [confirmRemoveTemplate, setConfirmRemoveTemplate] = useState(false)
-  const [addDtOpen, setAddDtOpen] = useState(false)
+  // addDtOpen removed — day type creation lives in Household Defaults only
 
   function showToast(msg) { setToastMsg(msg); setTimeout(() => setToastMsg(''), 2500) }
-
-  function handleDayTypeSaved(dt) {
-    const key = dt.name.toLowerCase().replace(/\s+/g, '_')
-    setDtKeyToId(prev => ({ ...prev, [key]: dt.id }))
-    showToast('Day type added')
-  }
 
   useEffect(() => {
     if (appUser?.household_id) loadData()
@@ -311,7 +305,7 @@ export default function ThisWeekSettings({ appUser }) {
 
           {/* ── Day Types ──────────────────────────────────────────────── */}
           <div>
-            <div style={zoneLabel}>Day Types</div>
+            <div style={zoneLabel}>This Week's Day Types</div>
             {DAYS.map((day, i) => {
               const dowKey = DOW_KEYS[i]
               const activeOpt = DAY_TYPE_OPTIONS.find(o => o.key === dayTypes[dowKey])
@@ -341,12 +335,12 @@ export default function ThisWeekSettings({ appUser }) {
                 </div>
               )
             })}
-            <button onClick={() => setAddDtOpen(true)} style={{
+            <button onClick={() => navigate('/week/defaults')} style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: '13px', color: C.forest, fontWeight: 400, padding: '10px 0',
+              fontSize: '12px', color: C.driftwood, fontWeight: 300, padding: '10px 0',
               fontFamily: "'Jost', sans-serif", textAlign: 'left',
             }}>
-              + Add a day type
+              Manage day types →
             </button>
           </div>
 
@@ -552,13 +546,6 @@ export default function ThisWeekSettings({ appUser }) {
           </div>
         </>
       )}
-
-      <AddDayTypeSheet
-        open={addDtOpen}
-        onClose={() => setAddDtOpen(false)}
-        householdId={appUser?.household_id}
-        onSaved={handleDayTypeSaved}
-      />
 
       {/* ── Toast ─────────────────────────────────────────────────────── */}
       {toastMsg && (

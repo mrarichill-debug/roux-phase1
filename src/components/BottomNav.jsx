@@ -1,6 +1,6 @@
 /**
  * Shared 5-tab bottom navigation.
- * Order: Today | Week | Meals | Sage | Shop
+ * Order: Today | Week | Meals | Pantry
  */
 import { useNavigate, useLocation } from 'react-router-dom'
 
@@ -39,15 +39,7 @@ const NAV_TABS = [
     ),
   },
   {
-    key: 'sage', label: 'Sage', path: '/sage',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
-        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-      </svg>
-    ),
-  },
-  {
-    key: 'shop', label: 'Shop', path: '/shopping',
+    key: 'pantry', label: 'Pantry', path: '/pantry',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
         <line x1="9" x2="21" y1="6" y2="6"/>
@@ -75,8 +67,12 @@ const PATH_TO_TAB = {
   '/recipes': 'meals',
   '/recipe': 'meals',
   '/save-recipe': 'meals',
-  '/sage': 'sage',
-  '/shopping': 'shop',
+  '/sage': 'today',
+  '/pantry': 'pantry',
+  '/pantry/list': 'pantry',
+  '/pantry/prep': 'pantry',
+  '/pantry/trip': 'pantry',
+  '/shopping': 'pantry',
   '/profile': 'today',
   '/week-settings': 'week',
   '/week/defaults': 'week',
@@ -86,6 +82,7 @@ function getTabFromPath(pathname) {
   if (PATH_TO_TAB[pathname]) return PATH_TO_TAB[pathname]
   if (pathname.startsWith('/recipe/')) return 'meals'
   if (pathname.startsWith('/meals/')) return 'meals'
+  if (pathname.startsWith('/pantry/')) return 'pantry'
   return 'today'
 }
 
@@ -113,7 +110,7 @@ export default function BottomNav({ activeTab, onBeforeNavigate }) {
     }}>
       <div style={{
         height: '48px',
-        display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
+        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
         alignItems: 'center',
       }}>
       {NAV_TABS.map(tab => {

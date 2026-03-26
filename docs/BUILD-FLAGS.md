@@ -31,7 +31,7 @@
 - [ ] Build shopping list auto-generation from week plan
 - [ ] Build slot-to-slot move
 - [ ] Build tradition slot picker workflow
-- [ ] Wire activity log writes (Sage intelligence blocked)
+- [x] Wire activity log writes — active via `src/lib/activityLog.js`
 - [ ] Wire "By Ingredient" search (currently dead tap)
 - [ ] Design child/view-only dashboard (required before onboarding ships)
 - [ ] Build tier enforcement layer (`useSubscription()` hook)
@@ -255,8 +255,7 @@ Traditions must be applied via the slot picker which creates a `planned_meals` r
 ### URL Extraction — Anthropic Web Search (Mar 20, 2026)
 
 - URL extraction uses Anthropic `web_search_20250305` tool — Claude fetches and parses recipe pages directly via built-in web search. No server-side HTTP fetch needed.
-- **Gated to Plus/Premium tiers** to manage cost (~3-5x more expensive than plain API calls due to web search tool usage).
-- Free users see the "Paste a URL" option with a "Plus" badge. Attempting extraction returns a warm upgrade prompt with "Take a photo →" and "Learn about Plus →" actions.
+- Free users get 3 URL extractions/month. Full Plan users get unlimited. ~3-5x more expensive than plain API calls due to web search tool usage.
 - Uses `@anthropic-ai/sdk` npm package in the serverless function.
 - Error handling: `tier_required` (Free users), `fetch_failed` (web search couldn't reach page), `parse_failed` (couldn't parse recipe from response). Every error provides a clear next step.
 - `subscription_tier` read from `households` table, loaded into `appUser` via `loadAppUser()`.
@@ -294,9 +293,57 @@ Traditions must be applied via the slot picker which creates a `planned_meals` r
 - Accepting updates the ingredient row in the database. All resolved → `sage_assist_status` set to `'resolved'`, nudge disappears.
 - Columns `sage_assist_content`, `sage_assist_status`, `sage_assist_offered` already existed on the `recipes` table. `sage_assist_status` CHECK constraint updated to include `'resolved'`.
 
-### Weekly Proteins — Tier Placement (Mar 18, 2026)
+### Calendar Sync (Mar 22, 2026)
 
-Basic weekly protein entry (protein name per week plan) is a **Free** feature. Sale price tracking, spending trends, Sage protein suggestions — **Premium**.
+Calendar sync — Apple CalDAV is TEST ONLY (requires app-specific password, not suitable for production). Production Apple Calendar = EventKit in native iOS app. Google Calendar OAuth is production-ready. Switch provider via `users.calendar_provider`. Events display as quiet honey-dotted pills on day cards — display only, max 3 per day with "+N more" overflow. Sage reads them for context.
+
+- `/api/calendar-sync.js` — serverless function, reads credentials from Supabase server-side only (never accepted in request body)
+- `/src/lib/calendarSync.js` — client helper, calls API and filters events by date
+- `/settings/calendar` — connect/disconnect screen. Apple section DEV ONLY.
+- Schema: `users.calendar_provider` (apple/google/null), `users.calendar_sync_enabled` (boolean), `users.calendar_credentials` (jsonb, encrypted at rest in Supabase)
+- Env vars needed: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` for Google OAuth
+
+### Sage Philosophy
+
+Sage never waits to be asked. All Sage interactions are proactive and app-triggered. She surfaces the right information at the right moment. Lauren responds with taps — never types. This is the core product differentiator for Roux vs. every other AI-powered cooking app. Every Sage interaction must be genuinely useful — never filler, never generic. Quality over quantity.
+
+Marketing line: *"Sage doesn't wait to be asked."*
+
+### Sage Interaction Model (Mar 22, 2026)
+
+Sage has no free-form chat interface. All interactions are structured and app-triggered. Users respond to Sage via action buttons only — never by typing. The app always constructs the API prompt based on context (which screen, which recipe, which week) — users never write prompts directly. SageChat.jsx and Sage.jsx deleted. `/sage` route removed. Sage sparkle icon in topbar opens a summary sheet showing recent nudges and suggestions.
+
+### Meals Tab Redesign (Pre-Build Spec — Mar 22, 2026)
+
+*Do not build yet — document only. Current priority is Sage meal match.*
+
+**Two views on the Meals tab:**
+
+- **"Our Meals"** — deduplicated list of every meal the family has ever planned, derived from `planned_meals` history. Sorted by most recently planned. Each entry shows: meal name, last planned date, times planned, recipe linked indicator. Tapping shows history and links to recipe if one exists. Zero setup — grows naturally as Lauren plans weeks.
+- **"Recipe Box"** — existing Recipe Library, unchanged.
+
+The tab currently navigates to Recipe Library only. Will become a tabbed view: Our Meals / Recipe Box.
+
+**Autofill update (flag for ThisWeek.jsx):** The add meal input should query `planned_meals` history FIRST (deduplicated `custom_name` + linked recipe names), then recipe names as fallback. This makes suggestions feel like "your family's meals" not "your recipe list."
+
+### Sage Meal Matching (Mar 22, 2026)
+
+Sage meal matching fires async after every ghost meal entry on the Menu page. Normalizes meal name spelling/casing (Title Case, fix typos) + searches recipe library for fuzzy matches. Surfaces inline suggestion card on day card with recipe buttons, "Save a new recipe", and "Keep as-is" actions. Two recognition pathways: autofill (instant, as-you-type from recipes table) + Sage match (async, fuzzy, normalizes name). Schema: `planned_meals.sage_match_result` (jsonb with `normalized_name`, `matches[]`, `suggest_new`), `planned_meals.sage_match_status` (text: pending/resolved). Poll interval: 3 seconds while pending matches exist. Fire-and-forget — never blocks the add meal flow.
+
+### Sage Topic Fencing (Mar 22, 2026)
+
+Sage is hard-fenced to kitchen/food/meal planning topics via system prompt in `/api/sage.js`. She will warmly redirect any off-topic questions: *"I'm your kitchen companion — that's a little outside my kitchen!"* This is not a UI feature — it's enforced at the API level on every call. Sage cannot be used as a general-purpose AI assistant.
+
+### Navigation Changes (Mar 22, 2026)
+
+- **Bottom nav reduced to 4 tabs:** Home / Week / Meals / Pantry. Sage removed from nav.
+- **Sage sparkle icon in topbar** (global, every screen) — persistent entry point to Sage chat. Tapping navigates to `/sage`.
+- **Search icon removed from topbar.** Search functionality lives contextually on individual screens (Recipe library has its own search, Pantry list has its own search). No global search needed at this stage.
+- **Home screen redesign planned** — Home screen will become Sage's intelligence center (daily briefing, nudges, family activity). Next major build after the Week page redesign.
+
+### Weekly Proteins — Deprecated (Mar 22, 2026)
+
+`weekly_proteins` table deprecated — UI removed from ThisWeek.jsx. `protein_favorites` kept for future Sage signal. Protein-based meal suggestions will be a Sage interaction on the new Week/Menu page — "chicken is on sale, here are your chicken recipes."
 
 ### Schema Added Mar 17–18, 2026
 
@@ -316,9 +363,9 @@ Basic weekly protein entry (protein name per week plan) is a **Free** feature. S
 
 ### Must Fix Before Inviting Users Outside Hill Household
 
-- [ ] **Add Protein flow** — the "+ Add protein" button on This Week exists but does nothing. Build a bottom sheet with: protein name field, store dropdown (pulls from `grocery_stores` table), on-sale toggle, price field. Writes to `weekly_proteins` table.
+- ~~**Add Protein flow**~~ — removed. `weekly_proteins` deprecated. Protein suggestions will be a Sage interaction.
 - [ ] **`family_members` management UI** — family members are seeded for the Hill family but there is no UI to add, edit, or remove family members. Needed for: Who's cooking on Tonight card, per-member dietary preferences, child dashboard scoping, assigned cook on planned meals. Build in Profile/Settings screen.
-- [ ] **`activity_log` writes** — zero activity being logged. Sage pattern intelligence depends entirely on this table. Add fire-and-forget INSERT to `activity_log` on these key actions: publish plan, add meal to plan, skip/remove meal, complete shopping, save recipe. Each entry needs: `user_id`, `household_id`, `action_type`, `entity_id`, `entity_type`, `created_at`.
+- [x] **`activity_log` writes** — ✅ ACTIVE. Fire-and-forget via `src/lib/activityLog.js`. Actions logged: `recipe_saved`, `recipe_edited`, `recipe_viewed`, `recipe_plan_tapped`, `recipe_planned`, `meal_planned`, `meal_added_to_week`, `meal_skipped`. Activity log retention — no cleanup policy needed until 1,000+ users. At scale, consider pruning entries older than 2 years. Do not implement yet.
 - [ ] **`invite_codes` table** — returned a query error during audit. Investigate whether table exists with correct schema and RLS policy. Needed before invite flow is built.
 
 ### Build After `family_members` UI Is Complete
@@ -344,12 +391,12 @@ Basic weekly protein entry (protein name per week plan) is a **Free** feature. S
 - **Settings screen** — splits into two sections:
   - **My Account** (personal): name, email, password, notification preferences, haptics toggle
   - **Our Kitchen** (household): family members, grocery stores, traditions, dietary preferences, invite code generation, decoration set selection
-  - Grocery store management: inline store addition from any store dropdown is built (protein roster, shopping list). Full store list management (edit, delete, set primary) lives in Our Kitchen section.
+  - Grocery store management: inline store addition from store dropdowns is built. Full store list management (edit, delete, set primary) lives in Our Kitchen section.
 - **Related recipes on recipe card** — "Goes Well With" section. Invest properly, not a placeholder row.
 - **Avery (child) dashboard** — scoped view-only experience. Must be designed before onboarding ships.
 - **Profile photos** — users should be able to add a profile photo that appears in the avatar circle instead of their initial. Applies to all household members. Photos stored in Supabase Storage. Avatar displays photo if available, initial as fallback. Build when Profile screen gets its second design pass.
 - **Notifications screen** — full notification center at `/notifications`. Bell icon in topbar routes here. Two tabs: Action Required and Informational. Notification types: meal plan archived (needs confirmation), new member joined via invite code, week published (family members notified), Sage observations and nudges, birthday reminders. `notifications` table exists in schema but nothing is writing to it yet — wire `activity_log` and notification writes together in same sprint.
-- **Sage screen at `/sage`** — currently placeholder. Full design required. Direct conversation interface with Sage — not a search bar. Lauren asks questions, gets suggestions, searches by ingredient or occasion. Premium feature. Search icon in topbar routes here.
+- **Sage screen at `/sage`** — currently placeholder. Full design required. Direct conversation interface with Sage — not a search bar. Lauren asks questions, gets suggestions, searches by ingredient or occasion. Full Plan feature. Search icon in topbar routes here.
 - **Color scheme user-level override** — currently household level. Future: each user picks their own scheme, stored in `user_preferences`. Household scheme is the default, user override takes precedence.
 - **Walnut Tonight card variant** — wood grain CSS needs a dark walnut color variant distinct from the blonde maple Garden treatment.
 - **Serves adjuster with quantity scaling** — affects the data model. Plan this early in the recipe card build.
@@ -382,7 +429,7 @@ The weekly wrap-up is the end-of-week moment that closes the planning loop. Trig
 4. Archive the week: set `meal_plans.status` to `'archived'`, seal any `tradition_occurrences` from that week (`is_sealed = true`)
 5. Surface a warm summary moment: *"This week your family ate X meals. You cooked Y new recipes."* — Sage delivers this
 
-**Premium feature.** Required before spending trends and Sage skip detection can work accurately. Dependencies: activity log writes, shopping list completion tracking.
+**Full Plan feature.** Required before spending trends and Sage skip detection can work accurately. Dependencies: activity log writes, shopping list completion tracking.
 
 ---
 
@@ -408,7 +455,7 @@ The spending snapshot section on the Dashboard (Estimated / Spent / Used %) is t
 - Spent figure can still show actual receipt totals even before full activation
 - Estimated and Used % remain blank until threshold is met
 
-**State 2 — Active (6+ receipted shopping trips, Premium tier):**
+**State 2 — Active (6+ receipted shopping trips, Full Plan):**
 - Estimated: auto-populated by Sage from planned meals × price history
 - Spent: pulled from captured receipts as before
 - Used %: utilization calculation from planned vs purchased ingredients
@@ -431,12 +478,12 @@ The spending snapshot is the single most powerful retention feature in the app �
 
 ## Subscription Tiers
 
-See **`docs/PRODUCT-TIERS.md`** for authoritative tier definitions (Free / Plus / Premium feature breakdown).
+See **`docs/PRODUCT-TIERS.md`** for authoritative tier definitions (Free / Full Plan feature breakdown).
 
 ### Enforcement Status
 
 - `subscription_tier` field exists on users/households table ✓
-- Lauren Hill set to Premium permanently ✓
+- Lauren Hill set to Full permanently ✓
 - `useSubscription()` hook — **NOT YET BUILT**
 - Enforcement layer — **NOT YET BUILT**
 - Upgrade prompt UI — **NOT YET DESIGNED**
@@ -479,3 +526,194 @@ Build the enforcement layer as a focused sprint immediately before inviting any 
 ## Design Decisions — Pending
 
 - **Day type badge redesign** — current colored pills feel too generic for the Roux aesthetic. Redesign direction: small contextual icon + Caveat handwritten label inside a warm stamp/tag shape. Applies to three surfaces: This Week day row header badges, Week Settings day type selector pills, and the active badge display. Full prototype to be provided before build. Do not change current implementation until spec is delivered.
+
+---
+
+## Brand & Domain Roadmap
+
+**Domains registered March 21, 2026** — all locked for 3 years via Squarespace:
+
+- **myroux.app** — primary app domain, use when going live
+- **myroux.com** — main brand presence, marketing/landing page
+- **myroux.kitchen** — reserved for future social/community layer
+
+**Intended long-term architecture:**
+
+- **myroux.app** — the private household app (what we're building now)
+- **myroux.com** — public brand home, marketing site, App Store landing page
+- **myroux.kitchen** — social layer: shared kitchens, recipe discovery, following other households. Launched when social features are ready — estimated v3+
+
+**Actions needed before go-live:**
+
+- [ ] Configure `myroux.app` as custom domain in Vercel
+- [ ] Build a simple `myroux.com` marketing/waitlist page
+- [ ] Update all in-app URL references
+- [ ] Update Terms of Service and Privacy Policy links
+
+**Trademark:** File in IC 042 (SaaS/software) before public launch. USPTO search clean as of March 21, 2026.
+
+---
+
+## Pantry — Full Model (Pre-Build Spec)
+
+*Documented March 21, 2026. DO NOT BUILD until Aric gives the go signal.*
+
+### Nav Rename
+
+"Shop" → "Pantry" across all files — `BottomNav.jsx`, all route references, page titles, `DESIGN-SYSTEM.md`, `SCREEN-SPECS.md`. Pantry is an action center like Meals, not just a shopping list. It manages everything between the kitchen and the store and back again.
+
+### What Lives in Pantry
+
+**Master Family List** — always-on running list, never resets, never deletes. One per household. All family members can add. Non-admin additions show as `pending_approval`. Items auto-reset to `active` based on type and cadence — Lauren never manually unchecks anything.
+
+**Shopping Trips** — real-time shopping mode. Store selector = context switch ("I am at Kroger right now"). Checking off an item in store context records the store on the purchase. No pre-planning required — Lauren can assign items to stores on the fly or after the fact. Close-out: receipt scan (Full Plan) or manual confirm (Free). On close-out, items mark as purchased on master list.
+
+**Meal Prep Sessions** — batch cooking events. Lauren plans a prep session (Sunday breakfast sandwiches), Sage generates a bulk ingredient list for the prep, outputs become inventory items (12 sandwiches made, 8 remaining). Ingredients flow into the master list as a batch. Built before go-live, gated to Full Plan.
+
+**In the Freezer / Sale Items** — Sage-managed section. Items flagged as sale or bulk are tracked here. Sage follows up proactively — this is the one area Sage is allowed to be persistent. "You bought 3 lbs of chicken on sale 10 days ago — want to plan something with it?" Food waste prevention is a core Sage value prop.
+
+### Item Types and Auto-Reset Rules
+
+| Type | Description | Auto-Reset |
+|---|---|---|
+| `recipe` | From meal plan injection | Resets when recipe is planned again |
+| `staple` | Recurring household item | Configurable cadence (default 30 days). Full Plan: learned from receipt history |
+| `sale` | Opportunistic purchase | Does NOT auto-reset. Sage monitors and nudges |
+| `future` | For upcoming unplanned meals | Resurfaces when relevant week is planned |
+| `manual` | Anything Lauren or family adds | Resets based on `perishable_days` if perishable, otherwise stays until cleared |
+
+### Family Contributions
+
+- Any household member can add to master list
+- Non-admin items: `approval_status = pending`
+- Surfaces on HOME screen as a notice — admin-only clear
+- One-tap approve or remove from a banner — no modals
+- Only admin can clear Home page notices
+
+### Tier Gates
+
+| Tier | Features |
+|---|---|
+| **Free** | Master list, manual trip close-out, time-based auto-reset |
+| **Full Plan** | Family contributions, meal plan injection, meal prep sessions, receipt scanning, Sage learned cadence, food waste intelligence, sale item follow-ups |
+
+### Schema Changes Needed (Document Only — Do Not Build)
+
+- `shopping_lists` — remove required `meal_plan_id` (make nullable), add `list_type` (`master`/`trip`/`prep`)
+- `shopping_list_items` — add `suggested_by_user_id`, `approval_status`, `item_type` (`recipe`/`staple`/`sale`/`future`/`manual`), `auto_reset_days`, `last_purchased_at`
+- New table: `shopping_trips` — named trip events with `store_id`, `status`, linked items, `receipt_photo_url`
+- New table: `meal_prep_sessions` — batch cooking events with `planned_date`, `output_count`, `output_item_name`, ingredients linked to master list
+- Grant permissions on all new tables to `anon` and `authenticated` roles
+
+### Build Progress
+
+- [x] Schema changes — `grocery_category` column added to `shopping_list_items`, `shopping_trips` + `shopping_trip_items` tables live
+- [x] Nav rename Shop → Pantry — all files updated
+- [x] Pantry hub screen (`/pantry`) — action center with Family List, Start a Trip, Meal Prep tiles + Sage sections
+- [x] Family List screen (`/pantry/list`) — master list grouped by `grocery_category`, add item with category picker. **Not a shopping screen — no store context.**
+- [x] Shopping Trip screen (`/pantry/trip/:id`) — separate in-store experience. Large tap targets, store shown prominently, grouped by grocery category, progress bar, Done Shopping closes trip. **This is the store screen.**
+- [x] Trip creation — bottom sheet on Pantry hub: pick store, name trip (defaults to "Saturday Kroger run"), creates `shopping_trips` row, pulls active master list items, navigates to trip screen
+- [ ] Meal plan → list injection
+- [ ] Family contributions + Home screen notices
+- [ ] Meal prep sessions
+- [ ] Auto-reset intelligence
+- [ ] Receipt scanning (Full Plan, last)
+
+### Receipt Scanning (Pre-Build Spec)
+
+**Full Plan feature.** Do not build until Pantry core is stable.
+
+**Flow:**
+
+1. Lauren uploads 1–3 photos of a receipt
+2. Sage extracts all line items, prices, quantities via vision API
+3. Sage auto-calculates subtotal and compares to printed receipt subtotal
+4. If match within $0.05 → `reconciliation_status = 'matched'`
+5. If discrepancy → `reconciliation_status = 'discrepancy'`, highlight misread items in honey
+6. Lauren sees review screen — all items editable (name, price, qty, category)
+7. Lauren confirms → trip logged, items marked purchased, activity log written
+
+**Cost tracking — household level only (v1):**
+
+Track weekly spend by grocery category (produce, meat, dairy etc.) — not per meal. Per-meal cost allocation is a v2 feature requiring 3+ months of receipt history. Rationale: household category spend is always accurate; per-meal allocation requires quantity-based splitting that can't be verified without more data.
+
+**`shopping_trips` new fields needed:**
+
+- `receipt_subtotal` — printed total from the receipt
+- `sage_calculated_subtotal` — sum of extracted line items
+- `reconciliation_status` — `'matched'` / `'discrepancy'` / `'pending'`
+- `reconciliation_notes` — free text for flagged issues
+- `item_count` — number of line items extracted
+- `store_name` — denormalized store name for display (avoids join on history views)
+
+---
+
+## Sage Future Features — Requires Data Foundation First
+
+### Budget-Optimized Meal Planning (v3+)
+
+*"I want to spend around $100 at the store this week — how can I maximize that with my meal plan?"*
+
+**Prerequisites before this can be built — all must be in place:**
+
+- **Real spend data** — minimum 3 months of confirmed receipt history in `shopping_trips`
+- **Per-ingredient price history** — built from receipt scanning over time, stored in `shopping_list_items.actual_price` history
+- **Per-meal cost estimates** — calculated from ingredient quantities × price history. Accuracy improves with more receipt data.
+- **Recipe history** — sufficient `activity_log` entries to know which meals the family actually makes and enjoys
+
+**How it would work:**
+
+Lauren tells Sage her budget. Sage looks at the week's planned meals, estimates ingredient costs based on price history, identifies the most cost-efficient combination that covers the most meals. Suggests swaps where a cheaper protein or ingredient achieves similar results. Flags what's already in the pantry (already purchased) to reduce the actual shopping spend.
+
+**Why it can't be built yet:**
+
+Without real price history from receipts, Sage would be guessing ingredient costs. A wrong cost estimate is worse than no estimate — Lauren would lose trust immediately. This feature earns its credibility from months of real receipt data.
+
+**The data flywheel:** Receipt scanning → price history builds → per-meal costing becomes accurate → budget optimization becomes possible. Every receipt Lauren scans makes this feature more accurate. This is the long-term payoff of the receipt scanning investment.
+
+---
+
+### Architecture Notes
+
+- **Family List ≠ Shopping Trip.** Family List is for browsing/adding. Shopping Trip is the in-store checkout experience. Two distinct screens, two distinct mental models.
+- **Grocery categories are the primary grouping** — `produce`, `meat`, `seafood`, `dairy`, `bakery`, `pantry`, `frozen`, `beverages`, `household`, `personal_care`, `other`. Not `item_type`.
+- `item_type` (recipe/manual/staple/future/sale) shows as a quiet badge — it describes how the item got there, not where it lives in the store.
+
+---
+
+## ⚠ Active Bugs & Pending Items (Mar 22, 2026)
+
+### sageMealMatch Not Firing (BUG)
+Ghost meals save correctly but `sageMealMatch.js` is not triggering. Ghost entries in `planned_meals` show `sage_match_status = null`. Likely cause: `/api/sage` endpoint not reachable in dev mode (Vite proxy was pointed to `localhost:3001` — fixed to proxy to `roux-phase2.vercel.app`, but needs verification). Check: import in ThisWeek.jsx (~line 239), request format matches what `/api/sage.js` expects, browser console for errors on meal add.
+
+### Onboarding Screen 3 — Needs Interactive Rebuild
+Currently static "How It Works" bullets. Should let Lauren add her first meal inline on this screen. Screen 4 becomes celebration + finish-your-week invitation. Copy fixes also pending.
+
+### Welcome Screen Copy — Not Finalized
+Brainstorm complete, final line not chosen. Options: "Where your family's meals come together" (recommended), "Your family's kitchen, all in one place", others in session doc. Do not build until Aric confirms.
+
+### Onboarding Copy Fixes Pending
+Screen 1 subtext, Screen 2 Roux vs Sage distinction, remove "gets smarter" and "cook with Roux", Screen 3 add recipe box as third path. All written, not applied yet.
+
+### Meals Tab Redesign Pending
+"Our Meals" view (derived from `planned_meals` history) + "Recipe Box" (existing library). Build after Week page is stable and tested. Autofill update: add meal input should query `planned_meals` history FIRST, then recipes as fallback.
+
+### Calendar Connect Pending Test
+`/settings/calendar` built. Aric's Google account (with iCloud webcal subscribed) needs to be connected to Lauren's Roux account. Verify calendar event pills appear on week day cards.
+
+### Meal Type Smart Default (Future)
+Learn from `planned_meals` history what meal type a name is usually categorized as. "Waffles" → defaults to Breakfast. Requires data accumulation.
+
+### Google Calendar OAuth (Production Web)
+Production-ready path for web users. Apple CalDAV = TEST ONLY. Apple EventKit = native iOS app only.
+
+### Budget-Optimized Meal Planning (v3+)
+"I want to spend $100 this week, maximize my meal plan." Requires 3+ months receipt history, per-ingredient price history, per-meal cost estimates. See "Sage Future Features" section above.
+
+---
+
+## Pre-Launch Checklist
+
+### Google OAuth Credentials — Create Dedicated Account Before Commercial Launch
+
+Current Google Cloud OAuth project is registered under `mrarichill@gmail.com` (Aric's personal account). Before any commercial launch or public beta, create a dedicated Google account for Roux (e.g. `hello@myroux.app` or `dev@myroux.app`) and migrate the Google Cloud project to that account. Update `VITE_GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET` in Vercel environment variables and `.env.local`. Existing users who connected Google Calendar will need to reconnect once after the migration.

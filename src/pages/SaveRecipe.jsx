@@ -8,6 +8,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { runSageIngredientReview } from '../lib/sageReview'
+import { logActivity } from '../lib/activityLog'
 import useUnsavedChanges from '../hooks/useUnsavedChanges'
 import UnsavedChangesSheet from '../components/UnsavedChangesSheet'
 import TopBar from '../components/TopBar'
@@ -135,12 +136,12 @@ export default function SaveRecipe({ appUser }) {
       const response = await fetch('/api/extract-recipe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: urlInput.trim(), tier: appUser?.subscription_tier || 'free' }),
+        body: JSON.stringify({ url: urlInput.trim() }),
       })
       const data = await response.json()
       if (!response.ok || !data.success) {
         const errType = data.error
-        if (errType === 'tier_required' || errType === 'fetch_failed' || errType === 'parse_failed') {
+        if (errType === 'fetch_failed' || errType === 'parse_failed') {
           setUrlError({ type: errType })
           setExtracting(false)
           return
@@ -501,6 +502,7 @@ export default function SaveRecipe({ appUser }) {
 
       // 5. Fire-and-forget Sage ingredient review
       runSageIngredientReview(recipeId, validIngs, { recipeName: s(name), userId: appUser?.id })
+      logActivity({ user: appUser, actionType: 'recipe_saved', targetType: 'recipe', targetId: recipeId, targetName: s(name), metadata: { source_type: sourceType } })
 
       dirty.markClean()
       setToast('Recipe saved.')
@@ -596,16 +598,8 @@ export default function SaveRecipe({ appUser }) {
                 </svg>
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500 }}>
-                    Paste a URL
-                  </span>
-                  {appUser?.subscription_tier === 'free' && (
-                    <span style={{
-                      fontSize: '9px', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase',
-                      background: C.sage, color: 'white', padding: '2px 6px', borderRadius: '4px',
-                    }}>Plus</span>
-                  )}
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, marginBottom: '4px' }}>
+                  Paste a URL
                 </div>
                 <div style={{ fontSize: '13px', color: C.driftwood, fontWeight: 300 }}>
                   Share a link and Sage grabs everything
@@ -652,12 +646,9 @@ export default function SaveRecipe({ appUser }) {
           {urlError && (
             <div style={{
               padding: '16px', background: 'white', borderRadius: '12px',
-              borderLeft: `3px solid ${urlError.type === 'tier_required' ? C.sage : C.honey}`,
+              borderLeft: `3px solid ${C.honey}`,
             }}>
               <div style={{ fontSize: '14px', color: C.ink, lineHeight: 1.6, marginBottom: '14px' }}>
-                {urlError.type === 'tier_required' && (
-                  <>URL import is a Plus feature. Take a photo instead, or upgrade to Plus.</>
-                )}
                 {urlError.type === 'fetch_failed' && (
                   <>Sage couldn't reach that page — the link may be broken or the site may be temporarily down. Double-check the URL and try again, or use one of these instead:</>
                 )}
@@ -673,25 +664,14 @@ export default function SaveRecipe({ appUser }) {
                 }}>
                   Take a photo →
                 </button>
-                {urlError.type === 'tier_required' ? (
-                  <button onClick={() => { /* TODO: navigate to upgrade */ }} style={{
-                    flex: 1, padding: '10px', borderRadius: '10px', cursor: 'pointer',
-                    background: 'transparent', color: C.forest,
-                    border: `1.5px solid ${C.forest}`,
-                    fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
-                  }}>
-                    Learn about Plus →
-                  </button>
-                ) : (
-                  <button onClick={() => { setUrlError(null); startManual() }} style={{
-                    flex: 1, padding: '10px', borderRadius: '10px', cursor: 'pointer',
-                    background: 'transparent', color: C.forest,
-                    border: `1.5px solid ${C.forest}`,
-                    fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
-                  }}>
-                    Enter it manually →
-                  </button>
-                )}
+                <button onClick={() => { setUrlError(null); startManual() }} style={{
+                  flex: 1, padding: '10px', borderRadius: '10px', cursor: 'pointer',
+                  background: 'transparent', color: C.forest,
+                  border: `1.5px solid ${C.forest}`,
+                  fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
+                }}>
+                  Enter it manually →
+                </button>
               </div>
             </div>
           )}
@@ -932,8 +912,8 @@ export default function SaveRecipe({ appUser }) {
           {/* ── Details ────────────────────────────────────────── */}
           <div>
             <div style={labelStyle}>Tags</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
-              {tagDefs.map(tag => {
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: tagDefs.some(t => !t.is_default) ? '0' : '6px' }}>
+              {tagDefs.filter(t => t.is_default).map(tag => {
                 const active = selectedTagIds.has(tag.id)
                 return (
                   <button key={tag.id} onClick={() => setSelectedTagIds(prev => { const n = new Set(prev); n.has(tag.id) ? n.delete(tag.id) : n.add(tag.id); return n })} style={{
@@ -946,6 +926,25 @@ export default function SaveRecipe({ appUser }) {
                 )
               })}
             </div>
+            {tagDefs.some(t => !t.is_default) && (
+              <>
+                <div style={{ fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 300, margin: '10px 0 6px', fontFamily: "'Jost', sans-serif" }}>Your tags</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
+                  {tagDefs.filter(t => !t.is_default).map(tag => {
+                    const active = selectedTagIds.has(tag.id)
+                    return (
+                      <button key={tag.id} onClick={() => setSelectedTagIds(prev => { const n = new Set(prev); n.has(tag.id) ? n.delete(tag.id) : n.add(tag.id); return n })} style={{
+                        padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
+                        border: active ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                        background: active ? 'rgba(61,107,79,0.08)' : 'white',
+                        color: active ? C.forest : C.ink, cursor: 'pointer',
+                        fontFamily: "'Jost', sans-serif", fontWeight: active ? 500 : 400,
+                      }}>{tag.name}</button>
+                    )
+                  })}
+                </div>
+              </>
+            )}
             {newTagOpen ? (
               <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                 <input type="text" value={newTagName} onChange={e => setNewTagName(e.target.value)}

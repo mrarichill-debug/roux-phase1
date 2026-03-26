@@ -997,7 +997,7 @@ function QuickAccess({ navigate, shopTile }) {
 
       {/* Shopping tile — context-aware */}
       <button
-        onClick={() => navigate('/shopping')}
+        onClick={() => navigate('/pantry')}
         style={{
           background: 'white',
           border: `1px solid ${borderColor}`,

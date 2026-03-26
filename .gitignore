@@ -20,3 +20,4 @@ dist/
 
 # Supabase CLI
 supabase/.temp/
+client_secret_*.json

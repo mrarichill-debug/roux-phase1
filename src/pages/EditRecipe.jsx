@@ -6,6 +6,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { runSageIngredientReview } from '../lib/sageReview'
+import { logActivity } from '../lib/activityLog'
 import useUnsavedChanges from '../hooks/useUnsavedChanges'
 import UnsavedChangesSheet from '../components/UnsavedChangesSheet'
 import TopBar from '../components/TopBar'
@@ -344,6 +345,7 @@ export default function EditRecipe({ appUser }) {
 
       // Fire-and-forget Sage ingredient review
       runSageIngredientReview(id, validIngs, { recipeName: s(name), userId: appUser?.id })
+      logActivity({ user: appUser, actionType: 'recipe_edited', targetType: 'recipe', targetId: id, targetName: s(name) })
 
       dirty.markClean()
       setToast('Recipe saved.')
@@ -429,8 +431,8 @@ export default function EditRecipe({ appUser }) {
         {/* ── 3. Details ────────────────────────────────────────────── */}
         <div>
           <div style={label}>Tags</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
-            {tagDefs.map(tag => {
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: tagDefs.some(t => !t.is_default) ? '0' : '6px' }}>
+            {tagDefs.filter(t => t.is_default).map(tag => {
               const active = selectedTagIds.has(tag.id)
               return (
                 <button key={tag.id} onClick={() => { setSelectedTagIds(prev => { const n = new Set(prev); n.has(tag.id) ? n.delete(tag.id) : n.add(tag.id); return n }); dirty.markDirty() }} style={{
@@ -443,6 +445,25 @@ export default function EditRecipe({ appUser }) {
               )
             })}
           </div>
+          {tagDefs.some(t => !t.is_default) && (
+            <>
+              <div style={{ fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 300, margin: '10px 0 6px', fontFamily: "'Jost', sans-serif" }}>Your tags</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
+                {tagDefs.filter(t => !t.is_default).map(tag => {
+                  const active = selectedTagIds.has(tag.id)
+                  return (
+                    <button key={tag.id} onClick={() => { setSelectedTagIds(prev => { const n = new Set(prev); n.has(tag.id) ? n.delete(tag.id) : n.add(tag.id); return n }); dirty.markDirty() }} style={{
+                      padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
+                      border: active ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                      background: active ? 'rgba(61,107,79,0.08)' : 'white',
+                      color: active ? C.forest : C.ink, cursor: 'pointer',
+                      fontFamily: "'Jost', sans-serif", fontWeight: active ? 500 : 400,
+                    }}>{tag.name}</button>
+                  )
+                })}
+              </div>
+            </>
+          )}
           {newTagOpen ? (
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
               <input type="text" value={newTagName} onChange={e => setNewTagName(e.target.value)}
