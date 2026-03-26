@@ -43,16 +43,22 @@ export default async function handler(req, res) {
     console.log('[calendar-sync] User found:', !!user, 'provider:', user?.calendar_provider, 'enabled:', user?.calendar_sync_enabled, 'has creds:', !!user?.calendar_credentials)
 
     if (!user || !user.calendar_sync_enabled || !user.calendar_credentials) {
+      console.log('[calendar-sync] Early exit — missing user, sync disabled, or no creds')
       return res.status(200).json({ events: [] })
     }
 
-    const creds = typeof user.calendar_credentials === 'string'
-      ? JSON.parse(user.calendar_credentials)
-      : user.calendar_credentials
+    let creds
+    try {
+      creds = typeof user.calendar_credentials === 'string'
+        ? JSON.parse(user.calendar_credentials)
+        : user.calendar_credentials
+      console.log('[calendar-sync] Creds parsed ok, keys:', Object.keys(creds || {}))
+    } catch (parseErr) {
+      console.error('[calendar-sync] Creds parse CRASH:', parseErr.message)
+      return res.status(200).json({ events: [] })
+    }
 
     let events = []
-
-    console.log('[calendar-sync] Creds type:', typeof creds, 'keys:', Object.keys(creds || {}), 'hasRefreshToken:', !!creds?.refreshToken)
 
     if (user.calendar_provider === 'apple') {
       events = await fetchAppleCalendar(creds, startDate, endDate)
@@ -71,8 +77,8 @@ export default async function handler(req, res) {
     console.log('[calendar-sync] Returning', events.length, 'events')
     return res.status(200).json({ events })
   } catch (error) {
-    console.error('[calendar-sync] Error:', error.message)
-    return res.status(500).json({ error: 'Calendar sync failed', events: [] })
+    console.error('[calendar-sync] CRASH:', error.message, error.stack?.split('\n').slice(0, 3).join(' | '))
+    return res.status(500).json({ error: error.message, events: [] })
   }
 }
 
