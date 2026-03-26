@@ -186,25 +186,57 @@ async function fetchGoogleCalendar(creds, startDate, endDate) {
     )
     oauth2Client.setCredentials({ refresh_token: refreshToken })
 
-    const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
-    console.log('[calendar-sync] Calling Google Calendar API, range:', startDate, 'to', endDate)
-    const res = await calendar.events.list({
-      calendarId: 'primary',
-      timeMin: `${startDate}T00:00:00Z`,
-      timeMax: `${endDate}T23:59:59Z`,
-      singleEvents: true,
-      orderBy: 'startTime',
-      maxResults: 50,
-    })
+    // Force token refresh and log result
+    try {
+      const { credentials } = await oauth2Client.refreshAccessToken()
+      console.log('[calendar-sync] Token refresh result: hasAccessToken:', !!credentials?.access_token, 'expiry:', credentials?.expiry_date)
+    } catch (refreshErr) {
+      console.error('[calendar-sync] Token refresh FAILED:', refreshErr.message)
+      return []
+    }
 
-    return (res.data.items || []).map(event => ({
-      id: event.id,
-      title: event.summary || 'Untitled',
-      start: event.start?.date || event.start?.dateTime || startDate,
-      end: event.end?.date || event.end?.dateTime || startDate,
-      allDay: !!event.start?.date,
-      calendar: 'Google',
-    }))
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
+
+    // First list all calendars to find subscribed ones
+    const calListRes = await calendar.calendarList.list()
+    const allCalendars = calListRes.data.items || []
+    console.log('[calendar-sync] Calendars found:', allCalendars.length, allCalendars.map(c => `${c.summary} (${c.id})`))
+
+    const timeMin = `${startDate}T00:00:00Z`
+    const timeMax = `${endDate}T23:59:59Z`
+    console.log('[calendar-sync] Fetching range:', timeMin, 'to', timeMax)
+
+    // Fetch events from ALL calendars, not just primary
+    let allEvents = []
+    for (const cal of allCalendars) {
+      try {
+        const res = await calendar.events.list({
+          calendarId: cal.id,
+          timeMin,
+          timeMax,
+          singleEvents: true,
+          orderBy: 'startTime',
+          maxResults: 50,
+        })
+        const items = res.data.items || []
+        console.log('[calendar-sync] Calendar', cal.summary, ':', items.length, 'events')
+        for (const event of items) {
+          allEvents.push({
+            id: event.id,
+            title: event.summary || 'Untitled',
+            start: event.start?.date || event.start?.dateTime || startDate,
+            end: event.end?.date || event.end?.dateTime || startDate,
+            allDay: !!event.start?.date,
+            calendar: cal.summary || 'Google',
+          })
+        }
+      } catch (calErr) {
+        console.warn('[calendar-sync] Calendar', cal.summary, 'fetch error:', calErr.message)
+      }
+    }
+
+    console.log('[calendar-sync] Raw events total:', allEvents.length)
+    return allEvents
   } catch (err) {
     console.error('[calendar-sync] Google error:', err.message)
     return []
