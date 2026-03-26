@@ -303,6 +303,19 @@ Calendar sync — Apple CalDAV is TEST ONLY (requires app-specific password, not
 - Schema: `users.calendar_provider` (apple/google/null), `users.calendar_sync_enabled` (boolean), `users.calendar_credentials` (jsonb, encrypted at rest in Supabase)
 - Env vars needed: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` for Google OAuth
 
+### Session Close (Mar 25, 2026)
+
+- Calendar sync live — Hill family events showing on week view as honey-dot pills
+- Calendar selection UI at `/settings/calendar` — toggle individual Google calendars on/off
+- No docx session summaries needed — Claude Code handles session notes directly
+- Next session: go to `/settings/calendar` first, confirm Angels/Lakers toggled off, then full end-to-end test
+- Meal plan → Pantry list injection still pending — planning a meal should auto-populate shopping list
+- "Save a recipe" from Sage suggestion card should pre-fill meal name
+
+### Calendar Selection (Mar 25, 2026)
+
+Calendar selection UI — users choose which Google calendars appear in Roux. Stored in `users.calendar_credentials.selectedCalendarIds`. Default: primary + calendars with "family" in name. Sports/team calendars excluded by default. `/api/google-calendar-list.js` fetches the full calendar list. `/api/calendar-sync.js` filters to selected IDs only, falls back to primary-only if none selected.
+
 ### Sage Philosophy
 
 Sage never waits to be asked. All Sage interactions are proactive and app-triggered. She surfaces the right information at the right moment. Lauren responds with taps — never types. This is the core product differentiator for Roux vs. every other AI-powered cooking app. Every Sage interaction must be genuinely useful — never filler, never generic. Quality over quantity.

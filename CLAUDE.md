@@ -40,6 +40,10 @@ Only deploy to Vercel at the explicit close of a build session when Aric asks. A
 
 Active. All meaningful user actions write to `activity_log` via `src/lib/activityLog.js`. Every new feature must wire in a `logActivity()` call — fire-and-forget, after primary action succeeds, never blocking UI.
 
+## Session Notes (Mar 25, 2026)
+
+Google Calendar sync is live and working for Hill house. Calendar selection UI built — Lauren can choose which calendars appear in Roux. `selectedCalendarIds` stored in `users.calendar_credentials`. Angels/Lakers excluded, Hill Family and personal calendars included.
+
 ## Documentation Index
 
 | File | Read When |
