@@ -137,10 +137,11 @@ async function fetchAppleCalendar(creds, startDate, endDate) {
 }
 
 /**
- * Google Calendar — OAuth2 with refresh token. Fetches ALL calendars.
+ * Google Calendar — OAuth2 with refresh token.
+ * Fetches only selected calendars, or primary-only as fallback.
  */
 async function fetchGoogleCalendar(creds, startDate, endDate) {
-  const { refreshToken } = creds
+  const { refreshToken, selectedCalendarIds } = creds
   if (!refreshToken) return []
 
   try {
@@ -150,7 +151,6 @@ async function fetchGoogleCalendar(creds, startDate, endDate) {
     )
     oauth2Client.setCredentials({ refresh_token: refreshToken })
 
-    // Force token refresh
     try {
       await oauth2Client.refreshAccessToken()
     } catch (refreshErr) {
@@ -160,7 +160,15 @@ async function fetchGoogleCalendar(creds, startDate, endDate) {
 
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
     const calListRes = await calendar.calendarList.list()
-    const allCalendars = calListRes.data.items || []
+    let allCalendars = calListRes.data.items || []
+
+    // Filter to selected calendars, or primary-only as fallback
+    if (selectedCalendarIds?.length > 0) {
+      const selectedSet = new Set(selectedCalendarIds)
+      allCalendars = allCalendars.filter(c => selectedSet.has(c.id))
+    } else {
+      allCalendars = allCalendars.filter(c => c.primary)
+    }
 
     const timeMin = `${startDate}T00:00:00Z`
     const timeMax = `${endDate}T23:59:59Z`
