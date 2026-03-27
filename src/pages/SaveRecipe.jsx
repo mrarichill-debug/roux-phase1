@@ -5,7 +5,7 @@
  * After save: Sage ingredient review fires automatically (Haiku).
  */
 import { useEffect, useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { runSageIngredientReview } from '../lib/sageReview'
 import { logActivity } from '../lib/activityLog'
@@ -47,6 +47,10 @@ function tempId() { return `_new_${++idCounter}` }
 
 export default function SaveRecipe({ appUser }) {
   const navigate = useNavigate()
+  const location = useLocation()
+  const returnTo = location.state?.returnTo
+  const plannedMealId = location.state?.plannedMealId
+  const prefillName = location.state?.mealName
 
   // Flow state: 'choose' | 'url' | 'photo' | 'form'
   const [step, setStep] = useState('choose')
@@ -64,7 +68,7 @@ export default function SaveRecipe({ appUser }) {
   const photoInputRef = useRef(null)
 
   // Recipe form fields
-  const [name, setName] = useState('')
+  const [name, setName] = useState(prefillName || '')
   const [description, setDescription] = useState('')
   const [author, setAuthor] = useState('')
   const [sourceUrl, setSourceUrl] = useState('')
@@ -504,9 +508,16 @@ export default function SaveRecipe({ appUser }) {
       runSageIngredientReview(recipeId, validIngs, { recipeName: s(name), userId: appUser?.id })
       logActivity({ user: appUser, actionType: 'recipe_saved', targetType: 'recipe', targetId: recipeId, targetName: s(name), metadata: { source_type: sourceType } })
 
+      // If coming from week view, link recipe to the planned meal
+      if (returnTo === 'week' && plannedMealId) {
+        await supabase.from('planned_meals').update({
+          recipe_id: recipeId, entry_type: 'linked', sage_match_status: 'resolved',
+        }).eq('id', plannedMealId)
+      }
+
       dirty.markClean()
       setToast('Recipe saved.')
-      setTimeout(() => navigate(`/recipe/${recipeId}`), 1200)
+      setTimeout(() => navigate(returnTo === 'week' ? '/thisweek' : `/recipe/${recipeId}`), 1200)
     } catch (err) {
       console.error('[SaveRecipe] Save error:', err)
       setError('Something went wrong. Check your changes and try again.')

@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { logActivity } from '../lib/activityLog'
 import { sageMealMatch } from '../lib/sageMealMatch'
+import { injectMealPlanToList } from '../lib/injectMealPlanToList'
 import { getWeekDatesTZ, getWeekStartTZ, toLocalDateStr } from '../lib/dateUtils'
 import { fetchCalendarEvents, getEventsForDate } from '../lib/calendarSync'
 import TopBar from '../components/TopBar'
@@ -52,6 +53,12 @@ export default function ThisWeek({ appUser }) {
 
   // First-time hint
   const [showHint, setShowHint] = useState(false)
+
+  // Share / finalization
+  const [shareSheetOpen, setShareSheetOpen] = useState(false)
+  const [planStatus, setPlanStatus] = useState(null) // 'draft' | 'shared'
+  const [shoppingInjected, setShoppingInjected] = useState(false)
+  const [injecting, setInjecting] = useState(false)
 
   // Delete confirm
   const [deleteConfirmId, setDeleteConfirmId] = useState(null)
@@ -101,13 +108,15 @@ export default function ThisWeek({ appUser }) {
       // Get or find meal plan for this week
       const { data: plan } = await supabase
         .from('meal_plans')
-        .select('id')
+        .select('id, status, shopping_injected')
         .eq('household_id', appUser.household_id)
         .eq('week_start_date', ws)
         .maybeSingle()
 
       if (plan) {
         setPlanId(plan.id)
+        setPlanStatus(plan.status)
+        setShoppingInjected(plan.shopping_injected || false)
         // Fetch meals, then recipe names separately (no embedded join)
         const { data: mealsData } = await supabase
           .from('planned_meals')
@@ -175,9 +184,15 @@ export default function ThisWeek({ appUser }) {
 
   async function ensurePlan() {
     if (planId) return planId
+    // week_end_date = 6 days after start (Sunday)
+    const [y, m, d] = weekStart.split('-').map(Number)
+    const endDate = new Date(y, m - 1, d + 6)
+    const wed = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`
     const { data, error } = await supabase.from('meal_plans').insert({
       household_id: appUser.household_id,
+      created_by: appUser.id,
       week_start_date: weekStart,
+      week_end_date: wed,
       status: 'draft',
     }).select('id').single()
     if (error) { console.error('[Menu] Create plan error:', error); return null }
@@ -201,18 +216,43 @@ export default function ThisWeek({ appUser }) {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     if (val.trim().length < 2) { setRecipeSuggestions([]); return }
     debounceRef.current = setTimeout(async () => {
-      const { data } = await supabase.from('recipes')
-        .select('id, name, recipe_type')
+      // Query planned_meals history first — deduplicated by name
+      const { data: historyData } = await supabase
+        .from('planned_meals')
+        .select('id, custom_name, recipe_id, entry_type, meal_type')
         .eq('household_id', appUser.household_id)
-        .ilike('name', `%${val.trim()}%`)
-        .limit(6)
-      setRecipeSuggestions(data || [])
+        .not('custom_name', 'is', null)
+        .ilike('custom_name', `%${val.trim()}%`)
+        .order('created_at', { ascending: false })
+        .limit(10)
+      const seen = new Set()
+      const suggestions = (historyData || []).filter(m => {
+        const key = m.custom_name.toLowerCase()
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      }).slice(0, 6).map(m => ({
+        id: m.id,
+        name: m.custom_name,
+        recipe_id: m.recipe_id || null,
+        entry_type: m.entry_type,
+        meal_type: m.meal_type,
+        source: 'history',
+      }))
+      setRecipeSuggestions(suggestions)
     }, 200)
   }
 
-  function selectRecipeSuggestion(recipe) {
-    setSelectedRecipe(recipe)
-    setAddInput(recipe.name)
+  function selectRecipeSuggestion(suggestion) {
+    setAddInput(suggestion.name)
+    // If past meal had a recipe linked, carry it forward
+    if (suggestion.recipe_id) {
+      setSelectedRecipe({ id: suggestion.recipe_id, name: suggestion.name })
+    } else {
+      setSelectedRecipe(null)
+    }
+    // Pre-select the meal type from history
+    if (suggestion.meal_type) setAddMealType(suggestion.meal_type)
     setRecipeSuggestions([])
   }
 
@@ -305,6 +345,25 @@ export default function ThisWeek({ appUser }) {
       m.id === mealId ? { ...m, sage_match_status: 'resolved' } : m
     ))
     await supabase.from('planned_meals').update({ sage_match_status: 'resolved' }).eq('id', mealId)
+  }
+
+  // ── Share & inject ─────────────────────────────────────────────
+  async function sharePlan() {
+    if (!planId) return
+    await supabase.from('meal_plans').update({ status: 'shared' }).eq('id', planId)
+    setPlanStatus('shared')
+    setShareSheetOpen(true)
+  }
+
+  async function buildShoppingList() {
+    if (!planId || injecting) return
+    setInjecting(true)
+    const { count } = await injectMealPlanToList({ planId, householdId: appUser.household_id })
+    setShoppingInjected(true)
+    setShareSheetOpen(false)
+    showToast(`Added ${count} item${count !== 1 ? 's' : ''} to your list`)
+    setInjecting(false)
+    setTimeout(() => navigate('/pantry/list'), 800)
   }
 
   // ── Computed ──────────────────────────────────────────────────
@@ -485,28 +544,51 @@ export default function ThisWeek({ appUser }) {
                   )}
                 </div>
 
-                {/* Calendar events */}
+                {/* Calendar events — vertical, sorted by start time */}
                 {(() => {
                   const dayEvents = getEventsForDate(calendarEvents, toLocalDateStr(date))
+                    .sort((a, b) => {
+                      if (a.allDay && !b.allDay) return -1
+                      if (!a.allDay && b.allDay) return 1
+                      return (a.start || '').localeCompare(b.start || '')
+                    })
                   const shown = dayEvents.slice(0, 3)
                   const overflow = dayEvents.length - 3
                   if (shown.length === 0) return null
+
+                  function formatEventTime(ev) {
+                    if (ev.allDay || !ev.start?.includes('T')) return null
+                    const startDt = new Date(ev.start)
+                    const fmt = (d) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                    const startStr = fmt(startDt)
+                    if (!ev.end || !ev.end.includes('T')) return startStr
+                    const endDt = new Date(ev.end)
+                    // Skip end time if midnight or same as start
+                    if (endDt.getHours() === 0 && endDt.getMinutes() === 0) return startStr
+                    if (ev.start === ev.end) return startStr
+                    return `${startStr} – ${fmt(endDt)}`
+                  }
+
+                  const textColor = C.driftwoodSm // always on white background, even Today card
+
                   return (
-                    <div style={{ padding: '0 14px 6px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                      {shown.map(ev => (
-                        <span key={ev.id} style={{
-                          fontSize: '10px', color: isToday ? 'rgba(250,247,242,0.7)' : C.driftwood,
-                          display: 'flex', alignItems: 'center', gap: '3px',
-                        }}>
-                          <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: C.honey, flexShrink: 0 }} />
-                          {(ev.title || '').substring(0, 20)}{(ev.title || '').length > 20 ? '…' : ''}
-                          {!ev.allDay && ev.start?.includes('T') && (
-                            <span style={{ opacity: 0.7 }}>{new Date(ev.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
-                          )}
-                        </span>
-                      ))}
+                    <div style={{ padding: '8px 14px 4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      {shown.map(ev => {
+                        const timeStr = formatEventTime(ev)
+                        const title = (ev.title || '').length > 22 ? (ev.title || '').substring(0, 22) + '…' : (ev.title || '')
+                        return (
+                          <div key={ev.id} style={{
+                            fontSize: '10px', color: textColor, fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                            display: 'flex', alignItems: 'center', gap: '5px',
+                          }}>
+                            <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: C.honey, flexShrink: 0 }} />
+                            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
+                            {timeStr && <span style={{ flexShrink: 0, opacity: 0.8 }}>{timeStr}</span>}
+                          </div>
+                        )
+                      })}
                       {overflow > 0 && (
-                        <span style={{ fontSize: '10px', color: isToday ? 'rgba(250,247,242,0.5)' : C.driftwood, opacity: 0.6 }}>+{overflow} more</span>
+                        <div style={{ fontSize: '10px', color: textColor, opacity: 0.6, paddingLeft: '9px' }}>+{overflow} more</div>
                       )}
                     </div>
                   )
@@ -570,7 +652,7 @@ export default function ThisWeek({ appUser }) {
                                   fontFamily: "'Jost', sans-serif",
                                 }}>{match.recipe_name}</button>
                               ))}
-                              <button onClick={() => navigate('/save-recipe')} style={{
+                              <button onClick={() => navigate('/save-recipe', { state: { returnTo: 'week', plannedMealId: meal.id, mealName: getMealName(meal) } })} style={{
                                 padding: '5px 10px', borderRadius: '8px', fontSize: '11px',
                                 background: 'none', color: C.forest, border: `1px solid ${C.forest}`,
                                 cursor: 'pointer', fontFamily: "'Jost', sans-serif",
@@ -594,7 +676,7 @@ export default function ThisWeek({ appUser }) {
                               <span style={{ color: C.sage }}>✦</span> No matching recipes found — want to save one?
                             </div>
                             <div style={{ display: 'flex', gap: '6px' }}>
-                              <button onClick={() => navigate('/save-recipe')} style={{
+                              <button onClick={() => navigate('/save-recipe', { state: { returnTo: 'week', plannedMealId: meal.id, mealName: getMealName(meal) } })} style={{
                                 padding: '5px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 500,
                                 background: C.forest, color: 'white', border: 'none', cursor: 'pointer',
                                 fontFamily: "'Jost', sans-serif",
@@ -630,6 +712,18 @@ export default function ThisWeek({ appUser }) {
         </div>
       )}
 
+      {/* ── Share with family button ────────────────────────────── */}
+      {meals.length >= 2 && planStatus !== 'shared' && !loading && (
+        <div style={{ padding: '0 22px 12px' }}>
+          <button onClick={sharePlan} style={{
+            width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
+            background: C.forest, color: 'white', cursor: 'pointer',
+            fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
+            boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
+          }}>Share with family →</button>
+        </div>
+      )}
+
       {/* ── Ghost Bridge Card ────────────────────────────────────── */}
       {ghostMeals.length > 0 && (
         <div style={{
@@ -655,6 +749,49 @@ export default function ThisWeek({ appUser }) {
             }}>Add items manually</button>
           </div>
         </div>
+      )}
+
+      {/* ── Sage Share Sheet ─────────────────────────────────────── */}
+      {shareSheetOpen && (
+        <>
+          <div onClick={() => setShareSheetOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
+          <div onClick={e => e.stopPropagation()} style={{
+            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
+            padding: '0 0 env(safe-area-inset-bottom, 24px)', zIndex: 201,
+            boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
+            animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
+          }}>
+            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+            <div style={{ padding: '20px 22px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <span style={{ color: C.sage, fontSize: '18px' }}>✦</span>
+                <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink }}>Your week is set.</span>
+              </div>
+              <div style={{ fontSize: '14px', color: C.driftwood, lineHeight: 1.6, marginBottom: '20px' }}>
+                Ready to build your shopping list? I'll pull in everything you need from this week's recipes.
+              </div>
+              {ghostMeals.length > 0 && (
+                <div style={{ fontSize: '12px', color: C.driftwood, fontStyle: 'italic', marginBottom: '16px', paddingLeft: '4px' }}>
+                  {ghostMeals.length} meal{ghostMeals.length > 1 ? 's' : ''} don't have recipes yet — you can add those items manually.
+                </div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <button onClick={buildShoppingList} disabled={injecting} style={{
+                  width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
+                  background: C.forest, color: 'white', cursor: 'pointer',
+                  fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
+                  boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
+                }}>{injecting ? 'Building...' : 'Build my list →'}</button>
+                <button onClick={() => setShareSheetOpen(false)} style={{
+                  width: '100%', padding: '12px', borderRadius: '14px', border: 'none',
+                  background: 'none', color: C.driftwood, cursor: 'pointer',
+                  fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 300,
+                }}>I'll do it later</button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* ── Add Meal Sheet ───────────────────────────────────────── */}
@@ -713,7 +850,7 @@ export default function ThisWeek({ appUser }) {
                       fontFamily: "'Jost', sans-serif",
                     }}>
                       {r.name}
-                      {r.recipe_type === 'quick' && <span style={{ fontSize: '10px', color: C.driftwood, marginLeft: '6px' }}>Quick</span>}
+                      {r.recipe_id && <span style={{ fontSize: '10px', color: C.sage, marginLeft: '6px' }}>Recipe linked</span>}
                     </button>
                   ))}
                 </div>

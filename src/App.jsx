@@ -231,14 +231,14 @@ export default function App() {
         <DeclinedScreen />
       ) : (
         // ── Authenticated app ─────────────────────────────────────────────
-        <AuthenticatedApp appUser={appUser} />
+        <AuthenticatedApp appUser={appUser} setAppUser={setAppUser} />
       )}
     </BrowserRouter>
   )
 }
 
 // ── Authenticated shell — global avatar + ProfileSheet ──────────────────────
-function AuthenticatedApp({ appUser }) {
+function AuthenticatedApp({ appUser, setAppUser }) {
   const navigate = useNavigate()
   const location = useLocation()
   const isOnboarding = location.pathname === '/onboarding'
@@ -321,7 +321,7 @@ function AuthenticatedApp({ appUser }) {
         <Route path="/week-settings" element={<ThisWeekSettings appUser={appUser} />} />
         <Route path="/week/defaults" element={<HouseholdDefaults appUser={appUser} />} />
         <Route path="/profile"       element={<Profile        appUser={appUser} />} />
-        <Route path="/onboarding"   element={<Onboarding     appUser={appUser} />} />
+        <Route path="/onboarding"   element={<Onboarding     appUser={appUser} setAppUser={setAppUser} />} />
         <Route path="/settings/calendar" element={<CalendarConnect appUser={appUser} />} />
         {import.meta.env.DEV && <Route path="/dev/reset" element={<Suspense fallback={null}><DevReset appUser={appUser} /></Suspense>} />}
         <Route path="/*"             element={<Shell          appUser={appUser} />} />

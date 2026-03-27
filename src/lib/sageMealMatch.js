@@ -9,6 +9,29 @@ export async function sageMealMatch({ mealId, mealName, householdId }) {
   if (!mealName || !householdId || !mealId) return
 
   try {
+    // Check planned_meals history first — past meals with same name that have a recipe linked
+    const { data: pastMatches } = await supabase
+      .from('planned_meals')
+      .select('recipe_id, custom_name')
+      .eq('household_id', householdId)
+      .not('recipe_id', 'is', null)
+      .ilike('custom_name', `%${mealName}%`)
+      .order('created_at', { ascending: false })
+      .limit(3)
+
+    // If we found an exact past match with a recipe, use it directly — no need for Sage
+    const exactPast = (pastMatches || []).find(m => m.custom_name?.toLowerCase() === mealName.toLowerCase())
+    if (exactPast?.recipe_id) {
+      const { data: recipe } = await supabase.from('recipes').select('id, name').eq('id', exactPast.recipe_id).single()
+      if (recipe) {
+        await supabase.from('planned_meals').update({
+          sage_match_result: { normalized_name: mealName, matches: [{ recipe_id: recipe.id, recipe_name: recipe.name, confidence: 'high' }], suggest_new: false },
+          sage_match_status: 'pending',
+        }).eq('id', mealId)
+        return
+      }
+    }
+
     const { data: recipes } = await supabase
       .from('recipes')
       .select('id, name, description')

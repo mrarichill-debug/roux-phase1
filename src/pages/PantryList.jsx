@@ -34,6 +34,7 @@ export default function PantryList({ appUser }) {
   const [addCategory, setAddCategory] = useState('other')
   const [showCatPicker, setShowCatPicker] = useState(false)
   const [manualCatPick, setManualCatPick] = useState(false)
+  const [showTutorial, setShowTutorial] = useState(false)
 
   function handleAddInputChange(val) {
     setAddInput(val)
@@ -76,6 +77,18 @@ export default function PantryList({ appUser }) {
       console.error('[PantryList] Load error:', err)
     }
     setLoading(false)
+  }
+
+  // Show tutorial on first visit with items
+  useEffect(() => {
+    if (!loading && !appUser?.has_seen_shopping_tutorial && items.length > 0) {
+      setShowTutorial(true)
+    }
+  }, [loading, items.length])
+
+  async function dismissTutorial() {
+    setShowTutorial(false)
+    supabase.from('users').update({ has_seen_shopping_tutorial: true }).eq('id', appUser.id)
   }
 
   const activeItems = items.filter(i => i.status === 'active')
@@ -156,6 +169,23 @@ export default function PantryList({ appUser }) {
       />
 
       <div style={{ padding: '12px 22px' }}>
+        {/* Tutorial card */}
+        {showTutorial && (
+          <div style={{
+            padding: '14px 16px', marginBottom: '14px', background: 'white',
+            borderRadius: '12px', borderLeft: `3px solid ${C.sage}`,
+            boxShadow: '0 1px 6px rgba(80,60,30,0.08)',
+          }}>
+            <div style={{ fontSize: '13px', color: C.ink, lineHeight: 1.6, marginBottom: '8px' }}>
+              <span style={{ color: C.sage }}>✦</span> I've added ingredients from your week's recipes. Check items off as you shop — the more you use Roux, the smarter your list gets.
+            </div>
+            <button onClick={dismissTutorial} style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: '12px', color: C.forest, fontWeight: 500, fontFamily: "'Jost', sans-serif", padding: 0,
+            }}>Got it</button>
+          </div>
+        )}
+
         {grouped.length === 0 && purchasedItems.length === 0 && (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.ink, marginBottom: '8px' }}>List is clear.</div>
@@ -182,6 +212,9 @@ export default function PantryList({ appUser }) {
                   <div style={{ fontSize: '14px', color: C.ink }}>{item.name}</div>
                   {(item.quantity || item.unit) && (
                     <div style={{ fontSize: '11px', color: C.driftwood }}>{[item.quantity, item.unit].filter(Boolean).join(' ')}</div>
+                  )}
+                  {item.source_meal_name && (
+                    <div style={{ fontSize: '10px', color: C.driftwood, fontStyle: 'italic' }}>For {item.source_meal_name}</div>
                   )}
                 </div>
                 {item.item_type && item.item_type !== 'manual' && (

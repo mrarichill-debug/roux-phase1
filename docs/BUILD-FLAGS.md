@@ -303,6 +303,24 @@ Calendar sync — Apple CalDAV is TEST ONLY (requires app-specific password, not
 - Schema: `users.calendar_provider` (apple/google/null), `users.calendar_sync_enabled` (boolean), `users.calendar_credentials` (jsonb, encrypted at rest in Supabase)
 - Env vars needed: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` for Google OAuth
 
+### Session Close (Mar 26, 2026)
+
+- Week finalization flow built — "Share with family →" button, Sage sheet, meal plan → Pantry injection working end to end
+- Shopping list injection confirmed — ingredients pull from linked recipes with `source_meal_name` labels ("For Spaghetti", "For Apricot Chicken")
+- Sage tutorial card on first Pantry list visit — working
+- Pantry list screen needs editing work next session — layout, categorization, item management
+- Autofill now queries `planned_meals` history — meals grow naturally over time
+- Sage skips API call when history has exact name match with `recipe_id` already linked
+- Reverse match on recipe save still pending — when new recipe saved, check ghost meals for potential link
+- `protect_activity_log` flag needed before Lauren goes live for real
+- Save a recipe from Sage suggestion card now pre-fills meal name and links back to week view automatically
+- Calendar event spacing fixed — 8px top padding below header on all day cards
+- Onboarding `has_planned_first_meal` flag now sets correctly on both Screen 3 meal add and Screen 4 CTA, with in-memory state update to prevent redirect loop
+
+### Dev Reset
+
+`protect_activity_log` flag (future) — Before Lauren goes live for real, add a `protect_activity_log` toggle to `DevReset.jsx`. When ON (default once real usage begins), the reset skips clearing `activity_log` so real usage data is never accidentally wiped during a test session. Currently the reset wipes activity log — acceptable during pure dev testing, not acceptable once Lauren has real cooking history in the system.
+
 ### Session Close (Mar 25, 2026)
 
 - Calendar sync live — Hill family events showing on week view as honey-dot pills
@@ -342,6 +360,10 @@ The tab currently navigates to Recipe Library only. Will become a tabbed view: O
 ### Sage Meal Matching (Mar 22, 2026)
 
 Sage meal matching fires async after every ghost meal entry on the Menu page. Normalizes meal name spelling/casing (Title Case, fix typos) + searches recipe library for fuzzy matches. Surfaces inline suggestion card on day card with recipe buttons, "Save a new recipe", and "Keep as-is" actions. Two recognition pathways: autofill (instant, as-you-type from recipes table) + Sage match (async, fuzzy, normalizes name). Schema: `planned_meals.sage_match_result` (jsonb with `normalized_name`, `matches[]`, `suggest_new`), `planned_meals.sage_match_status` (text: pending/resolved). Poll interval: 3 seconds while pending matches exist. Fire-and-forget — never blocks the add meal flow.
+
+**Autofill from planned_meals history (Mar 26, 2026)** — Autofill in ThisWeek.jsx add meal input now queries `planned_meals` history (deduplicated by `custom_name`, most recent first) instead of the recipes table. Past meals with a linked `recipe_id` carry it forward automatically — selecting "Meatloaf" from autofill next week links the recipe without Sage needing to match. Meal type from history is also pre-selected. sageMealMatch.js also checks planned_meals history first — if an exact past match with a recipe exists, it skips the Sage API call entirely and surfaces the match directly.
+
+**Reverse match on recipe save (pending)** — When a new recipe is saved, check if any current week ghost meals with `sage_match_status = 'resolved'` or `null` could match the new recipe name. If a match is found, surface a quiet Sage suggestion on the week view: *"✦ You just saved [recipe name] — want to link it to [meal name] on [day]?"* This closes the gap where Lauren taps "Keep as-is" then saves a recipe separately. Trigger: `logActivity` `recipe_saved` event → fire `sageMealMatch` against existing ghost meals in the current week.
 
 ### Sage Topic Fencing (Mar 22, 2026)
 

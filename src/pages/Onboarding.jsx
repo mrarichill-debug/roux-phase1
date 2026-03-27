@@ -26,7 +26,7 @@ const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'
 const MEAL_TYPES = ['breakfast','lunch','dinner','other']
 const MEAL_TYPE_LABELS = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', other: 'Other' }
 
-export default function Onboarding({ appUser }) {
+export default function Onboarding({ appUser, setAppUser }) {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const firstName = appUser?.name?.split(' ')[0] || ''
@@ -37,11 +37,13 @@ export default function Onboarding({ appUser }) {
   const [mealType, setMealType] = useState(null)
   const [addingMeal, setAddingMeal] = useState(false)
   const [addedMealName, setAddedMealName] = useState(null) // set after first meal added
+  const [addError, setAddError] = useState(null)
   const inputRef = useRef(null)
 
+  // Only redirect on initial mount if already onboarded — not during the flow
   useEffect(() => {
-    if (appUser?.has_planned_first_meal) navigate('/', { replace: true })
-  }, [appUser?.has_planned_first_meal])
+    if (appUser?.has_planned_first_meal && step === 0) navigate('/', { replace: true })
+  }, [])
 
   // Focus input when Screen 3 appears
   useEffect(() => {
@@ -50,9 +52,15 @@ export default function Onboarding({ appUser }) {
 
   const totalSteps = 4
 
-  function next() {
-    if (step < totalSteps - 1) setStep(s => s + 1)
-    else navigate('/thisweek')
+  async function next() {
+    if (step < totalSteps - 1) {
+      setStep(s => s + 1)
+    } else {
+      // Final screen — set flag in DB and update in-memory state before navigating
+      await supabase.from('users').update({ has_planned_first_meal: true }).eq('id', appUser.id)
+      if (setAppUser) setAppUser(prev => ({ ...prev, has_planned_first_meal: true }))
+      navigate('/thisweek')
+    }
   }
 
   function back() {
@@ -63,6 +71,7 @@ export default function Onboarding({ appUser }) {
   async function addFirstMeal() {
     if (!mealInput.trim() || !mealType || addingMeal) return
     setAddingMeal(true)
+    setAddError(null)
     try {
       const ws = getWeekStartTZ(tz, 0)
       const today = new Date()
@@ -74,19 +83,24 @@ export default function Onboarding({ appUser }) {
       let { data: plan } = await supabase.from('meal_plans')
         .select('id').eq('household_id', appUser.household_id).eq('week_start_date', ws).maybeSingle()
       if (!plan) {
+        // week_end_date = 6 days after start (Sunday)
+        const [y, m, d] = ws.split('-').map(Number)
+        const endDate = new Date(y, m - 1, d + 6)
+        const wed = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`
         const { data: newPlan } = await supabase.from('meal_plans').insert({
-          household_id: appUser.household_id, week_start_date: ws, status: 'draft',
+          household_id: appUser.household_id, created_by: appUser.id,
+          week_start_date: ws, week_end_date: wed, status: 'draft',
         }).select('id').single()
         plan = newPlan
       }
-      if (!plan) { setAddingMeal(false); return }
+      if (!plan) { setAddError('Could not create meal plan. Try again.'); setAddingMeal(false); return }
 
       const name = mealInput.trim()
       const { data, error } = await supabase.from('planned_meals').insert({
         household_id: appUser.household_id,
         meal_plan_id: plan.id,
         day_of_week: dowKey,
-        meal_type: mealType,
+        meal_type: mealType || 'dinner',
         planned_date: dateStr,
         custom_name: name,
         entry_type: 'ghost',
@@ -97,8 +111,9 @@ export default function Onboarding({ appUser }) {
 
       if (error) throw error
 
-      // Mark first meal flag
-      supabase.from('users').update({ has_planned_first_meal: true }).eq('id', appUser.id)
+      // Mark first meal flag — await so it's set before any navigation, update in-memory state
+      await supabase.from('users').update({ has_planned_first_meal: true }).eq('id', appUser.id)
+      if (setAppUser) setAppUser(prev => ({ ...prev, has_planned_first_meal: true }))
 
       logActivity({
         user: appUser, actionType: 'meal_added_to_week', targetType: 'meal',
@@ -113,6 +128,7 @@ export default function Onboarding({ appUser }) {
       setStep(3) // Advance to celebration screen
     } catch (err) {
       console.error('[Onboarding] Add meal error:', err)
+      setAddError('Something went wrong. Try again.')
     }
     setAddingMeal(false)
   }
@@ -314,6 +330,9 @@ export default function Onboarding({ appUser }) {
             }}>
               {addingMeal ? 'Adding...' : 'Add to menu →'}
             </button>
+            {addError && (
+              <div style={{ marginTop: '8px', fontSize: '13px', color: C.red, textAlign: 'center' }}>{addError}</div>
+            )}
             <button onClick={next} style={{
               width: '100%', padding: '10px', marginTop: '8px',
               background: 'none', border: 'none', cursor: 'pointer',
@@ -321,7 +340,7 @@ export default function Onboarding({ appUser }) {
             }}>Skip for now →</button>
           </>
         ) : (
-          <button onClick={step === 3 ? () => navigate('/thisweek') : next} style={{
+          <button onClick={next} style={{
             width: '100%', padding: '16px', borderRadius: '14px', border: 'none',
             background: step === 0 ? 'rgba(250,247,242,0.95)' : C.forest,
             color: step === 0 ? C.forest : 'white',
