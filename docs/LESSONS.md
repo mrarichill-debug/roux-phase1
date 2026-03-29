@@ -110,3 +110,27 @@
 ### Quick review and detailed review are the same data, different depth
 **The lesson:** Quick review sets `status`, `cooked_at`, `quick_reviewed`. Detailed review adds `ingredients_consumed`, `ingredients_bought_before_skip`, `review_rating`, `detailed_reviewed`. The in-week "Mark as cooked" button IS the quick review distributed across the week — not a separate feature.
 **Why it matters:** Keeps the data model unified. One `planned_meals` row tracks the full lifecycle of every meal regardless of how it was reviewed.
+
+### Each meal plan owns its own shopping list
+**The lesson:** Always use `getOrCreateShoppingList(mealPlanId)` to find or create the right list. Never query shopping data by `household_id` alone — that returns all weeks mixed together.
+**Why it matters:** A household has 52 meal plans per year. Household-scoped queries return a jumbled mix of all weeks. Week-scoped queries return exactly what the user is looking at.
+
+### Pantry staples are household-level, shopping list items are week-level
+**The lesson:** `pantry_staples` persists across weeks — it represents what the household always has on hand. `shopping_list_items` is scoped to one meal plan's shopping list and resets each week.
+**Why it matters:** "I always have olive oil" is a household fact. "I need olive oil this week" is a weekly shopping need. Conflating these means Lauren re-marks her staples every week.
+
+### Three pantry staple types — different Sage behaviors
+**The lesson:** Perishable staples get spoilage and usage tracking (`sage_tracks = true`). Non-perishable staples get frequency tracking and inline weekly prompts. Household items get frequency tracking only. All three build purchase history through receipt scans.
+**Why it matters:** Not all pantry items need the same intelligence. Milk spoils, olive oil doesn't, trash bags aren't food. Sage applies the right kind of attention to each.
+
+### "Have it this week" is not the same as a pantry staple
+**The lesson:** `have_it_this_week` is a per-week flag on `shopping_list_items`. `pantry_staples` is a household-level persistent record. They are completely separate concepts — never conflate them.
+**Why it matters:** "I have milk this week" resets next week. "Milk is a staple I keep on hand" persists forever. One is situational, one is structural.
+
+### Planned meals support multiple recipes via planned_meal_recipes
+**The lesson:** Use the `planned_meal_recipes` junction table for recipe linking on planned meals, not `planned_meals.recipe_id`. A Taco Night might need a taco recipe AND a salsa recipe AND a guacamole recipe.
+**Why it matters:** Single `recipe_id` is a dead end. The junction table matches the `meal_recipes` pattern already established on the Meals page and scales to any number of recipes.
+
+### Never auto-link recipes without user confirmation
+**The lesson:** When Sage finds recipe matches, always surface as a suggestion via `sage_background_activity` or `sage_match_result`. Never silently set `recipe_id` or insert into `planned_meal_recipes`.
+**Why it matters:** Silent auto-linking removes user agency. Lauren may have multiple matching recipes or may not want any linked.

@@ -147,16 +147,36 @@ export default function ThisWeek({ appUser }) {
           .eq('meal_plan_id', plan.id)
           .is('removed_at', null)
           .order('sort_order')
-        // Resolve recipe names
-        const recipeIds = (mealsData || []).filter(m => m.recipe_id).map(m => m.recipe_id)
-        let recipeMap = {}
-        if (recipeIds.length > 0) {
-          const { data: recipes } = await supabase.from('recipes').select('id, name, prep_time_minutes').in('id', recipeIds)
-          recipeMap = Object.fromEntries((recipes || []).map(r => [r.id, r]))
+        // Load linked recipes from junction table (separate queries per LESSONS.md)
+        const mealIds = (mealsData || []).map(m => m.id)
+        let linkedRecipeMap = {} // planned_meal_id → [{ recipe_id, recipe_name }]
+        if (mealIds.length > 0) {
+          const { data: pmrRows } = await supabase.from('planned_meal_recipes')
+            .select('planned_meal_id, recipe_id, sort_order')
+            .in('planned_meal_id', mealIds)
+            .order('sort_order')
+          if (pmrRows?.length) {
+            const allRecipeIds = [...new Set(pmrRows.map(r => r.recipe_id))]
+            const { data: recipeRows } = await supabase.from('recipes').select('id, name, prep_time_minutes').in('id', allRecipeIds)
+            const recipeMap = Object.fromEntries((recipeRows || []).map(r => [r.id, r]))
+            for (const pmr of pmrRows) {
+              if (!linkedRecipeMap[pmr.planned_meal_id]) linkedRecipeMap[pmr.planned_meal_id] = []
+              const rec = recipeMap[pmr.recipe_id]
+              if (rec) linkedRecipeMap[pmr.planned_meal_id].push({ recipe_id: rec.id, recipe_name: rec.name })
+            }
+          }
+        }
+        // Also resolve legacy recipe_id for backward compat display
+        const legacyRecipeIds = (mealsData || []).filter(m => m.recipe_id).map(m => m.recipe_id)
+        let legacyRecipeMap = {}
+        if (legacyRecipeIds.length > 0) {
+          const { data: recipes } = await supabase.from('recipes').select('id, name, prep_time_minutes').in('id', legacyRecipeIds)
+          legacyRecipeMap = Object.fromEntries((recipes || []).map(r => [r.id, r]))
         }
         const enriched = (mealsData || []).map(m => ({
           ...m,
-          recipes: m.recipe_id ? recipeMap[m.recipe_id] || null : null,
+          linkedRecipes: linkedRecipeMap[m.id] || [],
+          recipes: m.recipe_id ? legacyRecipeMap[m.recipe_id] || null : null,
         }))
         setMeals(enriched)
       } else {
@@ -281,12 +301,7 @@ export default function ThisWeek({ appUser }) {
 
   function selectRecipeSuggestion(suggestion) {
     setAddInput(suggestion.name)
-    // If past meal had a recipe linked, carry it forward
-    if (suggestion.recipe_id) {
-      setSelectedRecipe({ id: suggestion.recipe_id, name: suggestion.name })
-    } else {
-      setSelectedRecipe(null)
-    }
+    setSelectedRecipe(null) // Never auto-link from add sheet — Sage surfaces matches after save
     // Pre-select the meal type from history
     if (suggestion.meal_type) setAddMealType(suggestion.meal_type)
     setRecipeSuggestions([])
@@ -301,7 +316,6 @@ export default function ThisWeek({ appUser }) {
 
       const dateStr = toLocalDateStr(addSheetDate)
       const dowKey = DOW_KEYS[addSheetDate.getDay() === 0 ? 6 : addSheetDate.getDay() - 1]
-      const isLinked = !!selectedRecipe
 
       const { data, error } = await supabase.from('planned_meals').insert({
         household_id: appUser.household_id,
@@ -309,10 +323,10 @@ export default function ThisWeek({ appUser }) {
         day_of_week: dowKey,
         meal_type: addMealType,
         planned_date: dateStr,
-        custom_name: isLinked ? null : addInput.trim(),
-        recipe_id: isLinked ? selectedRecipe.id : null,
-        entry_type: isLinked ? 'linked' : 'ghost',
-        slot_type: isLinked ? 'recipe' : 'note',
+        custom_name: addInput.trim(),
+        recipe_id: null,
+        entry_type: 'ghost',
+        slot_type: 'note',
         status: 'planned',
         sort_order: meals.filter(m => m.day_of_week === dowKey).length,
         batch_multiplier: addBatchMultiplier,
@@ -320,7 +334,8 @@ export default function ThisWeek({ appUser }) {
       }).select('*').single()
 
       if (error) throw error
-      const enriched = { ...data, recipes: selectedRecipe ? { name: selectedRecipe.name } : null }
+
+      const enriched = { ...data, linkedRecipes: [], recipes: null }
       setMeals(prev => [...prev, enriched])
       setAddSheetOpen(false)
       showToast(`Added ${addInput.trim()}`)
@@ -328,7 +343,7 @@ export default function ThisWeek({ appUser }) {
       logActivity({
         user: appUser, actionType: 'meal_added_to_week', targetType: 'meal',
         targetId: data.id, targetName: addInput.trim(),
-        metadata: { day_of_week: dowKey, entry_type: isLinked ? 'linked' : 'ghost' },
+        metadata: { day_of_week: dowKey, entry_type: 'ghost' },
       })
 
       // Dismiss first-time hint and mark user
@@ -413,12 +428,47 @@ export default function ThisWeek({ appUser }) {
   }
 
   async function linkRecipeToMeal(mealId, recipeId, recipeName) {
-    setMeals(prev => prev.map(m =>
-      m.id === mealId ? { ...m, recipe_id: recipeId, entry_type: 'linked', sage_match_status: 'resolved', recipes: { name: recipeName } } : m
-    ))
+    // Insert into junction table (upsert to avoid dupes)
+    await supabase.from('planned_meal_recipes').upsert(
+      { planned_meal_id: mealId, recipe_id: recipeId, sort_order: 0 },
+      { onConflict: 'planned_meal_id,recipe_id' }
+    )
+    // Mark as linked + resolved
     await supabase.from('planned_meals').update({
-      recipe_id: recipeId, entry_type: 'linked', sage_match_status: 'resolved',
+      entry_type: 'linked', sage_match_status: 'resolved',
     }).eq('id', mealId)
+    setMeals(prev => prev.map(m => {
+      if (m.id !== mealId) return m
+      const existing = m.linkedRecipes || []
+      const alreadyLinked = existing.some(r => r.recipe_id === recipeId)
+      return {
+        ...m,
+        entry_type: 'linked',
+        sage_match_status: 'resolved',
+        linkedRecipes: alreadyLinked ? existing : [...existing, { recipe_id: recipeId, recipe_name: recipeName }],
+        recipes: { name: recipeName },
+      }
+    }))
+  }
+
+  async function unlinkRecipeFromMeal(mealId, recipeId) {
+    await supabase.from('planned_meal_recipes').delete()
+      .eq('planned_meal_id', mealId).eq('recipe_id', recipeId)
+    setMeals(prev => prev.map(m => {
+      if (m.id !== mealId) return m
+      const remaining = (m.linkedRecipes || []).filter(r => r.recipe_id !== recipeId)
+      return {
+        ...m,
+        linkedRecipes: remaining,
+        entry_type: remaining.length > 0 ? 'linked' : 'ghost',
+      }
+    }))
+    // If no recipes remain, revert entry_type
+    const meal = meals.find(m => m.id === mealId)
+    const remaining = (meal?.linkedRecipes || []).filter(r => r.recipe_id !== recipeId)
+    if (remaining.length === 0) {
+      await supabase.from('planned_meals').update({ entry_type: 'ghost' }).eq('id', mealId)
+    }
   }
 
   async function dismissSageMatch(mealId) {
@@ -459,8 +509,11 @@ export default function ThisWeek({ appUser }) {
     if (!linkSheetMeal) return
     await linkRecipeToMeal(linkSheetMeal.id, recipeId, recipeName)
     logActivity({ user: appUser, actionType: 'recipe_linked_from_week', targetType: 'planned_meal', targetId: linkSheetMeal.id, targetName: recipeName })
+    showToast(`Linked ${recipeName}`)
+  }
+
+  function closeLinkSheet() {
     setLinkSheetMeal(null)
-    showToast(`Linked to ${recipeName}`)
   }
 
   async function changeBatchMultiplier(mealId, newMultiplier) {
@@ -480,7 +533,7 @@ export default function ThisWeek({ appUser }) {
     }).eq('id', mealId)
 
     // If already injected, update shopping list quantities in place
-    if (shoppingInjected && meal.recipe_id) {
+    if (shoppingInjected && meal.linkedRecipes?.length > 0) {
       const mealName = meal.custom_name || meal.recipes?.name || ''
       if (mealName) {
         const { data: listItems } = await supabase.from('shopping_list_items')
@@ -537,7 +590,7 @@ export default function ThisWeek({ appUser }) {
     showToast(`Added ${count} item${count !== 1 ? 's' : ''} to your list`)
     setInjecting(false)
     setCategorizing(false)
-    setTimeout(() => navigate('/pantry/list'), 800)
+    setTimeout(() => navigate('/pantry'), 800)
   }
 
   // ── Computed ──────────────────────────────────────────────────
@@ -551,7 +604,7 @@ export default function ThisWeek({ appUser }) {
     const endDate = new Date(weekEndDate + 'T20:00:00')
     return now > endDate
   })()
-  const ghostMeals = meals.filter(m => m.entry_type === 'ghost' && !m.recipe_id && !m.removed_at)
+  const ghostMeals = meals.filter(m => m.entry_type === 'ghost' && !m.linkedRecipes?.length && !m.removed_at)
   const ghostNames = ghostMeals.map(m => m.custom_name || 'Untitled')
   const ghostMessage = ghostNames.length === 1
     ? `${ghostNames[0]} doesn't have a recipe yet — add one so Sage can build your shopping list.`
@@ -804,18 +857,18 @@ export default function ThisWeek({ appUser }) {
                         const title = ev.title || ''
                         return (
                           <div key={ev.id} style={{
-                            fontSize: '10px', fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                            fontSize: '13px', fontFamily: "'Jost', sans-serif", fontWeight: 300,
                             color: isAllDay ? C.driftwood : textColor,
                             display: 'flex', alignItems: 'center', gap: '12px',
                           }}>
                             {!isAllDay && <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: C.honey, flexShrink: 0 }} />}
                             <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: isAllDay ? 'italic' : 'normal' }}>{title}</span>
-                            {timeStr && <span style={{ flexShrink: 0, opacity: 0.8 }}>{timeStr}</span>}
+                            {timeStr && <span style={{ flexShrink: 0, opacity: 0.8, fontSize: '12px' }}>{timeStr}</span>}
                           </div>
                         )
                       })}
                       {overflow > 0 && (
-                        <div style={{ fontSize: '10px', color: textColor, opacity: 0.6, paddingLeft: '9px' }}>+{overflow} more</div>
+                        <div style={{ fontSize: '12px', color: textColor, opacity: 0.6, paddingLeft: '9px' }}>+{overflow} more</div>
                       )}
                     </div>
                   )
@@ -835,7 +888,7 @@ export default function ThisWeek({ appUser }) {
                         }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontSize: '14px', color: meal.status === 'cooked' ? C.sage : (meal.entry_type === 'linked' && meal.recipe_id) ? C.forest : C.ink }}>
+                              <span style={{ fontSize: '14px', fontWeight: 500, color: meal.status === 'cooked' ? C.sage : meal.linkedRecipes?.length > 0 ? C.forest : C.ink }}>
                                 {meal.status === 'cooked' && <span style={{ color: C.sage }}>✓ </span>}
                                 {getMealName(meal)}
                               </span>
@@ -844,12 +897,12 @@ export default function ThisWeek({ appUser }) {
                                   {formatMultiplierBadge(meal.batch_multiplier)}
                                 </span>
                               )}
-                              {meal.entry_type === 'linked' && (
+                              {(meal.linkedRecipes?.length > 0 || meal.entry_type === 'linked') && (
                                 <svg viewBox="0 0 24 24" fill="none" stroke={C.sage} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12, flexShrink: 0 }}>
                                   <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
                                 </svg>
                               )}
-                              {meal.entry_type === 'ghost' && !meal.recipe_id && (
+                              {meal.entry_type === 'ghost' && !meal.linkedRecipes?.length && (
                                 <button onClick={e => { e.stopPropagation(); openLinkSheet(meal) }} style={{
                                   background: 'none', border: 'none', cursor: 'pointer', padding: '2px',
                                   display: 'flex', alignItems: 'center', flexShrink: 0, opacity: 0.5,
@@ -874,7 +927,7 @@ export default function ThisWeek({ appUser }) {
                             background: 'rgba(122,140,110,0.06)', borderRadius: '8px',
                             borderLeft: `3px solid ${C.sage}`,
                           }}>
-                            <div style={{ fontSize: '12px', color: C.ink, marginBottom: '8px', lineHeight: 1.5 }}>
+                            <div style={{ fontSize: '13px', color: C.ink, marginBottom: '8px', lineHeight: 1.5 }}>
                               <span style={{ color: C.sage }}>✦</span> I found some recipes that might work:
                             </div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -905,7 +958,7 @@ export default function ThisWeek({ appUser }) {
                             background: 'rgba(122,140,110,0.06)', borderRadius: '8px',
                             borderLeft: `3px solid ${C.sage}`,
                           }}>
-                            <div style={{ fontSize: '12px', color: C.driftwood, marginBottom: '8px', fontStyle: 'italic' }}>
+                            <div style={{ fontSize: '13px', color: C.driftwood, marginBottom: '8px', fontStyle: 'italic' }}>
                               <span style={{ color: C.sage }}>✦</span> No matching recipes found — want to save one?
                             </div>
                             <div style={{ display: 'flex', gap: '6px' }}>
@@ -1028,7 +1081,7 @@ export default function ThisWeek({ appUser }) {
                 Ready to build your shopping list? I'll pull in everything you need from this week's recipes.
               </div>
               {ghostMeals.length > 0 && (
-                <div style={{ fontSize: '12px', color: C.driftwood, fontStyle: 'italic', marginBottom: '16px', paddingLeft: '4px' }}>
+                <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', marginBottom: '16px', paddingLeft: '4px' }}>
                   {ghostNames.length === 1
                     ? `${ghostNames[0]} doesn't have a recipe — you can add those items manually.`
                     : ghostNames.length === 2
@@ -1088,17 +1141,10 @@ export default function ThisWeek({ appUser }) {
                     outline: 'none', color: C.ink, boxSizing: 'border-box',
                   }}
                 />
-                {selectedRecipe && (
-                  <div style={{
-                    position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
-                    fontSize: '9px', fontWeight: 500, color: C.sage, background: 'rgba(122,140,110,0.1)',
-                    padding: '2px 6px', borderRadius: '4px',
-                  }}>Recipe</div>
-                )}
               </div>
 
-              {/* Recipe suggestions */}
-              {recipeSuggestions.length > 0 && !selectedRecipe && (
+              {/* Meal name suggestions from history */}
+              {recipeSuggestions.length > 0 && (
                 <div style={{
                   marginBottom: '12px', background: C.cream, borderRadius: '10px',
                   border: `1px solid ${C.linen}`, maxHeight: '140px', overflowY: 'auto',
@@ -1111,7 +1157,6 @@ export default function ThisWeek({ appUser }) {
                       fontFamily: "'Jost', sans-serif",
                     }}>
                       {r.name}
-                      {r.recipe_id && <span style={{ fontSize: '10px', color: C.sage, marginLeft: '6px' }}>Recipe linked</span>}
                     </button>
                   ))}
                 </div>
@@ -1181,11 +1226,39 @@ export default function ThisWeek({ appUser }) {
             }}>
               <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
               <div style={{ padding: '16px 22px 20px' }}>
+                {/* 1. Meal name */}
                 <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '18px' }}>
                   {getMealName(editMeal)}
                 </div>
 
-                {/* Cooked button — for past meals that haven't been reviewed */}
+                {/* 2. Linked recipes */}
+                <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '8px' }}>Linked recipes</div>
+                <div style={{ marginBottom: '16px' }}>
+                  {(editMeal.linkedRecipes || []).length > 0 ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                      {editMeal.linkedRecipes.map(lr => (
+                        <span key={lr.recipe_id} style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '4px',
+                          padding: '5px 10px', borderRadius: '8px', fontSize: '12px',
+                          background: 'rgba(61,107,79,0.08)', color: C.forest,
+                          fontFamily: "'Jost', sans-serif", fontWeight: 500,
+                        }}>
+                          {lr.recipe_name}
+                          <button onClick={() => unlinkRecipeFromMeal(editMeal.id, lr.recipe_id)} style={{
+                            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                            fontSize: '14px', color: C.driftwood, lineHeight: 1, marginLeft: '2px',
+                          }}>×</button>
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                  <button onClick={() => { setBatchEditMealId(null); openLinkSheet(editMeal) }} style={{
+                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                    fontSize: '12px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 400,
+                  }}>{(editMeal.linkedRecipes || []).length > 0 ? '+ Add another recipe' : '+ Link a recipe'}</button>
+                </div>
+
+                {/* 3. Cooked button — for past meals that haven't been reviewed */}
                 {editMeal.planned_date && editMeal.planned_date < todayStr && editMeal.status !== 'cooked' && !editMeal.removed_at && (
                   <button onClick={() => markAsCooked(editMeal.id)} style={{
                     width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '16px',
@@ -1202,12 +1275,12 @@ export default function ThisWeek({ appUser }) {
                   }}>✓ Cooked {new Date(editMeal.cooked_at).toLocaleDateString('en-US', { weekday: 'long' })}</div>
                 )}
 
-                {/* Batch size */}
-                <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '8px' }}>Batch size</div>
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '20px' }}>
+                {/* 4. Batch size — compact */}
+                <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '6px' }}>Batch size</div>
+                <div style={{ display: 'flex', gap: '5px', marginBottom: '20px' }}>
                   {BATCH_OPTIONS.map(val => (
                     <button key={val} onClick={() => changeBatchMultiplier(batchEditMealId, val)} style={{
-                      flex: 1, padding: '12px', borderRadius: '10px', fontSize: '15px',
+                      flex: 1, padding: '6px 10px', height: '32px', borderRadius: '8px', fontSize: '13px',
                       border: currentBatch === val ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
                       background: currentBatch === val ? 'rgba(61,107,79,0.08)' : 'white',
                       color: currentBatch === val ? C.forest : C.ink,
@@ -1217,7 +1290,7 @@ export default function ThisWeek({ appUser }) {
                   ))}
                 </div>
 
-                {/* Done button */}
+                {/* 5. Done button */}
                 <button onClick={() => setBatchEditMealId(null)} style={{
                   width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
                   background: C.forest, color: 'white', cursor: 'pointer',
@@ -1238,56 +1311,72 @@ export default function ThisWeek({ appUser }) {
         )
       })()}
 
-      {/* ── Recipe Link Sheet (ghost meals) ──────────────────────── */}
-      {linkSheetMeal && (
-        <>
-          <div onClick={() => setLinkSheetMeal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
-          <div onClick={e => e.stopPropagation()} style={{
-            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-            padding: '0 0 env(safe-area-inset-bottom, 24px)', zIndex: 201,
-            boxShadow: '0 -4px 32px rgba(44,36,23,0.18)', maxHeight: '70vh',
-            animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
-          }}>
-            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-            <div style={{ padding: '16px 22px 20px' }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
-                Link a recipe to {getMealName(linkSheetMeal)}?
-              </div>
-              <input
-                type="text" value={linkSearch} onChange={e => handleLinkSearch(e.target.value)}
-                placeholder="Search recipes..." autoFocus
-                style={{
-                  width: '100%', padding: '12px 14px', fontSize: '14px',
-                  fontFamily: "'Jost', sans-serif", fontWeight: 300,
-                  border: `1.5px solid ${C.linen}`, borderRadius: '12px',
-                  outline: 'none', color: C.ink, boxSizing: 'border-box', marginBottom: '10px',
-                }}
-              />
-              <div style={{ maxHeight: '280px', overflowY: 'auto' }}>
-                {linkResults.length === 0 && (
-                  <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', padding: '12px 0' }}>
-                    {linkSearch.trim() ? 'No recipes found' : 'Loading recipes...'}
-                  </div>
-                )}
-                {linkResults.map(r => (
-                  <button key={r.id} onClick={() => linkFromSheet(r.id, r.name)} style={{
-                    display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
-                    padding: '12px 0', background: 'none', border: 'none',
-                    borderBottom: '1px solid rgba(200,185,160,0.15)',
-                    cursor: 'pointer', textAlign: 'left', fontFamily: "'Jost', sans-serif",
-                  }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke={C.sage} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
-                      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
-                    </svg>
-                    <span style={{ fontSize: '14px', color: C.ink, fontWeight: 300 }}>{r.name}</span>
-                  </button>
-                ))}
+      {/* ── Recipe Link Sheet (multi-select) ──────────────────────── */}
+      {linkSheetMeal && (() => {
+        const currentlyLinked = new Set((meals.find(m => m.id === linkSheetMeal.id)?.linkedRecipes || []).map(r => r.recipe_id))
+        return (
+          <>
+            <div onClick={closeLinkSheet} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
+            <div onClick={e => e.stopPropagation()} style={{
+              position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+              width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
+              padding: '0 0 env(safe-area-inset-bottom, 24px)', zIndex: 201,
+              boxShadow: '0 -4px 32px rgba(44,36,23,0.18)', maxHeight: '70vh',
+              animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
+            }}>
+              <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+              <div style={{ padding: '16px 22px 20px' }}>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
+                  Link recipes to {getMealName(linkSheetMeal)}
+                </div>
+                <input
+                  type="text" value={linkSearch} onChange={e => handleLinkSearch(e.target.value)}
+                  placeholder="Search recipes..." autoFocus
+                  style={{
+                    width: '100%', padding: '12px 14px', fontSize: '14px',
+                    fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                    border: `1.5px solid ${C.linen}`, borderRadius: '12px',
+                    outline: 'none', color: C.ink, boxSizing: 'border-box', marginBottom: '10px',
+                  }}
+                />
+                <div style={{ maxHeight: '240px', overflowY: 'auto' }}>
+                  {linkResults.length === 0 && (
+                    <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', padding: '12px 0' }}>
+                      {linkSearch.trim() ? 'No recipes found' : 'Loading recipes...'}
+                    </div>
+                  )}
+                  {linkResults.map(r => {
+                    const isLinked = currentlyLinked.has(r.id)
+                    return (
+                      <button key={r.id} onClick={() => isLinked ? unlinkRecipeFromMeal(linkSheetMeal.id, r.id) : linkFromSheet(r.id, r.name)} style={{
+                        display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
+                        padding: '12px 0', background: 'none', border: 'none',
+                        borderBottom: '1px solid rgba(200,185,160,0.15)',
+                        cursor: 'pointer', textAlign: 'left', fontFamily: "'Jost', sans-serif",
+                      }}>
+                        {isLinked ? (
+                          <div style={{ width: 18, height: 18, borderRadius: '4px', background: C.forest, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}><path d="M20 6L9 17l-5-5"/></svg>
+                          </div>
+                        ) : (
+                          <div style={{ width: 18, height: 18, borderRadius: '4px', border: `1.5px solid ${C.linen}`, flexShrink: 0 }} />
+                        )}
+                        <span style={{ fontSize: '14px', color: isLinked ? C.forest : C.ink, fontWeight: isLinked ? 500 : 300 }}>{r.name}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+                <button onClick={closeLinkSheet} style={{
+                  width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
+                  background: C.forest, color: 'white', cursor: 'pointer', marginTop: '12px',
+                  fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
+                  boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
+                }}>Done</button>
               </div>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )
+      })()}
 
       {/* ── Toast ────────────────────────────────────────────────── */}
       {toast && (

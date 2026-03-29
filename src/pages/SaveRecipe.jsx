@@ -62,8 +62,10 @@ export default function SaveRecipe({ appUser }) {
   const [urlInput, setUrlInput] = useState('')
   const [extracting, setExtracting] = useState(false)
   const [extractError, setExtractError] = useState(null)
-  // Typed URL error: null | { type: 'blocked_domain', site } | { type: 'fetch_failed' } | { type: 'parse_failed' }
+  // Typed URL error: null | { type: 'blocked_domain', site } | { type: 'fetch_failed' } | { type: 'parse_failed' } | { type: 'timeout' }
   const [urlError, setUrlError] = useState(null)
+  const [extractMessage, setExtractMessage] = useState('')
+  const extractTimersRef = useRef(null)
 
   // Multi-photo capture state
   const [capturedPhotos, setCapturedPhotos] = useState([]) // [{ file, preview, id }]
@@ -133,11 +135,43 @@ export default function SaveRecipe({ appUser }) {
   }
 
   // ── Extraction: URL ──────────────────────────────────────────
+  function clearExtractTimers() {
+    if (extractTimersRef.current) {
+      clearInterval(extractTimersRef.current.interval)
+      clearTimeout(extractTimersRef.current.timeout)
+      extractTimersRef.current = null
+    }
+  }
+
+  function startExtractTimers() {
+    const messages = [
+      'Sage is reading the page...',
+      'Pulling out the ingredients...',
+      "Almost there — this one's a bit complex...",
+      'Still working — some sites take a little longer...',
+    ]
+    let idx = 0
+    setExtractMessage(messages[0])
+    const interval = setInterval(() => {
+      idx = Math.min(idx + 1, messages.length - 1)
+      setExtractMessage(messages[idx])
+    }, 6000)
+    // Hard client-side timeout: 28s (3s buffer after 25s server timeout)
+    const timeout = setTimeout(() => {
+      clearInterval(interval)
+      setExtracting(false)
+      setUrlError({ type: 'timeout' })
+    }, 28000)
+    extractTimersRef.current = { interval, timeout }
+  }
+
   async function handleUrlExtract() {
     if (!urlInput.trim() || extracting) return
     setExtracting(true)
     setExtractError(null)
     setUrlError(null)
+    clearExtractTimers()
+    startExtractTimers()
     try {
       const response = await fetch('/api/extract-recipe', {
         method: 'POST',
@@ -145,9 +179,10 @@ export default function SaveRecipe({ appUser }) {
         body: JSON.stringify({ url: urlInput.trim() }),
       })
       const data = await response.json()
+      clearExtractTimers()
       if (!response.ok || !data.success) {
         const errType = data.error
-        if (errType === 'fetch_failed' || errType === 'parse_failed') {
+        if (errType === 'fetch_failed' || errType === 'parse_failed' || errType === 'timeout') {
           setUrlError({ type: errType })
           setExtracting(false)
           return
@@ -157,6 +192,7 @@ export default function SaveRecipe({ appUser }) {
       applyExtractedRecipe(data.recipe, urlInput.trim())
     } catch (err) {
       console.error('[SaveRecipe] URL extraction error:', err)
+      clearExtractTimers()
       setUrlError({ type: 'fetch_failed' })
       setExtracting(false)
     }
@@ -513,10 +549,14 @@ export default function SaveRecipe({ appUser }) {
         .then(({ data }) => { if (data?.length) categorizeIngredientsWithSage(data, { recipeName: s(name), recipeId, appUser }) })
       logActivity({ user: appUser, actionType: 'recipe_saved', targetType: 'recipe', targetId: recipeId, targetName: s(name), metadata: { source_type: sourceType } })
 
-      // If coming from week view, link recipe to the planned meal
+      // If coming from week view, link recipe to the planned meal via junction table
       if (returnTo === 'week' && plannedMealId) {
+        await supabase.from('planned_meal_recipes').upsert(
+          { planned_meal_id: plannedMealId, recipe_id: recipeId, sort_order: 0 },
+          { onConflict: 'planned_meal_id,recipe_id' }
+        )
         await supabase.from('planned_meals').update({
-          recipe_id: recipeId, entry_type: 'linked', sage_match_status: 'resolved',
+          entry_type: 'linked', sage_match_status: 'resolved',
         }).eq('id', plannedMealId)
       } else {
         // Reverse match — check if any ghost meals match this new recipe name
@@ -667,31 +707,61 @@ export default function SaveRecipe({ appUser }) {
               padding: '16px', background: 'white', borderRadius: '12px',
               borderLeft: `3px solid ${C.honey}`,
             }}>
-              <div style={{ fontSize: '14px', color: C.ink, lineHeight: 1.6, marginBottom: '14px' }}>
-                {urlError.type === 'fetch_failed' && (
-                  <>Sage couldn't reach that page — the link may be broken or the site may be temporarily down. Double-check the URL and try again, or use one of these instead:</>
-                )}
-                {urlError.type === 'parse_failed' && (
-                  <>Sage found the page but had trouble reading the recipe format. Try a photo of the recipe or enter it manually.</>
-                )}
-              </div>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button onClick={() => { setSourceType('photo'); setUrlError(null); setStep('photo') }} style={{
-                  flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-                  background: C.forest, color: 'white',
-                  fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
-                }}>
-                  Take a photo →
-                </button>
-                <button onClick={() => { setUrlError(null); startManual() }} style={{
-                  flex: 1, padding: '10px', borderRadius: '10px', cursor: 'pointer',
-                  background: 'transparent', color: C.forest,
-                  border: `1.5px solid ${C.forest}`,
-                  fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
-                }}>
-                  Enter it manually →
-                </button>
-              </div>
+              {urlError.type === 'timeout' ? (
+                <>
+                  <div style={{ textAlign: 'center', marginBottom: '14px' }}>
+                    <span style={{ fontSize: '24px', color: C.driftwood }}>✦</span>
+                    <div style={{ fontSize: '14px', color: C.ink, lineHeight: 1.6, marginTop: '8px' }}>
+                      Sage had trouble reading that page — the site may be blocking access or took too long to respond.
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <button onClick={() => { setUrlError(null); handleUrlExtract() }} style={{
+                      padding: '12px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+                      background: C.forest, color: 'white',
+                      fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
+                    }}>
+                      Try again
+                    </button>
+                    <button onClick={() => { setUrlError(null); startManual() }} style={{
+                      padding: '12px', borderRadius: '10px', cursor: 'pointer',
+                      background: 'transparent', color: C.forest,
+                      border: `1.5px solid ${C.forest}`,
+                      fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
+                    }}>
+                      Add manually instead
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: '14px', color: C.ink, lineHeight: 1.6, marginBottom: '14px' }}>
+                    {urlError.type === 'fetch_failed' && (
+                      <>Sage couldn't reach that page — the link may be broken or the site may be temporarily down. Double-check the URL and try again, or use one of these instead:</>
+                    )}
+                    {urlError.type === 'parse_failed' && (
+                      <>Sage found the page but had trouble reading the recipe format. Try a photo of the recipe or enter it manually.</>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button onClick={() => { setSourceType('photo'); setUrlError(null); setStep('photo') }} style={{
+                      flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+                      background: C.forest, color: 'white',
+                      fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
+                    }}>
+                      Take a photo →
+                    </button>
+                    <button onClick={() => { setUrlError(null); startManual() }} style={{
+                      flex: 1, padding: '10px', borderRadius: '10px', cursor: 'pointer',
+                      background: 'transparent', color: C.forest,
+                      border: `1.5px solid ${C.forest}`,
+                      fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
+                    }}>
+                      Enter it manually →
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -699,7 +769,7 @@ export default function SaveRecipe({ appUser }) {
             <div style={{ textAlign: 'center', padding: '32px 0' }}>
               <div style={{ display: 'inline-block', width: '32px', height: '32px', border: `3px solid ${C.linen}`, borderTop: `3px solid ${C.forest}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
               <div style={{ marginTop: '12px', fontSize: '14px', color: C.driftwood, fontStyle: 'italic' }}>
-                Sage is reading the recipe...
+                {extractMessage}
               </div>
             </div>
           ) : !urlError && (

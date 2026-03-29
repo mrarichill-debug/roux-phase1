@@ -102,11 +102,31 @@ export default function ShoppingTrip({ appUser }) {
       is_purchased: !wasPurchased, purchased_at: wasPurchased ? null : now,
     }).eq('id', item.tripItemId)
 
-    if (!wasPurchased && item.shopping_list_item_id) {
+    if (item.shopping_list_item_id) {
+      if (!wasPurchased) {
+        await supabase.from('shopping_list_items').update({
+          is_purchased: true, purchased_at: now, last_purchased_at: now, status: 'purchased',
+        }).eq('id', item.shopping_list_item_id)
+      } else {
+        await supabase.from('shopping_list_items').update({
+          is_purchased: false, purchased_at: null, status: 'active',
+        }).eq('id', item.shopping_list_item_id)
+      }
+    }
+  }
+
+  async function removeFromTrip(item) {
+    // Remove from local state immediately
+    setTripItems(prev => prev.filter(i => i.tripItemId !== item.tripItemId))
+    // Delete trip item row
+    await supabase.from('shopping_trip_items').delete().eq('id', item.tripItemId)
+    // Fully reset item so it returns to manifest as active + unassigned
+    if (item.shopping_list_item_id) {
       await supabase.from('shopping_list_items').update({
-        is_purchased: true, purchased_at: now, last_purchased_at: now, status: 'purchased',
+        assigned_trip_id: null, is_purchased: false, purchased_at: null, status: 'active',
       }).eq('id', item.shopping_list_item_id)
     }
+    logActivity({ user: appUser, actionType: 'trip_item_removed', targetType: 'shopping_item', targetName: item.name })
   }
 
   async function finishTrip() {
@@ -226,6 +246,10 @@ export default function ShoppingTrip({ appUser }) {
                     </div>
                   )}
                 </div>
+                <button onClick={(e) => { e.stopPropagation(); removeFromTrip(item) }} style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
+                  fontSize: '10px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                }}>Remove</button>
               </div>
             ))}
           </div>

@@ -190,6 +190,9 @@ export default async function handler(req, res) {
           listItem: li,
           mealCountMap,
         })
+
+        // Update pantry staple purchase tracking if ingredient is a staple
+        await updateStaplePurchase(supabase, householdId, matchName.toLowerCase().trim())
       } else if (bestMatch && bestScore >= LOW_CONFIDENCE_THRESHOLD) {
         // Low confidence — needs confirmation
         const li = listMap[bestMatch.shopping_list_item_id]
@@ -277,4 +280,40 @@ async function recordPurchaseHistory(supabase, { householdId, tripId, storeName,
       is_bulk_purchase: storeType === 'bulk',
     })
   }
+}
+
+/**
+ * Update pantry staple purchase tracking — frequency data for Sage nudges.
+ * Recalculates rolling average days between purchases and next purchase estimate.
+ */
+async function updateStaplePurchase(supabase, householdId, ingredientName) {
+  const { data: staple } = await supabase.from('pantry_staples')
+    .select('id, purchase_count, last_purchased_at, avg_days_between_purchase')
+    .eq('household_id', householdId)
+    .ilike('name', ingredientName)
+    .maybeSingle()
+
+  if (!staple) return // Not a pantry staple — skip
+
+  const now = new Date()
+  const newCount = (staple.purchase_count || 0) + 1
+  const update = {
+    last_purchased_at: now.toISOString(),
+    purchase_count: newCount,
+  }
+
+  // Calculate rolling average days between purchases
+  if (staple.last_purchased_at && newCount >= 2) {
+    const lastDate = new Date(staple.last_purchased_at)
+    const daysSinceLast = Math.max(1, Math.round((now - lastDate) / (1000 * 60 * 60 * 24)))
+    const prevAvg = staple.avg_days_between_purchase || daysSinceLast
+    // Rolling average: weight recent purchase more
+    const newAvg = Math.round(((prevAvg * (newCount - 2)) + daysSinceLast) / (newCount - 1))
+    update.avg_days_between_purchase = newAvg
+    // Estimate next purchase
+    const nextDate = new Date(now.getTime() + newAvg * 24 * 60 * 60 * 1000)
+    update.next_purchase_estimate = nextDate.toISOString().split('T')[0]
+  }
+
+  await supabase.from('pantry_staples').update(update).eq('id', staple.id)
 }

@@ -45,20 +45,20 @@ export default function SageNudgeCard({
 
         {/* Message */}
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '13px', color: C.ink, lineHeight: 1.5, fontFamily: "'Jost', sans-serif", fontWeight: 300 }}>
+          <div style={{ fontSize: '15px', color: C.ink, lineHeight: 1.5, fontFamily: "'Jost', sans-serif", fontWeight: 400 }}>
             {message}
           </div>
           {actionLabel && onAction && (
             <button onClick={onAction} style={{
               marginTop: '6px', background: 'none', border: 'none', padding: 0,
-              cursor: 'pointer', fontSize: '12px', color: C.forest, fontWeight: 400,
+              cursor: 'pointer', fontSize: '14px', color: C.forest, fontWeight: 400,
               fontFamily: "'Jost', sans-serif",
             }}>{actionLabel}</button>
           )}
           {secondaryActionLabel && secondaryOnAction && (
             <button onClick={secondaryOnAction} style={{
               marginTop: '4px', background: 'none', border: 'none', padding: 0,
-              cursor: 'pointer', fontSize: '11px', color: C.driftwood, fontWeight: 300,
+              cursor: 'pointer', fontSize: '13px', color: C.driftwood, fontWeight: 300,
               fontFamily: "'Jost', sans-serif", fontStyle: 'italic', display: 'block',
             }}>{secondaryActionLabel}</button>
           )}

@@ -354,3 +354,15 @@ window.addEventListener('scroll', () => {
   });
 }, { passive: true });
 ```
+
+---
+
+## Text Size Rules
+
+- **Minimum body text size: 13px.** Any text the user needs to read — descriptions, labels, action links, source meal names, nudge messages — must be at least 13px.
+- **Onboarding and instructional text: 15–16px.** Guided flows and explanatory body copy use larger sizes for comfortable reading.
+- **Never use less than 13px for any text the user needs to read.** UI-only labels (uppercase category headers like PRODUCE, pill labels like DINNER, badge text) can stay smaller.
+
+## Future Settings
+
+- **Calendar event font size** — planned small/medium/large selector in Settings. Default = medium (13px). Small = 11px, Large = 15px.

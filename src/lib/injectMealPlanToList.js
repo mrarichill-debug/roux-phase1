@@ -1,10 +1,12 @@
 /**
- * injectMealPlanToList.js — Pulls ingredients from linked recipes into the master shopping list.
+ * injectMealPlanToList.js — Pulls ingredients from linked recipes into the week's shopping list.
  * Called when Lauren taps "Build my list" after sharing the week.
+ * Uses getOrCreateShoppingList to find/create the right list for the meal plan.
  */
 import { supabase } from './supabase'
 import { categorizeIngredient } from './categorizeIngredient'
 import { categorizeIngredientsWithSage } from './categorizeIngredientsWithSage'
+import { getOrCreateShoppingList } from './getOrCreateShoppingList'
 
 /**
  * Multiply a quantity string by a batch multiplier.
@@ -59,18 +61,26 @@ export async function injectMealPlanToList({ planId, householdId, onCategorizing
   if (!planId || !householdId) return { count: 0 }
 
   try {
-    // Get linked meals with recipe IDs + batch multiplier
-    const { data: linkedMeals } = await supabase
+    // Get all meals for this plan (need batch_multiplier + custom_name)
+    const { data: allMeals } = await supabase
       .from('planned_meals')
-      .select('id, recipe_id, custom_name, entry_type, batch_multiplier')
+      .select('id, custom_name, entry_type, batch_multiplier')
       .eq('meal_plan_id', planId)
-      .eq('entry_type', 'linked')
-      .not('recipe_id', 'is', null)
+      .is('removed_at', null)
 
-    if (!linkedMeals?.length) return { count: 0 }
+    if (!allMeals?.length) return { count: 0 }
+
+    // Get recipe links from junction table (separate queries per LESSONS.md)
+    const mealIds = allMeals.map(m => m.id)
+    const { data: pmrRows } = await supabase
+      .from('planned_meal_recipes')
+      .select('planned_meal_id, recipe_id')
+      .in('planned_meal_id', mealIds)
+
+    if (!pmrRows?.length) return { count: 0 }
 
     // Get recipe names for display
-    const recipeIds = linkedMeals.map(m => m.recipe_id)
+    const recipeIds = [...new Set(pmrRows.map(r => r.recipe_id))]
     const { data: recipes } = await supabase
       .from('recipes')
       .select('id, name')
@@ -78,11 +88,15 @@ export async function injectMealPlanToList({ planId, householdId, onCategorizing
     const recipeNameMap = Object.fromEntries((recipes || []).map(r => [r.id, r.name]))
 
     // Build meal name + multiplier maps: recipe_id → display name / multiplier
+    // A recipe can appear in multiple meals — use the meal's custom_name for display
     const mealNameMap = {}
     const batchMap = {}
-    for (const meal of linkedMeals) {
-      mealNameMap[meal.recipe_id] = meal.custom_name || recipeNameMap[meal.recipe_id] || 'Meal'
-      batchMap[meal.recipe_id] = meal.batch_multiplier || 1
+    const mealById = Object.fromEntries(allMeals.map(m => [m.id, m]))
+    for (const pmr of pmrRows) {
+      const meal = mealById[pmr.planned_meal_id]
+      if (!meal) continue
+      mealNameMap[pmr.recipe_id] = meal.custom_name || recipeNameMap[pmr.recipe_id] || 'Meal'
+      batchMap[pmr.recipe_id] = meal.batch_multiplier || 1
     }
 
     // Fetch all ingredients for these recipes
@@ -117,26 +131,10 @@ export async function injectMealPlanToList({ planId, householdId, onCategorizing
       }
     }
 
-    // Get or create master list
-    let { data: masterList } = await supabase
-      .from('shopping_lists')
-      .select('id')
-      .eq('household_id', householdId)
-      .eq('list_type', 'master')
-      .neq('status', 'completed')
-      .limit(1)
-      .maybeSingle()
-
-    if (!masterList) {
-      const [y, m, d] = new Date().toISOString().split('T')[0].split('-').map(Number)
-      const endDate = new Date(y, m - 1, d + 6)
-      const wed = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`
-      const { data: newList } = await supabase.from('shopping_lists').insert({
-        household_id: householdId, list_type: 'master', status: 'draft',
-      }).select('id').single()
-      masterList = newList
-    }
-    if (!masterList) return { count: 0 }
+    // Get or create shopping list for this meal plan
+    const listId = await getOrCreateShoppingList(planId, householdId)
+    if (!listId) return { count: 0 }
+    const masterList = { id: listId }
 
     // Check existing items to avoid duplicates
     const { data: existingItems } = await supabase

@@ -85,42 +85,61 @@ export default async function handler(req, res) {
     const model = await getSageModelServer()
     const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
 
-    // First attempt
-    const response = await anthropic.messages.create({
-      model,
-      max_tokens: 4096,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      messages: [{ role: 'user', content: RECIPE_PROMPT(url) }],
-    })
+    // 25-second timeout — if Sage takes too long, fail gracefully
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), 25000)
+    )
 
-    const text = extractTextFromResponse(response)
-    const recipe = extractJsonFromResponse(text)
+    async function extractWithRetry() {
+      // First attempt
+      const response = await anthropic.messages.create({
+        model,
+        max_tokens: 4096,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content: RECIPE_PROMPT(url) }],
+      })
 
-    if (recipe) {
-      recipe.source_url = url
-      return res.status(200).json({ success: true, recipe })
+      const text = extractTextFromResponse(response)
+      const recipe = extractJsonFromResponse(text)
+
+      if (recipe) {
+        recipe.source_url = url
+        return { success: true, recipe }
+      }
+
+      // Retry once with stronger formatting instruction
+      console.log('[extract-recipe] First parse failed, retrying with strict prompt')
+      const retryResponse = await anthropic.messages.create({
+        model,
+        max_tokens: 4096,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content: RETRY_PROMPT(url) }],
+      })
+
+      const retryText = extractTextFromResponse(retryResponse)
+      const retryRecipe = extractJsonFromResponse(retryText)
+
+      if (retryRecipe) {
+        retryRecipe.source_url = url
+        return { success: true, recipe: retryRecipe }
+      }
+
+      return null
     }
 
-    // Retry once with stronger formatting instruction
-    console.log('[extract-recipe] First parse failed, retrying with strict prompt')
-    const retryResponse = await anthropic.messages.create({
-      model,
-      max_tokens: 4096,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      messages: [{ role: 'user', content: RETRY_PROMPT(url) }],
-    })
+    const result = await Promise.race([extractWithRetry(), timeoutPromise])
 
-    const retryText = extractTextFromResponse(retryResponse)
-    const retryRecipe = extractJsonFromResponse(retryText)
-
-    if (retryRecipe) {
-      retryRecipe.source_url = url
-      return res.status(200).json({ success: true, recipe: retryRecipe })
+    if (result) {
+      return res.status(200).json(result)
     }
 
     console.error('[extract-recipe] Both parse attempts failed')
     return res.status(422).json({ success: false, error: 'parse_failed' })
   } catch (error) {
+    if (error.message === 'timeout') {
+      console.error('[extract-recipe] Timed out after 25s')
+      return res.status(408).json({ success: false, error: 'timeout', message: 'Sage took too long to read that page.' })
+    }
     console.error('[extract-recipe] Error:', error.message)
     return res.status(500).json({ success: false, error: 'parse_failed' })
   }

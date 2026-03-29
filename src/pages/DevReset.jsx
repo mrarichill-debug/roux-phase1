@@ -9,11 +9,36 @@ import { supabase } from '../lib/supabase'
 
 const C = { forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417', driftwood: '#8C7B6B', honey: '#C49A3C', red: '#A03030', linen: '#E8E0D0' }
 
+const HILL_HOUSEHOLD = '53f6a197-544a-48e6-9a46-23d7252399c2'
+
 export default function DevReset({ appUser }) {
   const navigate = useNavigate()
   const [confirming, setConfirming] = useState(false)
   const [resetting, setResetting] = useState(false)
   const [done, setDone] = useState(false)
+  const [fixing, setFixing] = useState(false)
+
+  async function fixSession() {
+    if (fixing) return
+    setFixing(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { alert('No auth session — sign in first'); setFixing(false); return }
+      await supabase.from('users').upsert({
+        auth_id: session.user.id,
+        household_id: HILL_HOUSEHOLD,
+        name: session.user.email?.split('@')[0] || 'Dev User',
+        email: session.user.email || 'dev@roux.app',
+        role: 'admin',
+        membership_status: 'active',
+        has_planned_first_meal: true,
+      }, { onConflict: 'auth_id' })
+      window.location.reload()
+    } catch (err) {
+      console.error('[DevReset] Fix session error:', err)
+      setFixing(false)
+    }
+  }
 
   async function handleReset() {
     if (resetting) return
@@ -120,6 +145,19 @@ export default function DevReset({ appUser }) {
             }}>{p === 'apple' ? 'Apple' : p === 'google' ? 'Google' : 'None'}</button>
           ))}
         </div>
+      </div>
+
+      {/* Fix session — link dev auth user to Hill household */}
+      <div style={{ marginTop: '24px', padding: '16px', background: 'white', borderRadius: '12px', border: `1px solid ${C.linen}`, width: '100%', maxWidth: '260px' }}>
+        <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '8px' }}>Session Fix</div>
+        <div style={{ fontSize: '11px', color: C.driftwood, lineHeight: 1.5, marginBottom: '10px' }}>
+          Link current auth user to Hill household. Fixes blank screens caused by missing users row.
+        </div>
+        <button onClick={fixSession} disabled={fixing} style={{
+          width: '100%', padding: '10px', borderRadius: '8px', border: 'none',
+          background: C.honey, color: 'white', cursor: 'pointer',
+          fontFamily: "'Jost', sans-serif", fontSize: '12px', fontWeight: 500,
+        }}>{fixing ? 'Fixing...' : 'Fix session — link to Hill household'}</button>
       </div>
 
       <button onClick={() => navigate('/')} style={{

@@ -232,8 +232,13 @@ export default function Dashboard({ appUser }) {
         if (bg.activity_type === 'recipe_match' && bg.recipe_id && bg.metadata?.matched_meal_id) {
           entry.actionLabel = 'Link it →'
           entry.onLinkAction = async () => {
+            // Write to junction table, not planned_meals.recipe_id
+            await supabase.from('planned_meal_recipes').upsert(
+              { planned_meal_id: bg.metadata.matched_meal_id, recipe_id: bg.recipe_id, sort_order: 0 },
+              { onConflict: 'planned_meal_id,recipe_id' }
+            )
             await supabase.from('planned_meals').update({
-              recipe_id: bg.recipe_id, entry_type: 'linked', sage_match_status: 'resolved',
+              entry_type: 'linked', sage_match_status: 'resolved',
             }).eq('id', bg.metadata.matched_meal_id)
             await supabase.from('sage_background_activity').update({ seen: true }).eq('id', bg.id)
             setSageMessages(prev => prev.filter(m => m.id !== entry.id))

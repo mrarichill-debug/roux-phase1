@@ -39,7 +39,7 @@ const NAV_TABS = [
     ),
   },
   {
-    key: 'pantry', label: 'Pantry', path: '/pantry',
+    key: 'pantry', label: 'Shop', path: '/pantry',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
         <line x1="9" x2="21" y1="6" y2="6"/>

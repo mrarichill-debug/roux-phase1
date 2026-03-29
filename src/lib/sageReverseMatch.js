@@ -36,10 +36,15 @@ export async function sageReverseMatch({ recipeId, recipeName, appUser }) {
       household_id: appUser.household_id,
       user_id: appUser.id,
       activity_type: 'recipe_match',
-      message: `I noticed ${recipeName} is on your menu this week — want to link this recipe to ${dayName}'s plan?`,
+      message: `I found a recipe for ${match.custom_name} — want to link it?`,
       recipe_id: recipeId,
       seen: false,
-      metadata: { matched_meal_id: match.id, matched_meal_name: match.custom_name },
+      metadata: {
+        matched_meal_id: match.id,
+        matched_meal_name: match.custom_name,
+        matched_recipes: [{ id: recipeId, name: recipeName }],
+        planned_meal_id: match.id,
+      },
     })
   } catch (err) {
     console.warn('[SageReverseMatch] Failed:', err.message)

@@ -144,12 +144,30 @@ export default function App() {
       }
 
       if (!user) {
-        // Still no user record after retries — sign out.
-        console.error('[Roux] No user record found for auth ID:', authUserId, 'after retries — signing out')
-        sessionStorage.removeItem('pendingJoinFlow')
-        setAuthLoading(false)
-        await supabase.auth.signOut()
-        return
+        // In dev mode, auto-create user linked to Hill household to prevent blank screens
+        if (import.meta.env.DEV) {
+          console.warn('[Roux] DEV: No user record — auto-creating linked to Hill household')
+          const HILL_HOUSEHOLD = '53f6a197-544a-48e6-9a46-23d7252399c2'
+          await supabase.from('users').upsert({
+            auth_id: authUserId,
+            household_id: HILL_HOUSEHOLD,
+            name: sess.user.email?.split('@')[0] || 'Dev User',
+            email: sess.user.email || 'dev@roux.app',
+            role: 'admin',
+            membership_status: 'active',
+            has_planned_first_meal: true,
+          }, { onConflict: 'auth_id' })
+          user = await loadAppUser(authUserId)
+        }
+
+        if (!user) {
+          // Still no user record after retries — sign out.
+          console.error('[Roux] No user record found for auth ID:', authUserId, 'after retries — signing out')
+          sessionStorage.removeItem('pendingJoinFlow')
+          setAuthLoading(false)
+          await supabase.auth.signOut()
+          return
+        }
       }
 
       console.log('[Roux] Routing decision — session:', !!sess, 'membership_status:', user.membership_status)

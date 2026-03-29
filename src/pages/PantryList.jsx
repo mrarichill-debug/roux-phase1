@@ -1,15 +1,19 @@
 /**
- * PantryList.jsx — Master Family List screen.
- * Always-on running list. Groups by grocery_category. No store context — that's the Trip screen.
+ * PantryList.jsx — Week-scoped Shopping screen.
+ * Shows the shopping list for a specific week's meal plan. Groups by grocery_category.
+ * Week navigation lets Lauren move between weeks. No store context — that's the Trip screen.
  */
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { logActivity } from '../lib/activityLog'
 import { categorizeIngredient } from '../lib/categorizeIngredient'
+import { getOrCreateShoppingList } from '../lib/getOrCreateShoppingList'
+import { getWeekDatesTZ, getWeekStartTZ } from '../lib/dateUtils'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import SageNudgeCard from '../components/SageNudgeCard'
+import ShoppingOnboarding from '../components/ShoppingOnboarding'
 
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
@@ -28,6 +32,14 @@ const sentenceCase = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1) :
 
 export default function PantryList({ appUser }) {
   const navigate = useNavigate()
+  const tz = appUser?.timezone || 'America/Chicago'
+
+  // Week navigation
+  const [weekOffset, setWeekOffset] = useState(0)
+  const [weekDates, setWeekDates] = useState(() => getWeekDatesTZ(tz, 0))
+  const [selectedMealPlanId, setSelectedMealPlanId] = useState(null)
+  const [noMealPlan, setNoMealPlan] = useState(false)
+
   const [listId, setListId] = useState(null)
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -37,6 +49,7 @@ export default function PantryList({ appUser }) {
   const [showCatPicker, setShowCatPicker] = useState(false)
   const [manualCatPick, setManualCatPick] = useState(false)
   const [showTutorial, setShowTutorial] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(false)
   const [ghostMealsWithoutIngredients, setGhostMealsWithoutIngredients] = useState([])
 
   // Batch multipliers by meal name (case-insensitive)
@@ -54,9 +67,12 @@ export default function PantryList({ appUser }) {
   const [addingStore, setAddingStore] = useState(false)
   const [newStoreName, setNewStoreName] = useState('')
 
-  // "In my kitchen" + reassignment
-  const [kitchenExpanded, setKitchenExpanded] = useState(false)
+  // Pantry staples + "Have it" interaction
   const [reassignItem, setReassignItem] = useState(null) // item for trip reassignment sheet
+  const [pantryStaples, setPantryStaples] = useState([]) // household-level staples
+  const [haveItExpansion, setHaveItExpansion] = useState(null) // item id showing inline choice
+  const [stapleSheetItem, setStapleSheetItem] = useState(null) // item for staple type bottom sheet
+  const [haveThisWeekExpanded, setHaveThisWeekExpanded] = useState(false) // collapsed "already have" section
 
   // Completed trips this week
   const [completedTrips, setCompletedTrips] = useState([])
@@ -68,107 +84,146 @@ export default function PantryList({ appUser }) {
     if (!manualCatPick) setAddCategory(categorizeIngredient(val))
   }
 
+  // Load week + meal plan when offset or household changes
   useEffect(() => {
-    if (appUser?.household_id) loadList()
-  }, [appUser?.household_id])
+    if (appUser?.household_id) loadWeekAndList()
+  }, [appUser?.household_id, weekOffset])
 
-  async function loadList() {
+  async function loadWeekAndList() {
+    setLoading(true)
+    setNoMealPlan(false)
+    setItems([])
+    setListId(null)
+    setSelectedMealPlanId(null)
+    setGhostMealsWithoutIngredients([])
+
+    const dates = getWeekDatesTZ(tz, weekOffset)
+    setWeekDates(dates)
+    const ws = getWeekStartTZ(tz, weekOffset)
+
+    try {
+      // Find meal plan for this week
+      const { data: plan } = await supabase
+        .from('meal_plans')
+        .select('id, week_start_date, week_end_date')
+        .eq('household_id', appUser.household_id)
+        .eq('week_start_date', ws)
+        .maybeSingle()
+
+      if (!plan) {
+        setNoMealPlan(true)
+        // Still load stores (household-level)
+        supabase.from('grocery_stores').select('id, name, is_primary, sort_order').eq('household_id', appUser.household_id).order('sort_order')
+          .then(({ data }) => setStores(data || []))
+        setLoading(false)
+        return
+      }
+
+      setSelectedMealPlanId(plan.id)
+      await loadList(plan.id)
+    } catch (err) {
+      console.error('[PantryList] Load week error:', err)
+      setLoading(false)
+    }
+  }
+
+  async function loadList(mealPlanId) {
+    const mpId = mealPlanId || selectedMealPlanId
+    if (!mpId) return
     setLoading(true)
     try {
-      // Load grocery stores + pending trips
+      // Get or create shopping list for this meal plan
+      const activeListId = await getOrCreateShoppingList(mpId, appUser.household_id)
+      if (!activeListId) { setLoading(false); return }
+      setListId(activeListId)
+
+      // Load grocery stores (household-level)
       supabase.from('grocery_stores').select('id, name, is_primary, sort_order').eq('household_id', appUser.household_id).order('sort_order')
         .then(({ data }) => setStores(data || []))
+
+      // Load pending trips scoped to this shopping list
       supabase.from('shopping_trips').select('id, name, store_name, status')
-        .eq('household_id', appUser.household_id).in('status', ['pending', 'active'])
+        .eq('shopping_list_id', activeListId).in('status', ['pending', 'active'])
         .order('created_at', { ascending: false })
         .then(({ data }) => setPendingTrips(data || []))
 
-      // Load completed trips this week (Monday–Sunday)
-      const now = new Date()
-      const dayOfWeek = now.getDay()
-      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
-      const monday = new Date(now)
-      monday.setDate(now.getDate() + mondayOffset)
-      monday.setHours(0, 0, 0, 0)
+      // Load completed trips for this shopping list
       supabase.from('shopping_trips')
         .select('id, name, store_name, status, completed_at, receipt_photo_url, item_count')
-        .eq('household_id', appUser.household_id).eq('status', 'completed')
-        .gte('completed_at', monday.toISOString())
+        .eq('shopping_list_id', activeListId).eq('status', 'completed')
         .order('completed_at', { ascending: false })
         .then(({ data }) => setCompletedTrips(data || []))
 
-      const { data: list } = await supabase
-        .from('shopping_lists')
-        .select('id')
-        .eq('household_id', appUser.household_id)
-        .eq('list_type', 'master')
-        .neq('status', 'completed')
-        .limit(1)
-        .maybeSingle()
+      // Load items for this list
+      const { data } = await supabase
+        .from('shopping_list_items')
+        .select('*')
+        .eq('shopping_list_id', activeListId)
+        .eq('approval_status', 'approved')
+        .order('created_at')
+      setItems(data || [])
 
-      if (list) {
-        setListId(list.id)
-        const { data } = await supabase
-          .from('shopping_list_items')
-          .select('*')
-          .eq('shopping_list_id', list.id)
-          .eq('approval_status', 'approved')
-          .order('created_at')
-        setItems(data || [])
-        // Load batch multipliers for source meals — separate queries per LESSONS.md
-        ;(async () => {
-          const { data: pm } = await supabase.from('planned_meals')
-            .select('custom_name, batch_multiplier, recipe_id')
-            .eq('household_id', appUser.household_id)
-            .is('removed_at', null).not('batch_multiplier', 'is', null)
-          const map = {}
-          const recipeIds = []
-          for (const m of (pm || [])) {
-            if (!m.batch_multiplier || m.batch_multiplier === 1) continue
-            if (m.custom_name) map[m.custom_name.toLowerCase()] = m.batch_multiplier
-            if (m.recipe_id) recipeIds.push(m.recipe_id)
+      // Load pantry staples (household-level)
+      supabase.from('pantry_staples').select('id, name, category, staple_type, sage_tracks')
+        .eq('household_id', appUser.household_id)
+        .then(({ data: staples }) => setPantryStaples(staples || []))
+
+      // Load batch multipliers for source meals scoped to this meal plan
+      ;(async () => {
+        const { data: pm } = await supabase.from('planned_meals')
+          .select('custom_name, batch_multiplier, recipe_id')
+          .eq('meal_plan_id', mpId)
+          .is('removed_at', null).not('batch_multiplier', 'is', null)
+        const map = {}
+        const recipeIds = []
+        for (const m of (pm || [])) {
+          if (!m.batch_multiplier || m.batch_multiplier === 1) continue
+          if (m.custom_name) map[m.custom_name.toLowerCase()] = m.batch_multiplier
+          if (m.recipe_id) recipeIds.push(m.recipe_id)
+        }
+        if (recipeIds.length) {
+          const { data: recipes } = await supabase.from('recipes').select('id, name').in('id', recipeIds)
+          for (const r of (recipes || [])) {
+            const meal = (pm || []).find(m => m.recipe_id === r.id && m.batch_multiplier !== 1)
+            if (meal && r.name) map[r.name.toLowerCase()] = meal.batch_multiplier
           }
-          if (recipeIds.length) {
-            const { data: recipes } = await supabase.from('recipes').select('id, name').in('id', recipeIds)
-            for (const r of (recipes || [])) {
-              const meal = (pm || []).find(m => m.recipe_id === r.id && m.batch_multiplier !== 1)
-              if (meal && r.name) map[r.name.toLowerCase()] = meal.batch_multiplier
-            }
-          }
-          setBatchByMeal(map)
-        })()
-      } else {
-        const { data: newList } = await supabase.from('shopping_lists').insert({
-          household_id: appUser.household_id, list_type: 'master', status: 'draft',
-        }).select('id').single()
-        if (newList) setListId(newList.id)
-        setItems([])
-      }
+        }
+        setBatchByMeal(map)
+      })()
     } catch (err) {
       console.error('[PantryList] Load error:', err)
     }
     setLoading(false)
   }
 
-  // Show tutorial on first visit with items — verify against DB to avoid stale appUser
+  // Show onboarding on first visit with items — before tutorial
   useEffect(() => {
     if (loading || items.length === 0) return
+    if (appUser?.has_seen_shopping_onboarding) return
+    supabase.from('users').select('has_seen_shopping_onboarding').eq('id', appUser.id).single()
+      .then(({ data }) => {
+        if (!data?.has_seen_shopping_onboarding) setShowOnboarding(true)
+      })
+  }, [loading, items.length])
+
+  // Show tutorial on first visit with items — verify against DB to avoid stale appUser
+  useEffect(() => {
+    if (loading || items.length === 0 || showOnboarding) return
     if (appUser?.has_seen_shopping_tutorial) { setShowTutorial(false); return }
-    // Double-check DB in case appUser is stale
     supabase.from('users').select('has_seen_shopping_tutorial').eq('id', appUser.id).single()
       .then(({ data }) => {
         if (data?.has_seen_shopping_tutorial) setShowTutorial(false)
         else setShowTutorial(true)
       })
-  }, [loading, items.length])
+  }, [loading, items.length, showOnboarding])
 
-  // Check for ghost meals with no ingredients on the list
+  // Check for ghost meals with no ingredients on the list — scoped to selected meal plan
   useEffect(() => {
-    if (loading || !appUser?.household_id || !listId) return
+    if (loading || !appUser?.household_id || !listId || !selectedMealPlanId) return
     async function checkGhosts() {
       const { data: ghosts } = await supabase.from('planned_meals')
         .select('id, custom_name')
-        .eq('household_id', appUser.household_id)
+        .eq('meal_plan_id', selectedMealPlanId)
         .eq('entry_type', 'ghost')
         .is('recipe_id', null)
         .is('removed_at', null)
@@ -188,7 +243,7 @@ export default function PantryList({ appUser }) {
       setGhostMealsWithoutIngredients(uncovered)
     }
     checkGhosts()
-  }, [loading, listId, items.length])
+  }, [loading, listId, items.length, selectedMealPlanId])
 
   async function dismissTutorial() {
     setShowTutorial(false)
@@ -236,19 +291,77 @@ export default function PantryList({ appUser }) {
     loadList()
   }
 
-  async function markHaveIt(item) {
-    // Update all consolidated item IDs
+  // "Just this week" — sets have_it_this_week on shopping_list_items
+  async function markHaveItThisWeek(item) {
     const ids = item.ids || [item.id]
-    setItems(prev => prev.map(i => ids.includes(i.id) ? { ...i, already_have: true } : i))
+    setItems(prev => prev.map(i => ids.includes(i.id) ? { ...i, have_it_this_week: true } : i))
+    setHaveItExpansion(null)
     for (const id of ids) {
-      await supabase.from('shopping_list_items').update({ already_have: true }).eq('id', id)
+      await supabase.from('shopping_list_items').update({ have_it_this_week: true }).eq('id', id)
     }
-    logActivity({ user: appUser, actionType: 'item_marked_have_it', targetType: 'shopping_item', targetName: item.name })
+    logActivity({ user: appUser, actionType: 'item_have_it_this_week', targetType: 'shopping_item', targetName: item.name })
   }
 
-  async function markStillNeedIt(item) {
-    setItems(prev => prev.map(i => i.id === item.id ? { ...i, already_have: false } : i))
-    await supabase.from('shopping_list_items').update({ already_have: false }).eq('id', item.id)
+  // "Actually need it" — resets have_it_this_week
+  async function markActuallyNeedIt(item) {
+    const ids = item.ids || [item.id]
+    setItems(prev => prev.map(i => ids.includes(i.id) ? { ...i, have_it_this_week: false } : i))
+    for (const id of ids) {
+      await supabase.from('shopping_list_items').update({ have_it_this_week: false }).eq('id', id)
+    }
+  }
+
+  // "It's a staple" — insert into pantry_staples with chosen type
+  async function markAsStaple(item, stapleType) {
+    const name = (item.name || '').trim()
+    if (!name) return
+    const sageTracksVal = stapleType === 'perishable'
+    const newStaple = { name, category: item.grocery_category || 'other', staple_type: stapleType, sage_tracks: sageTracksVal }
+    setPantryStaples(prev => [...prev, newStaple])
+    setStapleSheetItem(null)
+    setHaveItExpansion(null)
+    await supabase.from('pantry_staples').upsert(
+      { household_id: appUser.household_id, name, category: item.grocery_category || 'other', staple_type: stapleType, sage_tracks: sageTracksVal },
+      { onConflict: 'household_id,name', ignoreDuplicates: false }
+    )
+    logActivity({ user: appUser, actionType: 'item_marked_staple', targetType: 'shopping_item', targetName: name, metadata: { staple_type: stapleType } })
+  }
+
+  // Staple inline: "Have it" — mark have_it_this_week (item stays visible but dimmed)
+  async function markStapleHaveIt(item) {
+    const ids = item.ids || [item.id]
+    setItems(prev => prev.map(i => ids.includes(i.id) ? { ...i, have_it_this_week: true } : i))
+    for (const id of ids) {
+      await supabase.from('shopping_list_items').update({ have_it_this_week: true }).eq('id', id)
+    }
+    logActivity({ user: appUser, actionType: 'staple_have_it', targetType: 'shopping_item', targetName: item.name })
+  }
+
+  // Remove from pantry staples — item returns to normal active manifest
+  async function removeStaple(item) {
+    const name = (item.name || '').trim()
+    setPantryStaples(prev => prev.filter(s => s.name.toLowerCase() !== name.toLowerCase()))
+    await supabase.from('pantry_staples')
+      .delete()
+      .eq('household_id', appUser.household_id)
+      .ilike('name', name)
+  }
+
+  async function removeItem(item) {
+    const ids = item.ids || [item.id]
+    // Remove from local state immediately
+    setItems(prev => prev.filter(i => !ids.includes(i.id)))
+    // If assigned to a trip, clean up trip items and reset state before deleting
+    for (const id of ids) {
+      if (item.assigned_trip_id) {
+        await supabase.from('shopping_trip_items').delete().eq('shopping_list_item_id', id)
+        await supabase.from('shopping_list_items').update({
+          assigned_trip_id: null, is_purchased: false, purchased_at: null, status: 'active',
+        }).eq('id', id)
+      }
+      await supabase.from('shopping_list_items').delete().eq('id', id)
+    }
+    logActivity({ user: appUser, actionType: 'shopping_item_removed', targetType: 'shopping_item', targetName: item.name })
   }
 
   async function reassignToTrip(item, newTripId) {
@@ -308,7 +421,7 @@ export default function PantryList({ appUser }) {
     setTripStoreName(store.name)
     setTripSheetStep(2)
     // Pre-select all unassigned items
-    const unassigned = activeItems.filter(i => !i.assigned_trip_id).map(i => i.id)
+    const unassigned = manifestItems.filter(i => !i.assigned_trip_id).map(i => i.id)
     setSelectedTripItems(new Set(unassigned))
   }
 
@@ -334,7 +447,7 @@ export default function PantryList({ appUser }) {
   }
 
   function selectAllUnassigned() {
-    const unassigned = activeItems.filter(i => !i.assigned_trip_id).map(i => i.id)
+    const unassigned = manifestItems.filter(i => !i.assigned_trip_id).map(i => i.id)
     setSelectedTripItems(new Set(unassigned))
   }
 
@@ -374,8 +487,11 @@ export default function PantryList({ appUser }) {
   }
 
   const completedTripIds = new Set(completedTrips.map(t => t.id))
-  const activeItems = items.filter(i => i.status === 'active' && !completedTripIds.has(i.assigned_trip_id) && !i.already_have)
-  const kitchenItems = items.filter(i => i.status === 'active' && i.already_have)
+  const stapleMap = new Map(pantryStaples.map(s => [(s.name || '').toLowerCase().trim(), s]))
+  // Active manifest items: not completed-trip, not have_it_this_week — includes staples inline
+  const manifestItems = items.filter(i => i.status === 'active' && !completedTripIds.has(i.assigned_trip_id) && !i.have_it_this_week)
+  // "Already have this week" section: have_it_this_week = true
+  const haveThisWeekItems = items.filter(i => i.status === 'active' && i.have_it_this_week)
   const purchasedItems = items.filter(i => i.status === 'purchased')
 
   // Consolidate duplicate ingredients by name (case-insensitive)
@@ -412,7 +528,7 @@ export default function PantryList({ appUser }) {
     return [...map.values()]
   }
 
-  const consolidated = consolidateItems(activeItems)
+  const consolidated = consolidateItems(manifestItems)
 
   const grouped = CATEGORY_ORDER.map(cat => ({
     cat,
@@ -467,9 +583,36 @@ export default function PantryList({ appUser }) {
     loadList()
   }
 
+  const dateRangeStr = weekDates.length === 7
+    ? `${weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekDates[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+    : ''
+
+  const weekSelector = (
+    <div style={{ padding: '10px 22px 0', position: 'relative' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+        <button onClick={() => setWeekOffset(o => o - 1)} style={{
+          position: 'absolute', left: 0, background: 'none', border: 'none', cursor: 'pointer',
+          color: C.driftwood, padding: '4px', display: 'flex',
+        }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '17px', color: C.ink }}>
+          {dateRangeStr}
+        </span>
+        <button onClick={() => setWeekOffset(o => o + 1)} style={{
+          position: 'absolute', right: 0, background: 'none', border: 'none', cursor: 'pointer',
+          color: C.driftwood, padding: '4px', display: 'flex',
+        }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+  )
+
   if (loading) return (
     <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
-      <TopBar centerContent={<span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>Shopping List</span>} />
+      <TopBar centerContent={<span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>Shopping</span>} />
+      {weekSelector}
       <div style={{ padding: '20px 22px' }}>
         {[60, 40, 40, 40].map((h, i) => <div key={i} className="shimmer-block" style={{ height: `${h}px`, borderRadius: '12px', marginBottom: '10px' }} />)}
       </div>
@@ -483,9 +626,23 @@ export default function PantryList({ appUser }) {
       paddingBottom: 'calc(110px + env(safe-area-inset-bottom, 8px))',
     }}>
       <TopBar
-        centerContent={<span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>Shopping List</span>}
+        centerContent={<span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>Shopping</span>}
       />
 
+      {weekSelector}
+
+      {/* No meal plan for this week */}
+      {noMealPlan && (
+        <div style={{ textAlign: 'center', padding: '48px 22px' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.ink, marginBottom: '8px' }}>No meals planned for this week</div>
+          <button onClick={() => navigate('/thisweek')} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: '14px', color: C.forest, fontWeight: 500, fontFamily: "'Jost', sans-serif",
+          }}>Plan your week →</button>
+        </div>
+      )}
+
+      {!noMealPlan && <>
       {/* ── Start a Trip + pending trip cards ─────────────────── */}
       <div style={{ padding: '10px 22px 6px', display: 'flex', gap: '10px', overflowX: 'auto' }}>
         <button onClick={openTripSheet} style={{
@@ -545,52 +702,96 @@ export default function PantryList({ appUser }) {
               {group.label}
             </div>
             {group.items.map(item => {
-              // Find store name if assigned to a trip
               const assignedTrip = item.assigned_trip_id ? pendingTrips.find(t => t.id === item.assigned_trip_id) : null
+              const isStaple = stapleMap.has((item.name || '').toLowerCase().trim())
+              const stapleInfo = isStaple ? stapleMap.get((item.name || '').toLowerCase().trim()) : null
+              const isExpanding = haveItExpansion === (item.ids?.[0] || item.id)
+
               return (
                 <div key={item.ids?.[0] || item.id} style={{
                   padding: '10px 0', borderBottom: '1px solid rgba(200,185,160,0.25)',
-                  display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+                  borderLeft: isStaple ? '2px solid rgba(122,140,110,0.4)' : 'none',
+                  paddingLeft: isStaple ? '10px' : 0,
                 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '14px', color: C.ink }}>{sentenceCase(item.name)}</div>
-                    {(item.quantity || item.unit) && (() => {
-                      const batchVal = (item.sourceMeals || []).reduce((b, name) => batchByMeal[name.toLowerCase()] || b, null)
-                      return (
-                        <div style={{ fontSize: '11px', color: C.driftwood }}>
-                          {[item.quantity, item.unit].filter(Boolean).join(' ')}
-                          {batchVal && batchVal !== 1 && (
-                            <span style={{ fontSize: '9px', fontWeight: 600, color: C.forest, marginLeft: '4px' }}>
-                              {batchVal === 0.5 ? '×½' : batchVal === 1.5 ? '×1½' : `×${batchVal}`}
-                            </span>
-                          )}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '14px', color: C.ink }}>{sentenceCase(item.name)}</div>
+                      {isStaple && (
+                        <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic' }}>Pantry staple</div>
+                      )}
+                      {(item.quantity || item.unit) && (() => {
+                        const batchVal = (item.sourceMeals || []).reduce((b, name) => batchByMeal[name.toLowerCase()] || b, null)
+                        return (
+                          <div style={{ fontSize: '11px', color: C.driftwood }}>
+                            {[item.quantity, item.unit].filter(Boolean).join(' ')}
+                            {batchVal && batchVal !== 1 && (
+                              <span style={{ fontSize: '9px', fontWeight: 600, color: C.forest, marginLeft: '4px' }}>
+                                {batchVal === 0.5 ? '×½' : batchVal === 1.5 ? '×1½' : `×${batchVal}`}
+                              </span>
+                            )}
+                          </div>
+                        )
+                      })()}
+                      {item.sourceMeals?.length > 0 && (
+                        <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic' }}>For {item.sourceMeals.join(', ')}</div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: assignedTrip ? 'column' : 'row', alignItems: assignedTrip ? 'flex-end' : 'center', gap: assignedTrip ? '4px' : '8px', flexShrink: 0, marginTop: '2px' }}>
+                      {assignedTrip && (
+                        <button onClick={() => setReassignItem(item)} style={{
+                          background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                          fontSize: '13px', color: C.driftwood, fontStyle: 'italic',
+                          fontFamily: "'Jost', sans-serif",
+                        }}>{assignedTrip.store_name}</button>
+                      )}
+                      {isStaple ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <button onClick={() => markStapleHaveIt(item)} style={{
+                            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                            fontSize: '13px', color: C.sage, fontFamily: "'Jost', sans-serif", fontWeight: 400,
+                          }}>✓ Have it</button>
+                          <button onClick={() => removeItem(item)} style={{
+                            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                            fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                          }}>Remove</button>
                         </div>
-                      )
-                    })()}
-                    {item.sourceMeals?.length > 0 && (
-                      <div style={{ fontSize: '10px', color: C.driftwood, fontStyle: 'italic' }}>For {item.sourceMeals.join(', ')}</div>
-                    )}
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <button onClick={() => setHaveItExpansion(isExpanding ? null : (item.ids?.[0] || item.id))} style={{
+                            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                            fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                          }}>Have it</button>
+                          <button onClick={() => removeItem(item)} style={{
+                            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                            fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                          }}>Remove</button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, marginTop: '2px' }}>
-                    {assignedTrip && (
-                      <button onClick={() => setReassignItem(item)} style={{
-                        background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                        fontSize: '10px', color: C.driftwood, fontStyle: 'italic',
-                        fontFamily: "'Jost', sans-serif",
-                      }}>{assignedTrip.store_name}</button>
-                    )}
-                    <button onClick={() => markHaveIt(item)} style={{
-                      background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                      fontSize: '11px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300,
-                    }}>Have it</button>
-                  </div>
+                  {/* Inline "Have it" expansion — two choices */}
+                  {isExpanding && (
+                    <div style={{
+                      marginTop: '8px', padding: '8px 10px', background: 'rgba(250,247,242,0.6)',
+                      borderRadius: '8px', display: 'flex', gap: '8px',
+                    }}>
+                      <button onClick={() => markHaveItThisWeek(item)} style={{
+                        flex: 1, padding: '8px', borderRadius: '8px', fontSize: '12px',
+                        border: `1px solid ${C.linen}`, background: 'white', color: C.ink, cursor: 'pointer',
+                        fontFamily: "'Jost', sans-serif", fontWeight: 400,
+                      }}>Just this week</button>
+                      <button onClick={() => { setStapleSheetItem(item); setHaveItExpansion(null) }} style={{
+                        flex: 1, padding: '8px', borderRadius: '8px', fontSize: '12px',
+                        border: `1px solid ${C.sage}`, background: 'rgba(122,140,110,0.06)', color: C.forest, cursor: 'pointer',
+                        fontFamily: "'Jost', sans-serif", fontWeight: 500,
+                      }}>It's a staple</button>
+                    </div>
+                  )}
                 </div>
               )
             })}
           </div>
         ))}
-
-        {/* Purchased items hidden on manifest view — visible in Shopping Trip */}
       </div>
 
       {/* ── Ghost meal notices ────────────────────────────────────── */}
@@ -605,24 +806,24 @@ export default function PantryList({ appUser }) {
         />
       ))}
 
-      {/* ── In my kitchen (already have) ─────────────────────────── */}
-      {kitchenItems.length > 0 && (
+      {/* ── Already have this week ─────────────────────────────── */}
+      {haveThisWeekItems.length > 0 && (
         <div style={{ padding: '0 22px 12px' }}>
-          <button onClick={() => setKitchenExpanded(!kitchenExpanded)} style={{
+          <button onClick={() => setHaveThisWeekExpanded(!haveThisWeekExpanded)} style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%',
             background: 'none', border: 'none', cursor: 'pointer', padding: '8px 0',
             fontFamily: "'Jost', sans-serif",
           }}>
             <span style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', color: C.driftwood }}>
-              In my kitchen ({kitchenItems.length})
+              Already have this week ({haveThisWeekItems.length})
             </span>
-            <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, transform: kitchenExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, transform: haveThisWeekExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }}>
               <path d="m6 9 6 6 6-6" />
             </svg>
           </button>
-          {kitchenExpanded && (
+          {haveThisWeekExpanded && (
             <div>
-              {kitchenItems.map(item => (
+              {haveThisWeekItems.map(item => (
                 <div key={item.id} style={{
                   padding: '8px 0', borderBottom: '1px solid rgba(200,185,160,0.15)',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -630,13 +831,13 @@ export default function PantryList({ appUser }) {
                   <div>
                     <div style={{ fontSize: '13px', color: C.driftwood, fontWeight: 300 }}>{sentenceCase(item.name)}</div>
                     {(item.quantity || item.unit) && (
-                      <div style={{ fontSize: '10px', color: C.driftwood, opacity: 0.6 }}>{[item.quantity, item.unit].filter(Boolean).join(' ')}</div>
+                      <div style={{ fontSize: '13px', color: C.driftwood, opacity: 0.6 }}>{[item.quantity, item.unit].filter(Boolean).join(' ')}</div>
                     )}
                   </div>
-                  <button onClick={() => markStillNeedIt(item)} style={{
+                  <button onClick={() => markActuallyNeedIt(item)} style={{
                     background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                    fontSize: '11px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300, fontStyle: 'italic',
-                  }}>Still need it</button>
+                    fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300, fontStyle: 'italic',
+                  }}>Actually need it</button>
                 </div>
               ))}
             </div>
@@ -828,7 +1029,7 @@ export default function PantryList({ appUser }) {
                   }}>Select all unassigned</button>
 
                   {CATEGORY_ORDER.map(cat => {
-                    const catItems = activeItems.filter(i => (i.grocery_category || 'other') === cat)
+                    const catItems = manifestItems.filter(i => (i.grocery_category || 'other') === cat)
                     if (catItems.length === 0) return null
                     return (
                       <div key={cat} style={{ marginBottom: '12px' }}>
@@ -949,7 +1150,58 @@ export default function PantryList({ appUser }) {
         )
       })()}
 
+      {/* ── Staple type picker sheet ────────────────────────────── */}
+      {stapleSheetItem && (
+        <>
+          <div onClick={() => setStapleSheetItem(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
+          <div onClick={e => e.stopPropagation()} style={{
+            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
+            padding: '0 0 env(safe-area-inset-bottom, 24px)', zIndex: 201,
+            boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
+            animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
+          }}>
+            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+            <div style={{ padding: '20px 22px 24px' }}>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '6px' }}>
+                What kind of staple?
+              </div>
+              <div style={{ fontSize: '12px', color: C.driftwood, marginBottom: '16px' }}>
+                {sentenceCase(stapleSheetItem.name)}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {[
+                  { type: 'perishable', emoji: '\uD83E\uDD5B', label: 'Perishable', desc: 'Dairy, meat, fresh produce' },
+                  { type: 'non_perishable', emoji: '\uD83E\uDDC2', label: 'Non-perishable', desc: 'Seasonings, oils, canned goods' },
+                  { type: 'household', emoji: '\uD83E\uDDF1', label: 'Household', desc: 'Cleaning supplies, paper goods' },
+                ].map(opt => (
+                  <button key={opt.type} onClick={() => markAsStaple(stapleSheetItem, opt.type)} style={{
+                    display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px',
+                    borderRadius: '12px', border: `1.5px solid ${C.linen}`, background: 'white',
+                    cursor: 'pointer', textAlign: 'left', fontFamily: "'Jost', sans-serif",
+                  }}>
+                    <span style={{ fontSize: '20px' }}>{opt.emoji}</span>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 500, color: C.ink }}>{opt.label}</div>
+                      <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300 }}>{opt.desc}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
       <style>{`@keyframes sheetRise { from { transform: translateX(-50%) translateY(100%); } to { transform: translateX(-50%) translateY(0); } }`}</style>
+      </>}
+
+      {showOnboarding && (
+        <ShoppingOnboarding
+          appUser={appUser}
+          onComplete={() => setShowOnboarding(false)}
+        />
+      )}
 
       <BottomNav activeTab="pantry" />
     </div>
