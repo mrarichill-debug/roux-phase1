@@ -6,6 +6,7 @@ import { useEffect, useState, useRef, useMemo } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { logActivity } from '../lib/activityLog'
+import { categorizeIngredientsWithSage } from '../lib/categorizeIngredientsWithSage'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import AddToPlanSheet from '../components/AddToPlanSheet'
@@ -124,6 +125,12 @@ export default function RecipeCard({ appUser }) {
 
     const ings = ingRes.data ?? []
     setIngredients(ings)
+
+    // Retry categorization for any skipped ingredients (silent background)
+    const skipped = ings.filter(i => i.categorization_status === 'skipped')
+    if (skipped.length > 0 && rec) {
+      categorizeIngredientsWithSage(skipped, { recipeName: rec.name, recipeId: id, appUser })
+    }
     setInstructions(insRes.data ?? [])
     setRecipePhotos(photosRes.data ?? [])
     // Fetch ingredient alternatives

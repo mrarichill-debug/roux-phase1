@@ -8,6 +8,8 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { runSageIngredientReview } from '../lib/sageReview'
+import { categorizeIngredientsWithSage } from '../lib/categorizeIngredientsWithSage'
+import { sageReverseMatch } from '../lib/sageReverseMatch'
 import { logActivity } from '../lib/activityLog'
 import useUnsavedChanges from '../hooks/useUnsavedChanges'
 import UnsavedChangesSheet from '../components/UnsavedChangesSheet'
@@ -504,8 +506,11 @@ export default function SaveRecipe({ appUser }) {
         await uploadCapturedPhotos(recipeId)
       }
 
-      // 5. Fire-and-forget Sage ingredient review
+      // 5. Fire-and-forget Sage ingredient review + categorization
       runSageIngredientReview(recipeId, validIngs, { recipeName: s(name), userId: appUser?.id })
+      // Fetch inserted ingredient IDs for categorization
+      supabase.from('ingredients').select('id, name, grocery_category, categorization_status').eq('recipe_id', recipeId)
+        .then(({ data }) => { if (data?.length) categorizeIngredientsWithSage(data, { recipeName: s(name), recipeId, appUser }) })
       logActivity({ user: appUser, actionType: 'recipe_saved', targetType: 'recipe', targetId: recipeId, targetName: s(name), metadata: { source_type: sourceType } })
 
       // If coming from week view, link recipe to the planned meal
@@ -513,6 +518,9 @@ export default function SaveRecipe({ appUser }) {
         await supabase.from('planned_meals').update({
           recipe_id: recipeId, entry_type: 'linked', sage_match_status: 'resolved',
         }).eq('id', plannedMealId)
+      } else {
+        // Reverse match — check if any ghost meals match this new recipe name
+        sageReverseMatch({ recipeId, recipeName: s(name), appUser })
       }
 
       dirty.markClean()

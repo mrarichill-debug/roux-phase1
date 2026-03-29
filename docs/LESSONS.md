@@ -1,0 +1,112 @@
+# Lessons
+*Principles learned from building Roux. Apply proactively — don't wait to rediscover these.*
+
+---
+
+### Always split Supabase queries — never embed joins
+**The lesson:** When querying related tables, use two separate queries and join the results in JavaScript. Never use PostgREST's embedded join syntax (`table(column)`).
+**Why it matters:** Embedded joins fail silently with 403 or empty results when multiple FK paths exist between tables — and the error gives no clue what went wrong.
+
+### Two-layer permissions are always required
+**The lesson:** Every Supabase table needs both GRANT (table-level access) AND RLS policies (row-level filtering). After every `CREATE TABLE`, run `GRANT SELECT, INSERT, UPDATE, DELETE ON [table] TO anon, authenticated;` immediately.
+**Why it matters:** Without GRANT, all queries return 403 even with perfect RLS policies — and the error message doesn't say "missing GRANT."
+
+### Deploy to Vercel only at explicit session close
+**The lesson:** Never push to main mid-session unless Aric specifically requests it. All development and testing runs on localhost via `npm run dev`.
+**Why it matters:** Unintended deploys can ship broken features to the live app that Lauren uses.
+
+### Prototypes in /prototypes/ are law
+**The lesson:** Never deviate from the approved prototypes without Aric's explicit approval. Match them exactly.
+**Why it matters:** Prototypes represent design decisions that were carefully made — improvising creates visual debt.
+
+### activity_log wire-in is required on every new feature
+**The lesson:** Every new feature that involves user interaction must include a `logActivity()` call — fire-and-forget, after the primary action succeeds.
+**Why it matters:** Sage intelligence depends entirely on this table. Missing log entries = Sage can't learn.
+
+### Sage never acts unilaterally
+**The lesson:** Sage observes, nudges, and suggests — but never makes decisions, removes options, or takes action without Lauren's explicit tap.
+**Why it matters:** Lauren plans. Sage assists. Violating this trust model is a product-level failure.
+
+### "Home" in all user-facing copy, never "household"
+**The lesson:** The word "household" is a census form word. Every UI string, button label, Sage message, and notification must say "home" instead.
+**Why it matters:** Roux is warm and personal. "Household" is cold and institutional.
+
+### Hard refresh after any .env change
+**The lesson:** Vite caches env vars at startup. After adding or changing any `.env` variable, kill the dev server process and restart. Then hard-refresh the browser (Cmd+Shift+R).
+**Why it matters:** HMR does not pick up new env vars — the app will silently use the old values.
+
+### Update in-memory state after DB writes that affect routing
+**The lesson:** When a DB update changes a value that React routing depends on, also call `setAppUser(prev => ({ ...prev, field: newValue }))`. DB write alone is not enough.
+**Why it matters:** React won't re-read from the database — stale state causes redirect loops.
+
+### Verify schema before writing inserts
+**The lesson:** Before writing any Supabase insert, check the table's columns for NOT NULL constraints without defaults. Include every required column in the payload.
+**Why it matters:** Missing a NOT NULL column causes a silent failure — no error, no rows created, no clue.
+
+### Search for all references before deleting a file
+**The lesson:** After deleting any component file, search the entire codebase for `<ComponentName` and `from '...ComponentName'` before committing.
+**Why it matters:** One missed import reference = total app crash (blank white page, no error visible to the user).
+
+### Sage returns mixed types — always coerce
+**The lesson:** Sage may return numbers, null, or unexpected types for fields your code expects as strings. Use a safe coercion helper on every field before any string operation or DB insert.
+**Why it matters:** `.trim()` on a number throws a TypeError that crashes the save flow.
+
+### History-first autofill
+**The lesson:** Autofill should query `planned_meals` history before the recipes table. Past linked meals carry their `recipe_id` forward automatically.
+**Why it matters:** Suggestions feel like "your family's meals" instead of "your recipe database."
+
+### Every error state needs a next step
+**The lesson:** Never show a generic error or dead end. Every error message must tell Lauren what happened, why, and what to do next — with action buttons.
+**Why it matters:** A dead end at 6pm with hungry kids is a product failure.
+
+### Sage over keyword rules for data classification
+**The lesson:** When categorizing natural language data like ingredient names, use Sage instead of building keyword lists. Keyword lists have a ceiling and require constant maintenance. Sage handles edge cases naturally.
+**Why it matters:** Keyword logic creates ongoing maintenance work and always has gaps. Sage categorization runs once, stores the result, and never needs updating.
+
+### Categorize at the source, carry forward
+**The lesson:** Store `grocery_category` on the `ingredients` table, not just on `shopping_list_items`. Categorize once when the recipe is saved, carry the value forward to every shopping list injection.
+**Why it matters:** Recategorizing on every injection wastes API calls and risks inconsistency. One source of truth on the ingredient is cleaner and cheaper.
+
+### Gate async AI work before dependent operations
+**The lesson:** If a shopping list injection depends on categorization being complete, await categorization before injecting — don't inject and clean up later.
+**Why it matters:** Users never see "other" on their shopping list. Sage quietly does the work first, then the list builds correctly the first time.
+
+### Use status columns to track async AI task state
+**The lesson:** When Sage does background work on a record, track it with a status column (`pending` / `done` / `skipped`) rather than inferring state from the data itself.
+**Why it matters:** Enables reliable retry logic, prevents duplicate API calls, and gives Sage a clear signal for when to act vs. when to skip.
+
+### Soft-delete planned meals, never hard-delete
+**The lesson:** When a meal is removed from the plan, set `removed_at` and `status = 'removed'` rather than deleting the row. Filter active queries with `.is('removed_at', null)`.
+**Why it matters:** Sage needs the removal record to surface intelligent nudges during the weekly review — e.g. "You kept the ingredients for Apricot Chicken, want to put it on next week's menu?"
+
+### The ingredient manifest and the shopping trip are two different UX modes
+**The lesson:** The Pantry screen in default state is a read-only ingredient manifest — what's needed this week and why. Checkboxes and shopping interactions belong in the Shopping Trip mode triggered by "Start a Trip". Never conflate these two experiences.
+**Why it matters:** Checkboxes on a reference view create false cognitive load. The manifest is for planning, the trip is for doing.
+
+### Shopping trips are item assignments, not list copies
+**The lesson:** When creating a shopping trip, assign manifest items to the trip via `assigned_trip_id` on `shopping_list_items` — don't copy rows into a separate table. The `shopping_trip_items` join table tracks per-trip purchase state while the master list item remains the single source of truth.
+**Why it matters:** Copying creates sync problems — if Lauren edits a quantity on the manifest, the trip copy is stale. Assignment keeps one row per item with a pointer to its current trip.
+
+### Receipt scanning uses Haiku not Sonnet
+**The lesson:** Receipt parsing is a structured extraction task — fast and accurate with Haiku. Reserve Sonnet for tasks requiring reasoning or creativity. Cost difference is significant at scale.
+**Why it matters:** Receipt scans could happen weekly per household. At scale, using Sonnet would be 5x more expensive than Haiku for no quality gain on this task.
+
+### Batch multiplier lives on planned_meals, not ingredients
+**The lesson:** The batch size is a property of this week's plan, not the recipe itself. `batch_multiplier` on `planned_meals` means the same recipe can be made at different scales in different weeks without touching the recipe data.
+**Why it matters:** Keeps recipes clean and reusable. The shopping list injection is responsible for applying the scale at the moment of injection.
+
+### Cost intelligence builds from receipt scans, not assumptions
+**The lesson:** Ingredient cost estimates come from Lauren's actual purchase history recorded during receipt scans. Bulk store purchases (Costco, Sam's Club) are stored separately from standard store purchases and never mixed in cost averages.
+**Why it matters:** A bag of Parmesan from Costco costs $14 and lasts months. The same ingredient from Kroger costs $5. Mixing these averages would produce meaningless estimates.
+
+### Split shared ingredient costs evenly across recipes
+**The lesson:** When an ingredient appears in multiple recipes on the same week and is purchased once, split the cost evenly between all recipes. This averages out over time.
+**Why it matters:** Precise per-recipe cost attribution isn't possible from a single receipt line item. Even splitting is fair and self-correcting over multiple weeks.
+
+### Low confidence receipt matches require user confirmation
+**The lesson:** Never auto-record a purchase history entry for a receipt item that doesn't clearly match an ingredient. Always ask Lauren to confirm ambiguous matches.
+**Why it matters:** One wrong match contaminates the cost history for that ingredient permanently. Confirmation is worth the extra tap.
+
+### Quick review and detailed review are the same data, different depth
+**The lesson:** Quick review sets `status`, `cooked_at`, `quick_reviewed`. Detailed review adds `ingredients_consumed`, `ingredients_bought_before_skip`, `review_rating`, `detailed_reviewed`. The in-week "Mark as cooked" button IS the quick review distributed across the week — not a separate feature.
+**Why it matters:** Keeps the data model unified. One `planned_meals` row tracks the full lifecycle of every meal regardless of how it was reviewed.

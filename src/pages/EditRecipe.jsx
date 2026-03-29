@@ -6,6 +6,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { runSageIngredientReview } from '../lib/sageReview'
+import { categorizeIngredientsWithSage } from '../lib/categorizeIngredientsWithSage'
 import { logActivity } from '../lib/activityLog'
 import useUnsavedChanges from '../hooks/useUnsavedChanges'
 import UnsavedChangesSheet from '../components/UnsavedChangesSheet'
@@ -345,6 +346,9 @@ export default function EditRecipe({ appUser }) {
 
       // Fire-and-forget Sage ingredient review
       runSageIngredientReview(id, validIngs, { recipeName: s(name), userId: appUser?.id })
+      // Fire-and-forget Sage ingredient categorization
+      supabase.from('ingredients').select('id, name, grocery_category, categorization_status').eq('recipe_id', id)
+        .then(({ data }) => { if (data?.length) categorizeIngredientsWithSage(data, { recipeName: s(name), recipeId: id, appUser }) })
       logActivity({ user: appUser, actionType: 'recipe_edited', targetType: 'recipe', targetId: id, targetName: s(name) })
 
       dirty.markClean()

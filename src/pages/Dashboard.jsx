@@ -6,10 +6,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { fetchCalendarEvents } from '../lib/calendarSync'
+import { sageBusyNightDetection } from '../lib/sageBusyNightDetection'
 import WatermarkLayer from '../components/WatermarkLayer'
 import TopBar from '../components/TopBar'
 import { getWeekDatesTZ, getWeekStartTZ, getDayOfWeekTZ, getTodayStr, timeGreetingTZ, toLocalDateStr } from '../lib/dateUtils'
 import BottomNav from '../components/BottomNav'
+import SageNudgeCard from '../components/SageNudgeCard'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -66,8 +69,8 @@ export default function Dashboard({ appUser }) {
   const [shopTile, setShopTile]             = useState({ state: 'none', listCount: 0, totalSpent: 0, remaining: 0 })
   const [activeTemplateName, setActiveTemplateName] = useState(null)
   const [loading, setLoading]               = useState(true)  // Phase 1+2 loading
-  const [sageOpen, setSageOpen]             = useState(false)
-  const [pendingReviews, setPendingReviews] = useState([])
+  const [sageMessages, setSageMessages] = useState([]) // unified Sage nudge queue
+  const [sageIndex, setSageIndex] = useState(0) // which message is currently shown
 
   const tz         = appUser?.timezone ?? 'America/Chicago'
   const weekDates  = getWeekDatesTZ(tz)                     // [Mon..Sun]
@@ -195,13 +198,88 @@ export default function Dashboard({ appUser }) {
           })
         }
       }
-      // Fetch pending Sage ingredient reviews
+      // Build unified Sage message queue
+      const messages = []
+
+      // 1. Pending ingredient reviews
       const { data: pendingRes } = await supabase.from('recipes')
         .select('id, name')
         .eq('household_id', hid)
         .eq('sage_assist_status', 'pending')
         .limit(5)
-      if (pendingRes) setPendingReviews(pendingRes)
+      if (pendingRes?.length) {
+        messages.push({
+          id: `review-${pendingRes[0].id}`,
+          message: pendingRes.length === 1
+            ? `I took a look at ${pendingRes[0].name} after you saved it — I have a suggestion or two about the ingredients.`
+            : `I reviewed ${pendingRes.length} recipes you recently saved and have some ingredient suggestions.`,
+          actionLabel: 'See suggestions →',
+          actionUrl: `/recipe/${pendingRes[0].id}`,
+          source: 'review',
+        })
+      }
+
+      // 2. Unseen Sage background activity
+      const { data: bgActivity } = await supabase.from('sage_background_activity')
+        .select('id, message, activity_type, recipe_id, metadata, created_at')
+        .eq('household_id', hid)
+        .eq('seen', false)
+        .order('created_at')
+        .limit(5)
+      for (const bg of (bgActivity || [])) {
+        const entry = { id: `bg-${bg.id}`, dbId: bg.id, message: bg.message, source: 'background' }
+        // recipe_match entries get a "Link it" action
+        if (bg.activity_type === 'recipe_match' && bg.recipe_id && bg.metadata?.matched_meal_id) {
+          entry.actionLabel = 'Link it →'
+          entry.onLinkAction = async () => {
+            await supabase.from('planned_meals').update({
+              recipe_id: bg.recipe_id, entry_type: 'linked', sage_match_status: 'resolved',
+            }).eq('id', bg.metadata.matched_meal_id)
+            await supabase.from('sage_background_activity').update({ seen: true }).eq('id', bg.id)
+            setSageMessages(prev => prev.filter(m => m.id !== entry.id))
+          }
+        }
+        // calendar_context nudges with action URL
+        if (bg.activity_type === 'calendar_context' && bg.metadata?.action_url) {
+          const dayName = bg.metadata.day_of_week ? bg.metadata.day_of_week.charAt(0).toUpperCase() + bg.metadata.day_of_week.slice(1) : 'that day'
+          entry.actionLabel = `Plan ${dayName} →`
+          entry.actionUrl = bg.metadata.action_url
+        }
+        messages.push(entry)
+      }
+
+      // 3. Check for unreviewd past week
+      const lastWeekStart = getWeekStartTZ(tz, -1)
+      const { data: lastPlan } = await supabase.from('meal_plans')
+        .select('id, week_end_date, reviewed_at')
+        .eq('household_id', hid)
+        .eq('week_start_date', lastWeekStart)
+        .maybeSingle()
+      if (lastPlan && !lastPlan.reviewed_at) {
+        const endDate = new Date((lastPlan.week_end_date || lastWeekStart) + 'T20:00:00')
+        if (new Date() > endDate) {
+          messages.unshift({
+            id: 'weekly-review',
+            message: `Hey ${appUser.name?.split(' ')[0] || 'there'} — how did last week go? Closing it out takes less than a minute.`,
+            actionLabel: "Let's do it →",
+            actionUrl: `/review/${lastPlan.id}`,
+            source: 'review',
+            noDismiss: true,
+          })
+        }
+      }
+
+      setSageMessages(messages)
+      setSageIndex(0)
+
+      // Run busy night detection if calendar is connected
+      if (appUser.calendar_sync_enabled) {
+        fetchCalendarEvents(appUser, weekDates).then(events => {
+          if (events?.length) {
+            sageBusyNightDetection({ calendarEvents: events, meals: weekMeals, weekDates, appUser })
+          }
+        })
+      }
     } catch (err) {
       console.error('Dashboard load error:', err)
     } finally {
@@ -216,6 +294,25 @@ export default function Dashboard({ appUser }) {
     .slice(todayMbIdx)
     .filter(d => !plannedDows.has(DOW_KEYS[getMondayBasedIndex(d.getDay())]))
     .map(d => MON_SHORT[getMondayBasedIndex(d.getDay())])
+
+  // Add dynamic open-days message to sage queue (after weekMeals resolves)
+  useEffect(() => {
+    if (loading || !weekMeals) return
+    let openMsg = null
+    if (openDayNames.length === 1) {
+      openMsg = `${openDayNames[0]} doesn't have a dinner planned yet. Want me to suggest something?`
+    } else if (openDayNames.length >= 2) {
+      const last = openDayNames[openDayNames.length - 1]
+      const other = openDayNames.slice(0, -1).join(', ')
+      openMsg = `${other} and ${last} don't have dinners yet. I have some ideas that would work with this week's groceries.`
+    }
+    if (openMsg) {
+      setSageMessages(prev => {
+        if (prev.some(m => m.source === 'open_days')) return prev
+        return [{ id: 'open-days', message: openMsg, actionLabel: 'Plan your week →', actionUrl: '/thisweek', source: 'open_days' }, ...prev]
+      })
+    }
+  }, [loading, openDayNames.length])
 
   // Plan status text for greeting
   const plannedCount = weekMeals.length
@@ -319,50 +416,32 @@ export default function Dashboard({ appUser }) {
           />
         )}
 
-        {/* ── Sage Ingredient Review Nudge ─────────────────────────────── */}
-        {pendingReviews.length > 0 && (
-          <div
-            onClick={() => navigate(`/recipe/${pendingReviews[0].id}`)}
-            style={{
-              margin: '0 22px 14px', background: 'white',
-              border: '1px solid rgba(200,185,160,0.55)',
-              borderLeft: `3px solid ${C.honey}`,
-              borderRadius: '14px', padding: '14px 16px',
-              cursor: 'pointer', display: 'flex', gap: '12px', alignItems: 'flex-start',
-              boxShadow: '0 1px 4px rgba(80,60,30,0.06)',
-              animation: 'fadeUp 0.4s ease 0.12s both',
-              position: 'relative', zIndex: 1,
-            }}
-          >
-            <div style={{
-              width: '28px', height: '28px', borderRadius: '50%',
-              background: 'rgba(196,154,60,0.10)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke={C.honey} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
-                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-              </svg>
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '13px', color: C.ink, lineHeight: 1.45, marginBottom: '6px' }}>
-                {pendingReviews.length === 1
-                  ? `I took a look at ${pendingReviews[0].name} after you saved it — I have a suggestion or two about the ingredients.`
-                  : `I reviewed ${pendingReviews.length} recipes you recently saved and have some ingredient suggestions.`}
-              </div>
-              <span style={{ fontSize: '12px', color: C.forest, fontWeight: 400 }}>
-                See suggestions →
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* ── Sage Nudge ────────────────────────────────────────────────── */}
-        <SageNudge
-          openDayNames={openDayNames}
-          loading={loading}
-          open={sageOpen}
-          onToggle={() => setSageOpen(v => !v)}
-        />
+        {/* ── Unified Sage Nudge ─────────────────────────────────────── */}
+        {sageMessages.length > 0 && sageIndex < sageMessages.length && (() => {
+          const msg = sageMessages[sageIndex]
+          return (
+            <SageNudgeCard
+              message={msg.message}
+              actionLabel={msg.actionLabel}
+              onAction={msg.onLinkAction || (msg.actionUrl ? () => navigate(msg.actionUrl) : undefined)}
+              count={sageMessages.length}
+              currentIndex={sageIndex}
+              onDismiss={msg.noDismiss ? undefined : async () => {
+                // Mark stored messages as seen
+                if (msg.dbId) {
+                  await supabase.from('sage_background_activity').update({ seen: true }).eq('id', msg.dbId)
+                }
+                // Advance to next or clear
+                if (sageIndex < sageMessages.length - 1) {
+                  setSageIndex(i => i + 1)
+                } else {
+                  setSageMessages([])
+                  setSageIndex(0)
+                }
+              }}
+            />
+          )
+        })()}
 
         {/* ── Spending Snapshot ─────────────────────────────────────────── */}
         <SpendingSnapshot
@@ -622,116 +701,6 @@ function WeekStrip({ weekDates, weekMeals, todayMbIdx, onFullPlan }) {
             </div>
           )
         })}
-      </div>
-    </div>
-  )
-}
-
-// ── Sage Nudge ────────────────────────────────────────────────────────────────
-function SageNudge({ openDayNames, loading, open, onToggle }) {
-  let preview = 'Your week is all set. Let me know if you want ideas.'
-  let fullMsg  = 'Looks like you\'ve got the whole week covered — I\'ll stay quiet unless you need me. Just tap here to chat.'
-
-  if (!loading && openDayNames.length === 1) {
-    preview = `${openDayNames[0]} is still open — want a suggestion?`
-    fullMsg  = `${openDayNames[0]} doesn't have a dinner planned yet. Want me to suggest something based on what you have this week?`
-  } else if (!loading && openDayNames.length >= 2) {
-    const last  = openDayNames[openDayNames.length - 1]
-    const other = openDayNames.slice(0, -1).join(', ')
-    preview  = `${other} and ${last} are still open — want suggestions?`
-    fullMsg  = `${other} and ${last} don't have dinners yet. I have some ideas that would work with this week's groceries without feeling repetitive.`
-  }
-
-  return (
-    <div
-      style={{
-        margin: '0 22px 14px',
-        background: 'white',
-        border: `1px solid rgba(200,185,160,0.55)`,
-        borderLeft: `3px solid ${C.sage}`,
-        borderRadius: '14px',
-        overflow: 'hidden',
-        cursor: 'pointer',
-        boxShadow: '0 1px 4px rgba(80,60,30,0.06), 0 3px 10px rgba(80,60,30,0.04)',
-        animation: 'fadeUp 0.4s ease 0.14s both',
-        position: 'relative', zIndex: 1,
-      }}
-      onClick={onToggle}
-    >
-      {/* Collapsed row */}
-      <div style={{ padding: '13px 14px', display: 'flex', alignItems: 'center', gap: '11px' }}>
-        <div style={{
-          width: '28px', height: '28px', borderRadius: '50%',
-          background: 'rgba(122,140,110,0.10)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke={C.sage} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
-            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-          </svg>
-        </div>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '3px' }}>
-            <span
-              className="sage-pulse-dot"
-              style={{ width: '5px', height: '5px', borderRadius: '50%', background: C.sage, flexShrink: 0 }}
-            />
-            <span style={{ fontSize: '9px', letterSpacing: '2px', textTransform: 'uppercase', color: C.sage, fontWeight: 500 }}>
-              Sage
-            </span>
-          </div>
-          <div style={{
-            fontSize: '13px', color: C.driftwood, fontWeight: 300,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            opacity: open ? 0 : 1,
-            transition: 'opacity 0.12s ease',
-          }}>
-            {loading ? '…' : preview}
-          </div>
-        </div>
-
-        {/* Chevron */}
-        <svg
-          viewBox="0 0 24 24" fill="none" stroke={C.sage} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
-          style={{ width: 14, height: 14, opacity: 0.55, flexShrink: 0, transition: 'transform 0.28s', transform: open ? 'rotate(180deg)' : 'none' }}
-        >
-          <path d="m6 9 6 6 6-6"/>
-        </svg>
-      </div>
-
-      {/* Expanded content */}
-      <div style={{
-        maxHeight: open ? '130px' : '0',
-        overflow: 'hidden',
-        opacity: open ? 1 : 0,
-        transition: 'max-height 0.32s ease, opacity 0.22s ease 0.10s',
-        padding: open ? '0 14px' : '0 14px',
-      }}>
-        <p style={{ fontSize: '14px', color: C.ink, lineHeight: 1.62, fontWeight: 300, paddingBottom: '12px' }}>
-          {fullMsg}
-        </p>
-        <div style={{ display: 'flex', gap: '8px', paddingBottom: '14px' }}>
-          <button
-            onClick={e => e.stopPropagation()}
-            style={{
-              background: 'rgba(122,140,110,0.12)', border: '1px solid rgba(122,140,110,0.22)',
-              color: C.forest, padding: '7px 14px', borderRadius: '8px',
-              fontSize: '12px', fontFamily: "'Jost', sans-serif", cursor: 'pointer', fontWeight: 400,
-            }}
-          >
-            Show me ideas
-          </button>
-          <button
-            onClick={e => { e.stopPropagation(); onToggle() }}
-            style={{
-              background: 'none', border: 'none', color: C.driftwoodSm,
-              fontSize: '12px', fontFamily: "'Jost', sans-serif",
-              fontWeight: 300, cursor: 'pointer', padding: '7px 8px',
-            }}
-          >
-            Not now
-          </button>
-        </div>
       </div>
     </div>
   )

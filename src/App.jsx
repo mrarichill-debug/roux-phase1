@@ -20,7 +20,9 @@ import SaveRecipe     from './pages/SaveRecipe'
 import ShoppingList from './pages/ShoppingList'
 import Pantry from './pages/Pantry'
 import PantryList from './pages/PantryList'
-import PantryTrip from './pages/PantryTrip'
+import ShoppingTrip from './pages/ShoppingTrip'
+import ReceiptScan from './pages/ReceiptScan'
+import WeeklyReview from './pages/WeeklyReview'
 // Sage page removed — Sage interactions are structured, not chat-based
 import PlanMeal     from './pages/PlanMeal'
 import SavedMeals   from './pages/SavedMeals'
@@ -313,9 +315,11 @@ function AuthenticatedApp({ appUser, setAppUser }) {
         <Route path="/recipe/:id"   element={<RecipeCard    appUser={appUser} />} />
         <Route path="/recipe/:id/edit" element={<EditRecipe  appUser={appUser} />} />
         <Route path="/save-recipe"  element={<SaveRecipe    appUser={appUser} />} />
-        <Route path="/pantry"         element={<Pantry         appUser={appUser} />} />
+        <Route path="/pantry"         element={<PantryList    appUser={appUser} />} />
         <Route path="/pantry/list"    element={<PantryList    appUser={appUser} />} />
-        <Route path="/pantry/trip/:id" element={<PantryTrip  appUser={appUser} />} />
+        <Route path="/pantry/trip/:id" element={<ShoppingTrip appUser={appUser} />} />
+        <Route path="/pantry/trip/:tripId/receipt" element={<ReceiptScan appUser={appUser} />} />
+        <Route path="/review/:mealPlanId" element={<WeeklyReview appUser={appUser} />} />
         <Route path="/shopping"       element={<ShoppingList  appUser={appUser} />} />
         {/* /sage route removed — Sage has no standalone page */}
         <Route path="/week-settings" element={<ThisWeekSettings appUser={appUser} />} />

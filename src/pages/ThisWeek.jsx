@@ -11,7 +11,9 @@ import { sageMealMatch } from '../lib/sageMealMatch'
 import { injectMealPlanToList } from '../lib/injectMealPlanToList'
 import { getWeekDatesTZ, getWeekStartTZ, toLocalDateStr } from '../lib/dateUtils'
 import { fetchCalendarEvents, getEventsForDate } from '../lib/calendarSync'
+import { sageBusyNightDetection } from '../lib/sageBusyNightDetection'
 import TopBar from '../components/TopBar'
+import SageNudgeCard from '../components/SageNudgeCard'
 import BottomNav from '../components/BottomNav'
 
 const C = {
@@ -46,6 +48,7 @@ export default function ThisWeek({ appUser }) {
   const [recipeSuggestions, setRecipeSuggestions] = useState([])
   const [selectedRecipe, setSelectedRecipe] = useState(null)
   const [adding, setAdding] = useState(false)
+  const [addBatchMultiplier, setAddBatchMultiplier] = useState(1.0)
   const debounceRef = useRef(null)
 
   // Calendar events
@@ -59,9 +62,26 @@ export default function ThisWeek({ appUser }) {
   const [planStatus, setPlanStatus] = useState(null) // 'draft' | 'shared'
   const [shoppingInjected, setShoppingInjected] = useState(false)
   const [injecting, setInjecting] = useState(false)
+  const [categorizing, setCategorizing] = useState(false)
 
   // Delete confirm
+  const [selectedDay, setSelectedDay] = useState(null) // DOW_KEY of selected pill
   const [deleteConfirmId, setDeleteConfirmId] = useState(null)
+  const [ingredientDialog, setIngredientDialog] = useState(null) // { mealId, mealName, itemCount }
+  const [householdMemberCount, setHouseholdMemberCount] = useState(1)
+
+  // Week review
+  const [weekEndDate, setWeekEndDate] = useState(null)
+  const [weekReviewed, setWeekReviewed] = useState(false)
+
+  // Recipe link sheet (for ghost meals)
+  const [linkSheetMeal, setLinkSheetMeal] = useState(null) // { id, custom_name }
+  const [linkSearch, setLinkSearch] = useState('')
+  const [linkResults, setLinkResults] = useState([])
+  const linkDebounceRef = useRef(null)
+
+  // Batch edit
+  const [batchEditMealId, setBatchEditMealId] = useState(null)
 
   // Toast
   const [toast, setToast] = useState('')
@@ -82,6 +102,7 @@ export default function ThisWeek({ appUser }) {
         .from('planned_meals')
         .select('id, sage_match_result, sage_match_status, custom_name')
         .eq('meal_plan_id', planId)
+        .is('removed_at', null)
         .not('sage_match_status', 'is', null)
       if (updated?.length) {
         setMeals(prev => prev.map(m => {
@@ -108,7 +129,7 @@ export default function ThisWeek({ appUser }) {
       // Get or find meal plan for this week
       const { data: plan } = await supabase
         .from('meal_plans')
-        .select('id, status, shopping_injected')
+        .select('id, status, shopping_injected, week_end_date, reviewed_at')
         .eq('household_id', appUser.household_id)
         .eq('week_start_date', ws)
         .maybeSingle()
@@ -117,11 +138,14 @@ export default function ThisWeek({ appUser }) {
         setPlanId(plan.id)
         setPlanStatus(plan.status)
         setShoppingInjected(plan.shopping_injected || false)
+        setWeekEndDate(plan.week_end_date || null)
+        setWeekReviewed(!!plan.reviewed_at)
         // Fetch meals, then recipe names separately (no embedded join)
         const { data: mealsData } = await supabase
           .from('planned_meals')
           .select('*')
           .eq('meal_plan_id', plan.id)
+          .is('removed_at', null)
           .order('sort_order')
         // Resolve recipe names
         const recipeIds = (mealsData || []).filter(m => m.recipe_id).map(m => m.recipe_id)
@@ -169,15 +193,26 @@ export default function ThisWeek({ appUser }) {
     }
     setLoading(false)
 
+    // Check household member count for family visibility toggle
+    const { count: memberCount } = await supabase.from('users').select('id', { count: 'exact', head: true })
+      .eq('household_id', appUser.household_id).neq('membership_status', 'invited')
+    setHouseholdMemberCount(memberCount || 1)
+
     // Fetch calendar events if sync is enabled
     if (appUser.calendar_sync_enabled) {
-      fetchCalendarEvents(appUser, dates).then(setCalendarEvents)
+      fetchCalendarEvents(appUser, dates).then(events => {
+        setCalendarEvents(events)
+        // Run busy night detection — meals state is already set by this point
+        if (events?.length) {
+          sageBusyNightDetection({ calendarEvents: events, meals, weekDates: dates, appUser })
+        }
+      })
     }
 
     // Show first-time hint if user hasn't planned a meal yet
     if (!appUser.has_planned_first_meal) {
       // Check if any meals exist globally for this household
-      const { count } = await supabase.from('planned_meals').select('id', { count: 'exact', head: true }).eq('household_id', appUser.household_id)
+      const { count } = await supabase.from('planned_meals').select('id', { count: 'exact', head: true }).eq('household_id', appUser.household_id).is('removed_at', null)
       if (!count || count === 0) setShowHint(true)
     }
   }
@@ -207,6 +242,7 @@ export default function ThisWeek({ appUser }) {
     setAddMealType('dinner')
     setRecipeSuggestions([])
     setSelectedRecipe(null)
+    setAddBatchMultiplier(1.0)
     setAddSheetOpen(true)
   }
 
@@ -279,6 +315,8 @@ export default function ThisWeek({ appUser }) {
         slot_type: isLinked ? 'recipe' : 'note',
         status: 'planned',
         sort_order: meals.filter(m => m.day_of_week === dowKey).length,
+        batch_multiplier: addBatchMultiplier,
+        previous_batch_multiplier: addBatchMultiplier,
       }).select('*').single()
 
       if (error) throw error
@@ -309,21 +347,64 @@ export default function ThisWeek({ appUser }) {
     setAdding(false)
   }
 
-  async function deleteMeal(mealId) {
+  async function initDeleteMeal(mealId) {
     const meal = meals.find(m => m.id === mealId)
-    setMeals(prev => prev.filter(m => m.id !== mealId))
+    if (!meal) return
+    const mealName = meal.custom_name || meal.recipes?.name || 'Meal'
     setDeleteConfirmId(null)
-    showToast('Removed from menu')
 
-    if (meal) {
-      logActivity({
-        user: appUser, actionType: 'meal_skipped', targetType: 'meal',
-        targetId: mealId, targetName: meal.custom_name || meal.recipes?.name || 'Meal',
-        metadata: { day_of_week: meal.day_of_week, recipe_id: meal.recipe_id },
-      })
+    // Check if ingredients exist on the shopping list for this meal
+    const { data: list } = await supabase.from('shopping_lists').select('id')
+      .eq('household_id', appUser.household_id).eq('list_type', 'master').neq('status', 'completed').limit(1).maybeSingle()
+    if (list) {
+      // Case-insensitive match — source_meal_name may differ in casing from custom_name
+      const { data: matchingItems } = await supabase.from('shopping_list_items')
+        .select('id, source_meal_name')
+        .eq('shopping_list_id', list.id)
+        .eq('is_purchased', false)
+        .not('source_meal_name', 'is', null)
+      const matches = (matchingItems || []).filter(i =>
+        i.source_meal_name?.toLowerCase() === mealName.toLowerCase()
+      )
+      if (matches.length > 0) {
+        // Use the stored source_meal_name for deletion (exact match)
+        setIngredientDialog({ mealId, mealName: matches[0].source_meal_name, itemCount: matches.length })
+        return
+      }
     }
 
-    await supabase.from('planned_meals').delete().eq('id', mealId)
+    // Path 1 — no ingredients, soft-delete silently
+    await softDeleteMeal(mealId, mealName, null)
+  }
+
+  async function softDeleteMeal(mealId, mealName, ingredientsKept) {
+    setMeals(prev => prev.filter(m => m.id !== mealId))
+    setIngredientDialog(null)
+    showToast('Removed from menu')
+
+    logActivity({
+      user: appUser, actionType: 'meal_skipped', targetType: 'meal',
+      targetId: mealId, targetName: mealName,
+      metadata: { ingredients_kept: ingredientsKept },
+    })
+
+    await supabase.from('planned_meals').update({
+      status: 'removed', removed_at: new Date().toISOString(),
+      ingredients_kept: ingredientsKept,
+    }).eq('id', mealId)
+  }
+
+  async function removeMealWithIngredients(mealId, mealName) {
+    // Delete unpurchased shopping list items for this meal
+    const { data: listId } = await supabase.from('shopping_lists').select('id')
+      .eq('household_id', appUser.household_id).eq('list_type', 'master').neq('status', 'completed').limit(1).maybeSingle()
+    if (listId) {
+      await supabase.from('shopping_list_items').delete()
+        .eq('shopping_list_id', listId.id)
+        .eq('source_meal_name', mealName)
+        .eq('is_purchased', false)
+    }
+    await softDeleteMeal(mealId, mealName, false)
   }
 
   async function dismissHint() {
@@ -347,29 +428,136 @@ export default function ThisWeek({ appUser }) {
     await supabase.from('planned_meals').update({ sage_match_status: 'resolved' }).eq('id', mealId)
   }
 
-  // ── Share & inject ─────────────────────────────────────────────
-  async function sharePlan() {
+  // ── Recipe link sheet for ghost meals ─────────────────────────
+  function openLinkSheet(meal) {
+    setLinkSheetMeal(meal)
+    setLinkSearch('')
+    setLinkResults([])
+    // Load all recipes initially
+    supabase.from('recipes').select('id, name').eq('household_id', appUser.household_id)
+      .order('name').limit(50)
+      .then(({ data }) => setLinkResults(data || []))
+  }
+
+  function handleLinkSearch(val) {
+    setLinkSearch(val)
+    if (linkDebounceRef.current) clearTimeout(linkDebounceRef.current)
+    linkDebounceRef.current = setTimeout(async () => {
+      if (val.trim().length < 1) {
+        const { data } = await supabase.from('recipes').select('id, name')
+          .eq('household_id', appUser.household_id).order('name').limit(50)
+        setLinkResults(data || [])
+      } else {
+        const { data } = await supabase.from('recipes').select('id, name')
+          .eq('household_id', appUser.household_id).ilike('name', `%${val.trim()}%`).order('name').limit(30)
+        setLinkResults(data || [])
+      }
+    }, 200)
+  }
+
+  async function linkFromSheet(recipeId, recipeName) {
+    if (!linkSheetMeal) return
+    await linkRecipeToMeal(linkSheetMeal.id, recipeId, recipeName)
+    logActivity({ user: appUser, actionType: 'recipe_linked_from_week', targetType: 'planned_meal', targetId: linkSheetMeal.id, targetName: recipeName })
+    setLinkSheetMeal(null)
+    showToast(`Linked to ${recipeName}`)
+  }
+
+  async function changeBatchMultiplier(mealId, newMultiplier) {
+    const meal = meals.find(m => m.id === mealId)
+    if (!meal) return
+    const oldMultiplier = meal.batch_multiplier || 1
+
+    // Update in-memory state
+    setMeals(prev => prev.map(m =>
+      m.id === mealId ? { ...m, batch_multiplier: newMultiplier, previous_batch_multiplier: oldMultiplier } : m
+    ))
+    setBatchEditMealId(null)
+
+    // Update DB
+    await supabase.from('planned_meals').update({
+      batch_multiplier: newMultiplier, previous_batch_multiplier: oldMultiplier,
+    }).eq('id', mealId)
+
+    // If already injected, update shopping list quantities in place
+    if (shoppingInjected && meal.recipe_id) {
+      const mealName = meal.custom_name || meal.recipes?.name || ''
+      if (mealName) {
+        const { data: listItems } = await supabase.from('shopping_list_items')
+          .select('id, quantity').ilike('source_meal_name', mealName).eq('status', 'active')
+        if (listItems?.length && oldMultiplier !== 0) {
+          for (const item of listItems) {
+            if (!item.quantity) continue
+            const raw = parseFloat(item.quantity)
+            if (isNaN(raw)) continue
+            const base = raw / oldMultiplier
+            const newQty = String(Math.round(base * newMultiplier * 100) / 100)
+            await supabase.from('shopping_list_items').update({ quantity: newQty }).eq('id', item.id)
+          }
+        }
+      }
+    }
+    showToast(`Batch ${formatMultiplierBadge(newMultiplier)}`)
+    logActivity({ user: appUser, actionType: 'batch_multiplier_changed', targetType: 'planned_meal', targetId: mealId, metadata: { old: oldMultiplier, new: newMultiplier } })
+  }
+
+  async function markAsCooked(mealId) {
+    const now = new Date().toISOString()
+    setMeals(prev => prev.map(m =>
+      m.id === mealId ? { ...m, status: 'cooked', cooked_at: now, quick_reviewed: true } : m
+    ))
+    setBatchEditMealId(null)
+    await supabase.from('planned_meals').update({ status: 'cooked', cooked_at: now, quick_reviewed: true }).eq('id', mealId)
+    logActivity({ user: appUser, actionType: 'meal_marked_cooked', targetType: 'planned_meal', targetId: mealId })
+    showToast('Marked as cooked')
+  }
+
+  // ── Visibility & inject ────────────────────────────────────────
+  async function toggleVisibility() {
     if (!planId) return
-    await supabase.from('meal_plans').update({ status: 'shared' }).eq('id', planId)
-    setPlanStatus('shared')
-    setShareSheetOpen(true)
+    const isPublished = planStatus === 'published'
+    const newStatus = isPublished ? 'draft' : 'published'
+    await supabase.from('meal_plans').update({
+      status: newStatus,
+      published_at: isPublished ? null : new Date().toISOString(),
+    }).eq('id', planId)
+    setPlanStatus(newStatus)
   }
 
   async function buildShoppingList() {
     if (!planId || injecting) return
     setInjecting(true)
-    const { count } = await injectMealPlanToList({ planId, householdId: appUser.household_id })
+    const { count } = await injectMealPlanToList({
+      planId,
+      householdId: appUser.household_id,
+      onCategorizing: setCategorizing,
+    })
     setShoppingInjected(true)
     setShareSheetOpen(false)
     showToast(`Added ${count} item${count !== 1 ? 's' : ''} to your list`)
     setInjecting(false)
+    setCategorizing(false)
     setTimeout(() => navigate('/pantry/list'), 800)
   }
 
   // ── Computed ──────────────────────────────────────────────────
   const todayStr = toLocalDateStr(new Date())
   const plannedDays = new Set(meals.map(m => m.day_of_week))
-  const ghostMeals = meals.filter(m => m.entry_type === 'ghost')
+
+  // Week review eligibility: after Sunday 8pm or any time Monday+
+  const showWeekReview = (() => {
+    if (!weekEndDate || weekReviewed || !planId) return false
+    const now = new Date()
+    const endDate = new Date(weekEndDate + 'T20:00:00')
+    return now > endDate
+  })()
+  const ghostMeals = meals.filter(m => m.entry_type === 'ghost' && !m.recipe_id && !m.removed_at)
+  const ghostNames = ghostMeals.map(m => m.custom_name || 'Untitled')
+  const ghostMessage = ghostNames.length === 1
+    ? `${ghostNames[0]} doesn't have a recipe yet — add one so Sage can build your shopping list.`
+    : ghostNames.length === 2
+    ? `${ghostNames[0]} and ${ghostNames[1]} don't have recipes yet — add them so Sage can build your shopping list.`
+    : `${ghostNames[0]}, ${ghostNames[1]}, and ${ghostNames.length - 2} other${ghostNames.length - 2 > 1 ? 's' : ''} don't have recipes yet — add them so Sage can build your shopping list.`
 
   const weekLabel = weekOffset === 0 ? "This Week's Menu"
     : weekOffset === 1 ? "Next Week's Menu"
@@ -383,6 +571,15 @@ export default function ThisWeek({ appUser }) {
 
   function getMealName(m) {
     return m.custom_name || m.recipes?.name || m.note || 'Untitled'
+  }
+
+  const BATCH_OPTIONS = [0.5, 1, 1.5, 2, 3]
+  const BATCH_LABELS = { 0.5: '½', 1: '1', 1.5: '1½', 2: '2', 3: '3' }
+
+  function formatMultiplierBadge(val) {
+    if (val === 0.5) return '×½'
+    if (val === 1.5) return '×1½'
+    return `×${val}`
   }
 
   // ── Render ────────────────────────────────────────────────────
@@ -424,34 +621,61 @@ export default function ThisWeek({ appUser }) {
           {dateRangeStr}
         </div>
 
-        {/* Row 3: status */}
-        <div style={{ textAlign: 'center', fontSize: '11px', color: C.driftwood, fontStyle: 'italic', marginBottom: '12px' }}>
-          {plannedDays.size} of 7 nights planned
+        {/* Row 3: status + visibility toggle */}
+        <div style={{ textAlign: 'center', fontSize: '11px', color: C.driftwood, fontStyle: 'italic', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          <span>{plannedDays.size} of 7 nights planned</span>
+          {householdMemberCount > 1 && planId && (
+            <button onClick={toggleVisibility} style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              fontSize: '10px', fontFamily: "'Jost', sans-serif", fontWeight: 400,
+              color: planStatus === 'published' ? C.sage : C.driftwood,
+            }}>
+              · {planStatus === 'published' ? 'Visible to family ✓' : 'Private'}
+            </button>
+          )}
         </div>
       </div>
 
-      {/* ── Week Strip ───────────────────────────────────────────── */}
+      {/* ── Weekly Review Nudge ──────────────────────────────────── */}
+      {showWeekReview && (
+        <div style={{ padding: '8px 0 0' }}>
+          <SageNudgeCard
+            message="This week is done — want to close it out with Sage?"
+            actionLabel="Quick review"
+            onAction={() => navigate(`/review/${planId}?mode=quick`)}
+            secondaryActionLabel="Full review"
+            secondaryOnAction={() => navigate(`/review/${planId}?mode=detailed`)}
+          />
+        </div>
+      )}
+
+      {/* ── Week Strip (sticky below topbar) ────────────────────── */}
       <div style={{
-        display: 'flex', gap: '4px', padding: '0 22px 16px',
+        display: 'flex', gap: '4px', padding: '8px 22px 12px',
         overflowX: 'auto', WebkitOverflowScrolling: 'touch',
+        position: 'sticky', top: '66px', zIndex: 10,
+        background: C.cream,
+        boxShadow: '0 2px 6px rgba(80,60,30,0.06)',
       }}>
         {weekDates.map((date, i) => {
           const dateStr = toLocalDateStr(date)
           const isToday = dateStr === todayStr
           const hasPlanned = meals.some(m => m.day_of_week === DOW_KEYS[i])
+          const isSelected = selectedDay ? selectedDay === DOW_KEYS[i] : isToday
           return (
             <button key={i} onClick={() => {
+              setSelectedDay(DOW_KEYS[i])
               const el = document.getElementById(`day-${DOW_KEYS[i]}`)
               if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
             }} style={{
               flex: '1 0 auto', minWidth: '44px', padding: '6px 8px', borderRadius: '10px',
               border: 'none', cursor: 'pointer', textAlign: 'center',
-              background: isToday ? C.forest : 'white',
-              color: isToday ? 'white' : C.ink,
-              boxShadow: isToday ? '0 2px 8px rgba(61,107,79,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
+              background: isSelected ? C.forest : 'white',
+              color: isSelected ? 'white' : C.ink,
+              boxShadow: isSelected ? '0 2px 8px rgba(61,107,79,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
               fontFamily: "'Jost', sans-serif",
             }}>
-              <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase', opacity: isToday ? 0.8 : 0.5 }}>
+              <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase', opacity: isSelected ? 0.8 : 0.5 }}>
                 {DAY_ABBR[i]}
               </div>
               <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', fontWeight: 500 }}>
@@ -519,6 +743,7 @@ export default function ThisWeek({ appUser }) {
                 background: 'white', borderRadius: '14px', marginBottom: '12px',
                 border: isToday ? `1.5px solid ${C.forest}` : '1px solid rgba(200,185,160,0.45)',
                 overflow: 'hidden',
+                scrollMarginTop: '145px',
                 animation: `fadeUp 0.35s ease ${0.02 + i * 0.03}s both`,
               }}>
                 {/* Day header */}
@@ -575,14 +800,16 @@ export default function ThisWeek({ appUser }) {
                     <div style={{ padding: '8px 14px 4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                       {shown.map(ev => {
                         const timeStr = formatEventTime(ev)
-                        const title = (ev.title || '').length > 22 ? (ev.title || '').substring(0, 22) + '…' : (ev.title || '')
+                        const isAllDay = ev.allDay || !timeStr
+                        const title = ev.title || ''
                         return (
                           <div key={ev.id} style={{
-                            fontSize: '10px', color: textColor, fontFamily: "'Jost', sans-serif", fontWeight: 300,
-                            display: 'flex', alignItems: 'center', gap: '5px',
+                            fontSize: '10px', fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                            color: isAllDay ? C.driftwood : textColor,
+                            display: 'flex', alignItems: 'center', gap: '12px',
                           }}>
-                            <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: C.honey, flexShrink: 0 }} />
-                            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
+                            {!isAllDay && <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: C.honey, flexShrink: 0 }} />}
+                            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: isAllDay ? 'italic' : 'normal' }}>{title}</span>
                             {timeStr && <span style={{ flexShrink: 0, opacity: 0.8 }}>{timeStr}</span>}
                           </div>
                         )
@@ -600,38 +827,44 @@ export default function ThisWeek({ appUser }) {
                     const sageMatches = meal.sage_match_status === 'pending' && meal.sage_match_result?.matches
                     return (
                       <div key={meal.id}>
-                        <div style={{
+                        <div onClick={() => setBatchEditMealId(meal.id)} style={{
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                           padding: '8px 0',
                           borderBottom: sageMatches ? 'none' : '1px solid rgba(200,185,160,0.15)',
+                          cursor: 'pointer',
                         }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontSize: '14px', color: C.ink }}>{getMealName(meal)}</span>
+                              <span style={{ fontSize: '14px', color: meal.status === 'cooked' ? C.sage : (meal.entry_type === 'linked' && meal.recipe_id) ? C.forest : C.ink }}>
+                                {meal.status === 'cooked' && <span style={{ color: C.sage }}>✓ </span>}
+                                {getMealName(meal)}
+                              </span>
+                              {meal.batch_multiplier && meal.batch_multiplier !== 1 && (
+                                <span style={{ fontSize: '10px', fontWeight: 600, color: C.forest, fontFamily: "'Jost', sans-serif" }}>
+                                  {formatMultiplierBadge(meal.batch_multiplier)}
+                                </span>
+                              )}
                               {meal.entry_type === 'linked' && (
                                 <svg viewBox="0 0 24 24" fill="none" stroke={C.sage} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12, flexShrink: 0 }}>
                                   <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
                                 </svg>
+                              )}
+                              {meal.entry_type === 'ghost' && !meal.recipe_id && (
+                                <button onClick={e => { e.stopPropagation(); openLinkSheet(meal) }} style={{
+                                  background: 'none', border: 'none', cursor: 'pointer', padding: '2px',
+                                  display: 'flex', alignItems: 'center', flexShrink: 0, opacity: 0.5,
+                                }}>
+                                  <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13 }}>
+                                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
+                                    <path d="M9 10h6M9 14h4"/>
+                                  </svg>
+                                </button>
                               )}
                             </div>
                             <span style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.driftwood }}>
                               {MEAL_TYPE_LABELS[meal.meal_type] || 'Dinner'}
                             </span>
                           </div>
-                          {deleteConfirmId === meal.id ? (
-                            <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-                              <button onClick={() => deleteMeal(meal.id)} style={{ fontSize: '11px', color: C.red, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontWeight: 500 }}>Remove</button>
-                              <button onClick={() => setDeleteConfirmId(null)} style={{ fontSize: '11px', color: C.driftwood, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Keep</button>
-                            </div>
-                          ) : (
-                            <button onClick={() => setDeleteConfirmId(meal.id)} style={{
-                              background: 'none', border: 'none', cursor: 'pointer', color: C.driftwood, padding: '4px', flexShrink: 0, opacity: 0.4,
-                            }}>
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
-                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                              </svg>
-                            </button>
-                          )}
                         </div>
 
                         {/* Sage match suggestion card */}
@@ -712,43 +945,66 @@ export default function ThisWeek({ appUser }) {
         </div>
       )}
 
-      {/* ── Share with family button ────────────────────────────── */}
-      {meals.length >= 2 && planStatus !== 'shared' && !loading && (
+      {/* ── Build / View my list button ──────────────────────────── */}
+      {meals.length >= 1 && !loading && (
         <div style={{ padding: '0 22px 12px' }}>
-          <button onClick={sharePlan} style={{
+          <button onClick={shoppingInjected ? () => navigate('/pantry/list') : () => setShareSheetOpen(true)} disabled={injecting} style={{
             width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
             background: C.forest, color: 'white', cursor: 'pointer',
             fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
             boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
-          }}>Share with family →</button>
+          }}>{categorizing ? 'Sage is organizing your ingredients…' : injecting ? 'Building...' : shoppingInjected ? 'View my list →' : 'Build my list →'}</button>
         </div>
       )}
 
       {/* ── Ghost Bridge Card ────────────────────────────────────── */}
       {ghostMeals.length > 0 && (
-        <div style={{
-          margin: '4px 22px 16px', padding: '14px 16px',
-          background: 'white', borderRadius: '12px',
-          borderLeft: `3px solid ${C.sage}`,
-          border: '1px solid rgba(200,185,160,0.45)',
-        }}>
-          <div style={{ fontSize: '13px', color: C.ink, lineHeight: 1.6, marginBottom: '10px' }}>
-            <span style={{ color: C.sage }}>✦</span> Some meals don't have recipes yet — want Sage to help with your shopping list?
+        <SageNudgeCard
+          message={ghostMessage}
+          actionLabel="Add recipes →"
+          onAction={() => navigate('/meals/recipes')}
+        />
+      )}
+
+      {/* ── Ingredient Cleanup Dialog ────────────────────────────── */}
+      {ingredientDialog && (
+        <>
+          <div onClick={() => setIngredientDialog(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
+          <div onClick={e => e.stopPropagation()} style={{
+            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
+            padding: '0 0 env(safe-area-inset-bottom, 24px)', zIndex: 201,
+            boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
+            animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
+          }}>
+            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+            <div style={{ padding: '20px 22px 24px' }}>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '8px' }}>
+                Remove {ingredientDialog.mealName}?
+              </div>
+              <div style={{ fontSize: '14px', color: C.driftwood, lineHeight: 1.6, marginBottom: '20px' }}>
+                {ingredientDialog.itemCount} ingredient{ingredientDialog.itemCount !== 1 ? 's' : ''} for this meal {ingredientDialog.itemCount !== 1 ? 'are' : 'is'} already on your shopping list. Remove {ingredientDialog.itemCount !== 1 ? 'them' : 'it'} too?
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <button onClick={() => removeMealWithIngredients(ingredientDialog.mealId, ingredientDialog.mealName)} style={{
+                  width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
+                  background: C.forest, color: 'white', cursor: 'pointer',
+                  fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
+                }}>Yes, remove ingredients</button>
+                <button onClick={() => softDeleteMeal(ingredientDialog.mealId, ingredientDialog.mealName, true)} style={{
+                  width: '100%', padding: '12px', borderRadius: '14px',
+                  background: 'none', color: C.ink, border: `1.5px solid ${C.linen}`,
+                  cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontSize: '14px',
+                }}>Keep ingredients on my list</button>
+                <button onClick={() => setIngredientDialog(null)} style={{
+                  width: '100%', padding: '10px', background: 'none', border: 'none',
+                  cursor: 'pointer', color: C.driftwood, fontSize: '13px', fontWeight: 300,
+                  fontFamily: "'Jost', sans-serif",
+                }}>Never mind, keep this meal</button>
+              </div>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={() => navigate('/meals/recipes')} style={{
-              padding: '8px 14px', borderRadius: '10px', border: 'none',
-              background: C.forest, color: 'white', fontSize: '12px', fontWeight: 500,
-              cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-            }}>Add recipes</button>
-            <button onClick={() => navigate('/pantry/list')} style={{
-              padding: '8px 14px', borderRadius: '10px',
-              background: 'none', color: C.forest, fontSize: '12px', fontWeight: 500,
-              border: `1px solid ${C.forest}`,
-              cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-            }}>Add items manually</button>
-          </div>
-        </div>
+        </>
       )}
 
       {/* ── Sage Share Sheet ─────────────────────────────────────── */}
@@ -773,7 +1029,12 @@ export default function ThisWeek({ appUser }) {
               </div>
               {ghostMeals.length > 0 && (
                 <div style={{ fontSize: '12px', color: C.driftwood, fontStyle: 'italic', marginBottom: '16px', paddingLeft: '4px' }}>
-                  {ghostMeals.length} meal{ghostMeals.length > 1 ? 's' : ''} don't have recipes yet — you can add those items manually.
+                  {ghostNames.length === 1
+                    ? `${ghostNames[0]} doesn't have a recipe — you can add those items manually.`
+                    : ghostNames.length === 2
+                    ? `${ghostNames[0]} and ${ghostNames[1]} don't have recipes — you can add those items manually.`
+                    : `${ghostNames[0]}, ${ghostNames[1]}, and ${ghostNames.length - 2} other${ghostNames.length - 2 > 1 ? 's' : ''} don't have recipes — you can add those items manually.`
+                  }
                 </div>
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -782,7 +1043,7 @@ export default function ThisWeek({ appUser }) {
                   background: C.forest, color: 'white', cursor: 'pointer',
                   fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
                   boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
-                }}>{injecting ? 'Building...' : 'Build my list →'}</button>
+                }}>{categorizing ? 'Sage is organizing your ingredients…' : injecting ? 'Building...' : 'Build my list →'}</button>
                 <button onClick={() => setShareSheetOpen(false)} style={{
                   width: '100%', padding: '12px', borderRadius: '14px', border: 'none',
                   background: 'none', color: C.driftwood, cursor: 'pointer',
@@ -870,6 +1131,23 @@ export default function ThisWeek({ appUser }) {
                 ))}
               </div>
 
+              {/* Batch size */}
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '6px' }}>Batch size</div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {BATCH_OPTIONS.map(val => (
+                    <button key={val} onClick={() => setAddBatchMultiplier(val)} style={{
+                      flex: 1, padding: '8px', borderRadius: '10px', fontSize: '13px',
+                      border: addBatchMultiplier === val ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                      background: addBatchMultiplier === val ? 'rgba(61,107,79,0.08)' : 'white',
+                      color: addBatchMultiplier === val ? C.forest : C.ink,
+                      cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+                      fontWeight: addBatchMultiplier === val ? 600 : 400,
+                    }}>{BATCH_LABELS[val]}</button>
+                  ))}
+                </div>
+              </div>
+
               {/* Add button */}
               <button onClick={addMeal} disabled={!addInput.trim() || adding} style={{
                 width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
@@ -881,6 +1159,131 @@ export default function ThisWeek({ appUser }) {
               }}>
                 {adding ? 'Adding...' : 'Add to menu'}
               </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Meal Edit Sheet ──────────────────────────────────────── */}
+      {batchEditMealId && (() => {
+        const editMeal = meals.find(m => m.id === batchEditMealId)
+        if (!editMeal) return null
+        const currentBatch = editMeal.batch_multiplier || 1
+        return (
+          <>
+            <div onClick={() => setBatchEditMealId(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
+            <div onClick={e => e.stopPropagation()} style={{
+              position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+              width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
+              padding: '0 0 env(safe-area-inset-bottom, 24px)', zIndex: 201,
+              boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
+              animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
+            }}>
+              <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+              <div style={{ padding: '16px 22px 20px' }}>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '18px' }}>
+                  {getMealName(editMeal)}
+                </div>
+
+                {/* Cooked button — for past meals that haven't been reviewed */}
+                {editMeal.planned_date && editMeal.planned_date < todayStr && editMeal.status !== 'cooked' && !editMeal.removed_at && (
+                  <button onClick={() => markAsCooked(editMeal.id)} style={{
+                    width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '16px',
+                    border: `1.5px solid ${C.forest}`, background: 'white', color: C.forest,
+                    cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                  }}>✓ Mark as cooked</button>
+                )}
+                {editMeal.status === 'cooked' && editMeal.cooked_at && (
+                  <div style={{
+                    width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '16px',
+                    background: 'rgba(122,140,110,0.08)', textAlign: 'center',
+                    fontSize: '13px', color: C.sage, fontFamily: "'Jost', sans-serif", fontWeight: 400,
+                  }}>✓ Cooked {new Date(editMeal.cooked_at).toLocaleDateString('en-US', { weekday: 'long' })}</div>
+                )}
+
+                {/* Batch size */}
+                <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '8px' }}>Batch size</div>
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '20px' }}>
+                  {BATCH_OPTIONS.map(val => (
+                    <button key={val} onClick={() => changeBatchMultiplier(batchEditMealId, val)} style={{
+                      flex: 1, padding: '12px', borderRadius: '10px', fontSize: '15px',
+                      border: currentBatch === val ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                      background: currentBatch === val ? 'rgba(61,107,79,0.08)' : 'white',
+                      color: currentBatch === val ? C.forest : C.ink,
+                      cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+                      fontWeight: currentBatch === val ? 600 : 400,
+                    }}>{BATCH_LABELS[val]}</button>
+                  ))}
+                </div>
+
+                {/* Done button */}
+                <button onClick={() => setBatchEditMealId(null)} style={{
+                  width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
+                  background: C.forest, color: 'white', cursor: 'pointer',
+                  fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
+                  boxShadow: '0 4px 16px rgba(30,55,35,0.25)', marginBottom: '16px',
+                }}>Done</button>
+
+                {/* Divider + Remove */}
+                <div style={{ borderTop: `1px solid ${C.linen}`, paddingTop: '14px', textAlign: 'center' }}>
+                  <button onClick={() => { setBatchEditMealId(null); initDeleteMeal(editMeal.id) }} style={{
+                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                    fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                  }}>Remove this meal →</button>
+                </div>
+              </div>
+            </div>
+          </>
+        )
+      })()}
+
+      {/* ── Recipe Link Sheet (ghost meals) ──────────────────────── */}
+      {linkSheetMeal && (
+        <>
+          <div onClick={() => setLinkSheetMeal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
+          <div onClick={e => e.stopPropagation()} style={{
+            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
+            padding: '0 0 env(safe-area-inset-bottom, 24px)', zIndex: 201,
+            boxShadow: '0 -4px 32px rgba(44,36,23,0.18)', maxHeight: '70vh',
+            animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
+          }}>
+            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+            <div style={{ padding: '16px 22px 20px' }}>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
+                Link a recipe to {getMealName(linkSheetMeal)}?
+              </div>
+              <input
+                type="text" value={linkSearch} onChange={e => handleLinkSearch(e.target.value)}
+                placeholder="Search recipes..." autoFocus
+                style={{
+                  width: '100%', padding: '12px 14px', fontSize: '14px',
+                  fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                  border: `1.5px solid ${C.linen}`, borderRadius: '12px',
+                  outline: 'none', color: C.ink, boxSizing: 'border-box', marginBottom: '10px',
+                }}
+              />
+              <div style={{ maxHeight: '280px', overflowY: 'auto' }}>
+                {linkResults.length === 0 && (
+                  <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', padding: '12px 0' }}>
+                    {linkSearch.trim() ? 'No recipes found' : 'Loading recipes...'}
+                  </div>
+                )}
+                {linkResults.map(r => (
+                  <button key={r.id} onClick={() => linkFromSheet(r.id, r.name)} style={{
+                    display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
+                    padding: '12px 0', background: 'none', border: 'none',
+                    borderBottom: '1px solid rgba(200,185,160,0.15)',
+                    cursor: 'pointer', textAlign: 'left', fontFamily: "'Jost', sans-serif",
+                  }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke={C.sage} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
+                      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
+                    </svg>
+                    <span style={{ fontSize: '14px', color: C.ink, fontWeight: 300 }}>{r.name}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </>

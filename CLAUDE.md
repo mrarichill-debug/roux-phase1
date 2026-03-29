@@ -1,5 +1,5 @@
 # CLAUDE.md — Roux Phase 2
-*Last updated: March 22, 2026*
+*Last updated: March 28, 2026*
 
 ## What Is Roux
 
@@ -19,6 +19,32 @@ Roux is a family meal planner + recipe library for the Hill family (7 members, H
 **Supabase:** `https://goivrbphdqleqgjfqbtb.supabase.co`
 **Lauren's IDs:** household `53f6a197-544a-48e6-9a46-23d7252399c2` / user `18c38c61-fb49-4c29-a4c2-e8907a554dac`
 
+---
+
+## Before You Start Any Task
+
+**1. Read these files first:**
+- `docs/BUILD-FLAGS.md` — what's done, what's next, current build status
+- `docs/ERROR_LOG.md` — known errors and how they were fixed. Do not repeat them.
+- `docs/LESSONS.md` — principles learned from the build. Apply them proactively.
+
+**2. Check the relevant skill file if one exists:**
+- Building UI? Read `skills/SKILL-component.md`
+- Writing RLS or schema? Read `skills/SKILL-supabase-rls.md`
+- Writing Sage prompts or voice? Read `skills/SKILL-sage-prompt.md`
+
+**3. Run the Round Table checklist before implementing:**
+- 🏛️ Architect: *Does this make sense as a system that will scale?*
+- 🎨 Designer: *Does this look and feel like Roux?*
+- 👤 UX Advocate: *Would a tired parent at 6pm find this easy and helpful?*
+- 🔨 Builder: *What's the right sequence to build this safely?*
+- 💰 Product Strategist: *Is this the most valuable thing to build right now?*
+- 👩‍🍳 Maya: *Would I actually use this on a Thursday night when I'm exhausted?*
+
+If any answer is clearly "no" — stop and flag it before proceeding.
+
+---
+
 ## Top 10 Rules
 
 1. **Prototypes are law.** `/prototypes/` are the visual source of truth. Match exactly.
@@ -32,17 +58,25 @@ Roux is a family meal planner + recipe library for the Hill family (7 members, H
 9. **Subscription tiers are `'free'` and `'full'` only.** No other tier names anywhere in the codebase. Hill House = `'full'`.
 10. **Sage has no free-form chat.** All interactions are app-triggered. Users respond with taps only. App always constructs the API prompt.
 
+---
+
 ## Deployment Rule
 
 Only deploy to Vercel at the explicit close of a build session when Aric asks. All development and testing during a session runs on localhost (`npm run dev`). Never push mid-session unless Aric specifically requests it.
+
+---
 
 ## Activity Log
 
 Active. All meaningful user actions write to `activity_log` via `src/lib/activityLog.js`. Every new feature must wire in a `logActivity()` call — fire-and-forget, after primary action succeeds, never blocking UI.
 
+---
+
 ## Session Notes (Mar 25, 2026)
 
 Google Calendar sync is live and working for Hill house. Calendar selection UI built — Lauren can choose which calendars appear in Roux. `selectedCalendarIds` stored in `users.calendar_credentials`. Angels/Lakers excluded, Hill Family and personal calendars included.
+
+---
 
 ## Documentation Index
 
@@ -54,6 +88,19 @@ Google Calendar sync is live and working for Hill house. Calendar selection UI b
 | `docs/BUILD-FLAGS.md` | Starting any task — what's done, what's next, current build status |
 | `docs/PRODUCT-TIERS.md` | Tier decisions — Free / Full Plan breakdown |
 | `docs/USER-EDUCATION.md` | Pre-launch — empty states, tooltips, Sage nudges |
+| `docs/ERROR_LOG.md` | Before any task — known bugs, root causes, fixes |
+| `docs/LESSONS.md` | Before any task — principles and patterns learned from the build |
+
+## Skills Index
+
+| File | Use When |
+|---|---|
+| `skills/SKILL-component.md` | Building any React component — structure, naming, Roux patterns |
+| `skills/SKILL-supabase-rls.md` | Writing RLS policies, schema changes, or Supabase queries |
+| `skills/SKILL-sage-prompt.md` | Writing Sage API prompts or Sage-facing copy |
+| `skills/SKILL-debug.md` | Hitting an error — standard debug sequence for this stack |
+
+---
 
 ## Database Quick Reference
 
