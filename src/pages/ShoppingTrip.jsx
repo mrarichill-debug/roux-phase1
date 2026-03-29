@@ -8,6 +8,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { logActivity } from '../lib/activityLog'
 import { getIngredientCostEstimate } from '../lib/getIngredientCostEstimate'
+import { hasSeenTooltip, dismissTooltip } from '../lib/tooltips'
 import BottomNav from '../components/BottomNav'
 
 const C = {
@@ -31,6 +32,7 @@ export default function ShoppingTrip({ appUser }) {
   const [loading, setLoading] = useState(true)
   const [completed, setCompleted] = useState(false)
   const [costEstimates, setCostEstimates] = useState({}) // name → estimate obj
+  const [receiptTipDismissed, setReceiptTipDismissed] = useState(() => hasSeenTooltip(appUser, 'receipt_value'))
 
   useEffect(() => { if (tripId) loadTrip() }, [tripId])
 
@@ -38,13 +40,17 @@ export default function ShoppingTrip({ appUser }) {
     setLoading(true)
     try {
       const { data: tripData } = await supabase.from('shopping_trips')
-        .select('id, name, store_name, status').eq('id', tripId).single()
+        .select('id, name, store_name, status, companion_trip_id, is_companion').eq('id', tripId).single()
       if (!tripData) { navigate('/pantry'); return }
       setTrip(tripData)
 
-      // Load trip items — separate queries per LESSONS.md
+      // Determine all trip IDs to load (primary + companion)
+      const tripIds = [tripId]
+      if (tripData.companion_trip_id) tripIds.push(tripData.companion_trip_id)
+
+      // Load trip items from all trips — separate queries per LESSONS.md
       const { data: tripItemRows } = await supabase.from('shopping_trip_items')
-        .select('id, shopping_list_item_id, is_purchased, purchased_at').eq('trip_id', tripId)
+        .select('id, trip_id, shopping_list_item_id, is_purchased, purchased_at').in('trip_id', tripIds)
       if (!tripItemRows?.length) { setTripItems([]); setLoading(false); return }
 
       const itemIds = tripItemRows.map(r => r.shopping_list_item_id)
@@ -56,6 +62,7 @@ export default function ShoppingTrip({ appUser }) {
         ...ti,
         ...(listMap[ti.shopping_list_item_id] || {}),
         tripItemId: ti.id,
+        _isCompanion: ti.trip_id !== tripId,
       })))
     } catch (err) {
       console.error('[ShoppingTrip] Load error:', err)
@@ -130,14 +137,20 @@ export default function ShoppingTrip({ appUser }) {
   }
 
   async function finishTrip() {
+    const now = new Date().toISOString()
     // Unassign unchecked items so they return to manifest
     for (const item of unchecked) {
       if (item.shopping_list_item_id) {
         await supabase.from('shopping_list_items').update({ assigned_trip_id: null }).eq('id', item.shopping_list_item_id)
       }
     }
-    await supabase.from('shopping_trips').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', tripId)
-    logActivity({ user: appUser, actionType: 'shopping_trip_completed', targetType: 'shopping_trip', targetId: tripId, targetName: trip?.name, metadata: { items_purchased: checkedCount, items_total: total } })
+    // Complete primary trip
+    await supabase.from('shopping_trips').update({ status: 'completed', completed_at: now }).eq('id', tripId)
+    // Complete companion trip if present
+    if (trip?.companion_trip_id) {
+      await supabase.from('shopping_trips').update({ status: 'completed', completed_at: now }).eq('id', trip.companion_trip_id)
+    }
+    logActivity({ user: appUser, actionType: 'shopping_trip_completed', targetType: 'shopping_trip', targetId: tripId, targetName: trip?.name, metadata: { items_purchased: checkedCount, items_total: total, multi_week: !!trip?.companion_trip_id } })
     setCompleted(true)
   }
 
@@ -175,6 +188,33 @@ export default function ShoppingTrip({ appUser }) {
         {checkedCount} item{checkedCount !== 1 ? 's' : ''} picked up
       </div>
 
+      {/* Receipt value education tooltip */}
+      {!receiptTipDismissed && (
+        <div style={{
+          width: '100%', maxWidth: '320px', padding: '14px 16px', marginBottom: '16px',
+          background: 'white', borderRadius: '12px', borderLeft: `3px solid ${C.sage}`,
+          border: '1px solid rgba(200,185,160,0.4)',
+        }}>
+          <div style={{ fontSize: '13px', color: C.ink, lineHeight: 1.6, marginBottom: '10px' }}>
+            <span style={{ color: C.sage }}>✦</span> <strong>Why scan your receipt?</strong> The more you scan, the smarter Sage gets — she'll learn what things cost at each store, when you're running low on staples, and how much you're spending vs eating out. It only takes a few seconds.
+          </div>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button onClick={async () => {
+              const updated = await dismissTooltip(appUser.id, appUser.dismissed_tooltips, 'receipt_value')
+              appUser.dismissed_tooltips = updated
+              setReceiptTipDismissed(true)
+            }} style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              fontSize: '12px', color: C.forest, fontWeight: 500, fontFamily: "'Jost', sans-serif",
+            }}>Got it</button>
+            <button onClick={() => setReceiptTipDismissed(true)} style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              fontSize: '12px', color: C.driftwood, fontWeight: 300, fontFamily: "'Jost', sans-serif",
+            }}>Remind me next time</button>
+          </div>
+        </div>
+      )}
+
       <button onClick={() => navigate(`/pantry/trip/${tripId}/receipt`)} style={{
         width: '100%', maxWidth: '320px', padding: '16px', borderRadius: '14px', border: 'none',
         background: C.forest, color: 'white', cursor: 'pointer',
@@ -207,8 +247,9 @@ export default function ShoppingTrip({ appUser }) {
           </button>
           <span style={{ fontSize: '12px', color: 'rgba(250,247,242,0.6)' }}>{checkedCount} of {total}</span>
         </div>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 500, color: 'rgba(250,247,242,0.95)', display: 'flex', alignItems: 'center', gap: '8px' }}>
           {trip?.name || trip?.store_name || 'Shopping Trip'}
+          {trip?.companion_trip_id && <span style={{ fontSize: '10px', fontFamily: "'Jost', sans-serif", fontWeight: 500, padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.15)', color: 'rgba(250,247,242,0.7)' }}>2 weeks</span>}
         </div>
         <div style={{ marginTop: '12px', height: '3px', background: 'rgba(255,255,255,0.15)', borderRadius: '2px' }}>
           <div style={{ height: '100%', background: 'rgba(250,247,242,0.7)', borderRadius: '2px', width: `${progress * 100}%`, transition: 'width 0.3s ease' }} />
@@ -239,6 +280,9 @@ export default function ShoppingTrip({ appUser }) {
                   )}
                   {item.source_meal_name && (
                     <div style={{ fontSize: '10px', color: C.driftwood, fontStyle: 'italic' }}>For {item.source_meal_name}</div>
+                  )}
+                  {trip?.companion_trip_id && (
+                    <div style={{ fontSize: '9px', color: C.driftwood, fontStyle: 'italic' }}>{item._isCompanion ? 'Next week' : 'This week'}</div>
                   )}
                   {costEstimates[(item.name || '').toLowerCase()] && (
                     <div style={{ fontSize: '10px', color: C.driftwood, fontStyle: 'italic' }}>

@@ -71,7 +71,7 @@ export default function WeeklyReview({ appUser }) {
   async function setMealStatus(mealId, status) {
     const now = new Date().toISOString()
     const update = { status, quick_reviewed: true }
-    if (status === 'cooked') update.cooked_at = now
+    if (status === 'cooked' || status === 'eating_out') update.cooked_at = now
     setMeals(prev => prev.map(m => m.id === mealId ? { ...m, ...update } : m))
     await supabase.from('planned_meals').update(update).eq('id', mealId)
   }
@@ -220,6 +220,25 @@ export default function WeeklyReview({ appUser }) {
                             cursor: 'pointer', fontFamily: "'Jost', sans-serif", textTransform: 'capitalize',
                           }}>{val}</button>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {isEatingOut && (
+                    <div style={{ marginBottom: '12px' }}>
+                      <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '6px' }}>How much did you spend?</div>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <div style={{ position: 'relative', flex: 1 }}>
+                          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '14px', color: C.driftwood }}>$</span>
+                          <input type="text" inputMode="decimal" value={meal.eating_out_actual_cost || ''}
+                            onChange={e => setDetailedField(meal.id, 'eating_out_actual_cost', e.target.value ? parseFloat(e.target.value.replace(/[^0-9.]/g, '')) || null : null)}
+                            placeholder="0.00" style={{
+                              width: '100%', padding: '8px 12px 8px 24px', fontSize: '14px',
+                              fontFamily: "'Jost', sans-serif", border: `1.5px solid ${C.linen}`,
+                              borderRadius: '8px', outline: 'none', color: C.ink, boxSizing: 'border-box',
+                            }} />
+                        </div>
+                        <span style={{ fontSize: '11px', color: C.driftwood, fontStyle: 'italic' }}>optional</span>
                       </div>
                     </div>
                   )}

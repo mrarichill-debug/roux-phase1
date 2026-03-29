@@ -13,6 +13,8 @@ import TopBar from '../components/TopBar'
 import { getWeekDatesTZ, getWeekStartTZ, getDayOfWeekTZ, getTodayStr, timeGreetingTZ, toLocalDateStr } from '../lib/dateUtils'
 import BottomNav from '../components/BottomNav'
 import SageNudgeCard from '../components/SageNudgeCard'
+import SageIntelligenceCard from '../components/SageIntelligenceCard'
+import { getSageIntelligence } from '../lib/getSageIntelligence'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -70,6 +72,7 @@ export default function Dashboard({ appUser }) {
   const [activeTemplateName, setActiveTemplateName] = useState(null)
   const [loading, setLoading]               = useState(true)  // Phase 1+2 loading
   const [sageMessages, setSageMessages] = useState([]) // unified Sage nudge queue
+  const [sageIntelligence, setSageIntelligence] = useState(null)
   const [sageIndex, setSageIndex] = useState(0) // which message is currently shown
 
   const tz         = appUser?.timezone ?? 'America/Chicago'
@@ -159,6 +162,9 @@ export default function Dashboard({ appUser }) {
         if (total > 0) setSpendUsedPct(Math.round((purchased / total) * 100))
         console.timeEnd('[Roux] Phase 3: spending')
       }
+
+      // Sage intelligence — deferred, non-blocking
+      getSageIntelligence(supabase, hid).then(data => setSageIntelligence(data))
 
       // Shopping tile state
       if (allLists.length === 0) {
@@ -447,6 +453,9 @@ export default function Dashboard({ appUser }) {
             />
           )
         })()}
+
+        {/* ── Sage Intelligence ───────────────────────────────────────── */}
+        <SageIntelligenceCard intelligence={sageIntelligence} />
 
         {/* ── Spending Snapshot ─────────────────────────────────────────── */}
         <SpendingSnapshot

@@ -134,3 +134,15 @@
 ### Never auto-link recipes without user confirmation
 **The lesson:** When Sage finds recipe matches, always surface as a suggestion via `sage_background_activity` or `sage_match_result`. Never silently set `recipe_id` or insert into `planned_meal_recipes`.
 **Why it matters:** Silent auto-linking removes user agency. Lauren may have multiple matching recipes or may not want any linked.
+
+### Use dismissed_tooltips JSONB for all persistent tip tracking
+**The lesson:** Never add individual boolean columns for "has seen X tip". Use `users.dismissed_tooltips` JSONB with string keys. Check with `hasSeenTooltip()`, dismiss with `dismissTooltip()` from `src/lib/tooltips.js`.
+**Why it matters:** One flexible column handles unlimited tips forever. Individual boolean columns multiply with every new feature.
+
+### Multi-week trips are two trips linked by companion_trip_id
+**The lesson:** When Lauren shops for two weeks in one trip, two `shopping_trips` rows are created — one per week's shopping list. They're linked via `companion_trip_id`. The UI shows them as one combined trip. Never merge the underlying data.
+**Why it matters:** Each week's shopping list must stay independent for weekly review, cost tracking, and Sage intelligence to work correctly.
+
+### Sage intelligence score is weighted by data quality
+**The lesson:** Receipt scans (x3) and weekly reviews (x4) are weighted higher than meals planned (x1) because they provide richer, more accurate data. Pantry staples (x2) are mid-weight.
+**Why it matters:** The score should reflect data quality, not just activity. A household that scans every receipt and reviews every week should advance faster than one that just plans meals.

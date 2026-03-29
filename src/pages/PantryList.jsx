@@ -9,7 +9,9 @@ import { supabase } from '../lib/supabase'
 import { logActivity } from '../lib/activityLog'
 import { categorizeIngredient } from '../lib/categorizeIngredient'
 import { getOrCreateShoppingList } from '../lib/getOrCreateShoppingList'
+import { injectMealPlanToList } from '../lib/injectMealPlanToList'
 import { getWeekDatesTZ, getWeekStartTZ } from '../lib/dateUtils'
+import { hasSeenTooltip, dismissTooltip } from '../lib/tooltips'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import SageNudgeCard from '../components/SageNudgeCard'
@@ -48,8 +50,9 @@ export default function PantryList({ appUser }) {
   const [addCategory, setAddCategory] = useState('other')
   const [showCatPicker, setShowCatPicker] = useState(false)
   const [manualCatPick, setManualCatPick] = useState(false)
-  const [showTutorial, setShowTutorial] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [shoppingTipDismissed, setShoppingTipDismissed] = useState(() => hasSeenTooltip(appUser, 'shopping_workflow'))
   const [ghostMealsWithoutIngredients, setGhostMealsWithoutIngredients] = useState([])
 
   // Batch multipliers by meal name (case-insensitive)
@@ -66,6 +69,9 @@ export default function PantryList({ appUser }) {
   const [creatingTrip, setCreatingTrip] = useState(false)
   const [addingStore, setAddingStore] = useState(false)
   const [newStoreName, setNewStoreName] = useState('')
+  // Multi-week trip state
+  const [secondWeek, setSecondWeek] = useState(null) // { planId, listId, label, items: [] }
+  const [secondWeekLoading, setSecondWeekLoading] = useState(false)
 
   // Pantry staples + "Have it" interaction
   const [reassignItem, setReassignItem] = useState(null) // item for trip reassignment sheet
@@ -83,6 +89,13 @@ export default function PantryList({ appUser }) {
     setAddInput(val)
     if (!manualCatPick) setAddCategory(categorizeIngredient(val))
   }
+
+  // Scroll lock when any bottom sheet is open
+  useEffect(() => {
+    const anyOpen = !!reassignItem || !!stapleSheetItem || tripSheetOpen
+    document.body.style.overflow = anyOpen ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [reassignItem, stapleSheetItem, tripSheetOpen])
 
   // Load week + meal plan when offset or household changes
   useEffect(() => {
@@ -141,8 +154,8 @@ export default function PantryList({ appUser }) {
       supabase.from('grocery_stores').select('id, name, is_primary, sort_order').eq('household_id', appUser.household_id).order('sort_order')
         .then(({ data }) => setStores(data || []))
 
-      // Load pending trips scoped to this shopping list
-      supabase.from('shopping_trips').select('id, name, store_name, status')
+      // Load pending trips scoped to this shopping list (include companion info)
+      supabase.from('shopping_trips').select('id, name, store_name, status, companion_trip_id, is_companion')
         .eq('shopping_list_id', activeListId).in('status', ['pending', 'active'])
         .order('created_at', { ascending: false })
         .then(({ data }) => setPendingTrips(data || []))
@@ -206,17 +219,6 @@ export default function PantryList({ appUser }) {
       })
   }, [loading, items.length])
 
-  // Show tutorial on first visit with items — verify against DB to avoid stale appUser
-  useEffect(() => {
-    if (loading || items.length === 0 || showOnboarding) return
-    if (appUser?.has_seen_shopping_tutorial) { setShowTutorial(false); return }
-    supabase.from('users').select('has_seen_shopping_tutorial').eq('id', appUser.id).single()
-      .then(({ data }) => {
-        if (data?.has_seen_shopping_tutorial) setShowTutorial(false)
-        else setShowTutorial(true)
-      })
-  }, [loading, items.length, showOnboarding])
-
   // Check for ghost meals with no ingredients on the list — scoped to selected meal plan
   useEffect(() => {
     if (loading || !appUser?.household_id || !listId || !selectedMealPlanId) return
@@ -244,11 +246,6 @@ export default function PantryList({ appUser }) {
     }
     checkGhosts()
   }, [loading, listId, items.length, selectedMealPlanId])
-
-  async function dismissTutorial() {
-    setShowTutorial(false)
-    supabase.from('users').update({ has_seen_shopping_tutorial: true }).eq('id', appUser.id)
-  }
 
   async function addToListManually(ghost) {
     if (!listId) return
@@ -405,7 +402,7 @@ export default function PantryList({ appUser }) {
     setCompletedTripItems(prev => ({ ...prev, [tripId]: merged }))
   }
 
-  // Trip creation — 2-step flow
+  // Trip creation — multi-step flow (1=store, 2=items, optionally includes second week)
   function openTripSheet() {
     setTripSheetStep(1)
     setTripStore(null)
@@ -413,16 +410,43 @@ export default function PantryList({ appUser }) {
     setSelectedTripItems(new Set())
     setAddingStore(false)
     setNewStoreName('')
+    setSecondWeek(null)
     setTripSheetOpen(true)
   }
 
   function selectStoreForTrip(store) {
     setTripStore(store.id)
     setTripStoreName(store.name)
+    goToItemSelection()
+  }
+
+  function goToItemSelection() {
     setTripSheetStep(2)
-    // Pre-select all unassigned items
+    // Pre-select all unassigned items from current week
     const unassigned = manifestItems.filter(i => !i.assigned_trip_id).map(i => i.id)
-    setSelectedTripItems(new Set(unassigned))
+    // Also pre-select second week items if loaded
+    const secondIds = (secondWeek?.items || []).filter(i => !i.assigned_trip_id).map(i => i.id)
+    setSelectedTripItems(new Set([...unassigned, ...secondIds]))
+  }
+
+  async function toggleSecondWeek(offset) {
+    if (secondWeek) { setSecondWeek(null); return }
+    setSecondWeekLoading(true)
+    try {
+      const ws = getWeekStartTZ(tz, weekOffset + offset)
+      const { data: plan } = await supabase.from('meal_plans')
+        .select('id').eq('household_id', appUser.household_id).eq('week_start_date', ws).maybeSingle()
+      if (!plan) { setSecondWeekLoading(false); return }
+      const swListId = await getOrCreateShoppingList(plan.id, appUser.household_id)
+      if (!swListId) { setSecondWeekLoading(false); return }
+      const { data: swItems } = await supabase.from('shopping_list_items')
+        .select('*').eq('shopping_list_id', swListId).eq('approval_status', 'approved').eq('status', 'active')
+      if (!swItems?.length) { setSecondWeekLoading(false); return }
+      const dates = getWeekDatesTZ(tz, weekOffset + offset)
+      const label = `${dates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${dates[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+      setSecondWeek({ planId: plan.id, listId: swListId, label, items: swItems, offset })
+    } catch (err) { console.error('[PantryList] Load second week error:', err) }
+    setSecondWeekLoading(false)
   }
 
   async function addNewStore() {
@@ -448,7 +472,8 @@ export default function PantryList({ appUser }) {
 
   function selectAllUnassigned() {
     const unassigned = manifestItems.filter(i => !i.assigned_trip_id).map(i => i.id)
-    setSelectedTripItems(new Set(unassigned))
+    const secondIds = (secondWeek?.items || []).filter(i => !i.assigned_trip_id).map(i => i.id)
+    setSelectedTripItems(new Set([...unassigned, ...secondIds]))
   }
 
   async function saveTrip() {
@@ -461,6 +486,13 @@ export default function PantryList({ appUser }) {
         .gte('created_at', new Date().toISOString().split('T')[0] + 'T00:00:00')
       const tripName = (!count || count === 0) ? `${dayName} ${tripStoreName} run` : `${dayName} ${tripStoreName} run #${count + 1}`
 
+      // Split selected items by week
+      const secondWeekItemIds = new Set((secondWeek?.items || []).map(i => i.id))
+      const selectedIds = [...selectedTripItems]
+      const primaryIds = selectedIds.filter(id => !secondWeekItemIds.has(id))
+      const companionIds = selectedIds.filter(id => secondWeekItemIds.has(id))
+
+      // Create primary trip
       const { data: trip, error: tripErr } = await supabase.from('shopping_trips').insert({
         household_id: appUser.household_id, shopping_list_id: listId,
         name: tripName, store_id: tripStore, store_name: tripStoreName,
@@ -468,16 +500,35 @@ export default function PantryList({ appUser }) {
       }).select('id').single()
       if (tripErr) throw tripErr
 
-      const selectedIds = [...selectedTripItems]
-      const { error: itemsErr } = await supabase.from('shopping_trip_items').insert(selectedIds.map(id => ({ trip_id: trip.id, shopping_list_item_id: id })))
-      if (itemsErr) throw itemsErr
-
-      // Assign items to this trip
-      for (const id of selectedIds) {
-        await supabase.from('shopping_list_items').update({ assigned_trip_id: trip.id }).eq('id', id)
+      // Assign primary week items
+      if (primaryIds.length > 0) {
+        await supabase.from('shopping_trip_items').insert(primaryIds.map(id => ({ trip_id: trip.id, shopping_list_item_id: id })))
+        for (const id of primaryIds) {
+          await supabase.from('shopping_list_items').update({ assigned_trip_id: trip.id }).eq('id', id)
+        }
       }
 
-      logActivity({ user: appUser, actionType: 'shopping_trip_created', targetType: 'shopping_trip', targetId: trip.id, targetName: tripName })
+      // Create companion trip for second week if items were selected
+      if (secondWeek && companionIds.length > 0) {
+        const { data: companion, error: compErr } = await supabase.from('shopping_trips').insert({
+          household_id: appUser.household_id, shopping_list_id: secondWeek.listId,
+          name: tripName + ' (week 2)', store_id: tripStore, store_name: tripStoreName,
+          status: 'pending', created_by_user_id: appUser.id,
+          is_companion: true, companion_trip_id: trip.id,
+        }).select('id').single()
+        if (compErr) throw compErr
+
+        // Link primary → companion
+        await supabase.from('shopping_trips').update({ companion_trip_id: companion.id }).eq('id', trip.id)
+
+        // Assign second week items to companion trip
+        await supabase.from('shopping_trip_items').insert(companionIds.map(id => ({ trip_id: companion.id, shopping_list_item_id: id })))
+        for (const id of companionIds) {
+          await supabase.from('shopping_list_items').update({ assigned_trip_id: companion.id }).eq('id', id)
+        }
+      }
+
+      logActivity({ user: appUser, actionType: 'shopping_trip_created', targetType: 'shopping_trip', targetId: trip.id, targetName: tripName, metadata: { multi_week: !!secondWeek && companionIds.length > 0 } })
       setTripSheetOpen(false)
       loadList() // Refresh to show trip card + store tags
     } catch (err) {
@@ -583,28 +634,46 @@ export default function PantryList({ appUser }) {
     loadList()
   }
 
+  async function refreshList() {
+    if (refreshing || !selectedMealPlanId) return
+    setRefreshing(true)
+    await injectMealPlanToList({ planId: selectedMealPlanId, householdId: appUser.household_id })
+    await loadList()
+    setRefreshing(false)
+  }
+
   const dateRangeStr = weekDates.length === 7
     ? `${weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekDates[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
     : ''
 
   const weekSelector = (
-    <div style={{ padding: '10px 22px 0', position: 'relative' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+    <div style={{ padding: '10px 22px 0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <button onClick={() => setWeekOffset(o => o - 1)} style={{
-          position: 'absolute', left: 0, background: 'none', border: 'none', cursor: 'pointer',
-          color: C.driftwood, padding: '4px', display: 'flex',
+          background: 'none', border: 'none', cursor: 'pointer',
+          color: C.driftwood, padding: '4px', display: 'flex', flexShrink: 0,
         }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '17px', color: C.ink }}>
+        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '17px', color: C.ink, textAlign: 'center', flex: 1 }}>
           {dateRangeStr}
         </span>
-        <button onClick={() => setWeekOffset(o => o + 1)} style={{
-          position: 'absolute', right: 0, background: 'none', border: 'none', cursor: 'pointer',
-          color: C.driftwood, padding: '4px', display: 'flex',
-        }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><path d="m9 18 6-6-6-6"/></svg>
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+          {selectedMealPlanId && (
+            <button onClick={refreshList} disabled={refreshing} style={{
+              background: 'none', border: 'none', cursor: refreshing ? 'default' : 'pointer',
+              fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 400,
+              padding: '10px 6px', minHeight: '44px', display: 'flex', alignItems: 'center',
+              opacity: refreshing ? 0.5 : 1,
+            }}>{refreshing ? 'Updating...' : '↻ Refresh'}</button>
+          )}
+          <button onClick={() => setWeekOffset(o => o + 1)} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: C.driftwood, padding: '4px', display: 'flex',
+          }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -653,7 +722,7 @@ export default function PantryList({ appUser }) {
         }}>
           <div style={{ fontSize: '13px', fontWeight: 500 }}>+ Start a Trip</div>
         </button>
-        {pendingTrips.map(trip => (
+        {pendingTrips.filter(t => !t.is_companion).map(trip => (
           <button key={trip.id} onClick={() => navigate(`/pantry/trip/${trip.id}`)} style={{
             padding: '10px 14px', borderRadius: '12px', cursor: 'pointer',
             background: 'white', color: C.ink, textAlign: 'left',
@@ -666,29 +735,42 @@ export default function PantryList({ appUser }) {
                 background: trip.status === 'active' ? 'rgba(122,140,110,0.12)' : 'rgba(200,185,160,0.15)',
                 color: trip.status === 'active' ? C.sage : C.driftwood,
               }}>{trip.status === 'active' ? 'In Progress' : 'Pending'}</span>
+              {trip.companion_trip_id && (
+                <span style={{ fontSize: '9px', color: C.driftwood }}>2 weeks</span>
+              )}
             </div>
           </button>
         ))}
       </div>
 
-      <div style={{ padding: '12px 22px' }}>
-        {/* Tutorial card */}
-        {showTutorial && (
-          <div style={{
-            padding: '14px 16px', marginBottom: '14px', background: 'white',
-            borderRadius: '12px', borderLeft: `3px solid ${C.sage}`,
-            boxShadow: '0 1px 6px rgba(80,60,30,0.08)',
-          }}>
-            <div style={{ fontSize: '13px', color: C.ink, lineHeight: 1.6, marginBottom: '8px' }}>
-              <span style={{ color: C.sage }}>✦</span> I've added ingredients from your week's recipes. Check items off as you shop — the more you use Roux, the smarter your list gets.
-            </div>
-            <button onClick={dismissTutorial} style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: '12px', color: C.forest, fontWeight: 500, fontFamily: "'Jost', sans-serif", padding: 0,
-            }}>Got it</button>
-          </div>
-        )}
+      {/* ── Shopping workflow education tooltip ─────────────────────── */}
+      {!shoppingTipDismissed && items.length > 0 && (
+        <SageNudgeCard
+          tier="teaching"
+          message="How shopping works: your ingredient list is built from your planned meals. Mark things you already have, then start a trip for each store you're visiting. Check items off as you shop, then scan your receipt when you're done."
+          actionLabel="Got it, don't show again"
+          onAction={async () => {
+            const updated = await dismissTooltip(appUser.id, appUser.dismissed_tooltips, 'shopping_workflow')
+            appUser.dismissed_tooltips = updated
+            setShoppingTipDismissed(true)
+          }}
+        />
+      )}
 
+      {/* ── Ghost meal notices ────────────────────────────────────── */}
+      {ghostMealsWithoutIngredients.map(ghost => (
+        <SageNudgeCard
+          key={ghost.id}
+          tier="notice"
+          message={`${ghost.custom_name} is on your menu but has no recipe yet — you'll need to add those ingredients manually.`}
+          actionLabel="Add a recipe →"
+          onAction={() => navigate('/save-recipe', { state: { mealName: ghost.custom_name } })}
+          secondaryActionLabel="Add to list manually →"
+          secondaryOnAction={() => addToListManually(ghost)}
+        />
+      ))}
+
+      <div style={{ padding: '12px 22px' }}>
         {grouped.length === 0 && purchasedItems.length === 0 && (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.ink, marginBottom: '8px' }}>List is clear.</div>
@@ -706,6 +788,7 @@ export default function PantryList({ appUser }) {
               const isStaple = stapleMap.has((item.name || '').toLowerCase().trim())
               const stapleInfo = isStaple ? stapleMap.get((item.name || '').toLowerCase().trim()) : null
               const isExpanding = haveItExpansion === (item.ids?.[0] || item.id)
+              const isManual = item.item_type === 'manual' || !item.source_meal_name
 
               return (
                 <div key={item.ids?.[0] || item.id} style={{
@@ -750,10 +833,10 @@ export default function PantryList({ appUser }) {
                             background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                             fontSize: '13px', color: C.sage, fontFamily: "'Jost', sans-serif", fontWeight: 400,
                           }}>✓ Have it</button>
-                          <button onClick={() => removeItem(item)} style={{
+                          {isManual && <button onClick={() => removeItem(item)} style={{
                             background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                             fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300,
-                          }}>Remove</button>
+                          }}>Remove</button>}
                         </div>
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -761,10 +844,10 @@ export default function PantryList({ appUser }) {
                             background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                             fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300,
                           }}>Have it</button>
-                          <button onClick={() => removeItem(item)} style={{
+                          {isManual && <button onClick={() => removeItem(item)} style={{
                             background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                             fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300,
-                          }}>Remove</button>
+                          }}>Remove</button>}
                         </div>
                       )}
                     </div>
@@ -793,18 +876,6 @@ export default function PantryList({ appUser }) {
           </div>
         ))}
       </div>
-
-      {/* ── Ghost meal notices ────────────────────────────────────── */}
-      {ghostMealsWithoutIngredients.map(ghost => (
-        <SageNudgeCard
-          key={ghost.id}
-          message={`${ghost.custom_name} is on your menu but has no recipe yet — you'll need to add those ingredients manually.`}
-          actionLabel="Add a recipe →"
-          onAction={() => navigate('/save-recipe', { state: { mealName: ghost.custom_name } })}
-          secondaryActionLabel="Add to list manually →"
-          secondaryOnAction={() => addToListManually(ghost)}
-        />
-      ))}
 
       {/* ── Already have this week ─────────────────────────────── */}
       {haveThisWeekItems.length > 0 && (
@@ -1012,24 +1083,52 @@ export default function PantryList({ appUser }) {
                 </>
               )}
 
-              {/* Step 2 — Item selection */}
+              {/* Step 2 — Item selection (optionally multi-week) */}
               {tripSheetStep === 2 && (
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                     <div>
-                      <button onClick={() => setTripSheetStep(1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.driftwood, fontSize: '12px', fontFamily: "'Jost', sans-serif", padding: 0 }}>← Back</button>
+                      <button onClick={() => { setTripSheetStep(1); setSecondWeek(null) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.driftwood, fontSize: '12px', fontFamily: "'Jost', sans-serif", padding: 0 }}>← Back</button>
                       <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginTop: '4px' }}>
                         What are you picking up at {tripStoreName}?
                       </div>
                     </div>
                   </div>
+
+                  {/* Multi-week toggle */}
+                  <div style={{ marginBottom: '12px', padding: '10px 12px', background: C.cream, borderRadius: '10px' }}>
+                    <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '6px' }}>Also shop for another week?</div>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button onClick={() => toggleSecondWeek(1)} disabled={secondWeekLoading} style={{
+                        padding: '6px 12px', borderRadius: '8px', fontSize: '12px',
+                        border: secondWeek?.offset === 1 ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                        background: secondWeek?.offset === 1 ? 'rgba(61,107,79,0.08)' : 'white',
+                        color: secondWeek?.offset === 1 ? C.forest : C.ink,
+                        cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontWeight: secondWeek?.offset === 1 ? 500 : 400,
+                      }}>{secondWeekLoading ? '...' : secondWeek?.offset === 1 ? `✓ Next week` : '+ Next week'}</button>
+                      <button onClick={() => toggleSecondWeek(-1)} disabled={secondWeekLoading} style={{
+                        padding: '6px 12px', borderRadius: '8px', fontSize: '12px',
+                        border: secondWeek?.offset === -1 ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                        background: secondWeek?.offset === -1 ? 'rgba(61,107,79,0.08)' : 'white',
+                        color: secondWeek?.offset === -1 ? C.forest : C.ink,
+                        cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontWeight: secondWeek?.offset === -1 ? 500 : 400,
+                      }}>{secondWeek?.offset === -1 ? `✓ Last week` : '+ Last week'}</button>
+                    </div>
+                    {secondWeek && (
+                      <div style={{ fontSize: '10px', color: C.sage, marginTop: '4px' }}>Including {secondWeek.label} ({secondWeek.items.length} items)</div>
+                    )}
+                  </div>
+
                   <button onClick={selectAllUnassigned} style={{
                     background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', marginBottom: '10px',
                     fontSize: '12px', color: C.forest, fontWeight: 500, fontFamily: "'Jost', sans-serif",
                   }}>Select all unassigned</button>
 
                   {CATEGORY_ORDER.map(cat => {
-                    const catItems = manifestItems.filter(i => (i.grocery_category || 'other') === cat)
+                    // Combine current week + second week items by category
+                    const secondWeekItems = (secondWeek?.items || []).map(i => ({ ...i, _secondWeek: true }))
+                    const allItems = [...manifestItems, ...secondWeekItems]
+                    const catItems = allItems.filter(i => (i.grocery_category || 'other') === cat)
                     if (catItems.length === 0) return null
                     return (
                       <div key={cat} style={{ marginBottom: '12px' }}>
@@ -1058,6 +1157,9 @@ export default function PantryList({ appUser }) {
                                 <div style={{ fontSize: '13px', color: C.ink }}>{sentenceCase(item.name)}</div>
                                 {(item.quantity || item.unit) && (
                                   <div style={{ fontSize: '10px', color: C.driftwood }}>{[item.quantity, item.unit].filter(Boolean).join(' ')}</div>
+                                )}
+                                {secondWeek && (
+                                  <div style={{ fontSize: '9px', color: C.driftwood, fontStyle: 'italic' }}>{item._secondWeek ? (secondWeek.offset === 1 ? 'Next week' : 'Last week') : 'This week'}</div>
                                 )}
                               </div>
                               {assignedTo && (

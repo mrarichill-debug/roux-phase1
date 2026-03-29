@@ -363,6 +363,18 @@ window.addEventListener('scroll', () => {
 - **Onboarding and instructional text: 15–16px.** Guided flows and explanatory body copy use larger sizes for comfortable reading.
 - **Never use less than 13px for any text the user needs to read.** UI-only labels (uppercase category headers like PRODUCE, pill labels like DINNER, badge text) can stay smaller.
 
+## Sage Message Tiers
+
+All Sage messages use `SageNudgeCard` with a `tier` prop. Three visual treatments:
+
+| Tier | When to use | Background | Left border | Icon |
+|---|---|---|---|---|
+| `teaching` | Tutorials, tooltips, celebrations, onboarding tips | Cream (#FAF7F2) | 3px sage (#7A8C6E) | ✦ sparkle in sage circle |
+| `notice` | Missing data, action needed, integrity issues, weekly review prompts | Light amber (#FDF8F0) | 3px honey (#C49A3C) | ⚠ in honey circle |
+| `insight` | Intelligent suggestions, predictions, Sage at her best | Forest green (#3D6B4F) | None — full card | ✦ sparkle in cream circle, cream text |
+
+Default tier is `notice` if not specified. Always pass `tier` explicitly for clarity.
+
 ## Future Settings
 
 - **Calendar event font size** — planned small/medium/large selector in Settings. Default = medium (13px). Small = 11px, Large = 15px.

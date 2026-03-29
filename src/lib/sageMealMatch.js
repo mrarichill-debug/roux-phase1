@@ -52,11 +52,22 @@ export async function sageMealMatch({ mealId, mealName, householdId }) {
     for (const m of localMatches) delete m._score
 
     if (localMatches.length > 0) {
-      await supabase.from('planned_meals').update({
-        sage_match_result: { normalized_name: mealName, matches: localMatches, suggest_new: false },
-        sage_match_status: 'pending',
-      }).eq('id', mealId)
-      return
+      // Filter out recipes with zero ingredients — empty recipes are useless
+      const matchedIds = localMatches.map(m => m.recipe_id)
+      const { data: ingredientRows } = await supabase
+        .from('ingredients')
+        .select('recipe_id')
+        .in('recipe_id', matchedIds)
+      const validIds = new Set((ingredientRows || []).map(r => r.recipe_id))
+      const filteredMatches = localMatches.filter(m => validIds.has(m.recipe_id))
+
+      if (filteredMatches.length > 0) {
+        await supabase.from('planned_meals').update({
+          sage_match_result: { normalized_name: mealName, matches: filteredMatches, suggest_new: false },
+          sage_match_status: 'pending',
+        }).eq('id', mealId)
+        return
+      }
     }
 
     // No local matches — call Sage for name normalization + suggest_new

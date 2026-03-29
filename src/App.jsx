@@ -22,6 +22,7 @@ import Pantry from './pages/Pantry'
 import PantryList from './pages/PantryList'
 import ShoppingTrip from './pages/ShoppingTrip'
 import ReceiptScan from './pages/ReceiptScan'
+import EatingOutReceipt from './pages/EatingOutReceipt'
 import WeeklyReview from './pages/WeeklyReview'
 // Sage page removed — Sage interactions are structured, not chat-based
 import PlanMeal     from './pages/PlanMeal'
@@ -38,7 +39,26 @@ const DevReset = import.meta.env.DEV
   ? lazy(() => import('./pages/DevReset'))
   : () => null
 import ProfileSheet from './components/ProfileSheet'
+import TopBar from './components/TopBar'
+import BottomNav from './components/BottomNav'
 import { Shell } from './components/AppShell'
+
+function TraditionsPlaceholder() {
+  const navigate = useNavigate()
+  return (
+    <div style={{ background: '#FAF7F2', minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
+      <TopBar
+        leftAction={() => navigate('/meals')}
+        leftIcon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}><path d="m15 18-6-6 6-6"/></svg>}
+        centerContent={<span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>Traditions</span>}
+      />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 22px', color: '#8C7B6B', fontStyle: 'italic' }}>
+        Traditions — coming soon
+      </div>
+      <BottomNav activeTab="meals" />
+    </div>
+  )
+}
 
 export default function App() {
   const [authLoading, setAuthLoading] = useState(true) // true until initial auth check completes
@@ -326,8 +346,8 @@ function AuthenticatedApp({ appUser, setAppUser }) {
         <Route path="/meals/recipes" element={<RecipeLibrary appUser={appUser} />} />
         <Route path="/meals/plan"    element={<PlanMeal       appUser={appUser} />} />
         <Route path="/meals/plan/:id" element={<PlanMeal       appUser={appUser} />} />
-        <Route path="/meals/traditions" element={<div style={{ background: '#FAF7F2', minHeight: '100vh', maxWidth: '430px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Jost', sans-serif", color: '#8C7B6B', fontStyle: 'italic' }}>Traditions — coming soon</div>} />
-        <Route path="/meals/traditions/new" element={<div style={{ background: '#FAF7F2', minHeight: '100vh', maxWidth: '430px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Jost', sans-serif", color: '#8C7B6B', fontStyle: 'italic' }}>Traditions — coming soon</div>} />
+        <Route path="/meals/traditions" element={<TraditionsPlaceholder />} />
+        <Route path="/meals/traditions/new" element={<TraditionsPlaceholder />} />
         <Route path="/meals/saved"     element={<SavedMeals   appUser={appUser} />} />
         <Route path="/recipes"      element={<RecipeLibrary appUser={appUser} />} />
         <Route path="/recipe/:id"   element={<RecipeCard    appUser={appUser} />} />
@@ -337,6 +357,7 @@ function AuthenticatedApp({ appUser, setAppUser }) {
         <Route path="/pantry/list"    element={<PantryList    appUser={appUser} />} />
         <Route path="/pantry/trip/:id" element={<ShoppingTrip appUser={appUser} />} />
         <Route path="/pantry/trip/:tripId/receipt" element={<ReceiptScan appUser={appUser} />} />
+        <Route path="/pantry/eating-out-receipt/:mealId" element={<EatingOutReceipt appUser={appUser} />} />
         <Route path="/review/:mealPlanId" element={<WeeklyReview appUser={appUser} />} />
         <Route path="/shopping"       element={<ShoppingList  appUser={appUser} />} />
         {/* /sage route removed — Sage has no standalone page */}
