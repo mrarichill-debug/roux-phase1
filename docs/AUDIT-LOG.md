@@ -42,12 +42,73 @@ React/Vite frontend on Vercel. Supabase (PostgreSQL + RLS + Auth + Storage). Ant
 
 ---
 
+## Market Design Audit — March 2026
+
+### Current State at Time of Audit
+Single household in production (Hill family). Primary test user is Lauren. Core loop built: plan meals → build shopping list → shop by store → scan receipt → Sage learns. No outside users yet. Today's testing revealed: confusion about meals vs recipes mental model, friction in add-meal-then-link flow, ghost meal notices missed at bottom of screen, scroll clunkiness on mobile, Traditions dead end, and strong positive signal on shopping list organization and batch size feature.
+
+---
+
+### Lens 1: Desire vs Feature Gap (Freud)
+
+| # | Finding | Severity | Status | Target |
+|---|---|---|---|---|
+| D1 | Meals vs recipes confusion is a mental model problem, not a feature problem — desire is confidence the shopping list will be right | Critical | In progress (tooltips built) | Pre-launch |
+| D2 | Traditions dead end signals unmet desire for family identity — users want the app to know their family | Moderate | Partial (placeholder fixed) | Next session |
+| D3 | Batch size is really about waste reduction — Sage framing hasn't caught up to the real desire | Low | Open | Future |
+
+### Lens 2: Belonging Signal Audit (Tocqueville)
+
+| # | Finding | Severity | Status | Target |
+|---|---|---|---|---|
+| B1 | Zero belonging signals anywhere in the app — blank week view feels like setting up a spreadsheet | Critical | Open | Pre-launch |
+| B2 | Sage intelligence herb is the right instinct but new users see a seed with no visible path forward | Moderate | Open | Next session |
+| B3 | Lauren is the only social proof — new households will see a blank slate with no sense anyone has gone before | Moderate | Open | Pre-launch |
+
+### Lens 3: Value Visibility Review (Adam Smith)
+
+| # | Finding | Severity | Status | Target |
+|---|---|---|---|---|
+| V1 | Receipt scanning value invisible until after 5th scan — payoff requires imagination not observation | Critical | Partial (tooltip built) | Pre-launch |
+| V2 | Shopping list feels like extra work until first trip is complete — value only visible in use | Moderate | Open | Pre-launch |
+| V3 | Week planner value vs paper calendar not obvious on day one — connection to shopping list not shown | Moderate | Open | Pre-launch |
+
+### Lens 4: Real Competitive Landscape (Machiavelli)
+
+| # | Finding | Severity | Status | Target |
+|---|---|---|---|---|
+| M1 | Real competitor is the group text and mental shortlist — not Paprika or Mealime | Critical | Open | Pre-launch |
+| M2 | Roux's differentiation (meal plan → shopping → budget → Sage) is invisible at first contact | Critical | Open | Pre-launch |
+| M3 | Switch cost is front-loaded, payoff is back-loaded — 6-8 steps before Sage has anything to say | Moderate | Open | Pre-launch |
+
+---
+
 ## Audits To Run
 
 - [ ] Debugging Audit — run after first significant production bug
 - [ ] Automation Audit — run after 4 weeks of live receipt scanning
 - [ ] Code Review Audit — run before first major refactor
-- [ ] Market Design Audit — run after first non-Hill users onboard
+- [x] Architecture Audit — completed March 2026
+- [x] Market Design Audit — completed March 2026
+
+---
+
+## Pre-Launch Critical Findings Checklist
+
+These findings are Critical severity and must be addressed before opening Roux to non-Hill users:
+
+**Architecture:**
+- [ ] F1 — Resolve single-household RLS assumption for multi-user launch
+- [ ] F2 — Establish basic test coverage for core flows
+- [ ] F3 — Migrate Google OAuth to dedicated account (dev@myroux.app)
+- [ ] F4 — Add Sage API cost ceiling / circuit breaker
+
+**Market Design:**
+- [ ] D1 — Mental model: meals vs recipes must land in first session
+- [ ] B1 — Add belonging signals to first-use experience
+- [ ] V1 — Pull receipt scanning payoff forward — make value tangible immediately
+- [ ] M1 — Differentiation visible at first contact
+- [ ] M2 — Reduce front-loaded switch cost or pull early payoffs forward
 
 ---
 
@@ -56,3 +117,4 @@ React/Vite frontend on Vercel. Supabase (PostgreSQL + RLS + Auth + Storage). Ant
 | Date | Audit Type | Notes |
 |---|---|---|
 | March 2026 | Architecture | First formal audit. 4 critical/moderate findings pre-launch, 6 scale findings deferred. |
+| March 2026 | Market Design | First market design audit. 5 critical findings pre-launch, 3 moderate. Real competitor identified as group text, not apps. |
