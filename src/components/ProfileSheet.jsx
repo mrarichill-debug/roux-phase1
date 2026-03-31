@@ -1,12 +1,13 @@
 /**
  * ProfileSheet.jsx — Minimal profile bottom sheet.
  * Opens when the avatar button is tapped in the topbar.
- * Provides Sign Out + a greyed-out Settings placeholder.
+ * Provides Sign Out + Settings.
  */
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import BottomSheet from './BottomSheet'
 
 const C = {
   forest:    '#3D6B4F',
@@ -24,45 +25,11 @@ export default function ProfileSheet({ appUser, open, onClose }) {
   async function handleSignOut() {
     setSigningOut(true)
     await supabase.auth.signOut()
-    // App.jsx onAuthStateChange will set session to null → routes to welcome
   }
 
   return (
-    <>
-      {/* Overlay */}
-      <div
-        onClick={onClose}
-        style={{
-          position: 'fixed', inset: 0, zIndex: 200,
-          background: 'rgba(20,20,20,0.45)',
-          opacity: open ? 1 : 0,
-          pointerEvents: open ? 'auto' : 'none',
-          transition: 'opacity 0.28s ease',
-        }}
-      />
-
-      {/* Sheet */}
-      <div
-        style={{
-          position: 'fixed', bottom: 0, left: '50%',
-          transform: open
-            ? 'translateX(-50%) translateY(0)'
-            : 'translateX(-50%) translateY(100%)',
-          width: '100%', maxWidth: '430px',
-          background: 'white',
-          borderRadius: '20px 20px 0 0',
-          zIndex: 201,
-          transition: 'transform 0.32s cubic-bezier(0.32,0.72,0,1)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-        }}
-      >
-        {/* Drag handle */}
-        <div style={{
-          width: '36px', height: '4px', borderRadius: '2px',
-          background: C.linen,
-          margin: '12px auto 0',
-        }} />
-
+    <BottomSheet isOpen={open} onClose={onClose}>
+      <div style={{ padding: '0 0 0' }}>
         {/* Close button */}
         <button
           onClick={onClose}
@@ -72,6 +39,7 @@ export default function ProfileSheet({ appUser, open, onClose }) {
             background: 'none', border: 'none', cursor: 'pointer',
             color: C.driftwood, padding: '4px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1,
           }}
         >
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
@@ -82,7 +50,7 @@ export default function ProfileSheet({ appUser, open, onClose }) {
 
         {/* User info */}
         <div style={{
-          padding: '20px 24px 18px',
+          padding: '8px 24px 18px',
           borderBottom: `1px solid ${C.linen}`,
         }}>
           <div style={{
@@ -179,6 +147,6 @@ export default function ProfileSheet({ appUser, open, onClose }) {
           </button>
         </div>
       </div>
-    </>
+    </BottomSheet>
   )
 }

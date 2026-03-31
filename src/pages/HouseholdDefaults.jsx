@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import AddDayTypeSheet from '../components/AddDayTypeSheet'
+import BottomSheet from '../components/BottomSheet'
 
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
@@ -303,34 +304,26 @@ export default function HouseholdDefaults({ appUser }) {
       )}
 
       {/* ── Day Type Picker Sheet ─────────────────────────────────────── */}
-      {dtPickerDow && (
-        <>
-          <div onClick={() => setDtPickerDow(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
-          <div style={{
-            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-            padding: '20px 22px 40px', zIndex: 201,
-          }}>
-            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '0 auto 16px' }} />
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
-              {dtPickerDow.charAt(0).toUpperCase() + dtPickerDow.slice(1)}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {DAY_TYPE_OPTIONS.map(opt => (
-                <button key={opt.key} onClick={() => savePatternDay(dtPickerDow, opt.key)} style={{
-                  padding: '12px 16px', borderRadius: '10px', border: `1.5px solid ${opt.color}`,
-                  background: defaultPattern[dtPickerDow] === opt.key ? opt.color : 'white',
-                  color: defaultPattern[dtPickerDow] === opt.key ? 'white' : opt.color,
-                  fontSize: '14px', fontWeight: 500, fontFamily: "'Jost', sans-serif", cursor: 'pointer',
-                  textAlign: 'left', width: '100%',
-                }}>
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+      <BottomSheet isOpen={!!dtPickerDow} onClose={() => setDtPickerDow(null)}>
+        <div style={{ padding: '20px 22px 40px' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
+            {dtPickerDow ? dtPickerDow.charAt(0).toUpperCase() + dtPickerDow.slice(1) : ''}
           </div>
-        </>
-      )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {DAY_TYPE_OPTIONS.map(opt => (
+              <button key={opt.key} onClick={() => savePatternDay(dtPickerDow, opt.key)} style={{
+                padding: '12px 16px', borderRadius: '10px', border: `1.5px solid ${opt.color}`,
+                background: dtPickerDow && defaultPattern[dtPickerDow] === opt.key ? opt.color : 'white',
+                color: dtPickerDow && defaultPattern[dtPickerDow] === opt.key ? 'white' : opt.color,
+                fontSize: '14px', fontWeight: 500, fontFamily: "'Jost', sans-serif", cursor: 'pointer',
+                textAlign: 'left', width: '100%',
+              }}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </BottomSheet>
 
       <AddDayTypeSheet
         open={addDtOpen}

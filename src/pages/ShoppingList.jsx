@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
+import BottomSheet from '../components/BottomSheet'
 import WatermarkLayer from '../components/WatermarkLayer'
 import { getWeekStartTZ } from '../lib/dateUtils'
 
@@ -85,7 +86,6 @@ export default function ShoppingList({ appUser }) {
   const [inCartPulsing,    setInCartPulsing]    = useState(false)
   const [completeVisible,  setCompleteVisible]  = useState(false)
   const [receiptSheetOpen, setReceiptSheetOpen] = useState(false)
-  const [receiptOverlay,   setReceiptOverlay]   = useState(false)
 
   const inCartRef = useRef(null)
 
@@ -321,11 +321,9 @@ export default function ShoppingList({ appUser }) {
   // ── Receipt sheet ────────────────────────────────────────────────────────────
   function openReceiptSheet() {
     setReceiptSheetOpen(true)
-    setTimeout(() => setReceiptOverlay(true), 40)
   }
   function closeReceiptSheet() {
-    setReceiptOverlay(false)
-    setTimeout(() => setReceiptSheetOpen(false), 320)
+    setReceiptSheetOpen(false)
   }
 
   // ── Store filter (client side) ───────────────────────────────────────────────
@@ -781,67 +779,24 @@ export default function ShoppingList({ appUser }) {
       <BottomNav activeTab="pantry" />
 
       {/* ── Receipt capture overlay ──────────────────────────────────────────── */}
-      {receiptSheetOpen && (
-        <>
-          <div
+      <BottomSheet isOpen={receiptSheetOpen} onClose={() => setReceiptSheetOpen(false)} title="Add your receipt">
+        <div style={{ padding: '20px 24px 40px' }}>
+          <div style={{ textAlign: 'center', padding: '24px 0', color: C.driftwood, fontSize: '14px' }}>
+            Receipt capture coming soon.
+          </div>
+          <button
             onClick={closeReceiptSheet}
             style={{
-              position: 'fixed', inset: 0,
-              background: 'rgba(30,20,10,0.55)',
-              zIndex: 200,
-              opacity: receiptOverlay ? 1 : 0,
-              transition: 'opacity 0.25s ease',
-              backdropFilter: 'blur(2px)',
+              width: '100%', padding: '12px', borderRadius: '10px',
+              background: 'none', color: C.driftwood,
+              fontFamily: "'Jost', sans-serif", fontSize: '13px',
+              border: `1px solid ${C.linen}`, cursor: 'pointer',
             }}
-          />
-          <div style={{
-            position: 'fixed', bottom: 0, left: '50%',
-            transform: receiptSheetOpen ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
-            width: '100%', maxWidth: '430px',
-            background: C.cream, borderRadius: '24px 24px 0 0',
-            maxHeight: '92vh', overflowY: 'auto',
-            zIndex: 201,
-            animation: 'sheetRise 0.32s cubic-bezier(0.32,0.72,0,1) both',
-          }}>
-            <div style={{ width: '40px', height: '4px', borderRadius: '2px', background: 'rgba(140,123,107,0.28)', margin: '14px auto 0' }} />
-            <div style={{
-              padding: '20px 24px 16px', borderBottom: `1px solid ${C.linen}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink }}>
-                Add your receipt
-              </div>
-              <button
-                onClick={closeReceiptSheet}
-                style={{
-                  width: '32px', height: '32px', borderRadius: '50%',
-                  border: 'none', background: 'rgba(140,123,107,0.12)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', color: C.driftwood,
-                }}
-              >
-                <CloseIcon />
-              </button>
-            </div>
-            <div style={{ padding: '20px 24px 40px' }}>
-              <div style={{ textAlign: 'center', padding: '24px 0', color: C.driftwood, fontSize: '14px' }}>
-                Receipt capture coming soon.
-              </div>
-              <button
-                onClick={closeReceiptSheet}
-                style={{
-                  width: '100%', padding: '12px', borderRadius: '10px',
-                  background: 'none', color: C.driftwood,
-                  fontFamily: "'Jost', sans-serif", fontSize: '13px',
-                  border: `1px solid ${C.linen}`, cursor: 'pointer',
-                }}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+          >
+            Close
+          </button>
+        </div>
+      </BottomSheet>
 
     </div>
   )

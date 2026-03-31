@@ -12,6 +12,7 @@ import UnsavedChangesSheet from '../components/UnsavedChangesSheet'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import AddToPlanSheet from '../components/AddToPlanSheet'
+import BottomSheet from '../components/BottomSheet'
 
 const C = {
   forest: '#3D6B4F', forestDk: '#2E5038',
@@ -110,36 +111,7 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
   }
 
   return (
-    <>
-      {/* Overlay */}
-      <div
-        onClick={onClose}
-        style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(44,36,23,0.45)',
-          zIndex: 200,
-          opacity: open ? 1 : 0,
-          pointerEvents: open ? 'all' : 'none',
-          transition: 'opacity 0.28s cubic-bezier(0.22,1,0.36,1)',
-        }}
-      />
-      {/* Sheet */}
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          position: 'fixed', bottom: 0, left: '50%',
-          transform: open ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
-          width: '100%', maxWidth: '430px',
-          background: 'white', borderRadius: '20px 20px 0 0',
-          padding: '0 0 40px', zIndex: 201,
-          boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-          transition: 'transform 0.28s cubic-bezier(0.22,1,0.36,1)',
-          maxHeight: '70vh', display: 'flex', flexDirection: 'column',
-        }}
-      >
-        {/* Handle */}
-        <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-
+    <BottomSheet isOpen={open} onClose={onClose} maxHeight="70vh">
         {view === 'list' ? (
           <>
             {/* Header */}
@@ -386,8 +358,7 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
             </button>
           </div>
         )}
-      </div>
-    </>
+    </BottomSheet>
   )
 }
 

@@ -10,6 +10,7 @@
  *   stayLabel — e.g. "Keep cooking"
  *   leaveLabel — e.g. "Leave anyway"
  */
+import BottomSheet from './BottomSheet'
 
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
@@ -25,92 +26,46 @@ export default function UnsavedChangesSheet({
   stayLabel = 'Keep cooking',
   leaveLabel = 'Leave anyway',
 }) {
-  if (!open) return null
-
   return (
-    <>
-      {/* Overlay */}
-      <div
-        onClick={onStay}
-        style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(44,36,23,0.45)', zIndex: 200,
-        }}
-      />
-
-      {/* Sheet */}
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-          width: '100%', maxWidth: '430px',
-          background: 'white', borderRadius: '20px 20px 0 0',
-          padding: '0 0 env(safe-area-inset-bottom, 24px)',
-          zIndex: 201,
-          boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-          animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
-        }}
-      >
-        {/* Handle */}
+    <BottomSheet isOpen={open} onClose={onStay} title={title}>
+      <div style={{ padding: '0 22px 24px' }}>
         <div style={{
-          width: '36px', height: '4px', borderRadius: '2px',
-          background: 'rgba(200,185,160,0.6)', margin: '12px auto 0',
-        }} />
+          fontSize: '14px', color: C.driftwood, fontWeight: 300,
+          lineHeight: 1.6, marginBottom: '24px',
+          fontFamily: "'Jost', sans-serif",
+        }}>
+          {message}
+        </div>
 
-        <div style={{ padding: '20px 22px 24px' }}>
-          <div style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: '20px', fontWeight: 500, color: C.ink,
-            marginBottom: '8px',
-          }}>
-            {title}
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {/* Stay — primary */}
+          <button
+            onClick={onStay}
+            style={{
+              width: '100%', padding: '15px', borderRadius: '14px',
+              background: C.forest, color: 'white', border: 'none',
+              cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+              fontSize: '15px', fontWeight: 500,
+              boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
+            }}
+          >
+            {stayLabel}
+          </button>
 
-          <div style={{
-            fontSize: '14px', color: C.driftwood, fontWeight: 300,
-            lineHeight: 1.6, marginBottom: '24px',
-            fontFamily: "'Jost', sans-serif",
-          }}>
-            {message}
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {/* Stay — primary */}
-            <button
-              onClick={onStay}
-              style={{
-                width: '100%', padding: '15px', borderRadius: '14px',
-                background: C.forest, color: 'white', border: 'none',
-                cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-                fontSize: '15px', fontWeight: 500,
-                boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
-              }}
-            >
-              {stayLabel}
-            </button>
-
-            {/* Leave — secondary */}
-            <button
-              onClick={onLeave}
-              style={{
-                width: '100%', padding: '15px', borderRadius: '14px',
-                background: 'transparent', color: C.driftwood, border: 'none',
-                cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-                fontSize: '14px', fontWeight: 300,
-              }}
-            >
-              {leaveLabel}
-            </button>
-          </div>
+          {/* Leave — secondary */}
+          <button
+            onClick={onLeave}
+            style={{
+              width: '100%', padding: '15px', borderRadius: '14px',
+              background: 'transparent', color: C.driftwood, border: 'none',
+              cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+              fontSize: '14px', fontWeight: 300,
+            }}
+          >
+            {leaveLabel}
+          </button>
         </div>
       </div>
-
-      <style>{`
-        @keyframes sheetRise {
-          from { transform: translateX(-50%) translateY(100%); }
-          to   { transform: translateX(-50%) translateY(0); }
-        }
-      `}</style>
-    </>
+    </BottomSheet>
   )
 }

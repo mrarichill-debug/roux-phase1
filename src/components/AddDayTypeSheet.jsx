@@ -3,6 +3,7 @@
  */
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import BottomSheet from './BottomSheet'
 
 const C = {
   forest: '#3D6B4F', ink: '#2C2417', driftwood: '#8C7B6B', linen: '#E8E0D0',
@@ -38,21 +39,9 @@ export default function AddDayTypeSheet({ open, onClose, householdId, onSaved })
     }
   }
 
-  if (!open) return null
-
   return (
-    <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
-      <div style={{
-        position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-        width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-        padding: '20px 22px 40px', zIndex: 201,
-        boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-      }}>
-        <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '0 auto 16px' }} />
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
-          New day type
-        </div>
+    <BottomSheet isOpen={open} onClose={onClose} title="New day type">
+      <div style={{ padding: '4px 22px 24px' }}>
         <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Day type name"
           autoFocus style={{
             width: '100%', padding: '12px 14px', fontSize: '14px', fontFamily: "'Jost', sans-serif",
@@ -80,6 +69,6 @@ export default function AddDayTypeSheet({ open, onClose, householdId, onSaved })
           {saving ? 'Saving...' : 'Add day type'}
         </button>
       </div>
-    </>
+    </BottomSheet>
   )
 }

@@ -13,6 +13,7 @@ import { injectMealPlanToList } from '../lib/injectMealPlanToList'
 import { getWeekDatesTZ, getWeekStartTZ } from '../lib/dateUtils'
 import { hasSeenTooltip, dismissTooltip } from '../lib/tooltips'
 import TopBar from '../components/TopBar'
+import BottomSheet from '../components/BottomSheet'
 import BottomNav from '../components/BottomNav'
 import SageNudgeCard from '../components/SageNudgeCard'
 import ShoppingOnboarding from '../components/ShoppingOnboarding'
@@ -89,13 +90,6 @@ export default function PantryList({ appUser }) {
     setAddInput(val)
     if (!manualCatPick) setAddCategory(categorizeIngredient(val))
   }
-
-  // Scroll lock when any bottom sheet is open
-  useEffect(() => {
-    const anyOpen = !!reassignItem || !!stapleSheetItem || tripSheetOpen
-    document.body.style.overflow = anyOpen ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [reassignItem, stapleSheetItem, tripSheetOpen])
 
   // Load week + meal plan when offset or household changes
   useEffect(() => {
@@ -1035,17 +1029,7 @@ export default function PantryList({ appUser }) {
       </div>
 
       {/* ── Trip creation sheet — 2-step ────────────────────────── */}
-      {tripSheetOpen && (
-        <>
-          <div onClick={() => setTripSheetOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
-          <div onClick={e => e.stopPropagation()} style={{
-            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-            padding: '0 0 env(safe-area-inset-bottom, 24px)', zIndex: 201,
-            boxShadow: '0 -4px 32px rgba(44,36,23,0.18)', maxHeight: '75vh', overflowY: 'auto',
-            animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
-          }}>
-            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+      <BottomSheet isOpen={tripSheetOpen} onClose={() => { setTripSheetOpen(false); setTripSheetStep(1) }} maxHeight="75vh">
             <div style={{ padding: '20px 22px 24px' }}>
 
               {/* Step 1 — Store selection */}
@@ -1188,9 +1172,7 @@ export default function PantryList({ appUser }) {
                 </>
               )}
             </div>
-          </div>
-        </>
-      )}
+      </BottomSheet>
 
       {/* ── Trip Reassignment Sheet ──────────────────────────────── */}
       {reassignItem && (() => {
@@ -1198,16 +1180,7 @@ export default function PantryList({ appUser }) {
         const currentTrip = pendingTrips.find(t => t.id === currentTripId)
         const otherTrips = pendingTrips.filter(t => t.id !== currentTripId)
         return (
-          <>
-            <div onClick={() => setReassignItem(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
-            <div onClick={e => e.stopPropagation()} style={{
-              position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-              width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-              padding: '0 0 env(safe-area-inset-bottom, 24px)', zIndex: 201,
-              boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-              animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
-            }}>
-              <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+          <BottomSheet isOpen={!!reassignItem} onClose={() => setReassignItem(null)}>
               <div style={{ padding: '16px 22px 20px' }}>
                 <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '6px' }}>
                   {sentenceCase(reassignItem.name)}
@@ -1247,27 +1220,13 @@ export default function PantryList({ appUser }) {
                   }}>Remove from trip</button>
                 </div>
               </div>
-            </div>
-          </>
+          </BottomSheet>
         )
       })()}
 
       {/* ── Staple type picker sheet ────────────────────────────── */}
-      {stapleSheetItem && (
-        <>
-          <div onClick={() => setStapleSheetItem(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
-          <div onClick={e => e.stopPropagation()} style={{
-            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-            padding: '0 0 env(safe-area-inset-bottom, 24px)', zIndex: 201,
-            boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-            animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
-          }}>
-            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+      <BottomSheet isOpen={!!stapleSheetItem} onClose={() => setStapleSheetItem(null)} title="What kind of staple?">
             <div style={{ padding: '20px 22px 24px' }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '6px' }}>
-                What kind of staple?
-              </div>
               <div style={{ fontSize: '12px', color: C.driftwood, marginBottom: '16px' }}>
                 {sentenceCase(stapleSheetItem.name)}
               </div>
@@ -1291,11 +1250,8 @@ export default function PantryList({ appUser }) {
                 ))}
               </div>
             </div>
-          </div>
-        </>
-      )}
+      </BottomSheet>
 
-      <style>{`@keyframes sheetRise { from { transform: translateX(-50%) translateY(100%); } to { transform: translateX(-50%) translateY(0); } }`}</style>
       </>}
 
       {showOnboarding && (

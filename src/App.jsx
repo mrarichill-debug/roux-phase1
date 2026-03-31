@@ -39,6 +39,7 @@ const DevReset = import.meta.env.DEV
   ? lazy(() => import('./pages/DevReset'))
   : () => null
 import ProfileSheet from './components/ProfileSheet'
+import BottomSheet from './components/BottomSheet'
 import TopBar from './components/TopBar'
 import BottomNav from './components/BottomNav'
 import { Shell } from './components/AppShell'
@@ -445,133 +446,97 @@ function AuthenticatedApp({ appUser, setAppUser }) {
       />
 
       {/* ── Sage Summary Sheet ─────────────────────────────────────────── */}
-      {sageSheetOpen && (
-        <>
-          <div onClick={() => setSageSheetOpen(false)} style={{
-            position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)',
-            zIndex: 200, animation: 'fadeIn 0.2s ease',
-          }} />
-          <div onClick={e => e.stopPropagation()} style={{
-            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-            padding: '0 0 env(safe-area-inset-bottom, 24px)', zIndex: 201,
-            boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-            maxHeight: '70vh', overflowY: 'auto',
-            animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
-          }}>
-            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-            <div style={{ padding: '20px 22px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(122,140,110,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#7A8C6E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
-                    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-                  </svg>
-                </div>
-                <div>
-                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: '#2C2417' }}>Sage</div>
-                  <div style={{ fontSize: '11px', color: '#8C7B6B', fontWeight: 300 }}>Your kitchen companion</div>
-                </div>
-              </div>
-
-              {/* Sage nudges will be populated here from notifications/activity data */}
-              <div style={{ textAlign: 'center', padding: '24px 0' }}>
-                <div style={{ fontSize: '14px', color: '#8C7B6B', fontStyle: 'italic', lineHeight: 1.6, fontFamily: "'Jost', sans-serif", fontWeight: 300 }}>
-                  Nothing new right now, {firstName}. I'll surface suggestions as you plan and cook this week.
-                </div>
-              </div>
+      <BottomSheet isOpen={sageSheetOpen} onClose={() => setSageSheetOpen(false)} maxHeight="70vh">
+        <div style={{ padding: '8px 22px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(122,140,110,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#7A8C6E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+              </svg>
+            </div>
+            <div>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: '#2C2417' }}>Sage</div>
+              <div style={{ fontSize: '11px', color: '#8C7B6B', fontWeight: 300 }}>Your kitchen companion</div>
             </div>
           </div>
-        </>
-      )}
+
+          <div style={{ textAlign: 'center', padding: '24px 0' }}>
+            <div style={{ fontSize: '14px', color: '#8C7B6B', fontStyle: 'italic', lineHeight: 1.6, fontFamily: "'Jost', sans-serif", fontWeight: 300 }}>
+              Nothing new right now, {firstName}. I'll surface suggestions as you plan and cook this week.
+            </div>
+          </div>
+        </div>
+      </BottomSheet>
 
       {/* ── Notification Sheet ────────────────────────────────────────────── */}
-      {notifOpen && (
-        <>
-          <div onClick={() => setNotifOpen(false)} style={{
-            position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)',
-            zIndex: 200, animation: 'fadeIn 0.2s ease',
-          }} />
-          <div onClick={e => e.stopPropagation()} style={{
-            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px', background: 'white',
-            borderRadius: '20px 20px 0 0', padding: '0 0 40px', zIndex: 201,
-            boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-            animation: 'sheetRise 0.32s cubic-bezier(0.32,0.72,0,1) both',
-          }}>
-            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-            <div style={{ padding: '20px 22px 0' }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: '#2C2417', marginBottom: '14px' }}>
-                Notifications
-              </div>
-              {notifications.length === 0 ? (
-                <div style={{ fontSize: '13px', fontStyle: 'italic', color: '#8C7B6B', padding: '20px 0' }}>
-                  All caught up — nothing needs your attention.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '8px' }}>
-                  {notifications.map(n => (
-                    <div key={n.id} style={{
-                      padding: '14px', borderRadius: '12px',
-                      border: '1px solid rgba(200,185,160,0.55)',
-                      background: '#FAF7F2',
-                    }}>
-                      <div style={{ fontSize: '14px', fontWeight: 500, color: '#2C2417', marginBottom: '4px' }}>
-                        {n.title}
-                      </div>
-                      {n.body && (
-                        <div style={{ fontSize: '13px', color: '#8C7B6B', fontWeight: 300, lineHeight: 1.5, marginBottom: '10px' }}>
-                          {n.body}
-                        </div>
-                      )}
-                      {n.action_type === 'membership_approval' && (
-                        <div>
-                          {/* Role selector */}
-                          <div style={{ display: 'flex', gap: '4px', marginBottom: '10px' }}>
-                            {[
-                              { key: 'co_admin', label: 'Co-admin' },
-                              { key: 'member_admin', label: 'Family member' },
-                              { key: 'member_viewer', label: 'View only' },
-                            ].map(r => {
-                              const sel = (approvalRoles[n.id] || 'member_admin') === r.key
-                              return (
-                                <button key={r.key} onClick={() => setApprovalRoles(prev => ({ ...prev, [n.id]: r.key }))} style={{
-                                  flex: 1, padding: '6px 4px', fontSize: '10px', fontWeight: sel ? 500 : 400,
-                                  fontFamily: "'Jost', sans-serif", borderRadius: '8px', cursor: 'pointer',
-                                  border: `1px solid ${sel ? '#3D6B4F' : '#E8E0D0'}`,
-                                  background: sel ? '#3D6B4F' : 'transparent',
-                                  color: sel ? 'white' : '#2C2417', transition: 'all 0.15s',
-                                  textAlign: 'center',
-                                }}>{r.label}</button>
-                              )
-                            })}
-                          </div>
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <button onClick={() => handleNotifAction(n.id, 'approve_member', n.target_id, approvalRoles[n.id] || 'member_admin')} style={{
-                              flex: 1, padding: '10px', borderRadius: '10px',
-                              background: '#3D6B4F', color: 'white', border: 'none',
-                              fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500, cursor: 'pointer',
-                            }}>Approve</button>
-                            <button onClick={() => handleNotifAction(n.id, 'decline_member', n.target_id)} style={{
-                              flex: 1, padding: '10px', borderRadius: '10px',
-                              background: 'none', color: '#8C7B6B', border: '1px solid #E8E0D0',
-                              fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500, cursor: 'pointer',
-                            }}>Decline</button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-              <button onClick={() => setNotifOpen(false)} style={{
-                width: '100%', background: 'none', border: 'none', color: '#8C7B6B',
-                fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300,
-                padding: '10px', cursor: 'pointer',
-              }}>Close</button>
+      <BottomSheet isOpen={notifOpen} onClose={() => setNotifOpen(false)} title="Notifications">
+        <div style={{ padding: '0 22px 40px' }}>
+          {notifications.length === 0 ? (
+            <div style={{ fontSize: '13px', fontStyle: 'italic', color: '#8C7B6B', padding: '20px 0' }}>
+              All caught up — nothing needs your attention.
             </div>
-          </div>
-        </>
-      )}
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '8px' }}>
+              {notifications.map(n => (
+                <div key={n.id} style={{
+                  padding: '14px', borderRadius: '12px',
+                  border: '1px solid rgba(200,185,160,0.55)',
+                  background: '#FAF7F2',
+                }}>
+                  <div style={{ fontSize: '14px', fontWeight: 500, color: '#2C2417', marginBottom: '4px' }}>
+                    {n.title}
+                  </div>
+                  {n.body && (
+                    <div style={{ fontSize: '13px', color: '#8C7B6B', fontWeight: 300, lineHeight: 1.5, marginBottom: '10px' }}>
+                      {n.body}
+                    </div>
+                  )}
+                  {n.action_type === 'membership_approval' && (
+                    <div>
+                      <div style={{ display: 'flex', gap: '4px', marginBottom: '10px' }}>
+                        {[
+                          { key: 'co_admin', label: 'Co-admin' },
+                          { key: 'member_admin', label: 'Family member' },
+                          { key: 'member_viewer', label: 'View only' },
+                        ].map(r => {
+                          const sel = (approvalRoles[n.id] || 'member_admin') === r.key
+                          return (
+                            <button key={r.key} onClick={() => setApprovalRoles(prev => ({ ...prev, [n.id]: r.key }))} style={{
+                              flex: 1, padding: '6px 4px', fontSize: '10px', fontWeight: sel ? 500 : 400,
+                              fontFamily: "'Jost', sans-serif", borderRadius: '8px', cursor: 'pointer',
+                              border: `1px solid ${sel ? '#3D6B4F' : '#E8E0D0'}`,
+                              background: sel ? '#3D6B4F' : 'transparent',
+                              color: sel ? 'white' : '#2C2417', transition: 'all 0.15s',
+                              textAlign: 'center',
+                            }}>{r.label}</button>
+                          )
+                        })}
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button onClick={() => handleNotifAction(n.id, 'approve_member', n.target_id, approvalRoles[n.id] || 'member_admin')} style={{
+                          flex: 1, padding: '10px', borderRadius: '10px',
+                          background: '#3D6B4F', color: 'white', border: 'none',
+                          fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+                        }}>Approve</button>
+                        <button onClick={() => handleNotifAction(n.id, 'decline_member', n.target_id)} style={{
+                          flex: 1, padding: '10px', borderRadius: '10px',
+                          background: 'none', color: '#8C7B6B', border: '1px solid #E8E0D0',
+                          fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+                        }}>Decline</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          <button onClick={() => setNotifOpen(false)} style={{
+            width: '100%', background: 'none', border: 'none', color: '#8C7B6B',
+            fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300,
+            padding: '10px', cursor: 'pointer',
+          }}>Close</button>
+        </div>
+      </BottomSheet>
     </>
   )
 }

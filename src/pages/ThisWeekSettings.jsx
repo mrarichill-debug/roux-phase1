@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import { getWeekDatesTZ, getWeekStartTZ, toLocalDateStr } from '../lib/dateUtils'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
+import BottomSheet from '../components/BottomSheet'
 // AddDayTypeSheet removed — day type creation lives in Household Defaults only
 
 const C = {
@@ -452,100 +453,70 @@ export default function ThisWeekSettings({ appUser }) {
       )}
 
       {/* ── Day Type Picker Sheet ─────────────────────────────────────── */}
-      {dtPickerDow && (
-        <>
-          <div onClick={() => setDtPickerDow(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
-          <div style={{
-            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-            padding: '20px 22px 40px', zIndex: 201, boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-          }}>
-            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '0 auto 16px' }} />
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
-              {dtPickerDow.charAt(0).toUpperCase() + dtPickerDow.slice(1)}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {DAY_TYPE_OPTIONS.map(opt => (
-                <button key={opt.key} onClick={() => saveDayType(dtPickerDow, opt.key)} style={{
-                  padding: '12px 16px', borderRadius: '10px', border: `1.5px solid ${opt.color}`,
-                  background: dayTypes[dtPickerDow] === opt.key ? opt.color : 'white',
-                  color: dayTypes[dtPickerDow] === opt.key ? 'white' : opt.color,
-                  fontSize: '14px', fontWeight: 500, fontFamily: "'Jost', sans-serif", cursor: 'pointer',
-                  textAlign: 'left', width: '100%',
-                }}>
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+      <BottomSheet isOpen={!!dtPickerDow} onClose={() => setDtPickerDow(null)}>
+        <div style={{ padding: '8px 22px 40px' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
+            {dtPickerDow && (dtPickerDow.charAt(0).toUpperCase() + dtPickerDow.slice(1))}
           </div>
-        </>
-      )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {DAY_TYPE_OPTIONS.map(opt => (
+              <button key={opt.key} onClick={() => saveDayType(dtPickerDow, opt.key)} style={{
+                padding: '12px 16px', borderRadius: '10px', border: `1.5px solid ${opt.color}`,
+                background: dtPickerDow && dayTypes[dtPickerDow] === opt.key ? opt.color : 'white',
+                color: dtPickerDow && dayTypes[dtPickerDow] === opt.key ? 'white' : opt.color,
+                fontSize: '14px', fontWeight: 500, fontFamily: "'Jost', sans-serif", cursor: 'pointer',
+                textAlign: 'left', width: '100%',
+              }}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </BottomSheet>
 
       {/* ── Save Template Sheet ───────────────────────────────────────── */}
-      {saveSheetOpen && (
-        <>
-          <div onClick={() => setSaveSheetOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
-          <div style={{
-            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-            padding: '20px 22px 40px', zIndex: 201,
+      <BottomSheet isOpen={saveSheetOpen} onClose={() => setSaveSheetOpen(false)} title="Save as template">
+        <div style={{ padding: '8px 22px 40px' }}>
+          <input type="text" value={templateName} onChange={e => setTemplateName(e.target.value)} placeholder="Template name"
+            autoFocus style={{
+              width: '100%', padding: '12px 14px', fontSize: '14px', fontFamily: "'Jost', sans-serif",
+              border: `1.5px solid ${C.linen}`, borderRadius: '10px', outline: 'none', color: C.ink, boxSizing: 'border-box', marginBottom: '12px',
+            }} />
+          <button onClick={saveAsTemplate} disabled={!templateName.trim() || savingTemplate} style={{
+            width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
+            background: templateName.trim() ? C.forest : C.linen, color: templateName.trim() ? 'white' : C.driftwood,
+            fontSize: '14px', fontWeight: 500, fontFamily: "'Jost', sans-serif", cursor: templateName.trim() ? 'pointer' : 'default',
           }}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>Save as template</div>
-            <input type="text" value={templateName} onChange={e => setTemplateName(e.target.value)} placeholder="Template name"
-              autoFocus style={{
-                width: '100%', padding: '12px 14px', fontSize: '14px', fontFamily: "'Jost', sans-serif",
-                border: `1.5px solid ${C.linen}`, borderRadius: '10px', outline: 'none', color: C.ink, boxSizing: 'border-box', marginBottom: '12px',
-              }} />
-            <button onClick={saveAsTemplate} disabled={!templateName.trim() || savingTemplate} style={{
-              width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
-              background: templateName.trim() ? C.forest : C.linen, color: templateName.trim() ? 'white' : C.driftwood,
-              fontSize: '14px', fontWeight: 500, fontFamily: "'Jost', sans-serif", cursor: templateName.trim() ? 'pointer' : 'default',
-            }}>
-              {savingTemplate ? 'Saving...' : 'Save template'}
-            </button>
-          </div>
-        </>
-      )}
+            {savingTemplate ? 'Saving...' : 'Save template'}
+          </button>
+        </div>
+      </BottomSheet>
 
       {/* ── Reset Confirmation ────────────────────────────────────────── */}
-      {confirmReset && (
-        <>
-          <div onClick={() => setConfirmReset(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
-          <div style={{
-            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-            padding: '20px 22px 40px', zIndex: 201,
-          }}>
-            <div style={{ fontSize: '15px', color: C.ink, fontWeight: 400, marginBottom: '14px' }}>
-              Reset all day types to your household defaults and clear the template?
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={resetToDefaults} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: C.forest, color: 'white', border: 'none', fontSize: '13px', fontWeight: 500, fontFamily: "'Jost', sans-serif", cursor: 'pointer' }}>Reset</button>
-              <button onClick={() => setConfirmReset(false)} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'none', color: C.driftwood, border: `1px solid ${C.linen}`, fontSize: '13px', fontWeight: 400, fontFamily: "'Jost', sans-serif", cursor: 'pointer' }}>Cancel</button>
-            </div>
+      <BottomSheet isOpen={confirmReset} onClose={() => setConfirmReset(false)}>
+        <div style={{ padding: '8px 22px 40px' }}>
+          <div style={{ fontSize: '15px', color: C.ink, fontWeight: 400, marginBottom: '14px' }}>
+            Reset all day types to your household defaults and clear the template?
           </div>
-        </>
-      )}
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={resetToDefaults} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: C.forest, color: 'white', border: 'none', fontSize: '13px', fontWeight: 500, fontFamily: "'Jost', sans-serif", cursor: 'pointer' }}>Reset</button>
+            <button onClick={() => setConfirmReset(false)} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'none', color: C.driftwood, border: `1px solid ${C.linen}`, fontSize: '13px', fontWeight: 400, fontFamily: "'Jost', sans-serif", cursor: 'pointer' }}>Cancel</button>
+          </div>
+        </div>
+      </BottomSheet>
 
       {/* ── Remove Template Confirmation ─────────────────────────────── */}
-      {confirmRemoveTemplate && (
-        <>
-          <div onClick={() => setConfirmRemoveTemplate(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
-          <div style={{
-            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-            padding: '20px 22px 40px', zIndex: 201,
-          }}>
-            <div style={{ fontSize: '15px', color: C.ink, fontWeight: 400, marginBottom: '14px' }}>
-              Remove {savedTemplates.find(t => t.id === activeTemplateId)?.name || 'template'} and reset to defaults?
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={removeAppliedTemplate} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: C.forest, color: 'white', border: 'none', fontSize: '13px', fontWeight: 500, fontFamily: "'Jost', sans-serif", cursor: 'pointer' }}>Yes</button>
-              <button onClick={() => setConfirmRemoveTemplate(false)} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'none', color: C.driftwood, border: `1px solid ${C.linen}`, fontSize: '13px', fontWeight: 400, fontFamily: "'Jost', sans-serif", cursor: 'pointer' }}>Cancel</button>
-            </div>
+      <BottomSheet isOpen={!!confirmRemoveTemplate} onClose={() => setConfirmRemoveTemplate(null)}>
+        <div style={{ padding: '8px 22px 40px' }}>
+          <div style={{ fontSize: '15px', color: C.ink, fontWeight: 400, marginBottom: '14px' }}>
+            Remove {savedTemplates.find(t => t.id === activeTemplateId)?.name || 'template'} and reset to defaults?
           </div>
-        </>
-      )}
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={removeAppliedTemplate} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: C.forest, color: 'white', border: 'none', fontSize: '13px', fontWeight: 500, fontFamily: "'Jost', sans-serif", cursor: 'pointer' }}>Yes</button>
+            <button onClick={() => setConfirmRemoveTemplate(null)} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'none', color: C.driftwood, border: `1px solid ${C.linen}`, fontSize: '13px', fontWeight: 400, fontFamily: "'Jost', sans-serif", cursor: 'pointer' }}>Cancel</button>
+          </div>
+        </div>
+      </BottomSheet>
 
       {/* ── Toast ─────────────────────────────────────────────────────── */}
       {toastMsg && (

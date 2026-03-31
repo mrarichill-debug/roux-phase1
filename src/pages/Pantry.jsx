@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import { logActivity } from '../lib/activityLog'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
+import BottomSheet from '../components/BottomSheet'
 
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
@@ -283,67 +284,49 @@ export default function Pantry({ appUser }) {
       </div>
 
       {/* ── Trip creation sheet ──────────────────────────────────── */}
-      {tripSheetOpen && (
-        <>
-          <div onClick={() => setTripSheetOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
-          <div onClick={e => e.stopPropagation()} style={{
-            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-            padding: '0 0 env(safe-area-inset-bottom, 24px)', zIndex: 201,
-            boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-            animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
-          }}>
-            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-            <div style={{ padding: '20px 22px 24px' }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '16px' }}>
-                Start a Trip
-              </div>
+      <BottomSheet isOpen={tripSheetOpen} onClose={() => setTripSheetOpen(false)} title="Start a Trip">
+        <div style={{ padding: '4px 22px 24px' }}>
+          {/* Trip name */}
+          <div style={{ marginBottom: '14px' }}>
+            <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwoodSm, fontWeight: 500, marginBottom: '6px' }}>Trip name</div>
+            <input type="text" value={tripName} onChange={e => setTripName(e.target.value)}
+              style={{
+                width: '100%', padding: '10px 12px', fontSize: '14px', fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                border: `1.5px solid ${C.linen}`, borderRadius: '10px', outline: 'none', color: C.ink, boxSizing: 'border-box',
+              }} />
+          </div>
 
-              {/* Trip name */}
-              <div style={{ marginBottom: '14px' }}>
-                <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwoodSm, fontWeight: 500, marginBottom: '6px' }}>Trip name</div>
-                <input type="text" value={tripName} onChange={e => setTripName(e.target.value)}
-                  style={{
-                    width: '100%', padding: '10px 12px', fontSize: '14px', fontFamily: "'Jost', sans-serif", fontWeight: 300,
-                    border: `1.5px solid ${C.linen}`, borderRadius: '10px', outline: 'none', color: C.ink, boxSizing: 'border-box',
-                  }} />
-              </div>
-
-              {/* Store picker */}
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwoodSm, fontWeight: 500, marginBottom: '6px' }}>Store</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {stores.map(s => (
-                    <button key={s.id} onClick={() => {
-                      setTripStore(s.id)
-                      const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' })
-                      setTripName(`${dayName} ${s.name} run`)
-                    }} style={{
-                      padding: '6px 14px', borderRadius: '10px', fontSize: '13px',
-                      border: tripStore === s.id ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
-                      background: tripStore === s.id ? 'rgba(61,107,79,0.08)' : 'white',
-                      color: tripStore === s.id ? C.forest : C.ink,
-                      cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontWeight: tripStore === s.id ? 500 : 400,
-                    }}>{s.name}</button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Confirm */}
-              <button onClick={createTrip} disabled={creatingTrip} style={{
-                width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
-                background: C.forest, color: 'white', cursor: 'pointer',
-                fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
-                boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
-              }}>
-                {creatingTrip ? 'Starting...' : 'Start shopping'}
-              </button>
+          {/* Store picker */}
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwoodSm, fontWeight: 500, marginBottom: '6px' }}>Store</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {stores.map(s => (
+                <button key={s.id} onClick={() => {
+                  setTripStore(s.id)
+                  const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' })
+                  setTripName(`${dayName} ${s.name} run`)
+                }} style={{
+                  padding: '6px 14px', borderRadius: '10px', fontSize: '13px',
+                  border: tripStore === s.id ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                  background: tripStore === s.id ? 'rgba(61,107,79,0.08)' : 'white',
+                  color: tripStore === s.id ? C.forest : C.ink,
+                  cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontWeight: tripStore === s.id ? 500 : 400,
+                }}>{s.name}</button>
+              ))}
             </div>
           </div>
-        </>
-      )}
 
-      <style>{`@keyframes sheetRise { from { transform: translateX(-50%) translateY(100%); } to { transform: translateX(-50%) translateY(0); } }`}</style>
+          {/* Confirm */}
+          <button onClick={createTrip} disabled={creatingTrip} style={{
+            width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
+            background: C.forest, color: 'white', cursor: 'pointer',
+            fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
+            boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
+          }}>
+            {creatingTrip ? 'Starting...' : 'Start shopping'}
+          </button>
+        </div>
+      </BottomSheet>
 
       <BottomNav activeTab="pantry" />
     </div>

@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase'
 import { getWeekDatesTZ, getWeekStartTZ, toLocalDateStr } from '../lib/dateUtils'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
+import BottomSheet from '../components/BottomSheet'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -878,33 +879,9 @@ export default function WeekSettings({ appUser }) {
       {/* ── Bottom Nav ────────────────────────────────────────────────────── */}
       <BottomNav activeTab="week" />
 
-      {/* ── Add Tradition Sheet overlay ──────────────────────────────── */}
-      <div
-        onClick={() => setAddTradSheetOpen(false)}
-        style={{
-          position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)',
-          zIndex: 200, opacity: addTradSheetOpen ? 1 : 0,
-          pointerEvents: addTradSheetOpen ? 'all' : 'none',
-          transition: 'opacity 0.25s ease',
-        }}
-      />
-
       {/* ── Add Tradition Sheet ────────────────────────────────────────── */}
-      <div style={{
-        position: 'fixed', bottom: 0, left: '50%',
-        transform: addTradSheetOpen ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
-        width: '100%', maxWidth: '430px',
-        background: 'white', borderRadius: '20px 20px 0 0',
-        padding: '0 0 40px', zIndex: 201,
-        transition: 'transform 0.32s cubic-bezier(0.32,0.72,0,1)',
-        boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-      }}>
-        <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-        <div style={{ padding: '20px 22px 0' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '16px' }}>
-            Add a tradition
-          </div>
-
+      <BottomSheet isOpen={addTradSheetOpen} onClose={() => setAddTradSheetOpen(false)} title="Add a tradition">
+        <div style={{ padding: '16px 22px 40px' }}>
           {/* Name */}
           <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '6px' }}>
             Name
@@ -974,34 +951,11 @@ export default function WeekSettings({ appUser }) {
             Cancel
           </button>
         </div>
-      </div>
-
-      {/* ── Save Template Sheet overlay ────────────────────────────────── */}
-      <div
-        onClick={() => setSaveSheetOpen(false)}
-        style={{
-          position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)',
-          zIndex: 200, opacity: saveSheetOpen ? 1 : 0,
-          pointerEvents: saveSheetOpen ? 'all' : 'none',
-          transition: 'opacity 0.25s ease',
-        }}
-      />
+      </BottomSheet>
 
       {/* ── Save Template Sheet ────────────────────────────────────────── */}
-      <div style={{
-        position: 'fixed', bottom: 0, left: '50%',
-        transform: saveSheetOpen ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
-        width: '100%', maxWidth: '430px',
-        background: 'white', borderRadius: '20px 20px 0 0',
-        padding: '0 0 40px', zIndex: 201,
-        transition: 'transform 0.32s cubic-bezier(0.32,0.72,0,1)',
-        boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-      }}>
-        <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-        <div style={{ padding: '20px 22px 0' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '16px' }}>
-            Name this template
-          </div>
+      <BottomSheet isOpen={saveSheetOpen} onClose={() => setSaveSheetOpen(false)} title="Name this template">
+        <div style={{ padding: '16px 22px 40px' }}>
           <input
             type="text"
             value={templateName}
@@ -1042,63 +996,37 @@ export default function WeekSettings({ appUser }) {
             Cancel
           </button>
         </div>
-      </div>
+      </BottomSheet>
 
       {/* ── Apply Template Confirmation Sheet ───────────────────────────── */}
-      {applyConfirmId && (() => {
-        const tpl = savedTemplates.find(t => t.id === applyConfirmId)
-        return (
-          <>
-            <div
-              onClick={() => setApplyConfirmId(null)}
-              style={{
-                position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)',
-                zIndex: 200, animation: 'fadeIn 0.2s ease',
-              }}
-            />
-            <div style={{
-              position: 'fixed', bottom: 0, left: '50%',
-              transform: 'translateX(-50%)',
-              width: '100%', maxWidth: '430px',
-              background: 'white', borderRadius: '20px 20px 0 0',
-              padding: '0 0 40px', zIndex: 201,
-              boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-              animation: 'sheetRise 0.32s cubic-bezier(0.32,0.72,0,1) both',
-            }}>
-              <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-              <div style={{ padding: '20px 22px 0' }}>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '10px' }}>
-                  Apply this template?
-                </div>
-                <div style={{ fontSize: '14px', color: C.driftwood, fontWeight: 300, lineHeight: 1.6, marginBottom: '22px' }}>
-                  {tpl?.name} will update your day types for this week. You can still adjust individual days after applying.
-                </div>
-                <button
-                  onClick={() => applyTemplateById(applyConfirmId)}
-                  style={{
-                    width: '100%', background: C.forest, color: 'white', border: 'none',
-                    borderRadius: '12px', padding: '14px',
-                    fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
-                    cursor: 'pointer', marginBottom: '8px',
-                  }}
-                >
-                  Apply
-                </button>
-                <button
-                  onClick={() => setApplyConfirmId(null)}
-                  style={{
-                    width: '100%', background: 'none', border: 'none', color: C.driftwood,
-                    fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300,
-                    padding: '10px', cursor: 'pointer',
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </>
-        )
-      })()}
+      <BottomSheet isOpen={!!applyConfirmId} onClose={() => setApplyConfirmId(null)} title="Apply this template?">
+        <div style={{ padding: '6px 22px 40px' }}>
+          <div style={{ fontSize: '14px', color: C.driftwood, fontWeight: 300, lineHeight: 1.6, marginBottom: '22px' }}>
+            {savedTemplates.find(t => t.id === applyConfirmId)?.name} will update your day types for this week. You can still adjust individual days after applying.
+          </div>
+          <button
+            onClick={() => applyTemplateById(applyConfirmId)}
+            style={{
+              width: '100%', background: C.forest, color: 'white', border: 'none',
+              borderRadius: '12px', padding: '14px',
+              fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
+              cursor: 'pointer', marginBottom: '8px',
+            }}
+          >
+            Apply
+          </button>
+          <button
+            onClick={() => setApplyConfirmId(null)}
+            style={{
+              width: '100%', background: 'none', border: 'none', color: C.driftwood,
+              fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300,
+              padding: '10px', cursor: 'pointer',
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </BottomSheet>
     </div>
   )
 }

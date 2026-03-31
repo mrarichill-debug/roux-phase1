@@ -12,6 +12,7 @@ import { toLocalDateStr, getWeekStartTZ, getWeekDatesTZ } from '../lib/dateUtils
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import AddToPlanSheet from '../components/AddToPlanSheet'
+import BottomSheet from '../components/BottomSheet'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -143,12 +144,10 @@ export default function RecipeLibrary({ appUser }) {
   const [gridVisible,     setGridVisible]     = useState(true)
   const [weekPickerRecipe,setWeekPickerRecipe]= useState(null)
   const [planSheetRecipe, setPlanSheetRecipe] = useState(null)
-  const [overlayVisible,  setOverlayVisible]  = useState(false)
   const [saveBtnActive,   setSaveBtnActive]   = useState(false)
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
 
   const filterTimer   = useRef(null)
-  const overlayTimer  = useRef(null)
   const isFirstLoad   = useRef(true)
 
   useEffect(() => {
@@ -285,13 +284,10 @@ export default function RecipeLibrary({ appUser }) {
 
   function openWeekPicker(recipe) {
     setWeekPickerRecipe(recipe)
-    overlayTimer.current = setTimeout(() => setOverlayVisible(true), 40)
   }
 
   function closeWeekPicker() {
-    setOverlayVisible(false)
-    clearTimeout(overlayTimer.current)
-    setTimeout(() => setWeekPickerRecipe(null), 320)
+    setWeekPickerRecipe(null)
   }
 
   return (
@@ -495,17 +491,7 @@ export default function RecipeLibrary({ appUser }) {
       />
 
       {/* ── Filter Sheet ────────────────────────────────────────────────────── */}
-      {filterSheetOpen && (
-        <>
-          <div onClick={() => setFilterSheetOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
-          <div onClick={e => e.stopPropagation()} style={{
-            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-            padding: '0 0 34px', zIndex: 201, boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-            maxHeight: '70vh', overflowY: 'auto',
-            animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
-          }}>
-            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+      <BottomSheet isOpen={filterSheetOpen} onClose={() => setFilterSheetOpen(false)} maxHeight="70vh">
             <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
               {/* Browse by tag — unified section */}
@@ -589,29 +575,16 @@ export default function RecipeLibrary({ appUser }) {
                 )}
               </div>
             </div>
-          </div>
-        </>
-      )}
-
-      {/* ── + Week sheet overlay ──────────────────────────────────────────────── */}
-      <div
-        onClick={closeWeekPicker}
-        style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(44,36,23,0.45)',
-          zIndex: 200,
-          opacity: overlayVisible ? 1 : 0,
-          pointerEvents: weekPickerRecipe ? 'all' : 'none',
-          transition: 'opacity 0.25s ease',
-        }}
-      />
+      </BottomSheet>
 
       {/* ── + Week bottom sheet ───────────────────────────────────────────────── */}
-      <WeekPickerSheet
-        recipe={weekPickerRecipe}
-        appUser={appUser}
-        onClose={closeWeekPicker}
-      />
+      <BottomSheet isOpen={!!weekPickerRecipe} onClose={() => setWeekPickerRecipe(null)}>
+        <WeekPickerSheetContent
+          recipe={weekPickerRecipe}
+          appUser={appUser}
+          onClose={() => { setWeekPickerRecipe(null); setOverlayVisible(false) }}
+        />
+      </BottomSheet>
 
     </div>
   )
@@ -711,11 +684,10 @@ function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWe
   )
 }
 
-// ── + Week Day Picker Sheet ────────────────────────────────────────────────────
-function WeekPickerSheet({ recipe, appUser, onClose }) {
+// ── + Week Day Picker Sheet Content ───────────────────────────────────────────
+function WeekPickerSheetContent({ recipe, appUser, onClose }) {
   const [adding, setAdding] = useState(null)
   const [added,  setAdded]  = useState(null)
-  const isOpen = !!recipe
 
   useEffect(() => {
     if (!recipe) {
@@ -768,20 +740,10 @@ function WeekPickerSheet({ recipe, appUser, onClose }) {
     }
   }
 
-  return (
-    <div style={{
-      position: 'fixed', bottom: 0, left: '50%',
-      transform: isOpen ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
-      width: '100%', maxWidth: '430px',
-      background: 'white', borderRadius: '20px 20px 0 0',
-      padding: '0 0 40px',
-      zIndex: 201,
-      transition: 'transform 0.32s cubic-bezier(0.32,0.72,0,1)',
-      boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-    }}>
-      {/* Handle */}
-      <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
+  if (!recipe) return null
 
+  return (
+    <>
       {/* Header */}
       <div style={{
         padding: '16px 22px 14px',
@@ -863,7 +825,7 @@ function WeekPickerSheet({ recipe, appUser, onClose }) {
           </div>
         )}
       </div>
-    </div>
+    </>
   )
 }
 

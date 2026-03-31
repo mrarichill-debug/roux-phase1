@@ -10,6 +10,7 @@ import { categorizeIngredientsWithSage } from '../lib/categorizeIngredientsWithS
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import AddToPlanSheet from '../components/AddToPlanSheet'
+import BottomSheet from '../components/BottomSheet'
 
 const C = {
   forest: '#3D6B4F', sage: '#7A8C6E', honey: '#C49A3C',
@@ -626,17 +627,8 @@ function SageReviewSheet({ open, onClose, recipe, recipeId, appUser, onResolved 
   }
 
   return (
-    <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
-      <div onClick={e => e.stopPropagation()} style={{
-        position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-        width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-        padding: '0 0 40px', zIndex: 201, boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-        maxHeight: '75vh', overflowY: 'auto',
-        animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
-      }}>
-        <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-        <div style={{ padding: '16px 22px' }}>
+    <BottomSheet isOpen={true} onClose={onClose} maxHeight="75vh">
+      <div style={{ padding: '16px 22px 40px' }}>
           <div style={{
             fontSize: '13px', color: C.driftwood, fontWeight: 300, fontStyle: 'italic',
             lineHeight: 1.5, marginBottom: '16px',
@@ -678,7 +670,6 @@ function SageReviewSheet({ open, onClose, recipe, recipeId, appUser, onResolved 
             )
           })}
         </div>
-      </div>
-    </>
+    </BottomSheet>
   )
 }

@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { logActivity } from '../lib/activityLog'
 import { getWeekDatesTZ, getWeekStartTZ, toLocalDateStr } from '../lib/dateUtils'
+import BottomSheet from './BottomSheet'
 
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
@@ -270,45 +271,8 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
   const monthLabel = calMonth !== null ? new Date(calYear, calMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : ''
 
   return (
-    <>
-      {/* Overlay */}
-      <div
-        onClick={onClose}
-        style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(44,36,23,0.45)',
-          zIndex: 200,
-          opacity: open ? 1 : 0,
-          pointerEvents: open ? 'all' : 'none',
-          transition: 'opacity 0.28s cubic-bezier(0.22,1,0.36,1)',
-        }}
-      />
-      {/* Sheet */}
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          position: 'fixed', bottom: 0, left: '50%',
-          transform: open ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
-          width: '100%', maxWidth: '430px',
-          background: 'white', borderRadius: '20px 20px 0 0',
-          padding: '0 0 34px', zIndex: 201,
-          boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-          transition: 'transform 0.28s cubic-bezier(0.22,1,0.36,1)',
-          display: 'flex', flexDirection: 'column',
-          maxHeight: '85vh', overflowY: 'auto',
-        }}
-      >
-        {/* Handle */}
-        <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-
-        <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-          {/* Title */}
-          <div style={{
-            fontFamily: "'Playfair Display', serif", fontSize: '20px',
-            fontWeight: 500, color: C.ink,
-          }}>
-            Add to plan
-          </div>
+    <BottomSheet isOpen={open} onClose={onClose} title="Add to plan">
+      <div style={{ padding: '4px 22px 34px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
           {/* Week selector */}
           <div>
@@ -633,7 +597,6 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
             </button>
           )}
         </div>
-      </div>
-    </>
+    </BottomSheet>
   )
 }

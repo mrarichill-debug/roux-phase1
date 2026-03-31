@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
+import BottomSheet from '../components/BottomSheet'
 import { COLOR_SCHEMES, SCHEME_NAMES } from '../lib/colorSchemes'
 
 const C = {
@@ -794,20 +795,8 @@ export default function Profile({ appUser }) {
       )}
 
       {/* ── Add Member Sheet ─────────────────────────────────────────── */}
-      {addMemberOpen && (
-        <>
-          <div onClick={() => setAddMemberOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200, animation: 'fadeIn 0.2s ease' }} />
-          <div onClick={e => e.stopPropagation()} style={{
-            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-            padding: '0 0 40px', zIndex: 201, boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-            animation: 'sheetRise 0.32s cubic-bezier(0.32,0.72,0,1) both',
-          }}>
-            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-            <div style={{ padding: '20px 22px 0' }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '16px' }}>
-                {editMemberId ? 'Edit family member' : 'Add a family member'}
-              </div>
+      <BottomSheet isOpen={addMemberOpen} onClose={() => setAddMemberOpen(false)} title={editMemberId ? 'Edit family member' : 'Add a family member'}>
+            <div style={{ padding: '0 22px 40px' }}>
               <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '6px' }}>Name</div>
               <input type="text" value={newMemberName} onChange={e => setNewMemberName(e.target.value)} placeholder={newMemberIsPet ? "Pet's name" : 'First and last name'} autoFocus style={{
                 width: '100%', padding: '12px 14px', border: `1px solid ${C.linen}`, borderRadius: '10px',
@@ -901,25 +890,11 @@ export default function Profile({ appUser }) {
                 fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300, padding: '10px', cursor: 'pointer',
               }}>Cancel</button>
             </div>
-          </div>
-        </>
-      )}
+      </BottomSheet>
 
       {/* ── Add Store Sheet ──────────────────────────────────────────── */}
-      {addStoreOpen && (
-        <>
-          <div onClick={() => setAddStoreOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200, animation: 'fadeIn 0.2s ease' }} />
-          <div onClick={e => e.stopPropagation()} style={{
-            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-            padding: '0 0 40px', zIndex: 201, boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-            animation: 'sheetRise 0.32s cubic-bezier(0.32,0.72,0,1) both',
-          }}>
-            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-            <div style={{ padding: '20px 22px 0' }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '16px' }}>
-                Add a store
-              </div>
+      <BottomSheet isOpen={addStoreOpen} onClose={() => setAddStoreOpen(false)} title="Add a store">
+            <div style={{ padding: '0 22px 40px' }}>
               <input type="text" value={newStoreName} onChange={e => setNewStoreName(e.target.value)} placeholder="Store name" autoFocus
                 onKeyDown={e => { if (e.key === 'Enter') addStore() }}
                 style={{
@@ -936,25 +911,11 @@ export default function Profile({ appUser }) {
                 fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300, padding: '10px', cursor: 'pointer',
               }}>Cancel</button>
             </div>
-          </div>
-        </>
-      )}
+      </BottomSheet>
 
       {/* ── Admin Transfer Sheet ─────────────────────────────────────── */}
-      {transferOpen && (
-        <>
-          <div onClick={() => setTransferOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 300, animation: 'fadeIn 0.2s ease' }} />
-          <div onClick={e => e.stopPropagation()} style={{
-            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-            padding: '0 0 40px', zIndex: 301, boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-            animation: 'sheetRise 0.32s cubic-bezier(0.32,0.72,0,1) both',
-          }}>
-            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-            <div style={{ padding: '20px 22px 0' }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '10px' }}>
-                Transfer Admin
-              </div>
+      <BottomSheet isOpen={transferOpen} onClose={() => setTransferOpen(false)} zIndex={300} title="Transfer Admin">
+            <div style={{ padding: '0 22px 40px' }}>
               <div style={{ fontSize: '13px', color: C.driftwood, lineHeight: 1.5, marginBottom: '16px' }}>
                 Select a Co-admin to become the new Admin. You will become Co-admin.
               </div>
@@ -986,25 +947,11 @@ export default function Profile({ appUser }) {
                 padding: '10px', cursor: 'pointer',
               }}>Cancel</button>
             </div>
-          </div>
-        </>
-      )}
+      </BottomSheet>
 
       {/* ── New Code Confirmation ────────────────────────────────────── */}
-      {newCodeConfirmOpen && (
-        <>
-          <div onClick={() => setNewCodeConfirmOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200, animation: 'fadeIn 0.2s ease' }} />
-          <div onClick={e => e.stopPropagation()} style={{
-            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-            padding: '0 0 40px', zIndex: 201, boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-            animation: 'sheetRise 0.32s cubic-bezier(0.32,0.72,0,1) both',
-          }}>
-            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-            <div style={{ padding: '20px 22px 0' }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '10px' }}>
-                Generate new code?
-              </div>
+      <BottomSheet isOpen={newCodeConfirmOpen} onClose={() => setNewCodeConfirmOpen(false)} title="Generate new code?">
+            <div style={{ padding: '0 22px 40px' }}>
               <div style={{ fontSize: '14px', color: C.driftwood, fontWeight: 300, lineHeight: 1.6, marginBottom: '20px' }}>
                 This will invalidate your current code. Anyone with the old code won't be able to use it.
               </div>
@@ -1023,24 +970,12 @@ export default function Profile({ appUser }) {
                 Cancel
               </button>
             </div>
-          </div>
-        </>
-      )}
+      </BottomSheet>
 
       {/* ── Toast ────────────────────────────────────────────────────── */}
       {/* ── Day Type Picker Sheet ─────────────────────────────────────── */}
-      {dtPickerDow && (
-        <>
-          <div onClick={() => setDtPickerDow(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
-          <div style={{
-            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-            padding: '20px 22px 40px', zIndex: 201,
-          }}>
-            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '0 auto 16px' }} />
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
-              {dtPickerDow.charAt(0).toUpperCase() + dtPickerDow.slice(1)}
-            </div>
+      <BottomSheet isOpen={!!dtPickerDow} onClose={() => setDtPickerDow(null)} title={dtPickerDow ? dtPickerDow.charAt(0).toUpperCase() + dtPickerDow.slice(1) : ''}>
+            <div style={{ padding: '0 22px 40px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {DAY_TYPE_OPTIONS.map(opt => (
                 <button key={opt.key} onClick={() => savePatternDay(dtPickerDow, opt.key)} style={{
@@ -1054,9 +989,8 @@ export default function Profile({ appUser }) {
                 </button>
               ))}
             </div>
-          </div>
-        </>
-      )}
+            </div>
+      </BottomSheet>
 
       {toastMsg && (
         <div style={{

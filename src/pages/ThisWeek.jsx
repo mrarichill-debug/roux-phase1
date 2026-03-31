@@ -16,6 +16,7 @@ import { sageBusyNightDetection } from '../lib/sageBusyNightDetection'
 import { hasSeenTooltip, dismissTooltip } from '../lib/tooltips'
 import TopBar from '../components/TopBar'
 import SageNudgeCard from '../components/SageNudgeCard'
+import BottomSheet from '../components/BottomSheet'
 import BottomNav from '../components/BottomNav'
 
 const C = {
@@ -99,13 +100,6 @@ export default function ThisWeek({ appUser }) {
   // Toast
   const [toast, setToast] = useState('')
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(''), 2500) }
-
-  // Scroll lock when any bottom sheet is open
-  useEffect(() => {
-    const anyOpen = addSheetOpen || shareSheetOpen || !!batchEditMealId || !!linkSheetMeal || addSheetLinkOpen
-    document.body.style.overflow = anyOpen ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [addSheetOpen, shareSheetOpen, batchEditMealId, linkSheetMeal, addSheetLinkOpen])
 
   useEffect(() => {
     if (appUser?.household_id) loadWeek()
@@ -1204,107 +1198,73 @@ export default function ThisWeek({ appUser }) {
       )}
 
       {/* ── Ingredient Cleanup Dialog ────────────────────────────── */}
-      {ingredientDialog && (
-        <>
-          <div onClick={() => setIngredientDialog(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
-          <div onClick={e => e.stopPropagation()} style={{
-            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-            padding: '0 0 env(safe-area-inset-bottom, 24px)', zIndex: 201,
-            boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-            animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
-          }}>
-            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-            <div style={{ padding: '20px 22px 24px' }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '8px' }}>
-                Remove {ingredientDialog.mealName}?
-              </div>
-              <div style={{ fontSize: '14px', color: C.driftwood, lineHeight: 1.6, marginBottom: '20px' }}>
-                {ingredientDialog.itemCount} ingredient{ingredientDialog.itemCount !== 1 ? 's' : ''} for this meal {ingredientDialog.itemCount !== 1 ? 'are' : 'is'} already on your shopping list. Remove {ingredientDialog.itemCount !== 1 ? 'them' : 'it'} too?
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <button onClick={() => removeMealWithIngredients(ingredientDialog.mealId, ingredientDialog.mealName)} style={{
-                  width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
-                  background: C.forest, color: 'white', cursor: 'pointer',
-                  fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
-                }}>Yes, remove ingredients</button>
-                <button onClick={() => softDeleteMeal(ingredientDialog.mealId, ingredientDialog.mealName, true)} style={{
-                  width: '100%', padding: '12px', borderRadius: '14px',
-                  background: 'none', color: C.ink, border: `1.5px solid ${C.linen}`,
-                  cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontSize: '14px',
-                }}>Keep ingredients on my list</button>
-                <button onClick={() => setIngredientDialog(null)} style={{
-                  width: '100%', padding: '10px', background: 'none', border: 'none',
-                  cursor: 'pointer', color: C.driftwood, fontSize: '13px', fontWeight: 300,
-                  fontFamily: "'Jost', sans-serif",
-                }}>Never mind, keep this meal</button>
-              </div>
-            </div>
+      <BottomSheet isOpen={!!ingredientDialog} onClose={() => setIngredientDialog(null)}>
+        <div style={{ padding: '20px 22px 24px' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '8px' }}>
+            Remove {ingredientDialog?.mealName}?
           </div>
-        </>
-      )}
+          <div style={{ fontSize: '14px', color: C.driftwood, lineHeight: 1.6, marginBottom: '20px' }}>
+            {ingredientDialog?.itemCount} ingredient{ingredientDialog?.itemCount !== 1 ? 's' : ''} for this meal {ingredientDialog?.itemCount !== 1 ? 'are' : 'is'} already on your shopping list. Remove {ingredientDialog?.itemCount !== 1 ? 'them' : 'it'} too?
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <button onClick={() => removeMealWithIngredients(ingredientDialog.mealId, ingredientDialog.mealName)} style={{
+              width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
+              background: C.forest, color: 'white', cursor: 'pointer',
+              fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
+            }}>Yes, remove ingredients</button>
+            <button onClick={() => softDeleteMeal(ingredientDialog.mealId, ingredientDialog.mealName, true)} style={{
+              width: '100%', padding: '12px', borderRadius: '14px',
+              background: 'none', color: C.ink, border: `1.5px solid ${C.linen}`,
+              cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontSize: '14px',
+            }}>Keep ingredients on my list</button>
+            <button onClick={() => setIngredientDialog(null)} style={{
+              width: '100%', padding: '10px', background: 'none', border: 'none',
+              cursor: 'pointer', color: C.driftwood, fontSize: '13px', fontWeight: 300,
+              fontFamily: "'Jost', sans-serif",
+            }}>Never mind, keep this meal</button>
+          </div>
+        </div>
+      </BottomSheet>
 
       {/* ── Sage Share Sheet ─────────────────────────────────────── */}
-      {shareSheetOpen && (
-        <>
-          <div onClick={() => setShareSheetOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
-          <div onClick={e => e.stopPropagation()} style={{
-            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-            padding: '0 0 env(safe-area-inset-bottom, 24px)', zIndex: 201,
-            boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-            animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
-          }}>
-            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-            <div style={{ padding: '20px 22px 24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <span style={{ color: C.sage, fontSize: '18px' }}>✦</span>
-                <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink }}>Your week is set.</span>
-              </div>
-              <div style={{ fontSize: '14px', color: C.driftwood, lineHeight: 1.6, marginBottom: '20px' }}>
-                Ready to build your shopping list? I'll pull in everything you need from this week's recipes.
-              </div>
-              {ghostMeals.length > 0 && (
-                <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', marginBottom: '16px', paddingLeft: '4px' }}>
-                  {ghostNames.length === 1
-                    ? `${ghostNames[0]} doesn't have a recipe — you can add those items manually.`
-                    : ghostNames.length === 2
-                    ? `${ghostNames[0]} and ${ghostNames[1]} don't have recipes — you can add those items manually.`
-                    : `${ghostNames[0]}, ${ghostNames[1]}, and ${ghostNames.length - 2} other${ghostNames.length - 2 > 1 ? 's' : ''} don't have recipes — you can add those items manually.`
-                  }
-                </div>
-              )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <button onClick={buildShoppingList} disabled={injecting} style={{
-                  width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
-                  background: C.forest, color: 'white', cursor: 'pointer',
-                  fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
-                  boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
-                }}>{categorizing ? 'Sage is organizing your ingredients…' : injecting ? 'Building...' : 'Build my list →'}</button>
-                <button onClick={() => setShareSheetOpen(false)} style={{
-                  width: '100%', padding: '12px', borderRadius: '14px', border: 'none',
-                  background: 'none', color: C.driftwood, cursor: 'pointer',
-                  fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 300,
-                }}>I'll do it later</button>
-              </div>
-            </div>
+      <BottomSheet isOpen={shareSheetOpen} onClose={() => setShareSheetOpen(false)}>
+        <div style={{ padding: '20px 22px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <span style={{ color: C.sage, fontSize: '18px' }}>✦</span>
+            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink }}>Your week is set.</span>
           </div>
-        </>
-      )}
+          <div style={{ fontSize: '14px', color: C.driftwood, lineHeight: 1.6, marginBottom: '20px' }}>
+            Ready to build your shopping list? I'll pull in everything you need from this week's recipes.
+          </div>
+          {ghostMeals.length > 0 && (
+            <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', marginBottom: '16px', paddingLeft: '4px' }}>
+              {ghostNames.length === 1
+                ? `${ghostNames[0]} doesn't have a recipe — you can add those items manually.`
+                : ghostNames.length === 2
+                ? `${ghostNames[0]} and ${ghostNames[1]} don't have recipes — you can add those items manually.`
+                : `${ghostNames[0]}, ${ghostNames[1]}, and ${ghostNames.length - 2} other${ghostNames.length - 2 > 1 ? 's' : ''} don't have recipes — you can add those items manually.`
+              }
+            </div>
+          )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <button onClick={buildShoppingList} disabled={injecting} style={{
+              width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
+              background: C.forest, color: 'white', cursor: 'pointer',
+              fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
+              boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
+            }}>{categorizing ? 'Sage is organizing your ingredients…' : injecting ? 'Building...' : 'Build my list →'}</button>
+            <button onClick={() => setShareSheetOpen(false)} style={{
+              width: '100%', padding: '12px', borderRadius: '14px', border: 'none',
+              background: 'none', color: C.driftwood, cursor: 'pointer',
+              fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 300,
+            }}>I'll do it later</button>
+          </div>
+        </div>
+      </BottomSheet>
 
       {/* ── Add Meal Sheet ───────────────────────────────────────── */}
-      {addSheetOpen && (
-        <>
-          <div onClick={() => setAddSheetOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
-          <div onClick={e => e.stopPropagation()} style={{
-            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-            padding: '0 0 env(safe-area-inset-bottom, 24px)', zIndex: 201,
-            boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-            animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
-          }}>
-            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-            <div style={{ padding: '16px 22px 20px' }}>
+      <BottomSheet isOpen={addSheetOpen} onClose={() => setAddSheetOpen(false)}>
+        <div style={{ padding: '16px 22px 20px' }}>
               <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
                 {addSheetDate && `${DAY_NAMES[addSheetDate.getDay() === 0 ? 6 : addSheetDate.getDay() - 1]}, ${addSheetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
               </div>
@@ -1464,27 +1424,16 @@ export default function ThisWeek({ appUser }) {
                 {adding ? 'Adding...' : 'Add to menu'}
               </button>
             </div>
-          </div>
-        </>
-      )}
+      </BottomSheet>
 
       {/* ── Meal Edit Sheet ──────────────────────────────────────── */}
-      {batchEditMealId && (() => {
-        const editMeal = meals.find(m => m.id === batchEditMealId)
-        if (!editMeal) return null
-        const currentBatch = editMeal.batch_multiplier || 1
-        return (
-          <>
-            <div onClick={() => setBatchEditMealId(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 200 }} />
-            <div onClick={e => e.stopPropagation()} style={{
-              position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-              width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-              padding: '0 0 env(safe-area-inset-bottom, 24px)', zIndex: 201,
-              boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
-              animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
-            }}>
-              <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-              <div style={{ padding: '16px 22px 20px' }}>
+      <BottomSheet isOpen={!!batchEditMealId} onClose={() => setBatchEditMealId(null)}>
+        {batchEditMealId && (() => {
+          const editMeal = meals.find(m => m.id === batchEditMealId)
+          if (!editMeal) return null
+          const currentBatch = editMeal.batch_multiplier || 1
+          return (
+            <div style={{ padding: '16px 22px 20px' }}>
                 {/* 1. Meal name */}
                 <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '18px' }}>
                   {getMealName(editMeal)}
@@ -1644,29 +1593,19 @@ export default function ThisWeek({ appUser }) {
                   }}>Remove this meal →</button>
                 </div>
               </div>
-            </div>
-          </>
-        )
-      })()}
+          )
+        })()}
+      </BottomSheet>
 
       {/* ── Recipe Link Sheet (multi-select) ──────────────────────── */}
-      {linkSheetMeal && (() => {
-        const linkedSet = addSheetLinkOpen
-          ? new Set(addSheetRecipes.map(r => r.recipe_id))
-          : new Set((meals.find(m => m.id === linkSheetMeal.id)?.linkedRecipes || []).map(r => r.recipe_id))
-        const sheetMealName = addSheetLinkOpen ? (addInput.trim() || 'New meal') : getMealName(linkSheetMeal)
-        return (
-          <>
-            <div onClick={closeLinkSheet} style={{ position: 'fixed', inset: 0, background: 'rgba(44,36,23,0.45)', zIndex: 300 }} />
-            <div onClick={e => e.stopPropagation()} style={{
-              position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-              width: '100%', maxWidth: '430px', background: 'white', borderRadius: '20px 20px 0 0',
-              padding: '0 0 env(safe-area-inset-bottom, 24px)', zIndex: 301,
-              boxShadow: '0 -4px 32px rgba(44,36,23,0.18)', maxHeight: '70vh',
-              animation: 'sheetRise 0.28s cubic-bezier(0.22,1,0.36,1) both',
-            }}>
-              <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(200,185,160,0.6)', margin: '12px auto 0' }} />
-              <div style={{ padding: '16px 22px 20px' }}>
+      <BottomSheet isOpen={!!linkSheetMeal} onClose={closeLinkSheet} zIndex={300} maxHeight="70vh">
+        {linkSheetMeal && (() => {
+          const linkedSet = addSheetLinkOpen
+            ? new Set(addSheetRecipes.map(r => r.recipe_id))
+            : new Set((meals.find(m => m.id === linkSheetMeal.id)?.linkedRecipes || []).map(r => r.recipe_id))
+          const sheetMealName = addSheetLinkOpen ? (addInput.trim() || 'New meal') : getMealName(linkSheetMeal)
+          return (
+            <div style={{ padding: '16px 22px 20px' }}>
                 <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
                   Link recipes to {sheetMealName}
                 </div>
@@ -1724,10 +1663,9 @@ export default function ThisWeek({ appUser }) {
                   boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
                 }}>Done</button>
               </div>
-            </div>
-          </>
-        )
-      })()}
+          )
+        })()}
+      </BottomSheet>
 
       {/* ── Toast ────────────────────────────────────────────────── */}
       {toast && (
@@ -1741,7 +1679,6 @@ export default function ThisWeek({ appUser }) {
 
       <style>{`
         @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes sheetRise { from { transform: translateX(-50%) translateY(100%); } to { transform: translateX(-50%) translateY(0); } }
       `}</style>
 
       <BottomNav activeTab="week" />
