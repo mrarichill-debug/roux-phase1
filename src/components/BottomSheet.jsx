@@ -26,53 +26,61 @@ export default function BottomSheet({ isOpen, onClose, title, children, zIndex =
   const backdropRef = useRef(null)
   const sheetRef = useRef(null)
 
-  // ── Body scroll lock ──────────────────────────────────────────
+  // ── Body + page scroll lock ───────────────────────────────────
   useEffect(() => {
     if (!isOpen) return
 
     scrollYRef.current = window.scrollY
 
+    // Lock body (standard approach)
     document.body.style.position = 'fixed'
     document.body.style.width = '100%'
     document.body.style.top = `-${scrollYRef.current}px`
+
+    // Lock <html> element — catches iOS Safari cases where body fixed alone doesn't hold
+    document.documentElement.style.overflow = 'hidden'
+
+    // Lock any inner page scroll containers (ThisWeek, PantryList, etc.)
+    const pageContainers = document.querySelectorAll('.page-scroll-container')
+    pageContainers.forEach(el => el.style.overflow = 'hidden')
 
     return () => {
       document.body.style.position = ''
       document.body.style.width = ''
       document.body.style.top = ''
+      document.documentElement.style.overflow = ''
+      pageContainers.forEach(el => el.style.overflow = '')
       window.scrollTo(0, scrollYRef.current)
     }
   }, [isOpen])
 
-  // ── Touch event blocking on backdrop ──────────────────────────
-  const blockTouch = useCallback((e) => {
-    e.preventDefault()
-  }, [])
-
+  // ── Document-level touch scroll blocking ──────────────────────
+  // Intercepts ALL touchmove events when sheet is open.
+  // Only allows scrolling inside the sheet's own [data-sheet-scroll] area.
   useEffect(() => {
-    const el = backdropRef.current
-    if (!isOpen || !el) return
+    if (!isOpen) return
 
-    el.addEventListener('touchmove', blockTouch, { passive: false })
-    return () => el.removeEventListener('touchmove', blockTouch)
-  }, [isOpen, blockTouch])
+    function blockTouchMove(e) {
+      // Allow scrolling inside the sheet's scrollable content
+      const sheetScroll = sheetRef.current?.querySelector('[data-sheet-scroll]')
+      if (sheetScroll && sheetScroll.contains(e.target)) {
+        // At scroll boundaries, prevent scroll-chaining to body
+        const { scrollTop, scrollHeight, clientHeight } = sheetScroll
+        const atTop = scrollTop <= 0
+        const atBottom = scrollTop + clientHeight >= scrollHeight
+        const isScrollable = scrollHeight > clientHeight
 
-  // ── Prevent scroll-chaining from inner content to body ────────
-  useEffect(() => {
-    const el = sheetRef.current
-    if (!isOpen || !el) return
-
-    function handleTouchMove(e) {
-      const scrollable = el.querySelector('[data-sheet-scroll]')
-      if (!scrollable) { e.preventDefault(); return }
-
-      const { scrollTop, scrollHeight, clientHeight } = scrollable
-      if (scrollHeight <= clientHeight) { e.preventDefault(); return }
-      if (scrollTop <= 0 && scrollTop + clientHeight >= scrollHeight) { e.preventDefault() }
+        if (!isScrollable || (atTop && atBottom)) {
+          e.preventDefault()
+        }
+        return
+      }
+      // Block all other touch scrolling (backdrop, body, page containers)
+      e.preventDefault()
     }
 
-    el.addEventListener('touchmove', handleTouchMove, { passive: false })
-    return () => el.removeEventListener('touchmove', handleTouchMove)
+    document.addEventListener('touchmove', blockTouchMove, { passive: false })
+    return () => document.removeEventListener('touchmove', blockTouchMove)
   }, [isOpen])
 
   if (!isOpen) return null

@@ -683,7 +683,7 @@ export default function PantryList({ appUser }) {
   )
 
   return (
-    <div style={{
+    <div className="page-scroll-container" style={{
       background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300,
       minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
       paddingBottom: 'calc(110px + env(safe-area-inset-bottom, 8px))',
