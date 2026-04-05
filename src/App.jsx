@@ -39,6 +39,9 @@ import CalendarConnect from './pages/CalendarConnect'
 const DevReset = import.meta.env.DEV
   ? lazy(() => import('./pages/DevReset'))
   : () => null
+import { ArcContext } from './context/ArcContext'
+import { getArcStage } from './lib/getArcStage'
+import { getArcColor } from './lib/getArcColor'
 import ProfileSheet from './components/ProfileSheet'
 import BottomSheet from './components/BottomSheet'
 import TopBar from './components/TopBar'
@@ -80,6 +83,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true) // true until initial auth check completes
   const [session, setSession] = useState(null)
   const [appUser, setAppUser] = useState(null)
+  const [arcStage, setArcStage] = useState(1)
   const isFetchingRef = useRef(false)
   const initialCheckDone = useRef(false)
 
@@ -234,6 +238,22 @@ export default function App() {
               if (error) console.warn('[Roux] Could not sync timezone:', error.message)
             })
         }
+
+        // Compute arc stage (deferred, never blocks app load)
+        Promise.all([
+          supabase.from('planned_meals').select('id', { count: 'exact', head: true }).eq('household_id', user.household_id).eq('status', 'planned'),
+          supabase.from('shopping_trips').select('id', { count: 'exact', head: true }).eq('household_id', user.household_id).not('receipt_photo_url', 'is', null),
+          supabase.from('meal_plans').select('id', { count: 'exact', head: true }).eq('household_id', user.household_id).not('reviewed_at', 'is', null),
+          supabase.from('planned_meals').select('id', { count: 'exact', head: true }).eq('household_id', user.household_id).eq('status', 'skipped'),
+        ]).then(([meals, receipts, weeks, skips]) => {
+          const stage = getArcStage({
+            mealsCount: meals.count ?? 0,
+            receiptsScanned: receipts.count ?? 0,
+            weeksClosedOut: weeks.count ?? 0,
+            skipsDetected: skips.count ?? 0,
+          })
+          setArcStage(stage)
+        }).catch(() => {}) // default 1 on failure
       }
     } catch (err) {
       console.error('[Roux] Failed to load app user:', err)
@@ -287,7 +307,9 @@ export default function App() {
         <DeclinedScreen />
       ) : (
         // ── Authenticated app ─────────────────────────────────────────────
-        <AuthenticatedApp appUser={appUser} setAppUser={setAppUser} />
+        <ArcContext.Provider value={{ stage: arcStage, color: getArcColor(arcStage) }}>
+          <AuthenticatedApp appUser={appUser} setAppUser={setAppUser} />
+        </ArcContext.Provider>
       )}
     </BrowserRouter>
   )

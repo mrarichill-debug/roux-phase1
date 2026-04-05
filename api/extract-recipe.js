@@ -5,6 +5,10 @@
  * Reads sage_model from app_config via service role key.
  */
 
+export const config = {
+  maxDuration: 60,
+}
+
 import Anthropic from '@anthropic-ai/sdk'
 import { getSageModelServer } from './_lib/getSageModel.js'
 
@@ -85,9 +89,9 @@ export default async function handler(req, res) {
     const model = await getSageModelServer()
     const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
 
-    // 25-second timeout — if Sage takes too long, fail gracefully
+    // 55-second timeout — under Vercel's 60s maxDuration limit
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('timeout')), 25000)
+      setTimeout(() => reject(new Error('timeout')), 55000)
     )
 
     async function extractWithRetry() {

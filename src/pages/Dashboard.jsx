@@ -15,8 +15,7 @@ import { getWeekDatesTZ, getWeekStartTZ, getDayOfWeekTZ, timeGreetingTZ } from '
 import BottomNav from '../components/BottomNav'
 import { getSageIntelligence } from '../lib/getSageIntelligence'
 import { getIntelligenceMessage } from '../lib/getIntelligenceMessage'
-import { getArcStage } from '../lib/getArcStage'
-import { getArcColor } from '../lib/getArcColor'
+import { useArc } from '../context/ArcContext'
 import { JOKES } from '../lib/jokes'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
@@ -55,6 +54,7 @@ function getMealName(meal) {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function Dashboard({ appUser }) {
+  const { color: arcColor, stage: arcStage } = useArc()
   const navigate = useNavigate()
 
   const [activePlan, setActivePlan]         = useState(null)
@@ -311,20 +311,6 @@ export default function Dashboard({ appUser }) {
     const newPrefs = { ...prefs, last_joke_index: jokeData.nextIdx, last_joke_shown: new Date().toISOString() }
     supabase.from('users').update({ preferences: newPrefs }).eq('id', appUser.id)
   }, [jokeData?.nextIdx])
-
-  // ── Arc stage + color (derived from already-fetched intelligence data) ──
-  const arcStage = useMemo(() => {
-    if (loading || !sageIntelligence) return 1
-    const score = sageIntelligence.score || { receipts: 0, reviews: 0, meals: 0, staples: 0 }
-    return getArcStage({
-      mealsCount: score.meals,
-      weeksClosedOut: score.reviews,
-      receiptsScanned: score.receipts,
-      skipsDetected: 0,
-    })
-  }, [loading, sageIntelligence])
-
-  const arcColor = getArcColor(arcStage)
 
   // Plan status text for greeting
   const plannedCount = Math.min(new Set(weekMeals.map(m => m.day_of_week)).size, 7)

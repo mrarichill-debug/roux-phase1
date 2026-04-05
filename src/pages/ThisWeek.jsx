@@ -18,7 +18,7 @@ import TopBar from '../components/TopBar'
 import SageNudgeCard from '../components/SageNudgeCard'
 import BottomSheet from '../components/BottomSheet'
 import BottomNav from '../components/BottomNav'
-import { getArcColor } from '../lib/getArcColor'
+import { useArc } from '../context/ArcContext'
 
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
@@ -33,7 +33,7 @@ const MEAL_TYPES = ['breakfast','lunch','dinner','other','eating_out']
 const MEAL_TYPE_LABELS = { dinner: 'Dinner', lunch: 'Lunch', breakfast: 'Breakfast', other: 'Other', eating_out: 'Eating Out' }
 
 export default function ThisWeek({ appUser }) {
-  const arcColor = getArcColor(1)
+  const { color: arcColor } = useArc()
   const navigate = useNavigate()
   const tz = appUser?.timezone || 'America/Chicago'
 

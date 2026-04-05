@@ -9,7 +9,7 @@ import { logActivity } from '../lib/activityLog'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import BottomSheet from '../components/BottomSheet'
-import { getArcColor } from '../lib/getArcColor'
+import { useArc } from '../context/ArcContext'
 
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
@@ -23,7 +23,7 @@ const sectionHeader = {
 }
 
 export default function Pantry({ appUser }) {
-  const arcColor = getArcColor(1)
+  const { color: arcColor } = useArc()
   const navigate = useNavigate()
   const [freezerItems, setFreezerItems] = useState([])
   const [pendingItems, setPendingItems] = useState([])

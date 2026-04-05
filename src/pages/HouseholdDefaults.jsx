@@ -9,7 +9,7 @@ import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import AddDayTypeSheet from '../components/AddDayTypeSheet'
 import BottomSheet from '../components/BottomSheet'
-import { getArcColor } from '../lib/getArcColor'
+import { useArc } from '../context/ArcContext'
 
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
@@ -48,7 +48,7 @@ const rowStyle = {
 }
 
 export default function HouseholdDefaults({ appUser }) {
-  const arcColor = getArcColor(1)
+  const { color: arcColor } = useArc()
   const navigate = useNavigate()
 
   const [defaultPattern, setDefaultPattern] = useState({ ...DEFAULT_DAY_TYPES })

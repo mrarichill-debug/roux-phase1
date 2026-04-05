@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { getArcColor } from '../lib/getArcColor'
+import { useArc } from '../context/ArcContext'
 import { SCHEME_NAMES } from '../lib/colorSchemes'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
@@ -61,7 +61,7 @@ const ICONS = {
 }
 
 export default function SettingsHub({ appUser }) {
-  const arcColor = getArcColor(1)
+  const { color: arcColor } = useArc()
   const navigate = useNavigate()
 
   const [householdName, setHouseholdName] = useState('')

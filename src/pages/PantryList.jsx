@@ -17,7 +17,7 @@ import BottomSheet from '../components/BottomSheet'
 import BottomNav from '../components/BottomNav'
 import SageNudgeCard from '../components/SageNudgeCard'
 import ShoppingOnboarding from '../components/ShoppingOnboarding'
-import { getArcColor } from '../lib/getArcColor'
+import { useArc } from '../context/ArcContext'
 
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
@@ -35,7 +35,7 @@ const TYPE_LABELS = { recipe: 'Recipe', manual: 'Added', staple: 'Staple', futur
 const sentenceCase = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1) : ''
 
 export default function PantryList({ appUser }) {
-  const arcColor = getArcColor(1)
+  const { color: arcColor } = useArc()
   const navigate = useNavigate()
   const tz = appUser?.timezone || 'America/Chicago'
 

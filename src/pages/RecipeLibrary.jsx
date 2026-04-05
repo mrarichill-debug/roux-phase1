@@ -13,7 +13,7 @@ import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import AddToPlanSheet from '../components/AddToPlanSheet'
 import BottomSheet from '../components/BottomSheet'
-import { getArcColor } from '../lib/getArcColor'
+import { useArc } from '../context/ArcContext'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -58,7 +58,7 @@ function getTotalMinutes(r) {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function RecipeLibrary({ appUser }) {
-  const arcColor = getArcColor(1)
+  const { color: arcColor } = useArc()
   const navigate  = useNavigate()
   const location  = useLocation()
 
@@ -602,7 +602,7 @@ export default function RecipeLibrary({ appUser }) {
 
 // ── Recipe Grid Card ───────────────────────────────────────────────────────────
 function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWeek, onToggleFavorite, primaryTag }) {
-  const arcColor = getArcColor(1)
+  const { color: arcColor } = useArc()
   const total    = getTotalMinutes(recipe)
   const timeStr  = total > 0 ? formatTime(total) : null
   const catLabel = primaryTag || displayCategory(recipe.category)

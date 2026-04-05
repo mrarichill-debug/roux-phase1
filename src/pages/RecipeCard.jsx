@@ -11,7 +11,7 @@ import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import AddToPlanSheet from '../components/AddToPlanSheet'
 import BottomSheet from '../components/BottomSheet'
-import { getArcColor } from '../lib/getArcColor'
+import { useArc } from '../context/ArcContext'
 
 const C = {
   forest: '#3D6B4F', sage: '#7A8C6E', honey: '#C49A3C',
@@ -66,7 +66,7 @@ const viewedThisSession = new Set()
 
 // ── Main ────────────────────────────────────────────────────────────────────
 export default function RecipeCard({ appUser }) {
-  const arcColor = getArcColor(1)
+  const { color: arcColor } = useArc()
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
@@ -588,7 +588,7 @@ const servesBtn = {
 
 // ── Sage Review Sheet ───────────────────────────────────────────────────────
 function SageReviewSheet({ open, onClose, recipe, recipeId, appUser, onResolved }) {
-  const arcColor = getArcColor(1)
+  const { color: arcColor } = useArc()
   const [resolved, setResolved] = useState(new Set())
 
   if (!open || !recipe?.sage_assist_content) return null

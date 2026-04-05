@@ -10,7 +10,7 @@ import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import BottomSheet from '../components/BottomSheet'
 import { COLOR_SCHEMES, SCHEME_NAMES } from '../lib/colorSchemes'
-import { getArcColor } from '../lib/getArcColor'
+import { useArc } from '../context/ArcContext'
 
 const C = {
   forest: '#3D6B4F', forestDk: '#2E5038', sage: '#7A8C6E',
@@ -34,7 +34,7 @@ const rowStyle = {
 }
 
 export default function Profile({ appUser }) {
-  const arcColor = getArcColor(1)
+  const { color: arcColor } = useArc()
   const navigate = useNavigate()
 
   const [loading, setLoading] = useState(true)
@@ -1015,7 +1015,7 @@ export default function Profile({ appUser }) {
 
 // ── Toggle Switch ─────────────────────────────────────────────────────────────
 function ToggleSwitch({ on, onToggle }) {
-  const arcColor = getArcColor(1)
+  const { color: arcColor } = useArc()
   return (
     <button onClick={onToggle} style={{
       width: '44px', height: '24px', borderRadius: '12px',

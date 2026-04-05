@@ -13,7 +13,7 @@ import BottomNav from '../components/BottomNav'
 import BottomSheet from '../components/BottomSheet'
 import WatermarkLayer from '../components/WatermarkLayer'
 import { getWeekStartTZ } from '../lib/dateUtils'
-import { getArcColor } from '../lib/getArcColor'
+import { useArc } from '../context/ArcContext'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -63,7 +63,7 @@ const SAGE_NUDGES = [
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function ShoppingList({ appUser }) {
-  const arcColor = getArcColor(1)
+  const { color: arcColor } = useArc()
   const navigate = useNavigate()
 
   // ── Data state ───────────────────────────────────────────────────────────────
@@ -855,6 +855,7 @@ function BudgetCol({ label, value, muted, color, pulsing }) {
 
 // ── List item ──────────────────────────────────────────────────────────────────
 function ListItem({ item, isLast, isExpanded, shoppingState, onTap, onGotIt, onAlreadyHave }) {
+  const { color: arcColor } = useArc()
   const isShopping    = shoppingState === 'shopping'
   const cbSize        = isShopping ? '30px' : '26px'
   const cbRadius      = isShopping ? '10px' : '8px'
@@ -934,7 +935,7 @@ function ListItem({ item, isLast, isExpanded, shoppingState, onTap, onGotIt, onA
               flex: 1, padding: '8px 0', borderRadius: '9px',
               fontSize: '12px', fontWeight: 500, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
-              background: 'rgba(61,107,79,0.1)', color: getArcColor(1),
+              background: 'rgba(61,107,79,0.1)', color: arcColor,
               border: '1px solid rgba(61,107,79,0.18)',
               transition: 'all 0.15s',
               fontFamily: "'Jost', sans-serif",
@@ -964,6 +965,7 @@ function ListItem({ item, isLast, isExpanded, shoppingState, onTap, onGotIt, onA
 
 // ── Got It item (checked, dimmed) ─────────────────────────────────────────────
 function GotItItem({ item, isLast, onUndo }) {
+  const { color: arcColor } = useArc()
   const qtyStr = [item.quantity, item.unit].filter(Boolean).join(' ')
   return (
     <div style={{
@@ -979,7 +981,7 @@ function GotItItem({ item, isLast, onUndo }) {
         title="Undo"
         style={{
           width: '26px', height: '26px', borderRadius: '8px',
-          background: getArcColor(1), border: 'none', flexShrink: 0,
+          background: arcColor, border: 'none', flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer',
         }}
@@ -1004,9 +1006,11 @@ function GotItItem({ item, isLast, onUndo }) {
 }
 
 // ── Small icon components ──────────────────────────────────────────────────────
-function SmallCheck({ color = getArcColor(1) }) {
+function SmallCheck({ color }) {
+  const { color: arcColor } = useArc()
+  const fill = color || arcColor
   return (
-    <svg viewBox="0 0 14 11" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 10 }}>
+    <svg viewBox="0 0 14 11" fill="none" stroke={fill} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 10 }}>
       <path d="M1 5.5L5 9.5L13 1.5" />
     </svg>
   )
