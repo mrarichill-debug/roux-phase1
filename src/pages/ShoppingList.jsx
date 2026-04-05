@@ -886,36 +886,32 @@ function ListItem({ item, isLast, isExpanded, onTap, onGotIt, onAlreadyHave }) {
 
         {/* Item body */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '14px', fontWeight: 400, color: '#2C2417', lineHeight: 1.3, marginBottom: '2px' }}>
-            {item.name}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', lineHeight: 1.3, marginBottom: '2px' }}>
+            <span style={{ fontSize: '14px', fontWeight: 400, color: '#2C2417' }}>
+              {item.name}
+            </span>
+            {qtyStr && (
+              <span style={{ fontSize: '12px', color: '#8C7B6B' }}>
+                ({qtyStr})
+              </span>
+            )}
             {item.is_recurring && (
-              <span style={{ fontSize: '11px', color: '#7A8C6E', opacity: 0.7, marginLeft: '6px' }}>↻</span>
+              <span style={{ fontSize: '11px', color: '#7A8C6E', opacity: 0.7 }}>↻</span>
             )}
           </div>
-          {(
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              {item.notes && (
-                <span style={{ fontSize: '11px', color: '#8B6F52', fontWeight: 300, fontStyle: 'italic' }}>
-                  {item.notes}
-                </span>
-              )}
+          {item.source_meal_name && (
+            <div style={{ fontSize: '11px', color: '#8C7B6B' }}>
+              {item.source_meal_name}
             </div>
           )}
         </div>
 
-        {/* Right: qty + price */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px', flexShrink: 0 }}>
-          {qtyStr && (
-            <div style={{ fontSize: '13px', color: '#2C2417', fontWeight: 400 }}>
-              {qtyStr}
-            </div>
-          )}
-          {item.estimated_price && (
-            <div style={{ fontSize: '11px', color: '#6B5B4E', fontWeight: 300 }}>
-              ~{formatPrice(item.estimated_price)}
-            </div>
-          )}
-        </div>
+        {/* Right: price */}
+        {item.estimated_price && (
+          <div style={{ fontSize: '11px', color: '#6B5B4E', fontWeight: 300, flexShrink: 0 }}>
+            ~{formatPrice(item.estimated_price)}
+          </div>
+        )}
       </div>
 
       {/* Action buttons — visible on tap */}
