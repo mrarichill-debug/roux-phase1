@@ -9,6 +9,7 @@ import { logActivity } from '../lib/activityLog'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import BottomSheet from '../components/BottomSheet'
+import { getArcColor } from '../lib/getArcColor'
 
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
@@ -22,6 +23,7 @@ const sectionHeader = {
 }
 
 export default function Pantry({ appUser }) {
+  const arcColor = getArcColor(1)
   const navigate = useNavigate()
   const [freezerItems, setFreezerItems] = useState([])
   const [pendingItems, setPendingItems] = useState([])
@@ -161,7 +163,7 @@ export default function Pantry({ appUser }) {
           {/* Family List — primary */}
           <button onClick={() => navigate('/pantry/list')} style={{
             padding: '20px', borderRadius: '14px', border: 'none', cursor: 'pointer',
-            background: C.forest, color: 'white', textAlign: 'left',
+            background: arcColor, color: 'white', textAlign: 'left',
             boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
             fontFamily: "'Jost', sans-serif", width: '100%',
           }}>
@@ -186,7 +188,7 @@ export default function Pantry({ appUser }) {
               background: '#F0EBE3', color: C.ink, textAlign: 'left',
               border: 'none', fontFamily: "'Jost', sans-serif",
             }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke={C.forest} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20, marginBottom: '8px' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke={arcColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20, marginBottom: '8px' }}>
                 <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
               </svg>
               <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '15px', fontWeight: 500, marginBottom: '2px' }}>Start a Trip</div>
@@ -242,7 +244,7 @@ export default function Pantry({ appUser }) {
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <button onClick={() => approvePending(item.id)} style={{
                       padding: '5px 10px', borderRadius: '8px', border: 'none',
-                      background: C.forest, color: 'white', fontSize: '11px', fontWeight: 500,
+                      background: arcColor, color: 'white', fontSize: '11px', fontWeight: 500,
                       cursor: 'pointer', fontFamily: "'Jost', sans-serif",
                     }}>Approve</button>
                     <button onClick={() => removePending(item.id)} style={{
@@ -307,9 +309,9 @@ export default function Pantry({ appUser }) {
                   setTripName(`${dayName} ${s.name} run`)
                 }} style={{
                   padding: '6px 14px', borderRadius: '10px', fontSize: '13px',
-                  border: tripStore === s.id ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                  border: tripStore === s.id ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
                   background: tripStore === s.id ? 'rgba(61,107,79,0.08)' : 'white',
-                  color: tripStore === s.id ? C.forest : C.ink,
+                  color: tripStore === s.id ? arcColor : C.ink,
                   cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontWeight: tripStore === s.id ? 500 : 400,
                 }}>{s.name}</button>
               ))}
@@ -319,7 +321,7 @@ export default function Pantry({ appUser }) {
           {/* Confirm */}
           <button onClick={createTrip} disabled={creatingTrip} style={{
             width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
-            background: C.forest, color: 'white', cursor: 'pointer',
+            background: arcColor, color: 'white', cursor: 'pointer',
             fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
             boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
           }}>

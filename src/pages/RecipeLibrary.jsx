@@ -13,6 +13,7 @@ import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import AddToPlanSheet from '../components/AddToPlanSheet'
 import BottomSheet from '../components/BottomSheet'
+import { getArcColor } from '../lib/getArcColor'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -57,6 +58,7 @@ function getTotalMinutes(r) {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function RecipeLibrary({ appUser }) {
+  const arcColor = getArcColor(1)
   const navigate  = useNavigate()
   const location  = useLocation()
 
@@ -466,7 +468,7 @@ export default function RecipeLibrary({ appUser }) {
           style={{
             position: 'fixed', bottom: 'calc(58px + env(safe-area-inset-bottom, 8px))', right: '20px',
             width: '56px', height: '56px', borderRadius: '50%',
-            background: C.forest, border: 'none', cursor: 'pointer',
+            background: arcColor, border: 'none', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
             zIndex: 50,
@@ -506,9 +508,9 @@ export default function RecipeLibrary({ appUser }) {
                     return (
                       <button key={tag.id} onClick={() => setActiveTags(prev => { const n = new Set(prev); n.has(tag.name) ? n.delete(tag.name) : n.add(tag.name); return n })} style={{
                         padding: '6px 14px', borderRadius: '20px',
-                        border: isActive ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                        border: isActive ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
                         background: isActive ? 'rgba(61,107,79,0.08)' : 'white',
-                        color: isActive ? C.forest : C.ink,
+                        color: isActive ? arcColor : C.ink,
                         fontFamily: "'Jost', sans-serif", fontSize: '13px',
                         fontWeight: isActive ? 500 : 400, cursor: 'pointer',
                       }}>{tag.name}</button>
@@ -525,9 +527,9 @@ export default function RecipeLibrary({ appUser }) {
                         return (
                           <button key={tag.id} onClick={() => setActiveTags(prev => { const n = new Set(prev); n.has(tag.name) ? n.delete(tag.name) : n.add(tag.name); return n })} style={{
                             padding: '6px 14px', borderRadius: '20px',
-                            border: isActive ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                            border: isActive ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
                             background: isActive ? 'rgba(61,107,79,0.08)' : 'white',
-                            color: isActive ? C.forest : C.ink,
+                            color: isActive ? arcColor : C.ink,
                             fontFamily: "'Jost', sans-serif", fontSize: '13px',
                             fontWeight: isActive ? 500 : 400, cursor: 'pointer',
                           }}>{tag.name}</button>
@@ -543,9 +545,9 @@ export default function RecipeLibrary({ appUser }) {
                     return (
                       <button key={pill} onClick={() => toggleFilter(pill)} style={{
                         padding: '6px 14px', borderRadius: '20px',
-                        border: isActive ? `1.5px solid ${C.forest}` : `1px solid ${C.honey}`,
+                        border: isActive ? `1.5px solid ${arcColor}` : `1px solid ${C.honey}`,
                         background: isActive ? 'rgba(61,107,79,0.08)' : 'white',
-                        color: isActive ? C.forest : C.ink,
+                        color: isActive ? arcColor : C.ink,
                         fontFamily: "'Jost', sans-serif", fontSize: '13px',
                         fontWeight: isActive ? 500 : 400, cursor: 'pointer',
                       }}>{pill}</button>
@@ -558,7 +560,7 @@ export default function RecipeLibrary({ appUser }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <button onClick={() => setFilterSheetOpen(false)} style={{
                   width: '100%', padding: '14px', borderRadius: '12px',
-                  background: C.forest, color: 'white', border: 'none',
+                  background: arcColor, color: 'white', border: 'none',
                   fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
                   cursor: 'pointer',
                 }}>
@@ -592,6 +594,7 @@ export default function RecipeLibrary({ appUser }) {
 
 // ── Recipe Grid Card ───────────────────────────────────────────────────────────
 function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWeek, primaryTag }) {
+  const arcColor = getArcColor(1)
   const total    = getTotalMinutes(recipe)
   const timeStr  = total > 0 ? formatTime(total) : null
   const catLabel = primaryTag || displayCategory(recipe.category)
@@ -675,7 +678,7 @@ function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWe
           position: 'absolute', bottom: '10px', right: '12px',
           background: 'none', border: 'none', cursor: 'pointer',
           fontFamily: "'Jost', sans-serif", fontSize: '11px',
-          fontWeight: 300, color: C.forest, padding: 0,
+          fontWeight: 300, color: arcColor, padding: 0,
         }}
       >
         {selectMode ? 'Select' : '+ Plan'}

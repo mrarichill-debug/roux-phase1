@@ -18,6 +18,7 @@ import TopBar from '../components/TopBar'
 import SageNudgeCard from '../components/SageNudgeCard'
 import BottomSheet from '../components/BottomSheet'
 import BottomNav from '../components/BottomNav'
+import { getArcColor } from '../lib/getArcColor'
 
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
@@ -32,6 +33,7 @@ const MEAL_TYPES = ['breakfast','lunch','dinner','other','eating_out']
 const MEAL_TYPE_LABELS = { dinner: 'Dinner', lunch: 'Lunch', breakfast: 'Breakfast', other: 'Other', eating_out: 'Eating Out' }
 
 export default function ThisWeek({ appUser }) {
+  const arcColor = getArcColor(1)
   const navigate = useNavigate()
   const tz = appUser?.timezone || 'America/Chicago'
 
@@ -873,7 +875,7 @@ export default function ThisWeek({ appUser }) {
             }} style={{
               flex: '1 0 auto', minWidth: '44px', padding: '6px 8px', borderRadius: '10px',
               border: 'none', cursor: 'pointer', textAlign: 'center',
-              background: isSelected ? C.forest : 'white',
+              background: isSelected ? arcColor : 'white',
               color: isSelected ? 'white' : C.ink,
               boxShadow: isSelected ? '0 2px 8px rgba(61,107,79,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
               fontFamily: "'Jost', sans-serif",
@@ -918,7 +920,7 @@ export default function ThisWeek({ appUser }) {
               <div style={{ textAlign: 'right', marginTop: '10px' }}>
                 <button onClick={dismissHint} style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  fontSize: '13px', color: C.forest, fontWeight: 500,
+                  fontSize: '13px', color: arcColor, fontWeight: 500,
                   fontFamily: "'Jost', sans-serif",
                 }}>Got it →</button>
               </div>
@@ -986,7 +988,7 @@ export default function ThisWeek({ appUser }) {
             return (
               <div key={dowKey} id={`day-${dowKey}`} style={{
                 background: 'white', borderRadius: '14px', marginBottom: '12px',
-                border: isToday ? `1.5px solid ${C.forest}` : '1px solid rgba(200,185,160,0.45)',
+                border: isToday ? `1.5px solid ${arcColor}` : '1px solid rgba(200,185,160,0.45)',
                 overflow: 'hidden',
                 scrollMarginTop: '145px',
                 animation: `fadeUp 0.35s ease ${0.02 + i * 0.03}s both`,
@@ -995,7 +997,7 @@ export default function ThisWeek({ appUser }) {
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '10px 14px',
-                  background: isToday ? C.forest : 'transparent',
+                  background: isToday ? arcColor : 'transparent',
                   color: isToday ? 'white' : C.ink,
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1080,7 +1082,7 @@ export default function ThisWeek({ appUser }) {
                         }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontSize: '14px', fontWeight: 500, color: meal.status === 'cooked' ? C.sage : (meal.status === 'eating_out' || meal.entry_type === 'eating_out') ? C.driftwood : meal.linkedRecipes?.length > 0 ? C.forest : C.ink }}>
+                              <span style={{ fontSize: '14px', fontWeight: 500, color: meal.status === 'cooked' ? C.sage : (meal.status === 'eating_out' || meal.entry_type === 'eating_out') ? C.driftwood : meal.linkedRecipes?.length > 0 ? arcColor : C.ink }}>
                                 {meal.status === 'cooked' && <span style={{ color: C.sage }}>✓ </span>}
                                 {(meal.status === 'eating_out' || meal.entry_type === 'eating_out') && <span>🍽️ </span>}
                                 {getMealName(meal)}
@@ -1091,7 +1093,7 @@ export default function ThisWeek({ appUser }) {
                                 </span>
                               )}
                               {meal.batch_multiplier && meal.batch_multiplier !== 1 && meal.entry_type !== 'eating_out' && (
-                                <span style={{ fontSize: '10px', fontWeight: 600, color: C.forest, fontFamily: "'Jost', sans-serif" }}>
+                                <span style={{ fontSize: '10px', fontWeight: 600, color: arcColor, fontFamily: "'Jost', sans-serif" }}>
                                   {formatMultiplierBadge(meal.batch_multiplier)}
                                 </span>
                               )}
@@ -1121,13 +1123,13 @@ export default function ThisWeek({ appUser }) {
                               {sageMatches.map(match => (
                                 <button key={match.recipe_id} onClick={() => linkRecipeToMeal(meal.id, match.recipe_id, match.recipe_name)} style={{
                                   padding: '5px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 500,
-                                  background: C.forest, color: 'white', border: 'none', cursor: 'pointer',
+                                  background: arcColor, color: 'white', border: 'none', cursor: 'pointer',
                                   fontFamily: "'Jost', sans-serif",
                                 }}>{match.recipe_name}</button>
                               ))}
                               <button onClick={() => navigate('/save-recipe', { state: { returnTo: 'week', plannedMealId: meal.id, mealName: getMealName(meal) } })} style={{
                                 padding: '5px 10px', borderRadius: '8px', fontSize: '11px',
-                                background: 'none', color: C.forest, border: `1px solid ${C.forest}`,
+                                background: 'none', color: arcColor, border: `1px solid ${arcColor}`,
                                 cursor: 'pointer', fontFamily: "'Jost', sans-serif",
                               }}>Save new recipe</button>
                               <button onClick={() => dismissSageMatch(meal.id)} style={{
@@ -1151,7 +1153,7 @@ export default function ThisWeek({ appUser }) {
                             <div style={{ display: 'flex', gap: '6px' }}>
                               <button onClick={() => navigate('/save-recipe', { state: { returnTo: 'week', plannedMealId: meal.id, mealName: getMealName(meal) } })} style={{
                                 padding: '5px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 500,
-                                background: C.forest, color: 'white', border: 'none', cursor: 'pointer',
+                                background: arcColor, color: 'white', border: 'none', cursor: 'pointer',
                                 fontFamily: "'Jost', sans-serif",
                               }}>Save a recipe</button>
                               <button onClick={() => dismissSageMatch(meal.id)} style={{
@@ -1172,7 +1174,7 @@ export default function ThisWeek({ appUser }) {
                   width: '100%', padding: dayMeals.length > 0 ? '8px 14px 10px' : '14px',
                   background: 'none', border: 'none', cursor: 'pointer',
                   fontSize: dayMeals.length > 0 ? '12px' : '13px',
-                  color: C.forest, fontWeight: 400,
+                  color: arcColor, fontWeight: 400,
                   fontFamily: "'Jost', sans-serif",
                   textAlign: 'left',
                   borderTop: dayMeals.length > 0 ? 'none' : `1px dashed ${C.linen}`,
@@ -1190,7 +1192,7 @@ export default function ThisWeek({ appUser }) {
         <div style={{ padding: '0 22px 12px' }}>
           <button onClick={shoppingInjected ? () => navigate('/pantry/list') : () => setShareSheetOpen(true)} disabled={injecting} style={{
             width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
-            background: C.forest, color: 'white', cursor: 'pointer',
+            background: arcColor, color: 'white', cursor: 'pointer',
             fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
             boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
           }}>{categorizing ? 'Sage is organizing your ingredients…' : injecting ? 'Building...' : shoppingInjected ? 'View my list →' : 'Build my list →'}</button>
@@ -1209,7 +1211,7 @@ export default function ThisWeek({ appUser }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <button onClick={() => removeMealWithIngredients(ingredientDialog.mealId, ingredientDialog.mealName)} style={{
               width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
-              background: C.forest, color: 'white', cursor: 'pointer',
+              background: arcColor, color: 'white', cursor: 'pointer',
               fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
             }}>Yes, remove ingredients</button>
             <button onClick={() => softDeleteMeal(ingredientDialog.mealId, ingredientDialog.mealName, true)} style={{
@@ -1249,7 +1251,7 @@ export default function ThisWeek({ appUser }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <button onClick={buildShoppingList} disabled={injecting} style={{
               width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
-              background: C.forest, color: 'white', cursor: 'pointer',
+              background: arcColor, color: 'white', cursor: 'pointer',
               fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
               boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
             }}>{categorizing ? 'Sage is organizing your ingredients…' : injecting ? 'Building...' : 'Build my list →'}</button>
@@ -1286,7 +1288,7 @@ export default function ThisWeek({ appUser }) {
                       setMealsVsRecipesDismissed(true)
                     }} style={{
                       background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                      fontSize: '12px', color: C.forest, fontWeight: 500, fontFamily: "'Jost', sans-serif",
+                      fontSize: '12px', color: arcColor, fontWeight: 500, fontFamily: "'Jost', sans-serif",
                     }}>Got it, don't show again</button>
                     <button onClick={() => setAddSheetOpen(false)} style={{
                       background: 'none', border: 'none', cursor: 'pointer', padding: 0,
@@ -1338,9 +1340,9 @@ export default function ThisWeek({ appUser }) {
                 {MEAL_TYPES.map(mt => (
                   <button key={mt} onClick={() => setAddMealType(mt)} style={{
                     flex: 1, padding: '8px', borderRadius: '10px', fontSize: '12px',
-                    border: addMealType === mt ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                    border: addMealType === mt ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
                     background: addMealType === mt ? 'rgba(61,107,79,0.08)' : 'white',
-                    color: addMealType === mt ? C.forest : C.ink,
+                    color: addMealType === mt ? arcColor : C.ink,
                     cursor: 'pointer', fontFamily: "'Jost', sans-serif",
                     fontWeight: addMealType === mt ? 500 : 400,
                   }}>{MEAL_TYPE_LABELS[mt]}</button>
@@ -1374,7 +1376,7 @@ export default function ThisWeek({ appUser }) {
                         <span key={lr.recipe_id} style={{
                           display: 'inline-flex', alignItems: 'center', gap: '4px',
                           padding: '5px 10px', borderRadius: '8px', fontSize: '12px',
-                          background: 'rgba(61,107,79,0.08)', color: C.forest,
+                          background: 'rgba(61,107,79,0.08)', color: arcColor,
                           fontFamily: "'Jost', sans-serif", fontWeight: 500,
                         }}>
                           {lr.recipe_name}
@@ -1401,9 +1403,9 @@ export default function ThisWeek({ appUser }) {
                     {BATCH_OPTIONS.map(val => (
                       <button key={val} onClick={() => setAddBatchMultiplier(val)} style={{
                         flex: 1, padding: '8px', borderRadius: '10px', fontSize: '13px',
-                        border: addBatchMultiplier === val ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                        border: addBatchMultiplier === val ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
                         background: addBatchMultiplier === val ? 'rgba(61,107,79,0.08)' : 'white',
-                        color: addBatchMultiplier === val ? C.forest : C.ink,
+                        color: addBatchMultiplier === val ? arcColor : C.ink,
                         cursor: 'pointer', fontFamily: "'Jost', sans-serif",
                         fontWeight: addBatchMultiplier === val ? 600 : 400,
                       }}>{BATCH_LABELS[val]}</button>
@@ -1415,7 +1417,7 @@ export default function ThisWeek({ appUser }) {
               {/* Add button */}
               <button onClick={addMeal} disabled={!addInput.trim() || adding} style={{
                 width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
-                background: addInput.trim() ? C.forest : C.linen,
+                background: addInput.trim() ? arcColor : C.linen,
                 color: addInput.trim() ? 'white' : C.driftwood,
                 cursor: addInput.trim() ? 'pointer' : 'default',
                 fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
@@ -1448,7 +1450,7 @@ export default function ThisWeek({ appUser }) {
                         <span key={lr.recipe_id} style={{
                           display: 'inline-flex', alignItems: 'center', gap: '4px',
                           padding: '5px 10px', borderRadius: '8px', fontSize: '12px',
-                          background: 'rgba(61,107,79,0.08)', color: C.forest,
+                          background: 'rgba(61,107,79,0.08)', color: arcColor,
                           fontFamily: "'Jost', sans-serif", fontWeight: 500,
                         }}>
                           {lr.recipe_name}
@@ -1472,7 +1474,7 @@ export default function ThisWeek({ appUser }) {
                     <div style={{ display: 'flex', gap: '8px', marginBottom: showAteOutInput ? '10px' : 0 }}>
                       <button onClick={() => markAsCooked(editMeal.id)} style={{
                         flex: 1, padding: '12px', borderRadius: '12px',
-                        border: `1.5px solid ${C.forest}`, background: 'white', color: C.forest,
+                        border: `1.5px solid ${arcColor}`, background: 'white', color: arcColor,
                         cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                       }}>✓ Cooked</button>
@@ -1496,7 +1498,7 @@ export default function ThisWeek({ appUser }) {
                         </div>
                         <button onClick={() => markAsAteOut(editMeal.id)} style={{
                           padding: '10px 16px', borderRadius: '10px', border: 'none',
-                          background: C.forest, color: 'white', cursor: 'pointer',
+                          background: arcColor, color: 'white', cursor: 'pointer',
                           fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
                         }}>Save</button>
                         <button onClick={() => { setAteOutInput(''); markAsAteOut(editMeal.id) }} style={{
@@ -1547,7 +1549,7 @@ export default function ThisWeek({ appUser }) {
                             </div>
                             <button onClick={() => saveActualCost(editMeal.id)} disabled={!actualCostInput.trim()} style={{
                               padding: '10px 16px', borderRadius: '10px', border: 'none',
-                              background: actualCostInput.trim() ? C.forest : C.linen, color: actualCostInput.trim() ? 'white' : C.driftwood,
+                              background: actualCostInput.trim() ? arcColor : C.linen, color: actualCostInput.trim() ? 'white' : C.driftwood,
                               cursor: actualCostInput.trim() ? 'pointer' : 'default',
                               fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
                             }}>Save</button>
@@ -1568,9 +1570,9 @@ export default function ThisWeek({ appUser }) {
                   {BATCH_OPTIONS.map(val => (
                     <button key={val} onClick={() => changeBatchMultiplier(batchEditMealId, val)} style={{
                       flex: 1, padding: '6px 10px', height: '32px', borderRadius: '8px', fontSize: '13px',
-                      border: currentBatch === val ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                      border: currentBatch === val ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
                       background: currentBatch === val ? 'rgba(61,107,79,0.08)' : 'white',
-                      color: currentBatch === val ? C.forest : C.ink,
+                      color: currentBatch === val ? arcColor : C.ink,
                       cursor: 'pointer', fontFamily: "'Jost', sans-serif",
                       fontWeight: currentBatch === val ? 600 : 400,
                     }}>{BATCH_LABELS[val]}</button>
@@ -1580,7 +1582,7 @@ export default function ThisWeek({ appUser }) {
                 {/* 5. Done button */}
                 <button onClick={() => setBatchEditMealId(null)} style={{
                   width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
-                  background: C.forest, color: 'white', cursor: 'pointer',
+                  background: arcColor, color: 'white', cursor: 'pointer',
                   fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
                   boxShadow: '0 4px 16px rgba(30,55,35,0.25)', marginBottom: '16px',
                 }}>Done</button>
@@ -1635,13 +1637,13 @@ export default function ThisWeek({ appUser }) {
                         cursor: 'pointer', textAlign: 'left', fontFamily: "'Jost', sans-serif",
                       }}>
                         {isLinked ? (
-                          <div style={{ width: 18, height: 18, borderRadius: '4px', background: C.forest, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <div style={{ width: 18, height: 18, borderRadius: '4px', background: arcColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}><path d="M20 6L9 17l-5-5"/></svg>
                           </div>
                         ) : (
                           <div style={{ width: 18, height: 18, borderRadius: '4px', border: `1.5px solid ${C.linen}`, flexShrink: 0 }} />
                         )}
-                        <span style={{ fontSize: '14px', color: isLinked ? C.forest : C.ink, fontWeight: isLinked ? 500 : 300 }}>{r.name}</span>
+                        <span style={{ fontSize: '14px', color: isLinked ? arcColor : C.ink, fontWeight: isLinked ? 500 : 300 }}>{r.name}</span>
                       </button>
                     )
                   })}
@@ -1653,12 +1655,12 @@ export default function ThisWeek({ appUser }) {
                   navigate('/save-recipe', { state: { returnTo: 'week', mealName: sheetMealName } })
                 }} style={{
                   background: 'none', border: 'none', cursor: 'pointer', padding: '10px 0 0',
-                  fontSize: '13px', color: C.forest, fontFamily: "'Jost', sans-serif", fontWeight: 400,
+                  fontSize: '13px', color: arcColor, fontFamily: "'Jost', sans-serif", fontWeight: 400,
                   width: '100%', textAlign: 'left',
                 }}>+ Save a new recipe</button>
                 <button onClick={closeLinkSheet} style={{
                   width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
-                  background: C.forest, color: 'white', cursor: 'pointer', marginTop: '12px',
+                  background: arcColor, color: 'white', cursor: 'pointer', marginTop: '12px',
                   fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
                   boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
                 }}>Done</button>
@@ -1671,7 +1673,7 @@ export default function ThisWeek({ appUser }) {
       {toast && (
         <div style={{
           position: 'fixed', top: '80px', left: '50%', transform: 'translateX(-50%)',
-          background: C.forest, color: 'white', padding: '10px 22px', borderRadius: '10px',
+          background: arcColor, color: 'white', padding: '10px 22px', borderRadius: '10px',
           fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
           zIndex: 300, boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
         }}>{toast}</div>

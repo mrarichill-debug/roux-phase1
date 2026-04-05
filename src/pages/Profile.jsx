@@ -10,6 +10,7 @@ import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import BottomSheet from '../components/BottomSheet'
 import { COLOR_SCHEMES, SCHEME_NAMES } from '../lib/colorSchemes'
+import { getArcColor } from '../lib/getArcColor'
 
 const C = {
   forest: '#3D6B4F', forestDk: '#2E5038', sage: '#7A8C6E',
@@ -33,6 +34,7 @@ const rowStyle = {
 }
 
 export default function Profile({ appUser }) {
+  const arcColor = getArcColor(1)
   const navigate = useNavigate()
 
   const [loading, setLoading] = useState(true)
@@ -438,7 +440,7 @@ export default function Profile({ appUser }) {
                   <input value={nameValue} onChange={e => setNameValue(e.target.value)} autoFocus
                     onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setEditingName(false) }}
                     style={{ flex: 1, padding: '8px 12px', border: `1px solid ${C.sage}`, borderRadius: '8px', fontFamily: "'Jost', sans-serif", fontSize: '14px', color: C.ink, outline: 'none', background: C.cream }} />
-                  <button onClick={saveName} style={{ fontSize: '12px', color: C.forest, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Save</button>
+                  <button onClick={saveName} style={{ fontSize: '12px', color: arcColor, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Save</button>
                   <button onClick={() => setEditingName(false)} style={{ fontSize: '12px', color: C.driftwoodSm, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Cancel</button>
                 </div>
               ) : (
@@ -447,7 +449,7 @@ export default function Profile({ appUser }) {
                     <div style={{ fontSize: '14px', color: C.ink }}>{displayName}</div>
                     <div style={{ fontSize: '11px', color: C.driftwoodSm }}>Name</div>
                   </div>
-                  <button onClick={() => setEditingName(true)} style={{ fontSize: '12px', color: C.forest, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Edit</button>
+                  <button onClick={() => setEditingName(true)} style={{ fontSize: '12px', color: arcColor, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Edit</button>
                 </>
               )}
             </div>
@@ -466,7 +468,7 @@ export default function Profile({ appUser }) {
                 <div style={{ fontSize: '14px', color: C.ink }}>••••••••</div>
                 <div style={{ fontSize: '11px', color: C.driftwoodSm }}>Password</div>
               </div>
-              <button onClick={sendPasswordReset} style={{ fontSize: '12px', color: resetSent ? C.driftwoodSm : C.forest, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>
+              <button onClick={sendPasswordReset} style={{ fontSize: '12px', color: resetSent ? C.driftwoodSm : arcColor, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>
                 {resetSent ? 'Sent ✓' : 'Reset'}
               </button>
             </div>
@@ -505,7 +507,7 @@ export default function Profile({ appUser }) {
                   <input value={homeValue} onChange={e => setHomeValue(e.target.value)} autoFocus
                     onKeyDown={e => { if (e.key === 'Enter') saveHomeName(); if (e.key === 'Escape') setEditingHome(false) }}
                     style={{ flex: 1, padding: '8px 12px', border: `1px solid ${C.sage}`, borderRadius: '8px', fontFamily: "'Jost', sans-serif", fontSize: '14px', color: C.ink, outline: 'none', background: C.cream }} />
-                  <button onClick={saveHomeName} style={{ fontSize: '12px', color: C.forest, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Save</button>
+                  <button onClick={saveHomeName} style={{ fontSize: '12px', color: arcColor, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Save</button>
                   <button onClick={() => { setEditingHome(false); setHomeValue(household.name) }} style={{ fontSize: '12px', color: C.driftwoodSm, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Cancel</button>
                 </div>
               ) : (
@@ -514,7 +516,7 @@ export default function Profile({ appUser }) {
                     <div style={{ fontSize: '14px', color: C.ink }}>{household?.name}</div>
                     <div style={{ fontSize: '11px', color: C.driftwoodSm }}>Home name</div>
                   </div>
-                  <button onClick={() => setEditingHome(true)} style={{ fontSize: '12px', color: C.forest, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Edit</button>
+                  <button onClick={() => setEditingHome(true)} style={{ fontSize: '12px', color: arcColor, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Edit</button>
                 </>
               )}
             </div>
@@ -574,7 +576,7 @@ export default function Profile({ appUser }) {
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '14px', color: C.ink }}>
                       {m.name}
-                      <span style={{ fontSize: isPet ? '13px' : '11px', color: isAdmin ? C.forest : C.driftwood, fontWeight: isAdmin ? 500 : 400, marginLeft: '8px' }}>
+                      <span style={{ fontSize: isPet ? '13px' : '11px', color: isAdmin ? arcColor : C.driftwood, fontWeight: isAdmin ? 500 : 400, marginLeft: '8px' }}>
                         {getMemberLabel(m)}
                       </span>
                     </div>
@@ -606,7 +608,7 @@ export default function Profile({ appUser }) {
             })}
             <button onClick={openAddMember} style={{
               width: '100%', padding: '12px', marginTop: '8px', fontSize: '13px',
-              fontFamily: "'Jost', sans-serif", fontWeight: 500, color: C.forest,
+              fontFamily: "'Jost', sans-serif", fontWeight: 500, color: arcColor,
               background: 'transparent', border: `1.5px dashed rgba(61,107,79,0.4)`,
               borderRadius: '10px', cursor: 'pointer', textAlign: 'center',
             }}>
@@ -622,7 +624,7 @@ export default function Profile({ appUser }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '14px', color: C.ink }}>{s.name}</span>
                   {s.is_primary && (
-                    <span style={{ fontSize: '9px', fontWeight: 500, color: C.forest, background: 'rgba(61,107,79,0.08)', border: '1px solid rgba(61,107,79,0.15)', padding: '2px 6px', borderRadius: '4px' }}>Default</span>
+                    <span style={{ fontSize: '9px', fontWeight: 500, color: arcColor, background: 'rgba(61,107,79,0.08)', border: '1px solid rgba(61,107,79,0.15)', padding: '2px 6px', borderRadius: '4px' }}>Default</span>
                   )}
                 </div>
                 {deleteStoreId === s.id ? (
@@ -642,7 +644,7 @@ export default function Profile({ appUser }) {
             ))}
             <button onClick={() => { setNewStoreName(''); setAddStoreOpen(true) }} style={{
               width: '100%', padding: '12px', marginTop: '8px', fontSize: '13px',
-              fontFamily: "'Jost', sans-serif", fontWeight: 500, color: C.forest,
+              fontFamily: "'Jost', sans-serif", fontWeight: 500, color: arcColor,
               background: 'transparent', border: `1.5px dashed rgba(61,107,79,0.4)`,
               borderRadius: '10px', cursor: 'pointer', textAlign: 'center',
             }}>
@@ -673,7 +675,7 @@ export default function Profile({ appUser }) {
                     <input value={editingTagName} onChange={e => setEditingTagName(e.target.value)} autoFocus
                       onKeyDown={e => { if (e.key === 'Enter') renameTag(tag.id); if (e.key === 'Escape') setEditingTagId(null) }}
                       style={{ flex: 1, padding: '6px 10px', fontSize: '14px', fontFamily: "'Jost', sans-serif", border: `1px solid ${C.sage}`, borderRadius: '8px', outline: 'none', color: C.ink, background: C.cream }} />
-                    <button onClick={() => renameTag(tag.id)} style={{ fontSize: '12px', color: C.forest, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Save</button>
+                    <button onClick={() => renameTag(tag.id)} style={{ fontSize: '12px', color: arcColor, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Save</button>
                     <button onClick={() => setEditingTagId(null)} style={{ fontSize: '12px', color: C.driftwoodSm, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Cancel</button>
                   </div>
                 ) : deleteTagConfirm === tag.id ? (
@@ -753,7 +755,7 @@ export default function Profile({ appUser }) {
             <div style={{ textAlign: 'center', padding: '12px 0' }}>
               <div style={{
                 fontFamily: "'Playfair Display', serif", fontSize: '32px', fontWeight: 600,
-                color: C.forest, letterSpacing: '8px', marginBottom: '6px',
+                color: arcColor, letterSpacing: '8px', marginBottom: '6px',
               }}>
                 {household?.invite_code || '------'}
               </div>
@@ -765,12 +767,12 @@ export default function Profile({ appUser }) {
               <button onClick={shareCode} style={{
                 flex: 1, padding: '10px', borderRadius: '10px', fontSize: '12px', fontWeight: 500,
                 fontFamily: "'Jost', sans-serif", cursor: 'pointer',
-                background: C.forest, color: 'white', border: 'none',
+                background: arcColor, color: 'white', border: 'none',
               }}>Share</button>
               <button onClick={copyCode} style={{
                 flex: 1, padding: '10px', borderRadius: '10px', fontSize: '12px', fontWeight: 500,
                 fontFamily: "'Jost', sans-serif", cursor: 'pointer',
-                background: 'none', color: C.forest, border: `1.5px solid rgba(61,107,79,0.4)`,
+                background: 'none', color: arcColor, border: `1.5px solid rgba(61,107,79,0.4)`,
               }}>Copy</button>
               <button onClick={() => setNewCodeConfirmOpen(true)} style={{
                 flex: 1, padding: '10px', borderRadius: '10px', fontSize: '12px', fontWeight: 500,
@@ -814,7 +816,7 @@ export default function Profile({ appUser }) {
               >
                 <div style={{
                   width: '38px', height: '22px', borderRadius: '11px',
-                  background: newMemberIsPet ? C.forest : C.linen,
+                  background: newMemberIsPet ? arcColor : C.linen,
                   position: 'relative', transition: 'background 0.2s',
                 }}>
                   <div style={{
@@ -847,9 +849,9 @@ export default function Profile({ appUser }) {
               <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '6px' }}>Role</div>
               {editMemberId && newMemberRole === 'admin' ? (
                 <div style={{ marginBottom: '14px' }}>
-                  <div style={{ fontSize: '13px', color: C.forest, fontWeight: 500, marginBottom: '8px' }}>Admin (locked)</div>
+                  <div style={{ fontSize: '13px', color: arcColor, fontWeight: 500, marginBottom: '8px' }}>Admin (locked)</div>
                   <button onClick={() => setTransferOpen(true)} style={{
-                    fontSize: '12px', color: C.forest, fontWeight: 500, background: 'none',
+                    fontSize: '12px', color: arcColor, fontWeight: 500, background: 'none',
                     border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif", padding: 0,
                   }}>
                     Transfer Admin to someone else →
@@ -865,8 +867,8 @@ export default function Profile({ appUser }) {
                     <button key={r.key} onClick={() => setNewMemberRole(r.key)} style={{
                       flex: 1, padding: '8px 6px', fontSize: '11px', fontFamily: "'Jost', sans-serif",
                       fontWeight: newMemberRole === r.key ? 500 : 400, borderRadius: '10px', cursor: 'pointer',
-                      border: `1.5px solid ${newMemberRole === r.key ? C.forest : C.linen}`,
-                      background: newMemberRole === r.key ? C.forest : 'transparent',
+                      border: `1.5px solid ${newMemberRole === r.key ? arcColor : C.linen}`,
+                      background: newMemberRole === r.key ? arcColor : 'transparent',
                       color: newMemberRole === r.key ? 'white' : C.ink, transition: 'all 0.15s',
                       textAlign: 'center',
                     }}>
@@ -879,7 +881,7 @@ export default function Profile({ appUser }) {
               )}
 
               <button onClick={editMemberId ? saveMemberEdit : addMember} disabled={!newMemberName.trim() || savingMember} style={{
-                width: '100%', padding: '14px', borderRadius: '12px', background: newMemberName.trim() ? C.forest : C.linen,
+                width: '100%', padding: '14px', borderRadius: '12px', background: newMemberName.trim() ? arcColor : C.linen,
                 color: newMemberName.trim() ? 'white' : C.driftwood, border: 'none', fontFamily: "'Jost', sans-serif",
                 fontSize: '14px', fontWeight: 500, cursor: newMemberName.trim() ? 'pointer' : 'default', marginBottom: '8px',
               }}>
@@ -902,7 +904,7 @@ export default function Profile({ appUser }) {
                   fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300, color: C.ink, outline: 'none', background: C.cream, boxSizing: 'border-box', marginBottom: '14px',
                 }} />
               <button onClick={addStore} disabled={!newStoreName.trim()} style={{
-                width: '100%', padding: '14px', borderRadius: '12px', background: newStoreName.trim() ? C.forest : C.linen,
+                width: '100%', padding: '14px', borderRadius: '12px', background: newStoreName.trim() ? arcColor : C.linen,
                 color: newStoreName.trim() ? 'white' : C.driftwood, border: 'none', fontFamily: "'Jost', sans-serif",
                 fontSize: '14px', fontWeight: 500, cursor: newStoreName.trim() ? 'pointer' : 'default', marginBottom: '8px',
               }}>Add Store</button>
@@ -937,7 +939,7 @@ export default function Profile({ appUser }) {
                     textAlign: 'left',
                   }}>
                     <span>{m.name}</span>
-                    <span style={{ fontSize: '11px', color: C.forest, fontWeight: 500 }}>Transfer →</span>
+                    <span style={{ fontSize: '11px', color: arcColor, fontWeight: 500 }}>Transfer →</span>
                   </button>
                 ))
               )}
@@ -956,7 +958,7 @@ export default function Profile({ appUser }) {
                 This will invalidate your current code. Anyone with the old code won't be able to use it.
               </div>
               <button onClick={confirmAndRefreshCode} style={{
-                width: '100%', background: C.forest, color: 'white', border: 'none',
+                width: '100%', background: arcColor, color: 'white', border: 'none',
                 borderRadius: '12px', padding: '14px', fontFamily: "'Jost', sans-serif",
                 fontSize: '14px', fontWeight: 500, cursor: 'pointer', marginBottom: '8px',
               }}>
@@ -995,7 +997,7 @@ export default function Profile({ appUser }) {
       {toastMsg && (
         <div style={{
           position: 'fixed', bottom: '100px', left: '50%', transform: 'translateX(-50%)',
-          background: C.forest, color: 'white', padding: '10px 20px',
+          background: arcColor, color: 'white', padding: '10px 20px',
           borderRadius: '10px', fontSize: '13px', fontWeight: 500,
           fontFamily: "'Jost', sans-serif", zIndex: 500,
           boxShadow: '0 4px 16px rgba(30,55,35,0.30)',
@@ -1013,11 +1015,12 @@ export default function Profile({ appUser }) {
 
 // ── Toggle Switch ─────────────────────────────────────────────────────────────
 function ToggleSwitch({ on, onToggle }) {
+  const arcColor = getArcColor(1)
   return (
     <button onClick={onToggle} style={{
       width: '44px', height: '24px', borderRadius: '12px',
       border: on ? 'none' : `1.5px solid ${C.linen}`,
-      background: on ? C.forest : C.cream,
+      background: on ? arcColor : C.cream,
       cursor: 'pointer', position: 'relative',
       transition: 'background 0.25s, border-color 0.25s',
       padding: 0, flexShrink: 0,

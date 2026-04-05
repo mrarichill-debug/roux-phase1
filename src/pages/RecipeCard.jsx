@@ -11,6 +11,7 @@ import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import AddToPlanSheet from '../components/AddToPlanSheet'
 import BottomSheet from '../components/BottomSheet'
+import { getArcColor } from '../lib/getArcColor'
 
 const C = {
   forest: '#3D6B4F', sage: '#7A8C6E', honey: '#C49A3C',
@@ -65,6 +66,7 @@ const viewedThisSession = new Set()
 
 // ── Main ────────────────────────────────────────────────────────────────────
 export default function RecipeCard({ appUser }) {
+  const arcColor = getArcColor(1)
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
@@ -284,7 +286,7 @@ export default function RecipeCard({ appUser }) {
             {descExpanded || recipe.description.length <= 100 ? recipe.description : (
               <>
                 {recipe.description.slice(0, 100)}…{' '}
-                <button onClick={() => setDescExpanded(true)} style={{ background: 'none', border: 'none', color: C.forest, cursor: 'pointer', fontSize: '12px', padding: 0, fontFamily: "'Jost', sans-serif" }}>more</button>
+                <button onClick={() => setDescExpanded(true)} style={{ background: 'none', border: 'none', color: arcColor, cursor: 'pointer', fontSize: '12px', padding: 0, fontFamily: "'Jost', sans-serif" }}>more</button>
               </>
             )}
           </div>
@@ -361,9 +363,9 @@ export default function RecipeCard({ appUser }) {
             padding: '14px', textAlign: 'center',
             fontFamily: "'Jost', sans-serif", fontSize: '12px',
             fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase',
-            color: activeTab === tab ? C.forest : C.driftwood,
+            color: activeTab === tab ? arcColor : C.driftwood,
             cursor: 'pointer', border: 'none', background: 'none',
-            borderBottom: activeTab === tab ? `2px solid ${C.forest}` : '2px solid transparent',
+            borderBottom: activeTab === tab ? `2px solid ${arcColor}` : '2px solid transparent',
             transition: 'color 0.2s cubic-bezier(0.22,1,0.36,1), border-color 0.2s cubic-bezier(0.22,1,0.36,1)',
           }}>
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -518,7 +520,7 @@ export default function RecipeCard({ appUser }) {
           <button onClick={() => navigate(`/recipe/${id}/edit`)} style={{
             background: 'none', border: 'none', cursor: 'pointer',
             fontFamily: "'Jost', sans-serif", fontSize: '13px',
-            color: C.forest, fontWeight: 300,
+            color: arcColor, fontWeight: 300,
           }}>
             Edit recipe
           </button>
@@ -586,6 +588,7 @@ const servesBtn = {
 
 // ── Sage Review Sheet ───────────────────────────────────────────────────────
 function SageReviewSheet({ open, onClose, recipe, recipeId, appUser, onResolved }) {
+  const arcColor = getArcColor(1)
   const [resolved, setResolved] = useState(new Set())
 
   if (!open || !recipe?.sage_assist_content) return null
@@ -649,14 +652,14 @@ function SageReviewSheet({ open, onClose, recipe, recipeId, appUser, onResolved 
                 <div style={{ fontSize: '13px', color: C.driftwood, fontWeight: 300, marginBottom: '6px', lineHeight: 1.4 }}>
                   {s.issue}
                 </div>
-                <div style={{ fontSize: '13px', color: C.forest, fontWeight: 400, marginBottom: '8px' }}>
+                <div style={{ fontSize: '13px', color: arcColor, fontWeight: 400, marginBottom: '8px' }}>
                   → {s.suggestion}
                 </div>
                 {!done && (
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button onClick={() => accept(i, s)} style={{
                       padding: '6px 14px', borderRadius: '8px', border: 'none',
-                      background: C.forest, color: 'white', fontSize: '12px', fontWeight: 500,
+                      background: arcColor, color: 'white', fontSize: '12px', fontWeight: 500,
                       fontFamily: "'Jost', sans-serif", cursor: 'pointer',
                     }}>Accept</button>
                     <button onClick={() => dismiss(i)} style={{

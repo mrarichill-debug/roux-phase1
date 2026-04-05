@@ -13,6 +13,7 @@ import BottomNav from '../components/BottomNav'
 import BottomSheet from '../components/BottomSheet'
 import WatermarkLayer from '../components/WatermarkLayer'
 import { getWeekStartTZ } from '../lib/dateUtils'
+import { getArcColor } from '../lib/getArcColor'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -62,6 +63,7 @@ const SAGE_NUDGES = [
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function ShoppingList({ appUser }) {
+  const arcColor = getArcColor(1)
   const navigate = useNavigate()
 
   // ── Data state ───────────────────────────────────────────────────────────────
@@ -373,7 +375,7 @@ export default function ShoppingList({ appUser }) {
           <button
             onClick={() => navigate('/thisweek')}
             style={{
-              background: C.forest, color: 'white', border: 'none',
+              background: arcColor, color: 'white', border: 'none',
               borderRadius: '12px', padding: '14px 28px',
               fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
               cursor: 'pointer', boxShadow: '0 3px 10px rgba(30,55,35,0.22)',
@@ -410,7 +412,7 @@ export default function ShoppingList({ appUser }) {
             onClick={shoppingState === 'building' ? startShopping : doneShopping}
             style={{
               width: '100%', padding: '14px', borderRadius: '12px',
-              background: C.forest, color: 'white', border: 'none',
+              background: arcColor, color: 'white', border: 'none',
               fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
               cursor: 'pointer', letterSpacing: '0.3px',
               boxShadow: '0 2px 10px rgba(61,107,79,0.28)',
@@ -434,7 +436,7 @@ export default function ShoppingList({ appUser }) {
                       borderRadius: '20px', whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0,
                       background: isActive ? 'rgba(122,140,110,0.10)' : 'white',
                       border: isActive ? `1px solid ${C.sage}` : '1px solid rgba(200,185,160,0.55)',
-                      color: isActive ? C.forest : C.driftwood,
+                      color: isActive ? arcColor : C.driftwood,
                       fontFamily: "'Jost', sans-serif", transition: 'all 0.15s',
                       boxShadow: '0 1px 3px rgba(80,60,30,0.06)',
                     }}
@@ -465,7 +467,7 @@ export default function ShoppingList({ appUser }) {
                     style={{
                       padding: '5px 10px', fontSize: '10px', fontWeight: 500,
                       borderRadius: '20px', cursor: newStoreName.trim() ? 'pointer' : 'default',
-                      border: 'none', background: C.forest, color: 'white',
+                      border: 'none', background: arcColor, color: 'white',
                       fontFamily: "'Jost', sans-serif", flexShrink: 0,
                     }}
                   >
@@ -528,7 +530,7 @@ export default function ShoppingList({ appUser }) {
               onClick={openReceiptSheet}
               style={{
                 width: '100%', padding: '14px', borderRadius: '12px',
-                background: C.forest, color: 'white',
+                background: arcColor, color: 'white',
                 fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
                 border: 'none', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
@@ -930,7 +932,7 @@ function ListItem({ item, isLast, isExpanded, shoppingState, onTap, onGotIt, onA
               flex: 1, padding: '8px 0', borderRadius: '9px',
               fontSize: '12px', fontWeight: 500, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
-              background: 'rgba(61,107,79,0.1)', color: '#3D6B4F',
+              background: 'rgba(61,107,79,0.1)', color: getArcColor(1),
               border: '1px solid rgba(61,107,79,0.18)',
               transition: 'all 0.15s',
               fontFamily: "'Jost', sans-serif",
@@ -975,7 +977,7 @@ function GotItItem({ item, isLast, onUndo }) {
         title="Undo"
         style={{
           width: '26px', height: '26px', borderRadius: '8px',
-          background: '#3D6B4F', border: 'none', flexShrink: 0,
+          background: getArcColor(1), border: 'none', flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer',
         }}
@@ -1000,7 +1002,7 @@ function GotItItem({ item, isLast, onUndo }) {
 }
 
 // ── Small icon components ──────────────────────────────────────────────────────
-function SmallCheck({ color = '#3D6B4F' }) {
+function SmallCheck({ color = getArcColor(1) }) {
   return (
     <svg viewBox="0 0 14 11" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 10 }}>
       <path d="M1 5.5L5 9.5L13 1.5" />

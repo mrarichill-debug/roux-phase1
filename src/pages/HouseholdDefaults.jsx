@@ -9,6 +9,7 @@ import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import AddDayTypeSheet from '../components/AddDayTypeSheet'
 import BottomSheet from '../components/BottomSheet'
+import { getArcColor } from '../lib/getArcColor'
 
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
@@ -47,6 +48,7 @@ const rowStyle = {
 }
 
 export default function HouseholdDefaults({ appUser }) {
+  const arcColor = getArcColor(1)
   const navigate = useNavigate()
 
   const [defaultPattern, setDefaultPattern] = useState({ ...DEFAULT_DAY_TYPES })
@@ -202,7 +204,7 @@ export default function HouseholdDefaults({ appUser }) {
             ))}
             <button onClick={() => setAddDtOpen(true)} style={{
               width: '100%', padding: '12px', marginTop: '8px', fontSize: '13px',
-              fontFamily: "'Jost', sans-serif", fontWeight: 500, color: C.forest,
+              fontFamily: "'Jost', sans-serif", fontWeight: 500, color: arcColor,
               background: 'transparent', border: `1.5px dashed rgba(61,107,79,0.4)`,
               borderRadius: '10px', cursor: 'pointer', textAlign: 'center',
             }}>
@@ -262,9 +264,9 @@ export default function HouseholdDefaults({ appUser }) {
                       autoFocus onKeyDown={e => { if (e.key === 'Enter') renameTag(tag.id); if (e.key === 'Escape') { setEditingTagId(null); setEditingTagName('') } }}
                       style={{
                         flex: 1, padding: '6px 10px', fontSize: '14px', fontFamily: "'Jost', sans-serif",
-                        border: `1px solid ${C.forest}`, borderRadius: '8px', outline: 'none', color: C.ink, background: C.cream,
+                        border: `1px solid ${arcColor}`, borderRadius: '8px', outline: 'none', color: C.ink, background: C.cream,
                       }} />
-                    <button onClick={() => renameTag(tag.id)} style={{ fontSize: '12px', color: C.forest, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Save</button>
+                    <button onClick={() => renameTag(tag.id)} style={{ fontSize: '12px', color: arcColor, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Save</button>
                     <button onClick={() => { setEditingTagId(null); setEditingTagName('') }} style={{ fontSize: '12px', color: C.driftwoodSm, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Cancel</button>
                   </div>
                 ) : deleteTagConfirm === tag.id ? (
@@ -335,7 +337,7 @@ export default function HouseholdDefaults({ appUser }) {
       {toastMsg && (
         <div style={{
           position: 'fixed', top: '80px', left: '50%',
-          background: C.forest, color: 'white', padding: '10px 22px', borderRadius: '10px',
+          background: arcColor, color: 'white', padding: '10px 22px', borderRadius: '10px',
           fontSize: '14px', fontWeight: 500, zIndex: 300, boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
           animation: 'toastIn 0.25s cubic-bezier(0.22,1,0.36,1) forwards',
         }}>

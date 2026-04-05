@@ -17,6 +17,7 @@ import BottomSheet from '../components/BottomSheet'
 import BottomNav from '../components/BottomNav'
 import SageNudgeCard from '../components/SageNudgeCard'
 import ShoppingOnboarding from '../components/ShoppingOnboarding'
+import { getArcColor } from '../lib/getArcColor'
 
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
@@ -34,6 +35,7 @@ const TYPE_LABELS = { recipe: 'Recipe', manual: 'Added', staple: 'Staple', futur
 const sentenceCase = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1) : ''
 
 export default function PantryList({ appUser }) {
+  const arcColor = getArcColor(1)
   const navigate = useNavigate()
   const tz = appUser?.timezone || 'America/Chicago'
 
@@ -700,7 +702,7 @@ export default function PantryList({ appUser }) {
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.ink, marginBottom: '8px' }}>No meals planned for this week</div>
           <button onClick={() => navigate('/thisweek')} style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: '14px', color: C.forest, fontWeight: 500, fontFamily: "'Jost', sans-serif",
+            fontSize: '14px', color: arcColor, fontWeight: 500, fontFamily: "'Jost', sans-serif",
           }}>Plan your week →</button>
         </div>
       )}
@@ -710,7 +712,7 @@ export default function PantryList({ appUser }) {
       <div style={{ padding: '10px 22px 6px', display: 'flex', gap: '10px', overflowX: 'auto' }}>
         <button onClick={openTripSheet} style={{
           padding: '12px 16px', borderRadius: '12px', cursor: 'pointer',
-          background: C.forest, color: 'white', textAlign: 'left',
+          background: arcColor, color: 'white', textAlign: 'left',
           border: 'none', fontFamily: "'Jost', sans-serif", flexShrink: 0,
           boxShadow: '0 2px 8px rgba(30,55,35,0.2)',
         }}>
@@ -774,7 +776,7 @@ export default function PantryList({ appUser }) {
 
         {grouped.map(group => (
           <div key={group.cat} style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.forest, marginBottom: '6px', marginTop: '24px', borderLeft: `3px solid ${C.forest}`, paddingLeft: '10px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: arcColor, marginBottom: '6px', marginTop: '24px', borderLeft: `3px solid ${arcColor}`, paddingLeft: '10px' }}>
               {group.label}
             </div>
             {group.items.map(item => {
@@ -802,7 +804,7 @@ export default function PantryList({ appUser }) {
                           <div style={{ fontSize: '11px', color: C.driftwood }}>
                             {[item.quantity, item.unit].filter(Boolean).join(' ')}
                             {batchVal && batchVal !== 1 && (
-                              <span style={{ fontSize: '9px', fontWeight: 600, color: C.forest, marginLeft: '4px' }}>
+                              <span style={{ fontSize: '9px', fontWeight: 600, color: arcColor, marginLeft: '4px' }}>
                                 {batchVal === 0.5 ? '×½' : batchVal === 1.5 ? '×1½' : `×${batchVal}`}
                               </span>
                             )}
@@ -859,7 +861,7 @@ export default function PantryList({ appUser }) {
                       }}>Just this week</button>
                       <button onClick={() => { setStapleSheetItem(item); setHaveItExpansion(null) }} style={{
                         flex: 1, padding: '8px', borderRadius: '8px', fontSize: '12px',
-                        border: `1px solid ${C.sage}`, background: 'rgba(122,140,110,0.06)', color: C.forest, cursor: 'pointer',
+                        border: `1px solid ${C.sage}`, background: 'rgba(122,140,110,0.06)', color: arcColor, cursor: 'pointer',
                         fontFamily: "'Jost', sans-serif", fontWeight: 500,
                       }}>It's a staple</button>
                     </div>
@@ -964,7 +966,7 @@ export default function PantryList({ appUser }) {
                     )}
                     {ctGrouped.map(group => (
                       <div key={group.cat} style={{ marginTop: '10px' }}>
-                        <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.forest, marginBottom: '4px', marginTop: '24px', borderLeft: `3px solid ${C.forest}`, paddingLeft: '10px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: arcColor, marginBottom: '4px', marginTop: '24px', borderLeft: `3px solid ${arcColor}`, paddingLeft: '10px' }}>
                           {group.label}
                         </div>
                         {group.items.map(item => (
@@ -999,9 +1001,9 @@ export default function PantryList({ appUser }) {
             {CATEGORY_ORDER.map(cat => (
               <button key={cat} onClick={() => { setAddCategory(cat); setManualCatPick(true); setShowCatPicker(false) }} style={{
                 padding: '3px 8px', borderRadius: '8px', fontSize: '10px',
-                border: addCategory === cat ? `1px solid ${C.forest}` : `1px solid ${C.linen}`,
+                border: addCategory === cat ? `1px solid ${arcColor}` : `1px solid ${C.linen}`,
                 background: addCategory === cat ? 'rgba(61,107,79,0.08)' : 'white',
-                color: addCategory === cat ? C.forest : C.ink, cursor: 'pointer',
+                color: addCategory === cat ? arcColor : C.ink, cursor: 'pointer',
                 fontFamily: "'Jost', sans-serif",
               }}>{CATEGORY_LABELS[cat]}</button>
             ))}
@@ -1021,7 +1023,7 @@ export default function PantryList({ appUser }) {
             }} />
           <button onClick={addItem} disabled={!addInput.trim() || adding} style={{
             width: '44px', height: '44px', borderRadius: '12px', border: 'none',
-            background: addInput.trim() ? C.forest : C.linen, color: addInput.trim() ? 'white' : C.driftwood,
+            background: addInput.trim() ? arcColor : C.linen, color: addInput.trim() ? 'white' : C.driftwood,
             cursor: addInput.trim() ? 'pointer' : 'default',
             display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 300,
           }}>+</button>
@@ -1054,7 +1056,7 @@ export default function PantryList({ appUser }) {
                           border: `1.5px solid ${C.linen}`, borderRadius: '10px', outline: 'none', color: C.ink }} />
                       <button onClick={addNewStore} disabled={!newStoreName.trim()} style={{
                         padding: '8px 14px', borderRadius: '10px', border: 'none', fontSize: '12px', fontWeight: 500,
-                        background: newStoreName.trim() ? C.forest : C.linen, color: newStoreName.trim() ? 'white' : C.driftwood,
+                        background: newStoreName.trim() ? arcColor : C.linen, color: newStoreName.trim() ? 'white' : C.driftwood,
                         cursor: newStoreName.trim() ? 'pointer' : 'default', fontFamily: "'Jost', sans-serif",
                       }}>Add</button>
                     </div>
@@ -1085,16 +1087,16 @@ export default function PantryList({ appUser }) {
                     <div style={{ display: 'flex', gap: '6px' }}>
                       <button onClick={() => toggleSecondWeek(1)} disabled={secondWeekLoading} style={{
                         padding: '6px 12px', borderRadius: '8px', fontSize: '12px',
-                        border: secondWeek?.offset === 1 ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                        border: secondWeek?.offset === 1 ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
                         background: secondWeek?.offset === 1 ? 'rgba(61,107,79,0.08)' : 'white',
-                        color: secondWeek?.offset === 1 ? C.forest : C.ink,
+                        color: secondWeek?.offset === 1 ? arcColor : C.ink,
                         cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontWeight: secondWeek?.offset === 1 ? 500 : 400,
                       }}>{secondWeekLoading ? '...' : secondWeek?.offset === 1 ? `✓ Next week` : '+ Next week'}</button>
                       <button onClick={() => toggleSecondWeek(-1)} disabled={secondWeekLoading} style={{
                         padding: '6px 12px', borderRadius: '8px', fontSize: '12px',
-                        border: secondWeek?.offset === -1 ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                        border: secondWeek?.offset === -1 ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
                         background: secondWeek?.offset === -1 ? 'rgba(61,107,79,0.08)' : 'white',
-                        color: secondWeek?.offset === -1 ? C.forest : C.ink,
+                        color: secondWeek?.offset === -1 ? arcColor : C.ink,
                         cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontWeight: secondWeek?.offset === -1 ? 500 : 400,
                       }}>{secondWeek?.offset === -1 ? `✓ Last week` : '+ Last week'}</button>
                     </div>
@@ -1105,7 +1107,7 @@ export default function PantryList({ appUser }) {
 
                   <button onClick={selectAllUnassigned} style={{
                     background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', marginBottom: '10px',
-                    fontSize: '12px', color: C.forest, fontWeight: 500, fontFamily: "'Jost', sans-serif",
+                    fontSize: '12px', color: arcColor, fontWeight: 500, fontFamily: "'Jost', sans-serif",
                   }}>Select all unassigned</button>
 
                   {CATEGORY_ORDER.map(cat => {
@@ -1133,7 +1135,7 @@ export default function PantryList({ appUser }) {
                               <div style={{
                                 width: '20px', height: '20px', borderRadius: '6px', flexShrink: 0,
                                 border: isSelected ? 'none' : '1.5px solid rgba(200,185,160,0.7)',
-                                background: isSelected ? C.forest : 'white',
+                                background: isSelected ? arcColor : 'white',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 fontSize: '11px', color: 'white',
                               }}>{isSelected ? '✓' : ''}</div>
@@ -1162,7 +1164,7 @@ export default function PantryList({ appUser }) {
                     </div>
                     <button onClick={saveTrip} disabled={creatingTrip || selectedTripItems.size === 0} style={{
                       width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
-                      background: selectedTripItems.size > 0 ? C.forest : C.linen,
+                      background: selectedTripItems.size > 0 ? arcColor : C.linen,
                       color: selectedTripItems.size > 0 ? 'white' : C.driftwood,
                       cursor: selectedTripItems.size > 0 ? 'pointer' : 'default',
                       fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
@@ -1208,7 +1210,7 @@ export default function PantryList({ appUser }) {
 
                 <button onClick={() => setReassignItem(null)} style={{
                   width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
-                  background: C.forest, color: 'white', cursor: 'pointer',
+                  background: arcColor, color: 'white', cursor: 'pointer',
                   fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
                   boxShadow: '0 4px 16px rgba(30,55,35,0.25)', marginBottom: '12px',
                 }}>Done</button>

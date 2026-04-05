@@ -5,6 +5,7 @@
  * tier="insight" — intelligent suggestions, predictions (forest green, premium)
  * Default tier is "notice" for backward compatibility.
  */
+import { getArcColor } from '../lib/getArcColor'
 
 const C = {
   sage: '#7A8C6E', cream: '#FAF7F2', ink: '#2C2417',
@@ -67,8 +68,16 @@ export default function SageNudgeCard({
   count,
   currentIndex,
   tier = 'notice',
+  arcColor,
 }) {
-  const s = TIER_STYLES[tier] || TIER_STYLES.notice
+  const ac = arcColor || getArcColor(1)
+  const baseStyle = TIER_STYLES[tier] || TIER_STYLES.notice
+  // Insight tier keeps its forest identity; teaching/notice get arc color
+  const s = tier === 'insight' ? baseStyle : {
+    ...baseStyle,
+    border: `3px solid ${ac}`,
+    actionColor: ac,
+  }
 
   return (
     <div style={{
