@@ -32,6 +32,7 @@ import ThisWeekSettings from './pages/ThisWeekSettings'
 import HouseholdDefaults from './pages/HouseholdDefaults'
 import EditRecipe from './pages/EditRecipe'
 import Profile from './pages/Profile'
+import SettingsHub from './pages/SettingsHub'
 import Onboarding from './pages/Onboarding'
 import CalendarConnect from './pages/CalendarConnect'
 // DevReset — only loaded in dev, never bundled in production
@@ -364,7 +365,9 @@ function AuthenticatedApp({ appUser, setAppUser }) {
         {/* /sage route removed — Sage has no standalone page */}
         <Route path="/week-settings" element={<ThisWeekSettings appUser={appUser} />} />
         <Route path="/week/defaults" element={<HouseholdDefaults appUser={appUser} />} />
-        <Route path="/profile"       element={<Profile        appUser={appUser} />} />
+        <Route path="/profile"       element={<SettingsHub    appUser={appUser} />} />
+        <Route path="/profile/edit"  element={<Profile        appUser={appUser} />} />
+        <Route path="/settings/household" element={<HouseholdDefaults appUser={appUser} />} />
         <Route path="/onboarding"   element={<Onboarding     appUser={appUser} setAppUser={setAppUser} />} />
         <Route path="/settings/calendar" element={<CalendarConnect appUser={appUser} />} />
         {import.meta.env.DEV && <Route path="/dev/reset" element={<Suspense fallback={null}><DevReset appUser={appUser} /></Suspense>} />}
