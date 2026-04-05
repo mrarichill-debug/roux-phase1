@@ -399,7 +399,7 @@ export default function Dashboard({ appUser }) {
         {loading ? (
           <ShimmerCard height="56px" margin="0 18px" />
         ) : tonightMeal ? (
-          <TonightCard meal={tonightMeal} onView={() => navigate(tonightMeal.recipe_id ? `/recipe/${tonightMeal.recipe_id}` : '/thisweek', tonightMeal.recipe_id ? { state: { from: '/' } } : undefined)} />
+          <TonightCard meal={tonightMeal} arcColor={arcColor} onView={() => navigate(tonightMeal.recipe_id ? `/recipe/${tonightMeal.recipe_id}` : '/thisweek', tonightMeal.recipe_id ? { state: { from: '/' } } : undefined)} />
         ) : (
           <TonightEmpty onPlan={() => navigate('/thisweek')} />
         )}
@@ -441,7 +441,7 @@ function IntelligenceCard({ intel, navigate, arcColor, arcStage }) {
 
   return (
     <div style={{
-      borderLeft: `2.5px solid ${arcColor}`,
+      borderLeft: '2.5px solid #E4DDD2',
       paddingLeft: '14px',
       margin: '14px 18px 0',
       animation: 'fadeUp 0.4s ease 0.06s both',
@@ -565,7 +565,7 @@ function HumorCard({ joke, arcColor }) {
 }
 
 // ── Tonight Card — left accent line on cream ────────────────────────────────
-function TonightCard({ meal, onView }) {
+function TonightCard({ meal, onView, arcColor }) {
   const mealName = getMealName(meal)
   const slotType = meal.slot_type
   const tradition = meal.household_traditions?.name
@@ -578,7 +578,7 @@ function TonightCard({ meal, onView }) {
     <div
       onClick={onView}
       style={{
-        borderLeft: '2px solid #E4DDD2',
+        borderLeft: `2px solid ${arcColor}`,
         paddingLeft: '14px',
         margin: '0 18px',
         cursor: 'pointer',
