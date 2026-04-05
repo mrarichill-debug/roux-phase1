@@ -99,6 +99,7 @@ export default function PantryList({ appUser }) {
   }, [appUser?.household_id, weekOffset])
 
   async function loadWeekAndList() {
+    if (!appUser?.household_id) return
     setLoading(true)
     setNoMealPlan(false)
     setItems([])
@@ -427,6 +428,7 @@ export default function PantryList({ appUser }) {
 
   async function toggleSecondWeek(offset) {
     if (secondWeek) { setSecondWeek(null); return }
+    if (!appUser?.household_id) return
     setSecondWeekLoading(true)
     try {
       const ws = getWeekStartTZ(tz, weekOffset + offset)
@@ -446,7 +448,7 @@ export default function PantryList({ appUser }) {
   }
 
   async function addNewStore() {
-    if (!newStoreName.trim()) return
+    if (!newStoreName.trim() || !appUser?.household_id) return
     const { data } = await supabase.from('grocery_stores').insert({
       household_id: appUser.household_id, name: newStoreName.trim(), sort_order: stores.length,
     }).select('id, name, is_primary, sort_order').single()
@@ -473,7 +475,7 @@ export default function PantryList({ appUser }) {
   }
 
   async function saveTrip() {
-    if (creatingTrip || !listId || !tripStore || selectedTripItems.size === 0) return
+    if (creatingTrip || !listId || !tripStore || selectedTripItems.size === 0 || !appUser?.household_id) return
     setCreatingTrip(true)
     try {
       const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' })
@@ -599,10 +601,10 @@ export default function PantryList({ appUser }) {
   }
 
   async function addItem() {
-    if (!addInput.trim() || !listId || adding) return
+    if (!addInput.trim() || !listId || adding || !appUser?.household_id) return
     setAdding(true)
     const name = addInput.trim()
-    const isAdmin = appUser.role === 'admin' || appUser.role === 'co_admin'
+    const isAdmin = appUser?.role === 'admin' || appUser?.role === 'co_admin'
 
     const { data, error } = await supabase.from('shopping_list_items').insert({
       shopping_list_id: listId, household_id: appUser.household_id,
@@ -631,7 +633,7 @@ export default function PantryList({ appUser }) {
   }
 
   async function refreshList() {
-    if (refreshing || !selectedMealPlanId) return
+    if (refreshing || !selectedMealPlanId || !appUser?.household_id) return
     setRefreshing(true)
     await injectMealPlanToList({ planId: selectedMealPlanId, householdId: appUser.household_id })
     await loadList()
@@ -1230,7 +1232,7 @@ export default function PantryList({ appUser }) {
       <BottomSheet isOpen={!!stapleSheetItem} onClose={() => setStapleSheetItem(null)} title="What kind of staple?">
             <div style={{ padding: '20px 22px 24px' }}>
               <div style={{ fontSize: '12px', color: C.driftwood, marginBottom: '16px' }}>
-                {sentenceCase(stapleSheetItem.name)}
+                {sentenceCase(stapleSheetItem?.name)}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {[

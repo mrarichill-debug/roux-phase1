@@ -97,6 +97,7 @@ export default function ShoppingList({ appUser }) {
   }, [appUser])
 
   async function loadShoppingList() {
+    if (!appUser?.household_id) return
     setLoading(true)
     const tz = appUser?.timezone ?? 'America/Chicago'
     const ws = getWeekStartTZ(tz)
@@ -151,6 +152,7 @@ export default function ShoppingList({ appUser }) {
   }
 
   async function autoGenerateList(plan) {
+    if (!appUser?.household_id) return
     try {
       // Create shopping list record
       const { data: newList, error: listErr } = await supabase
@@ -277,7 +279,7 @@ export default function ShoppingList({ appUser }) {
 
   // ── State transitions ────────────────────────────────────────────────────────
   async function saveNewStore() {
-    if (!newStoreName.trim()) return
+    if (!newStoreName.trim() || !appUser?.household_id) return
     try {
       const { data, error } = await supabase.from('grocery_stores').insert({
         household_id: appUser.household_id,

@@ -41,6 +41,7 @@ export default function Pantry({ appUser }) {
   }, [appUser?.household_id])
 
   async function loadPantryHub() {
+    if (!appUser?.household_id) return
     setLoading(true)
     try {
       // Get stores
@@ -101,7 +102,7 @@ export default function Pantry({ appUser }) {
   }
 
   async function createTrip() {
-    if (creatingTrip) return
+    if (creatingTrip || !appUser?.household_id) return
     setCreatingTrip(true)
     try {
       // Get master list
