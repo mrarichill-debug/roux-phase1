@@ -678,7 +678,7 @@ export default function PantryList({ appUser }) {
 
   if (loading) return (
     <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
-      <TopBar centerContent={<span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>Shopping</span>} />
+      <TopBar />
       {weekSelector}
       <div style={{ padding: '20px 22px' }}>
         {[60, 40, 40, 40].map((h, i) => <div key={i} className="shimmer-block" style={{ height: `${h}px`, borderRadius: '12px', marginBottom: '10px' }} />)}
@@ -692,9 +692,21 @@ export default function PantryList({ appUser }) {
       minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
       paddingBottom: 'calc(110px + env(safe-area-inset-bottom, 8px))',
     }}>
-      <TopBar
-        centerContent={<span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>Shopping</span>}
-      />
+      <TopBar />
+
+      {/* ── Sticky page header ──────────────────────────────────────── */}
+      <div style={{
+        position: 'sticky',
+        top: '66px',
+        zIndex: 10,
+        background: C.cream,
+        boxShadow: '0 1px 0 #E4DDD2',
+        padding: '12px 18px 10px',
+      }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink }}>
+          Pantry
+        </div>
+      </div>
 
       {weekSelector}
 

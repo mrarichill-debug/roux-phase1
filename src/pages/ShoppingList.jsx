@@ -344,7 +344,7 @@ export default function ShoppingList({ appUser }) {
   if (loading) {
     return (
       <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
-        <ShoppingTopbar shoppingState="building" />
+        <TopBar />
         <div style={{ padding: '20px 24px' }}>
           <div className="shimmer-block" style={{ height: '72px', borderRadius: '12px', marginBottom: '12px' }} />
           <div className="shimmer-block" style={{ height: '44px', borderRadius: '10px', marginBottom: '20px' }} />
@@ -362,7 +362,7 @@ export default function ShoppingList({ appUser }) {
     return (
       <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif", paddingBottom: '64px' }}>
         <WatermarkLayer />
-        <ShoppingTopbar shoppingState="building" />
+        <TopBar />
         <div style={{ padding: '48px 32px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{ fontSize: '48px', marginBottom: '20px' }}>🛒</div>
           <div style={{
@@ -405,7 +405,24 @@ export default function ShoppingList({ appUser }) {
       <WatermarkLayer />
 
       {/* ── Topbar ──────────────────────────────────────────────────────────── */}
-      <ShoppingTopbar shoppingState={shoppingState} />
+      <TopBar />
+
+      {/* ── Sticky page header ──────────────────────────────────────── */}
+      <div style={{
+        position: 'sticky',
+        top: '66px',
+        zIndex: 10,
+        background: C.cream,
+        boxShadow: '0 1px 0 #E4DDD2',
+        padding: '12px 18px 10px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink }}>
+          Shopping List
+        </div>
+      </div>
 
       {/* ── Start/Done Shopping CTA (cream body, before budget strip) ──────── */}
       {shoppingState !== 'complete' && (
@@ -803,32 +820,6 @@ export default function ShoppingList({ appUser }) {
       </BottomSheet>
 
     </div>
-  )
-}
-
-// ── Topbar component ───────────────────────────────────────────────────────────
-function ShoppingTopbar({ shoppingState }) {
-  const pillStyle = shoppingState === 'complete'
-    ? { background: 'rgba(122,140,110,0.12)', color: '#7A8C6E', border: '1px solid rgba(122,140,110,0.28)' }
-    : shoppingState === 'shopping'
-    ? { background: 'rgba(61,107,79,0.12)', color: '#3D6B4F', border: '1px solid rgba(61,107,79,0.28)' }
-    : { background: 'rgba(196,154,60,0.12)', color: '#C49A3C', border: '1px solid rgba(196,154,60,0.3)' }
-
-  const pillLabel = shoppingState === 'complete' ? 'Complete'
-    : shoppingState === 'shopping' ? 'Shopping'
-    : 'Building'
-
-  return (
-    <TopBar centerContent={
-      <div style={{
-        ...pillStyle,
-        fontSize: '10px', fontWeight: 500, letterSpacing: '1px',
-        textTransform: 'uppercase', padding: '5px 11px', borderRadius: '20px',
-        transition: 'all 0.3s',
-      }}>
-        {pillLabel}
-      </div>
-    } />
   )
 }
 

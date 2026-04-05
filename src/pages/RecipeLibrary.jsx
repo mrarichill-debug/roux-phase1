@@ -314,67 +314,77 @@ export default function RecipeLibrary({ appUser }) {
 
       <WatermarkLayer />
 
-      {/* ── Green zone: Row 1 (topbar 66px) + Row 2 (search 48px) ─────────── */}
-      <TopBar childrenHeight={48} leftAction={{
-        onClick: () => navigate('/meals'),
-        icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>,
+      <TopBar />
+
+      {/* ── Sticky page header ──────────────────────────────────────── */}
+      <div style={{
+        position: 'sticky',
+        top: '66px',
+        zIndex: 10,
+        background: C.cream,
+        boxShadow: '0 1px 0 #E4DDD2',
+        padding: '12px 18px 10px',
       }}>
-        {/* Row 2: Search input + filter icon — unified green zone */}
-        <div style={{ padding: '0 22px 10px', position: 'relative', display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <div style={{ flex: 1, position: 'relative' }}>
-            <span style={{
-              position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)',
-              color: 'rgba(210,230,200,0.6)', display: 'flex', alignItems: 'center',
-            }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ width: 15, height: 15 }}>
-                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-              </svg>
-            </span>
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search recipes…"
-              className="library-search"
-              style={{
-                width: '100%',
-                background: 'rgba(255,255,255,0.12)',
-                border: '1px solid rgba(255,255,255,0.18)',
-                borderRadius: '10px',
-                padding: '10px 14px 10px 36px',
-                fontFamily: "'Jost', sans-serif",
-                fontSize: '14px', fontWeight: 300,
-                color: 'rgba(250,247,242,0.92)', outline: 'none',
-                transition: 'background 0.15s, border-color 0.15s',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-          {/* Filter icon */}
-          <button
-            onClick={() => setFilterSheetOpen(true)}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              position: 'relative', padding: '6px', flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="rgba(210,230,200,0.7)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
-              <line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/>
-              <line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/>
-              <line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/>
-              <line x1="1" x2="7" y1="14" y2="14"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="17" x2="23" y1="16" y2="16"/>
-            </svg>
-            {hasActiveFilters && (
-              <span style={{
-                position: 'absolute', top: '4px', right: '4px',
-                width: '6px', height: '6px', borderRadius: '50%',
-                background: C.honey,
-              }} />
-            )}
-          </button>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink }}>
+          Our Meals
         </div>
-      </TopBar>
+      </div>
+
+      {/* ── Search + filter ─────────────────────────────────────────── */}
+      <div style={{ padding: '0 18px 10px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ flex: 1, position: 'relative' }}>
+          <span style={{
+            position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)',
+            color: C.driftwood, display: 'flex', alignItems: 'center',
+          }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ width: 15, height: 15 }}>
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+          </span>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search recipes…"
+            className="library-search"
+            style={{
+              width: '100%',
+              background: 'white',
+              border: '1px solid rgba(200,185,160,0.55)',
+              borderRadius: '10px',
+              padding: '10px 14px 10px 36px',
+              fontFamily: "'Jost', sans-serif",
+              fontSize: '14px', fontWeight: 300,
+              color: C.ink, outline: 'none',
+              transition: 'background 0.15s, border-color 0.15s',
+              boxSizing: 'border-box',
+            }}
+          />
+        </div>
+        {/* Filter icon */}
+        <button
+          onClick={() => setFilterSheetOpen(true)}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            position: 'relative', padding: '6px', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+            <line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/>
+            <line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/>
+            <line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/>
+            <line x1="1" x2="7" y1="14" y2="14"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="17" x2="23" y1="16" y2="16"/>
+          </svg>
+          {hasActiveFilters && (
+            <span style={{
+              position: 'absolute', top: '4px', right: '4px',
+              width: '6px', height: '6px', borderRadius: '50%',
+              background: C.honey,
+            }} />
+          )}
+        </button>
+      </div>
 
       {/* ── Active filter summary ─────────────────────────────────────────── */}
       {hasActiveFilters && filterSummary && (
