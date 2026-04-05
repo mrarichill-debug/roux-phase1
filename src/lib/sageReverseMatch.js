@@ -36,7 +36,7 @@ export async function sageReverseMatch({ recipeId, recipeName, appUser }) {
       household_id: appUser.household_id,
       user_id: appUser.id,
       activity_type: 'recipe_match',
-      message: `I found a recipe for ${match.custom_name} — want to link it?`,
+      message: `${match.custom_name} matches a recipe in your library — want to link it?`,
       recipe_id: recipeId,
       seen: false,
       metadata: {

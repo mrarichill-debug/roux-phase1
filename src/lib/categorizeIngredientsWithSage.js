@@ -65,7 +65,7 @@ export async function categorizeIngredientsWithSage(ingredients, { recipeName, r
         household_id: appUser.household_id,
         user_id: appUser.id,
         activity_type: 'ingredient_categorization',
-        message: `I organized the ingredients for ${displayName} so your next shopping list is ready to go.`,
+        message: `The ingredients for ${displayName} are now organized — your shopping list will be cleaner next time.`,
         recipe_id: recipeId,
         seen: false,
       })

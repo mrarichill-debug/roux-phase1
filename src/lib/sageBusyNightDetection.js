@@ -48,11 +48,13 @@ export async function sageBusyNightDetection({ calendarEvents, meals, weekDates,
     mealsByDow[m.day_of_week].push(m)
   }
 
-  // Check existing nudges to deduplicate
+  // Check existing nudges this week to deduplicate
+  const weekStartStr = toLocalDateStr(weekDates[0])
   const { data: existingNudges } = await supabase.from('sage_background_activity')
     .select('metadata')
     .eq('household_id', appUser.household_id)
     .eq('activity_type', 'calendar_context')
+    .gte('created_at', weekStartStr + 'T00:00:00')
   const existingDates = new Set(
     (existingNudges || []).map(n => n.metadata?.date).filter(Boolean)
   )
@@ -76,7 +78,7 @@ export async function sageBusyNightDetection({ calendarEvents, meals, weekDates,
         household_id: appUser.household_id,
         user_id: appUser.id,
         activity_type: 'calendar_context',
-        message: `Hey ${firstName} — ${dayName} looks packed. ${mealName} is a solid call for a busy night. 👍`,
+        message: `${dayName} has ${dayEvents.length} event${dayEvents.length !== 1 ? 's' : ''}. ${mealName} is already on the plan — good timing.`,
         seen: false,
         metadata: { date: dateStr, day_of_week: dowKey, has_meal: true },
       })
@@ -85,7 +87,7 @@ export async function sageBusyNightDetection({ calendarEvents, meals, weekDates,
         household_id: appUser.household_id,
         user_id: appUser.id,
         activity_type: 'calendar_context',
-        message: `Hey ${firstName} — ${dayName} looks busy. Want something quick or make-ahead for dinner?`,
+        message: `${dayName} has ${dayEvents.length} calendar event${dayEvents.length !== 1 ? 's' : ''} and nothing planned for dinner yet.`,
         seen: false,
         metadata: { date: dateStr, day_of_week: dowKey, has_meal: false, action_url: '/thisweek' },
       })
