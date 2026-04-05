@@ -704,7 +704,7 @@ export default function PantryList({ appUser }) {
         padding: '12px 18px 10px',
       }}>
         <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink }}>
-          Pantry
+          The List.
         </div>
       </div>
 
@@ -1090,7 +1090,7 @@ export default function PantryList({ appUser }) {
                     <div>
                       <button onClick={() => { setTripSheetStep(1); setSecondWeek(null) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.driftwood, fontSize: '12px', fontFamily: "'Jost', sans-serif", padding: 0 }}>← Back</button>
                       <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginTop: '4px' }}>
-                        What are you picking up at {tripStoreName}?
+                        {tripStoreName || 'Shopping'} Trip
                       </div>
                     </div>
                   </div>
