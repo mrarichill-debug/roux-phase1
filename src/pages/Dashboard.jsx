@@ -48,12 +48,9 @@ function formatGreetingDate(d) {
 
 function getMealName(meal) {
   if (!meal) return null
-  if (meal.slot_type === 'meal')     return meal.meals?.name ?? null
-  if (meal.slot_type === 'recipe')   return meal.recipes?.name ?? null
-  if (meal.slot_type === 'note')     return meal.note ?? null
   if (meal.slot_type === 'leftover') return 'Leftovers'
   if (meal.slot_type === 'takeout')  return 'Eating Out'
-  return meal.meals?.name ?? meal.recipes?.name ?? meal.note ?? null
+  return meal.custom_name || meal.meals?.name || meal.recipes?.name || meal.note || null
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
@@ -116,7 +113,7 @@ export default function Dashboard({ appUser }) {
           .maybeSingle(),
 
         supabase.from('planned_meals')
-          .select('day_of_week, status, tradition_id, slot_type, note, created_at, updated_at')
+          .select('day_of_week, status, tradition_id, slot_type, note, custom_name, created_at, updated_at')
           .eq('meal_plan_id', plan.id)
           .eq('meal_type', 'dinner'),
 
