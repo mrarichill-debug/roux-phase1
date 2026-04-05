@@ -28,16 +28,18 @@ const C = {
   walnut:    '#8B6F52',
 }
 
-// ── Aisle sections in canonical order ─────────────────────────────────────────
+// ── Aisle sections in canonical order — keys match grocery_category values ────
 const AISLE_SECTIONS = [
-  { key: 'protein',  label: 'Meat & Seafood',    emoji: '🥩' },
-  { key: 'produce',  label: 'Produce',            emoji: '🥬' },
-  { key: 'dairy',    label: 'Dairy & Eggs',       emoji: '🧀' },
-  { key: 'deli',     label: 'Deli',               emoji: '🥗' },
-  { key: 'pantry',   label: 'Pantry & Canned',    emoji: '🥫' },
-  { key: 'bakery',   label: 'Bread & Bakery',     emoji: '🍞' },
-  { key: 'frozen',   label: 'Frozen',             emoji: '❄️' },
-  { key: 'other',    label: 'Household & Other',  emoji: '🛒' },
+  { key: 'produce',    label: 'Produce' },
+  { key: 'meat',       label: 'Meat & Seafood' },
+  { key: 'seafood',    label: 'Meat & Seafood' },
+  { key: 'dairy',      label: 'Dairy & Eggs' },
+  { key: 'bakery',     label: 'Bakery & Bread' },
+  { key: 'frozen',     label: 'Frozen' },
+  { key: 'beverages',  label: 'Beverages' },
+  { key: 'pantry',     label: 'Pantry & Dry Goods' },
+  { key: 'household',  label: 'Household & Other' },
+  { key: 'other',      label: 'Household & Other' },
 ]
 
 // ── Week start helper is now timezone-aware (see dateUtils.js) ────────────────
@@ -185,7 +187,8 @@ export default function ShoppingList({ appUser }) {
               unit:             ing.unit,
               source_type:      'recipe',
               recipe_id:        ing.recipe_id,
-              category:         'other',
+              category:         ing.grocery_category || 'other',
+              grocery_category: ing.grocery_category || 'other',
               is_perishable:    ing.is_perishable,
               perishable_days:  ing.perishable_days,
             }))
@@ -617,7 +620,7 @@ export default function ShoppingList({ appUser }) {
 
       {/* ── List sections ───────────────────────────────────────────────────── */}
       {AISLE_SECTIONS.map(({ key, label, emoji }, sectionIdx) => {
-        const sectionItems = activeItems.filter(i => (i.category || 'other') === key)
+        const sectionItems = activeItems.filter(i => (i.grocery_category || 'other') === key)
         if (sectionItems.length === 0) return null
         const isCollapsed = collapsedSections.has(key)
         const delay = 0.08 + sectionIdx * 0.03
