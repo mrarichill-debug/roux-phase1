@@ -282,13 +282,23 @@ export default function Dashboard({ appUser }) {
     return getIntelligenceMessage({
       activePlan,
       weekMeals,
+      tonightMeal,
       shoppingList,
       sageIntelligence,
       sageMessages,
       calendarConnected: !!appUser?.calendar_sync_enabled,
       shopTile,
-    })
-  }, [loading, activePlan, weekMeals, shoppingList, sageIntelligence, sageMessages, shopTile])
+      appUser,
+    }, arcStage)
+  }, [loading, activePlan, weekMeals, tonightMeal, shoppingList, sageIntelligence, sageMessages, shopTile, arcStage])
+
+  // Persist shown intelligence message (7-day dedup tracking)
+  useEffect(() => {
+    if (!intel?.messageId || !appUser?.id) return
+    const prefs = appUser?.preferences || {}
+    const shown = { ...(prefs.shown_messages || {}), [intel.messageId]: new Date().toISOString() }
+    supabase.from('users').update({ preferences: { ...prefs, shown_messages: shown } }).eq('id', appUser.id)
+  }, [intel?.messageId])
 
   // ── Humor card (fallback when no intelligence message) ────────
   const jokeData = useMemo(() => {
