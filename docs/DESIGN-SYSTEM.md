@@ -378,3 +378,58 @@ Default tier is `notice` if not specified. Always pass `tier` explicitly for cla
 ## Future Settings
 
 - **Calendar event font size** — planned small/medium/large selector in Settings. Default = medium (13px). Small = 11px, Large = 15px.
+
+---
+
+## The Arc Color System
+
+### Philosophy
+The arc color is the emotional language of the entire app. Every screen
+Lauren touches should feel like it's at the same stage of the relationship
+she's actually in. The color shift is never announced — Lauren just opens
+the app one day and something feels slightly different. Warmer. Richer.
+
+This is not a UI theme. It is the app's emotional state.
+
+### The Four Phases
+
+| Stages | Color | Hex | Emotional meaning |
+|--------|-------|-----|-------------------|
+| 1–2 | Forest green | #3D6B4F | Growth, freshness, beginnings. The app's home color. Something new and alive is starting here. |
+| 3–4 | Sage green | #7A8C6E | Wisdom, calm, maturity. The word "sage" means wise. Something personal is forming. |
+| 5–6 | Honey | #C49A3C | Warmth, richness, earned reward. Honey takes time. The work is paying off. |
+| 7 | Deep amber | #A07830 | Depth, permanence, the passage of time. This has lasted. This is part of the family now. |
+
+### What carries the arc color — every element that shifts
+1. Intelligence section left border (2.5px accent line)
+2. Arc answer text
+3. Primary action button fill
+4. Secondary button border and text color
+5. Arc progress dots — filled stages use the progression colors
+6. "See all →" and other quiet navigation links
+7. Today's day tile outline ring
+8. Active nav indicator dot
+9. Active filter pills (Recipe Library, Shop)
+10. Primary CTAs across all screens (Plan a meal, Start shopping, Save recipe)
+11. Checked/completed item color (Shopping list)
+12. Selection and active state colors throughout
+
+### What NEVER changes with the arc
+- Topbar: always #3D6B4F forest green — Roux's permanent identity
+- Tonight card: always #3C2F1E deep walnut — the evening anchor
+- Bottom nav background: always white
+- Primary text: always #2C2417 ink
+- Background: always #FAF7F2 cream
+- Wood grain texture: retired — no longer used anywhere
+
+### Implementation
+Single source of truth: `src/lib/getArcColor.js`
+Every component imports from this utility. No arc color is ever hardcoded
+in a component — always use getArcColor(stage) or the ARC_COLORS constants.
+
+### The arc color on non-Home screens
+The arc color follows Lauren everywhere. It is not a Home screen feature.
+Every screen's primary interactive color reads from the same arc stage.
+When Lauren is at Stage 5, the app feels honey-warm on every screen she
+visits — not just Home. The consistency is what makes it feel alive rather
+than like a feature.
