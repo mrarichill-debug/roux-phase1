@@ -570,9 +570,8 @@ function TonightCard({ meal, onView }) {
   const slotType = meal.slot_type
   const tradition = meal.household_traditions?.name
 
-  const typeLabel = slotType === 'takeout' ? 'Eating Out'
+  const typeLabel = slotType === 'eating_out' ? 'Eating Out'
     : slotType === 'leftover' ? 'Leftovers'
-    : slotType === 'note' ? 'Quick Note'
     : 'Dinner'
 
   return (
