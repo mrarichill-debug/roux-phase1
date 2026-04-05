@@ -46,12 +46,6 @@ function formatGreetingDate(d) {
   return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 }
 
-function getDayType(jsDay) {
-  // 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
-  if (jsDay === 0 || jsDay === 6) return { label: 'Weekend', color: '#3D6B4F', bg: 'rgba(61,107,79,0.10)', border: 'rgba(61,107,79,0.18)' }
-  return { label: 'School Day', color: '#3A6CB5', bg: 'rgba(91,141,217,0.10)', border: 'rgba(91,141,217,0.18)' }
-}
-
 function getMealName(meal) {
   if (!meal) return null
   if (meal.slot_type === 'meal')     return meal.meals?.name ?? null
@@ -81,7 +75,6 @@ export default function Dashboard({ appUser }) {
   const todayJsDay = getDayOfWeekTZ(tz)                     // 0=Sun..6=Sat in user's TZ
   const todayDow   = DOW_KEYS[todayJsDay]                   // e.g. 'thursday'
   const todayMbIdx = getMondayBasedIndex(todayJsDay)        // 0=Mon..6=Sun
-  const dayType    = getDayType(todayJsDay)
   const firstName  = appUser?.name?.split(' ')[0] ?? ''
 
   useEffect(() => {
@@ -360,67 +353,60 @@ export default function Dashboard({ appUser }) {
 
         {/* ── Greeting ──────────────────────────────────────────────────── */}
         <div style={{
-          padding: '24px 22px 18px',
+          padding: '20px 18px 0',
           animation: 'fadeUp 0.4s ease both',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{
-              fontSize: '10px', letterSpacing: '2.5px', textTransform: 'uppercase',
-              color: C.sage, fontWeight: 500,
-            }}>
-              {formatGreetingDate(today)}
-            </span>
-            <span style={{
-              fontSize: '10px', fontWeight: 400, letterSpacing: '0.8px',
-              textTransform: 'uppercase', padding: '2px 8px', borderRadius: '4px',
-              fontFamily: "'Jost', sans-serif",
-              background: dayType.bg, color: dayType.color,
-            }}>
-              {dayType.label}
-            </span>
+          <div style={{
+            fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase',
+            color: C.driftwood, fontWeight: 500, marginBottom: '6px',
+          }}>
+            {formatGreetingDate(today)}
           </div>
 
           <h1 style={{
             fontFamily: "'Playfair Display', serif",
-            fontSize: '29px', fontWeight: 500, color: C.ink, lineHeight: 1.2,
+            fontSize: '20px', fontWeight: 500, color: C.ink, lineHeight: 1.3,
             margin: 0,
           }}>
-            {timeGreetingTZ(tz)},<br />
-            <em style={{ fontStyle: 'italic', color: C.sage }}>
-              {loading ? '…' : `${firstName}.`}
-            </em>
+            {timeGreetingTZ(tz)}, {loading ? '…' : `${firstName}.`}
           </h1>
 
           {!loading && (
             <div style={{
-              marginTop: '5px', fontSize: '12px', color: C.driftwoodSm, fontWeight: 300,
+              marginTop: '4px', fontSize: '11px', color: C.driftwood, fontWeight: 300,
             }}>
               {plannedCount} of 7 nights planned
             </div>
           )}
         </div>
 
-        {/* ── Intelligence Card (hero) ─────────────────────────────────── */}
+        {/* ── Intelligence section ─────────────────────────────────────── */}
         {loading ? (
-          <ShimmerCard height="140px" margin="0 22px 14px" />
+          <ShimmerCard height="100px" margin="14px 18px 0" />
         ) : intel ? (
-          <IntelligenceCard intel={intel} navigate={navigate} arcColor={arcColor} />
+          <IntelligenceCard intel={intel} navigate={navigate} arcColor={arcColor} arcStage={arcStage} />
         ) : jokeData ? (
-          <HumorCard joke={jokeData.text} />
+          <HumorCard joke={jokeData.text} arcColor={arcColor} />
         ) : null}
+
+        {/* ── Divider ──────────────────────────────────────────────────── */}
+        {!loading && <div style={{ height: '0.5px', background: '#E4DDD2', margin: '16px 18px' }} />}
 
         {/* ── Tonight Card ──────────────────────────────────────────────── */}
         {loading ? (
-          <ShimmerCard height="110px" margin="0 22px 14px" />
+          <ShimmerCard height="72px" margin="0 14px" />
         ) : tonightMeal ? (
           <TonightCard meal={tonightMeal} onView={() => navigate(tonightMeal.recipe_id ? `/recipe/${tonightMeal.recipe_id}` : '/thisweek', tonightMeal.recipe_id ? { state: { from: '/' } } : undefined)} />
         ) : (
           <TonightEmpty onPlan={() => navigate('/thisweek')} />
         )}
 
+        {/* ── Divider ──────────────────────────────────────────────────── */}
+        {!loading && <div style={{ height: '0.5px', background: '#E4DDD2', margin: '16px 18px' }} />}
+
         {/* ── This Week Strip ───────────────────────────────────────────── */}
         {loading ? (
-          <ShimmerCard height="88px" margin="0 22px 14px" />
+          <ShimmerCard height="70px" margin="0 18px" />
         ) : (
           <WeekStrip
             weekDates={weekDates}
@@ -450,28 +436,25 @@ function ShimmerCard({ height, margin }) {
   )
 }
 
-// ── Intelligence Card (hero) ─────────────────────────────────────────────────
-function IntelligenceCard({ intel, navigate, arcColor }) {
+// ── Intelligence section — left accent line on cream ─────────────────────────
+function IntelligenceCard({ intel, navigate, arcColor, arcStage }) {
   const { message, arcAnswer, primaryAction, secondaryAction } = intel
 
   return (
     <div style={{
-      margin: '0 22px 14px',
-      background: 'white',
-      border: '0.5px solid var(--linen)',
-      borderRadius: '16px',
-      padding: '18px 20px',
+      borderLeft: `2.5px solid ${arcColor}`,
+      paddingLeft: '14px',
+      margin: '14px 18px 0',
       animation: 'fadeUp 0.4s ease 0.06s both',
-      position: 'relative', zIndex: 1,
     }}>
-      {/* Message */}
+      {/* Message — Playfair italic */}
       <div style={{
-        fontSize: '13px',
+        fontFamily: "'Playfair Display', serif",
+        fontSize: '14px',
+        fontStyle: 'italic',
         color: C.ink,
-        lineHeight: 1.65,
-        fontFamily: "'Jost', sans-serif",
-        fontWeight: 300,
-        marginBottom: '14px',
+        lineHeight: 1.7,
+        marginBottom: '12px',
       }}>
         {message}
       </div>
@@ -493,12 +476,24 @@ function IntelligenceCard({ intel, navigate, arcColor }) {
         fontWeight: 500,
         color: arcColor,
         fontFamily: "'Jost', sans-serif",
-        marginBottom: (primaryAction || secondaryAction) ? '16px' : 0,
+        marginBottom: '10px',
       }}>
         {arcAnswer}
       </div>
 
-      {/* Action buttons */}
+      {/* Arc progress dots */}
+      <div style={{ display: 'flex', gap: 5, marginBottom: 12 }}>
+        {[1,2,3,4,5,6,7].map(s => (
+          <div key={s} style={{
+            width: 7, height: 7, borderRadius: '50%',
+            background: s <= arcStage
+              ? (s <= 2 ? '#3D6B4F' : s <= 4 ? '#7A8C6E' : s <= 6 ? '#C49A3C' : '#A07830')
+              : '#E4DDD2',
+          }} />
+        ))}
+      </div>
+
+      {/* Action buttons — pill style */}
       {(primaryAction || secondaryAction) && (
         <div style={{ display: 'flex', gap: '10px' }}>
           {primaryAction && (
@@ -506,12 +501,12 @@ function IntelligenceCard({ intel, navigate, arcColor }) {
               onClick={() => primaryAction.route && navigate(primaryAction.route)}
               style={{
                 flex: 1,
-                padding: '10px 16px',
-                borderRadius: '10px',
+                padding: '8px 0',
+                borderRadius: '20px',
                 border: 'none',
                 background: arcColor,
-                color: 'white',
-                fontSize: '13px',
+                color: '#FAF7F2',
+                fontSize: '11px',
                 fontWeight: 500,
                 fontFamily: "'Jost', sans-serif",
                 cursor: 'pointer',
@@ -525,12 +520,12 @@ function IntelligenceCard({ intel, navigate, arcColor }) {
               onClick={() => secondaryAction.route && navigate(secondaryAction.route)}
               style={{
                 flex: 1,
-                padding: '10px 16px',
-                borderRadius: '10px',
-                border: `1px solid ${arcColor}`,
+                padding: '8px 0',
+                borderRadius: '20px',
+                border: `0.5px solid ${arcColor}`,
                 background: 'transparent',
                 color: arcColor,
-                fontSize: '13px',
+                fontSize: '11px',
                 fontWeight: 500,
                 fontFamily: "'Jost', sans-serif",
                 cursor: 'pointer',
@@ -545,33 +540,24 @@ function IntelligenceCard({ intel, navigate, arcColor }) {
   )
 }
 
-// ── Humor Card (quiet moment fallback) ───────────────────────────────────────
-function HumorCard({ joke }) {
+// ── Humor Card — on cream, no card border ───────────────────────────────────
+function HumorCard({ joke, arcColor }) {
   return (
     <div style={{
-      margin: '0 22px 14px',
-      background: 'white',
-      border: '0.5px solid var(--linen)',
-      borderRadius: '16px',
-      padding: '22px 20px',
+      margin: '14px 18px 0',
       textAlign: 'center',
       animation: 'fadeUp 0.4s ease 0.06s both',
-      position: 'relative', zIndex: 1,
     }}>
-      <div style={{
-        fontSize: '16px',
-        color: C.honey,
-        marginBottom: '10px',
-      }}>
+      <div style={{ height: '0.5px', background: '#E4DDD2', marginBottom: '16px' }} />
+      <div style={{ fontSize: '14px', color: arcColor, marginBottom: '8px' }}>
         ✦
       </div>
       <div style={{
+        fontFamily: "'Playfair Display', serif",
         fontSize: '12px',
         fontStyle: 'italic',
-        color: C.ink,
+        color: C.driftwood,
         lineHeight: 1.7,
-        fontFamily: "'Jost', sans-serif",
-        fontWeight: 300,
       }}>
         {joke}
       </div>
@@ -579,13 +565,12 @@ function HumorCard({ joke }) {
   )
 }
 
-// ── Tonight Card — slim cutting board ────────────────────────────────────────
+// ── Tonight Card — deep walnut, no wood grain ───────────────────────────────
 function TonightCard({ meal, onView }) {
   const mealName = getMealName(meal)
   const slotType = meal.slot_type
   const tradition = meal.household_traditions?.name
 
-  // Meal type pill label
   const typeLabel = slotType === 'takeout' ? 'Eating Out'
     : slotType === 'leftover' ? 'Leftovers'
     : slotType === 'note' ? 'Quick Note'
@@ -593,119 +578,125 @@ function TonightCard({ meal, onView }) {
 
   return (
     <div
-      className="tonight-board"
-      style={{ margin: '0 22px 14px' }}
       onClick={onView}
+      style={{
+        background: '#3C2F1E',
+        borderRadius: '14px',
+        padding: '14px 16px',
+        margin: '0 14px',
+        cursor: 'pointer',
+        animation: 'fadeUp 0.4s ease 0.08s both',
+      }}
     >
-      <div style={{ padding: '16px 18px 14px', position: 'relative', zIndex: 1 }}>
-        {/* Top row: label + pills */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-          <span style={{
-            fontSize: '9px', fontWeight: 500, letterSpacing: '2.5px',
-            textTransform: 'uppercase', color: 'rgba(80,38,8,0.52)',
-          }}>
-            Tonight
-          </span>
+      {/* Top row: label + pills */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+        <span style={{
+          fontSize: '9px', fontWeight: 500, letterSpacing: '2.5px',
+          textTransform: 'uppercase', color: 'rgba(250,247,242,0.45)',
+        }}>
+          Tonight
+        </span>
+        <span style={{
+          fontSize: '9px', fontWeight: 500, padding: '2px 8px', borderRadius: '10px',
+          background: 'rgba(250,247,242,0.10)', color: 'rgba(250,247,242,0.65)',
+          border: '0.5px solid rgba(250,247,242,0.15)',
+        }}>
+          {typeLabel}
+        </span>
+        {tradition && (
           <span style={{
             fontSize: '9px', fontWeight: 500, padding: '2px 8px', borderRadius: '10px',
-            background: 'rgba(80,38,8,0.10)', color: 'rgba(60,25,5,0.75)',
-            border: '1px solid rgba(80,38,8,0.14)',
+            background: 'rgba(250,247,242,0.10)', color: 'rgba(250,247,242,0.65)',
+            border: '0.5px solid rgba(250,247,242,0.15)',
           }}>
-            {typeLabel}
+            {tradition}
           </span>
-          {tradition && (
-            <span style={{
-              fontSize: '9px', fontWeight: 500, padding: '2px 8px', borderRadius: '10px',
-              background: 'rgba(80,38,8,0.10)', color: 'rgba(60,25,5,0.75)',
-              border: '1px solid rgba(80,38,8,0.14)',
-            }}>
-              {tradition}
-            </span>
-          )}
-        </div>
+        )}
+      </div>
 
-        {/* Meal name */}
-        <div style={{
-          fontFamily: "'Playfair Display', serif",
-          fontSize: '22px', fontWeight: 500,
-          color: 'rgba(40,18,4,0.92)', lineHeight: 1.2, marginBottom: '10px',
-        }}>
-          {mealName ?? 'Dinner'}
-        </div>
+      {/* Meal name */}
+      <div style={{
+        fontFamily: "'Playfair Display', serif",
+        fontSize: '16px', fontWeight: 500,
+        color: 'rgba(250,247,242,0.95)', lineHeight: 1.3,
+      }}>
+        {mealName ?? 'Dinner'}
+      </div>
 
-        {/* View recipe link */}
-        {meal.recipe_id && (
+      {/* View recipe link */}
+      {meal.recipe_id && (
+        <div style={{ textAlign: 'right', marginTop: '8px' }}>
           <button
             onClick={e => { e.stopPropagation(); onView() }}
             style={{
               background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-              fontSize: '11px', fontWeight: 400, color: 'rgba(80,38,8,0.58)',
+              fontSize: '9px', fontWeight: 400, color: 'rgba(250,247,242,0.30)',
               fontFamily: "'Jost', sans-serif",
             }}
           >
             View recipe →
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
 
-// ── Tonight Card — empty state ──────────────────────────────────────────────
+// ── Tonight Card — empty state (dashed outline, transparent) ────────────────
 function TonightEmpty({ onPlan }) {
   return (
     <div
-      className="tonight-board"
-      style={{ margin: '0 22px 14px' }}
       onClick={onPlan}
+      style={{
+        border: '1px dashed #D4CEC7',
+        borderRadius: '14px',
+        padding: '14px 16px',
+        margin: '0 14px',
+        cursor: 'pointer',
+        animation: 'fadeUp 0.4s ease 0.08s both',
+      }}
     >
-      <div style={{ padding: '16px 18px 14px', position: 'relative', zIndex: 1 }}>
-        <span style={{
-          fontSize: '9px', fontWeight: 500, letterSpacing: '2.5px',
-          textTransform: 'uppercase', color: 'rgba(80,38,8,0.52)',
-          marginBottom: '8px', display: 'block',
-        }}>
-          Tonight
-        </span>
-        <div style={{
-          fontFamily: "'Playfair Display', serif",
-          fontSize: '20px', fontWeight: 500, fontStyle: 'italic',
-          color: 'rgba(40,18,4,0.40)', lineHeight: 1.2, marginBottom: '10px',
-        }}>
-          What's for dinner?
-        </div>
-        <button
-          onClick={e => { e.stopPropagation(); onPlan() }}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: '5px',
-            background: 'rgba(80,38,8,0.12)', color: 'rgba(40,18,4,0.80)',
-            border: '1px solid rgba(80,38,8,0.18)', borderRadius: '8px',
-            padding: '5px 12px', cursor: 'pointer',
-            fontFamily: "'Jost', sans-serif", fontSize: '11px', fontWeight: 500,
-          }}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}>
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-          Plan tonight
-        </button>
+      <span style={{
+        fontSize: '9px', fontWeight: 500, letterSpacing: '2.5px',
+        textTransform: 'uppercase', color: C.driftwood,
+        marginBottom: '6px', display: 'block',
+      }}>
+        Tonight
+      </span>
+      <div style={{
+        fontFamily: "'Playfair Display', serif",
+        fontSize: '16px', fontWeight: 500, fontStyle: 'italic',
+        color: 'rgba(140,123,107,0.5)', lineHeight: 1.3,
+      }}>
+        What's for dinner?
       </div>
+      <button
+        onClick={e => { e.stopPropagation(); onPlan() }}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: '5px',
+          background: 'rgba(140,123,107,0.08)', color: C.driftwood,
+          border: '1px solid #E4DDD2', borderRadius: '8px',
+          padding: '5px 12px', cursor: 'pointer', marginTop: '8px',
+          fontFamily: "'Jost', sans-serif", fontSize: '11px', fontWeight: 500,
+        }}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}>
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        Plan tonight
+      </button>
     </div>
   )
 }
 
-// ── This Week Strip ───────────────────────────────────────────────────────────
+// ── This Week Strip — on cream, no card wrapper ─────────────────────────────
 function WeekStrip({ weekDates, weekMeals, todayMbIdx, onSeeAll, arcColor }) {
   const plannedMap = {}
   weekMeals.forEach(m => { plannedMap[m.day_of_week] = m })
 
   return (
     <div style={{
-      margin: '0 22px 14px',
-      background: 'white',
-      border: '0.5px solid var(--linen)',
-      borderRadius: '16px',
-      padding: '14px 16px 12px',
+      padding: '14px 18px 0',
       animation: 'fadeUp 0.4s ease 0.12s both',
       position: 'relative', zIndex: 1,
     }}>
@@ -729,8 +720,8 @@ function WeekStrip({ weekDates, weekMeals, todayMbIdx, onSeeAll, arcColor }) {
       {/* Day tiles */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '5px' }}>
         {weekDates.map((d, i) => {
-          const isToday   = i === todayMbIdx
-          const dowKey    = DOW_KEYS[d.getDay()]
+          const isToday    = i === todayMbIdx
+          const dowKey     = DOW_KEYS[d.getDay()]
           const hasPlanned = !!plannedMap[dowKey]
 
           return (
@@ -740,19 +731,17 @@ function WeekStrip({ weekDates, weekMeals, todayMbIdx, onSeeAll, arcColor }) {
               style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
                 padding: '7px 2px 6px', borderRadius: '10px',
-                background: hasPlanned ? arcColor : 'transparent',
-                border: isToday && !hasPlanned
-                  ? `1.5px solid ${C.honey}`
-                  : hasPlanned
-                  ? 'none'
-                  : `1px solid ${C.linen}`,
+                background: hasPlanned ? C.forest : 'transparent',
+                outline: isToday && !hasPlanned ? `1.5px solid ${arcColor}` : 'none',
+                outlineOffset: isToday && !hasPlanned ? '1px' : undefined,
+                border: hasPlanned ? 'none' : !isToday ? `1px solid ${C.linen}` : 'none',
                 cursor: 'pointer',
               }}
             >
               <span style={{
                 fontSize: '8px', fontWeight: 500, letterSpacing: '0.8px',
                 textTransform: 'uppercase',
-                color: hasPlanned ? 'rgba(255,255,255,0.6)' : C.driftwood,
+                color: hasPlanned ? 'rgba(255,255,255,0.6)' : isToday ? arcColor : C.driftwood,
               }}>
                 {MON_SHORT[i]}
               </span>
