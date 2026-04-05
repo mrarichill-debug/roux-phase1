@@ -42,6 +42,7 @@ const DevReset = import.meta.env.DEV
 import ProfileSheet from './components/ProfileSheet'
 import BottomSheet from './components/BottomSheet'
 import TopBar from './components/TopBar'
+import ScrollToTop from './components/ScrollToTop'
 import BottomNav from './components/BottomNav'
 import { Shell } from './components/AppShell'
 
@@ -341,6 +342,7 @@ function AuthenticatedApp({ appUser, setAppUser }) {
 
   return (
     <>
+      <ScrollToTop />
       <Routes>
         <Route path="/"              element={appUser.has_planned_first_meal === false ? <Navigate to="/onboarding" replace /> : <Dashboard appUser={appUser} />} />
         <Route path="/thisweek"     element={<ThisWeek      appUser={appUser} />} />
