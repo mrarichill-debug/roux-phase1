@@ -266,6 +266,13 @@ export default function RecipeLibrary({ appUser }) {
     filterTimer.current = setTimeout(() => setGridVisible(true), 150)
   }, [search, activeTags, filterKey])
 
+  async function toggleFavorite(recipeId, currentValue) {
+    setRecipes(prev => prev.map(r =>
+      r.id === recipeId ? { ...r, is_family_favorite: !currentValue } : r
+    ))
+    await supabase.from('recipes').update({ is_family_favorite: !currentValue }).eq('id', recipeId)
+  }
+
   function toggleFilter(pill) {
     if (pill === 'All') {
       setActiveFilters(new Set(['All']))
@@ -448,6 +455,7 @@ export default function RecipeLibrary({ appUser }) {
             primaryTag={(recipeTags[recipe.id] || [])[0] || null}
             onTap={selectMode ? () => selectRecipe(recipe) : () => navigate(`/recipe/${recipe.id}`, { state: { from: '/meals/recipes' } })}
             onAddToWeek={selectMode ? () => selectRecipe(recipe) : () => setPlanSheetRecipe({ id: recipe.id, name: recipe.name })}
+            onToggleFavorite={() => toggleFavorite(recipe.id, recipe.is_family_favorite)}
           />
         ))}
         {!loading && filteredRecipes.length === 0 && (
@@ -593,7 +601,7 @@ export default function RecipeLibrary({ appUser }) {
 }
 
 // ── Recipe Grid Card ───────────────────────────────────────────────────────────
-function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWeek, primaryTag }) {
+function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWeek, onToggleFavorite, primaryTag }) {
   const arcColor = getArcColor(1)
   const total    = getTotalMinutes(recipe)
   const timeStr  = total > 0 ? formatTime(total) : null
@@ -636,9 +644,18 @@ function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWe
               {catLabel}
             </div>
           ) : <div />}
-          {recipe.is_family_favorite && (
-            <span style={{ color: C.honey, fontSize: '15px', lineHeight: 1, flexShrink: 0, marginLeft: '4px' }}>★</span>
-          )}
+          <button
+            onClick={e => { e.stopPropagation(); onToggleFavorite() }}
+            style={{
+              background: 'none', border: 'none', padding: '2px', cursor: 'pointer',
+              flexShrink: 0, marginLeft: '4px', display: 'flex', alignItems: 'center',
+            }}
+            aria-label={recipe.is_family_favorite ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            <svg viewBox="0 0 24 24" fill={recipe.is_family_favorite ? arcColor : 'none'} stroke={recipe.is_family_favorite ? arcColor : C.driftwood} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          </button>
         </div>
 
         {/* Recipe name */}

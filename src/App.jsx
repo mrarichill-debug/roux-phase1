@@ -51,8 +51,7 @@ function TraditionsPlaceholder() {
   return (
     <div style={{ background: '#FAF7F2', minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
       <TopBar
-        leftAction={() => navigate('/meals')}
-        leftIcon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}><path d="m15 18-6-6 6-6"/></svg>}
+        leftAction={{ onClick: () => navigate(-1), label: 'Back' }}
         centerContent={<span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>Traditions</span>}
       />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 22px', color: '#8C7B6B', fontStyle: 'italic' }}>
