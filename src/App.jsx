@@ -44,7 +44,7 @@ import BottomSheet from './components/BottomSheet'
 import TopBar from './components/TopBar'
 import ScrollToTop from './components/ScrollToTop'
 import BottomNav from './components/BottomNav'
-import { Shell } from './components/AppShell'
+// AppShell (Shell) removed — Phase 1 leftover, disconnected from routing
 
 function TraditionsPlaceholder() {
   const navigate = useNavigate()
@@ -373,7 +373,7 @@ function AuthenticatedApp({ appUser, setAppUser }) {
         <Route path="/onboarding"   element={<Onboarding     appUser={appUser} setAppUser={setAppUser} />} />
         <Route path="/settings/calendar" element={<CalendarConnect appUser={appUser} />} />
         {import.meta.env.DEV && <Route path="/dev/reset" element={<Suspense fallback={null}><DevReset appUser={appUser} /></Suspense>} />}
-        <Route path="/*"             element={<Shell          appUser={appUser} />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
       {/* ── Global topbar icons — sage, bell, avatar — z-index 150 ──── */}
