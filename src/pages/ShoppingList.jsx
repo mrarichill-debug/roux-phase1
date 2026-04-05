@@ -74,7 +74,7 @@ export default function ShoppingList({ appUser }) {
   const [weekStart,     setWeekStart]     = useState('')
 
   // ── UI state ─────────────────────────────────────────────────────────────────
-  const [shoppingState,    setShoppingState]    = useState('building')  // building | shopping | complete
+  const [isComplete,       setIsComplete]       = useState(false)
   const [expandedItem,     setExpandedItem]     = useState(null)        // id of item with actions visible
   const [collapsedSections, setCollapsedSections] = useState(new Set()) // section keys that are collapsed
   const [gotItExpanded,    setGotItExpanded]    = useState(false)
@@ -84,7 +84,6 @@ export default function ShoppingList({ appUser }) {
   const [stores,           setStores]           = useState([])
   const [addingStore,      setAddingStore]      = useState(false)
   const [newStoreName,     setNewStoreName]     = useState('')
-  const [startBtnPressed,  setStartBtnPressed]  = useState(false)
   const [inCartPulsing,    setInCartPulsing]    = useState(false)
   const [completeVisible,  setCompleteVisible]  = useState(false)
   const [receiptSheetOpen, setReceiptSheetOpen] = useState(false)
@@ -132,12 +131,9 @@ export default function ShoppingList({ appUser }) {
     if (!list) { await autoGenerateList(plan); return }
 
     setShoppingList(list)
-    // Map DB status to UI state
-    const uiState = list.status === 'finalized' ? 'shopping'
-                  : list.status === 'completed' ? 'complete'
-                  : 'building'
-    setShoppingState(uiState)
-    if (uiState === 'complete') setCompleteVisible(true)
+    const complete = list.status === 'completed'
+    setIsComplete(complete)
+    if (complete) setCompleteVisible(true)
 
     // 3. Load items
     const { data: rawItems } = await supabase
@@ -248,6 +244,11 @@ export default function ShoppingList({ appUser }) {
     ))
     triggerInCartPulse()
 
+    // Auto-finalize list on first check (implicit trip start)
+    if (shoppingList?.id && gotItItems.length === 0) {
+      supabase.from('shopping_lists').update({ status: 'finalized' }).eq('id', shoppingList.id)
+    }
+
     await supabase.from('shopping_list_items')
       .update({ is_purchased: true, purchased_at: new Date().toISOString() })
       .eq('id', item.id)
@@ -294,21 +295,11 @@ export default function ShoppingList({ appUser }) {
     }
   }
 
-  async function startShopping() {
-    setStartBtnPressed(true)
-    setTimeout(() => setStartBtnPressed(false), 150)
-    setSageVisible(false)
-    await supabase.from('shopping_lists')
-      .update({ status: 'finalized' })
-      .eq('id', shoppingList.id)
-    setShoppingState('shopping')
-  }
-
-  async function doneShopping() {
+  async function completeShopping() {
     await supabase.from('shopping_lists')
       .update({ status: 'completed', actual_cost: inCartTotal })
       .eq('id', shoppingList.id)
-    setShoppingState('complete')
+    setIsComplete(true)
     setCompleteVisible(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -424,96 +415,79 @@ export default function ShoppingList({ appUser }) {
         </div>
       </div>
 
-      {/* ── Start/Done Shopping CTA (cream body, before budget strip) ──────── */}
-      {shoppingState !== 'complete' && (
-        <div style={{ padding: '14px 24px 0', position: 'relative', zIndex: 1, animation: 'fadeUp 0.3s ease both' }}>
-          <button
-            onClick={shoppingState === 'building' ? startShopping : doneShopping}
-            style={{
-              width: '100%', padding: '14px', borderRadius: '12px',
-              background: arcColor, color: 'white', border: 'none',
-              fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
-              cursor: 'pointer', letterSpacing: '0.3px',
-              boxShadow: '0 2px 10px rgba(61,107,79,0.28)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
-            }}
-          >
-            {shoppingState === 'building' ? <><CartIcon size={17} /> Start Shopping</> : <><CheckIcon size={17} /> Done Shopping</>}
-          </button>
-
-          {/* Store filter pills */}
-          {shoppingState === 'building' && (
-            <div className="no-scrollbar" style={{ display: 'flex', gap: '6px', overflowX: 'auto', marginTop: '10px', alignItems: 'center' }}>
-              {[{ id: 'all', name: 'All Stores' }, ...stores].map(store => {
-                const isActive = activeStoreFilter === (store.id === 'all' ? 'all' : store.id)
-                return (
-                  <button
-                    key={store.id}
-                    onClick={() => setActiveStoreFilter(store.id === 'all' ? 'all' : store.id)}
-                    style={{
-                      fontSize: '11px', fontWeight: 500, padding: '6px 14px',
-                      borderRadius: '20px', whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0,
-                      background: isActive ? 'rgba(122,140,110,0.10)' : 'white',
-                      border: isActive ? `1px solid ${C.sage}` : '1px solid rgba(200,185,160,0.55)',
-                      color: isActive ? arcColor : C.driftwood,
-                      fontFamily: "'Jost', sans-serif", transition: 'all 0.15s',
-                      boxShadow: '0 1px 3px rgba(80,60,30,0.06)',
-                    }}
-                  >
-                    {store.name}
-                  </button>
-                )
-              })}
-              {addingStore ? (
-                <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
-                  <input
-                    type="text"
-                    value={newStoreName}
-                    onChange={e => setNewStoreName(e.target.value)}
-                    placeholder="Store name"
-                    autoFocus
-                    onKeyDown={e => { if (e.key === 'Enter') saveNewStore() }}
-                    style={{
-                      padding: '5px 10px', fontSize: '11px', width: '110px',
-                      border: `1px solid ${C.sage}`, borderRadius: '20px',
-                      fontFamily: "'Jost', sans-serif", color: C.ink,
-                      outline: 'none', background: 'white',
-                    }}
-                  />
-                  <button
-                    onClick={saveNewStore}
-                    disabled={!newStoreName.trim()}
-                    style={{
-                      padding: '5px 10px', fontSize: '10px', fontWeight: 500,
-                      borderRadius: '20px', cursor: newStoreName.trim() ? 'pointer' : 'default',
-                      border: 'none', background: arcColor, color: 'white',
-                      fontFamily: "'Jost', sans-serif", flexShrink: 0,
-                    }}
-                  >
-                    Add
-                  </button>
-                </div>
-              ) : (
+      {/* ── Store filter pills ──────────────────────────────────────���─────── */}
+      {!isComplete && (
+        <div style={{ padding: '10px 24px 0', position: 'relative', zIndex: 1 }}>
+          <div className="no-scrollbar" style={{ display: 'flex', gap: '6px', overflowX: 'auto', alignItems: 'center' }}>
+            {[{ id: 'all', name: 'All Stores' }, ...stores].map(store => {
+              const isActive = activeStoreFilter === (store.id === 'all' ? 'all' : store.id)
+              return (
                 <button
-                  onClick={() => { setAddingStore(true); setNewStoreName('') }}
+                  key={store.id}
+                  onClick={() => setActiveStoreFilter(store.id === 'all' ? 'all' : store.id)}
                   style={{
-                    fontSize: '11px', fontWeight: 400, padding: '6px 14px',
+                    fontSize: '11px', fontWeight: 500, padding: '6px 14px',
                     borderRadius: '20px', whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0,
-                    border: '1px dashed rgba(200,185,160,0.6)',
-                    background: 'transparent', color: C.driftwood,
-                    fontFamily: "'Jost', sans-serif",
+                    background: isActive ? 'rgba(122,140,110,0.10)' : 'white',
+                    border: isActive ? `1px solid ${C.sage}` : '1px solid rgba(200,185,160,0.55)',
+                    color: isActive ? arcColor : C.driftwood,
+                    fontFamily: "'Jost', sans-serif", transition: 'all 0.15s',
+                    boxShadow: '0 1px 3px rgba(80,60,30,0.06)',
                   }}
                 >
-                  + Add store
+                  {store.name}
                 </button>
-              )}
-            </div>
-          )}
+              )
+            })}
+            {addingStore ? (
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
+                <input
+                  type="text"
+                  value={newStoreName}
+                  onChange={e => setNewStoreName(e.target.value)}
+                  placeholder="Store name"
+                  autoFocus
+                  onKeyDown={e => { if (e.key === 'Enter') saveNewStore() }}
+                  style={{
+                    padding: '5px 10px', fontSize: '11px', width: '110px',
+                    border: `1px solid ${C.sage}`, borderRadius: '20px',
+                    fontFamily: "'Jost', sans-serif", color: C.ink,
+                    outline: 'none', background: 'white',
+                  }}
+                />
+                <button
+                  onClick={saveNewStore}
+                  disabled={!newStoreName.trim()}
+                  style={{
+                    padding: '5px 10px', fontSize: '10px', fontWeight: 500,
+                    borderRadius: '20px', cursor: newStoreName.trim() ? 'pointer' : 'default',
+                    border: 'none', background: arcColor, color: 'white',
+                    fontFamily: "'Jost', sans-serif", flexShrink: 0,
+                  }}
+                >
+                  Add
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => { setAddingStore(true); setNewStoreName('') }}
+                style={{
+                  fontSize: '11px', fontWeight: 400, padding: '6px 14px',
+                  borderRadius: '20px', whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0,
+                  border: '1px dashed rgba(200,185,160,0.6)',
+                  background: 'transparent', color: C.driftwood,
+                  fontFamily: "'Jost', sans-serif",
+                }}
+              >
+                + Add store
+              </button>
+            )}
+          </div>
         </div>
       )}
 
       {/* ── Complete card ────────────────────────────────────────────────────── */}
-      {completeVisible && shoppingState === 'complete' && (
+      {completeVisible && isComplete && (
         <div style={{
           margin: '20px 24px', background: 'white',
           border: '1px solid rgba(61,107,79,0.2)', borderRadius: '16px',
@@ -577,33 +551,35 @@ export default function ShoppingList({ appUser }) {
         </div>
       )}
 
-      {/* ── Budget strip ────────────────────────────────────────────────────── */}
-      <div style={{
-        margin: '16px 24px 14px', background: 'white',
-        border: '1px solid rgba(200,185,160,0.5)', borderRadius: '12px',
-        padding: '12px 16px', display: 'flex', alignItems: 'center',
-        boxShadow: '0 1px 4px rgba(80,60,30,0.06)',
-        position: 'relative', zIndex: 1,
-        animation: 'fadeUp 0.35s ease 0.05s both',
-      }}>
-        <BudgetCol label="Estimated" value={estimatedTotal ? formatPrice(estimatedTotal) : '—'} muted />
-        <div style={{ width: '1px', background: C.linen, alignSelf: 'stretch' }} />
-        <BudgetCol
-          label="In Cart"
-          value={formatPrice(inCartTotal) || '$0.00'}
-          color={C.forest}
-          pulsing={inCartPulsing}
-        />
-        <div style={{ width: '1px', background: C.linen, alignSelf: 'stretch' }} />
-        <BudgetCol
-          label="Remaining"
-          value={estimatedTotal ? formatPrice(remaining) : '—'}
-          color={remainingColor}
-        />
-      </div>
+      {/* ── Budget strip (appears once items are checked) ──────────────────── */}
+      {gotItItems.length > 0 && (
+        <div style={{
+          margin: '16px 24px 14px', background: 'white',
+          border: '1px solid rgba(200,185,160,0.5)', borderRadius: '12px',
+          padding: '12px 16px', display: 'flex', alignItems: 'center',
+          boxShadow: '0 1px 4px rgba(80,60,30,0.06)',
+          position: 'relative', zIndex: 1,
+          animation: 'fadeUp 0.35s ease 0.05s both',
+        }}>
+          <BudgetCol label="Estimated" value={estimatedTotal ? formatPrice(estimatedTotal) : '—'} muted />
+          <div style={{ width: '1px', background: C.linen, alignSelf: 'stretch' }} />
+          <BudgetCol
+            label="In Cart"
+            value={formatPrice(inCartTotal) || '$0.00'}
+            color={C.forest}
+            pulsing={inCartPulsing}
+          />
+          <div style={{ width: '1px', background: C.linen, alignSelf: 'stretch' }} />
+          <BudgetCol
+            label="Remaining"
+            value={estimatedTotal ? formatPrice(remaining) : '—'}
+            color={remainingColor}
+          />
+        </div>
+      )}
 
       {/* ── Sage nudge (Building state only) ────────────────────────────────── */}
-      {shoppingState === 'building' && sageVisible && (
+      {!isComplete && sageVisible && gotItItems.length === 0 && (
         <div style={{
           margin: '0 24px 14px',
           borderLeft: `3px solid ${C.sage}`,
@@ -698,7 +674,6 @@ export default function ShoppingList({ appUser }) {
                     item={item}
                     isLast={idx === sectionItems.length - 1}
                     isExpanded={expandedItem === item.id}
-                    shoppingState={shoppingState}
                     onTap={() => tapItem(item.id)}
                     onGotIt={() => handleGotIt(item)}
                     onAlreadyHave={() => handleAlreadyHave(item)}
@@ -785,15 +760,42 @@ export default function ShoppingList({ appUser }) {
       )}
 
       {/* ── Empty list state (all items checked) ────────────────────────────── */}
-      {activeItems.length === 0 && !loading && !noList && shoppingState !== 'complete' && (
+      {activeItems.length === 0 && !loading && !noList && !isComplete && (
         <div style={{ textAlign: 'center', padding: '32px 24px', position: 'relative', zIndex: 1 }}>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.ink, marginBottom: '6px' }}>
             All items accounted for.
           </div>
           <div style={{ fontSize: '13px', color: C.driftwood }}>
-            Tap "Done Shopping" when you're ready to wrap up.
+            Tap the checkmark when you're ready to wrap up.
           </div>
         </div>
+      )}
+
+      {/* ── Complete trip FAB ──────────────────────────────────────────────── */}
+      {gotItItems.length > 0 && !isComplete && (
+        <button
+          onClick={completeShopping}
+          aria-label="Complete shopping"
+          style={{
+            position: 'fixed',
+            bottom: 88,
+            right: 20,
+            width: 56,
+            height: 56,
+            borderRadius: '50%',
+            background: arcColor,
+            color: 'white',
+            border: 'none',
+            boxShadow: '0 4px 16px rgba(44,36,23,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 50,
+            cursor: 'pointer',
+          }}
+        >
+          <CheckIcon size={24} />
+        </button>
       )}
 
       {/* ── Bottom nav ──────────────────────────────────────────────────────── */}
@@ -845,12 +847,11 @@ function BudgetCol({ label, value, muted, color, pulsing }) {
 }
 
 // ── List item ──────────────────────────────────────────────────────────────────
-function ListItem({ item, isLast, isExpanded, shoppingState, onTap, onGotIt, onAlreadyHave }) {
+function ListItem({ item, isLast, isExpanded, onTap, onGotIt, onAlreadyHave }) {
   const { color: arcColor } = useArc()
-  const isShopping    = shoppingState === 'shopping'
-  const cbSize        = isShopping ? '30px' : '26px'
-  const cbRadius      = isShopping ? '10px' : '8px'
-  const itemMinHeight = isShopping ? '64px' : '56px'
+  const cbSize        = '28px'
+  const cbRadius      = '9px'
+  const itemMinHeight = '56px'
 
   const qtyStr = [item.quantity, item.unit].filter(Boolean).join(' ')
 
@@ -882,13 +883,13 @@ function ListItem({ item, isLast, isExpanded, shoppingState, onTap, onGotIt, onA
 
         {/* Item body */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: isShopping ? '15px' : '14px', fontWeight: 400, color: '#2C2417', lineHeight: 1.3, marginBottom: '2px' }}>
+          <div style={{ fontSize: '14px', fontWeight: 400, color: '#2C2417', lineHeight: 1.3, marginBottom: '2px' }}>
             {item.name}
             {item.is_recurring && (
               <span style={{ fontSize: '11px', color: '#7A8C6E', opacity: 0.7, marginLeft: '6px' }}>↻</span>
             )}
           </div>
-          {!isShopping && (
+          {(
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               {item.notes && (
                 <span style={{ fontSize: '11px', color: '#8B6F52', fontWeight: 300, fontStyle: 'italic' }}>
