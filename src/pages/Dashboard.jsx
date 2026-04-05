@@ -379,30 +379,6 @@ export default function Dashboard({ appUser }) {
           )}
         </div>
 
-        {/* ── Intelligence section ─────────────────────────────────────── */}
-        {loading ? (
-          <ShimmerCard height="100px" margin="14px 18px 0" />
-        ) : intel ? (
-          <IntelligenceCard intel={intel} navigate={navigate} arcColor={arcColor} arcStage={arcStage} />
-        ) : jokeData ? (
-          <HumorCard joke={jokeData.text} arcColor={arcColor} />
-        ) : null}
-
-        {/* ── Divider ──────────────────────────────────────────────────── */}
-        {!loading && <div style={{ height: '0.5px', background: '#E4DDD2', margin: '16px 18px' }} />}
-
-        {/* ── Tonight Card ──────────────────────────────────────────────── */}
-        {loading ? (
-          <ShimmerCard height="72px" margin="0 14px" />
-        ) : tonightMeal ? (
-          <TonightCard meal={tonightMeal} onView={() => navigate(tonightMeal.recipe_id ? `/recipe/${tonightMeal.recipe_id}` : '/thisweek', tonightMeal.recipe_id ? { state: { from: '/' } } : undefined)} />
-        ) : (
-          <TonightEmpty onPlan={() => navigate('/thisweek')} />
-        )}
-
-        {/* ── Divider ──────────────────────────────────────────────────── */}
-        {!loading && <div style={{ height: '0.5px', background: '#E4DDD2', margin: '16px 18px' }} />}
-
         {/* ── This Week Strip ───────────────────────────────────────────── */}
         {loading ? (
           <ShimmerCard height="70px" margin="0 18px" />
@@ -415,6 +391,30 @@ export default function Dashboard({ appUser }) {
             arcColor={arcColor}
           />
         )}
+
+        {/* ── Divider ──────────────────────────────────────────────────── */}
+        {!loading && <div style={{ height: '0.5px', background: '#E4DDD2', margin: '16px 18px' }} />}
+
+        {/* ── Tonight Card ──────────────────────────────────────────────── */}
+        {loading ? (
+          <ShimmerCard height="56px" margin="0 18px" />
+        ) : tonightMeal ? (
+          <TonightCard meal={tonightMeal} onView={() => navigate(tonightMeal.recipe_id ? `/recipe/${tonightMeal.recipe_id}` : '/thisweek', tonightMeal.recipe_id ? { state: { from: '/' } } : undefined)} />
+        ) : (
+          <TonightEmpty onPlan={() => navigate('/thisweek')} />
+        )}
+
+        {/* ── Divider ──────────────────────────────────────────────────── */}
+        {!loading && <div style={{ height: '0.5px', background: '#E4DDD2', margin: '16px 18px' }} />}
+
+        {/* ── Intelligence section ─────────────────────────────────────── */}
+        {loading ? (
+          <ShimmerCard height="100px" margin="14px 18px 0" />
+        ) : intel ? (
+          <IntelligenceCard intel={intel} navigate={navigate} arcColor={arcColor} arcStage={arcStage} />
+        ) : jokeData ? (
+          <HumorCard joke={jokeData.text} arcColor={arcColor} />
+        ) : null}
 
       </div>
 
@@ -564,7 +564,7 @@ function HumorCard({ joke, arcColor }) {
   )
 }
 
-// ── Tonight Card — deep walnut, no wood grain ───────────────────────────────
+// ── Tonight Card — left accent line on cream ────────────────────────────────
 function TonightCard({ meal, onView }) {
   const mealName = getMealName(meal)
   const slotType = meal.slot_type
@@ -578,34 +578,32 @@ function TonightCard({ meal, onView }) {
     <div
       onClick={onView}
       style={{
-        background: '#3C2F1E',
-        borderRadius: '14px',
-        padding: '14px 16px',
-        margin: '0 14px',
+        borderLeft: '2px solid #E4DDD2',
+        paddingLeft: '14px',
+        margin: '0 18px',
         cursor: 'pointer',
         animation: 'fadeUp 0.4s ease 0.08s both',
       }}
     >
       {/* Top row: label + pills */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
         <span style={{
-          fontSize: '9px', fontWeight: 500, letterSpacing: '2.5px',
-          textTransform: 'uppercase', color: 'rgba(250,247,242,0.45)',
+          fontSize: '9px', fontWeight: 500, letterSpacing: '0.1em',
+          textTransform: 'uppercase', color: C.driftwood,
         }}>
           Tonight
         </span>
         <span style={{
           fontSize: '9px', fontWeight: 500, padding: '2px 8px', borderRadius: '10px',
-          background: 'rgba(250,247,242,0.10)', color: 'rgba(250,247,242,0.65)',
-          border: '0.5px solid rgba(250,247,242,0.15)',
+          background: '#EFF4EC', color: C.forest,
+          border: '0.5px solid #C8D9C0',
         }}>
           {typeLabel}
         </span>
         {tradition && (
           <span style={{
             fontSize: '9px', fontWeight: 500, padding: '2px 8px', borderRadius: '10px',
-            background: 'rgba(250,247,242,0.10)', color: 'rgba(250,247,242,0.65)',
-            border: '0.5px solid rgba(250,247,242,0.15)',
+            background: 'rgba(196,154,60,0.12)', color: '#A07830',
           }}>
             {tradition}
           </span>
@@ -615,47 +613,44 @@ function TonightCard({ meal, onView }) {
       {/* Meal name */}
       <div style={{
         fontFamily: "'Playfair Display', serif",
-        fontSize: '16px', fontWeight: 500,
-        color: 'rgba(250,247,242,0.95)', lineHeight: 1.3,
+        fontSize: '17px', fontWeight: 500,
+        color: C.ink, lineHeight: 1.3,
       }}>
         {mealName ?? 'Dinner'}
       </div>
 
       {/* View recipe link */}
       {meal.recipe_id && (
-        <div style={{ textAlign: 'right', marginTop: '8px' }}>
-          <button
-            onClick={e => { e.stopPropagation(); onView() }}
-            style={{
-              background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-              fontSize: '9px', fontWeight: 400, color: 'rgba(250,247,242,0.30)',
-              fontFamily: "'Jost', sans-serif",
-            }}
-          >
-            View recipe →
-          </button>
-        </div>
+        <button
+          onClick={e => { e.stopPropagation(); onView() }}
+          style={{
+            background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+            fontSize: '9px', fontWeight: 400, color: C.driftwood,
+            fontFamily: "'Jost', sans-serif", marginTop: '6px',
+          }}
+        >
+          View recipe →
+        </button>
       )}
     </div>
   )
 }
 
-// ── Tonight Card — empty state (dashed outline, transparent) ────────────────
+// ── Tonight Card — empty state (linen left border on cream) ─────────────────
 function TonightEmpty({ onPlan }) {
   return (
     <div
       onClick={onPlan}
       style={{
-        border: '1px dashed #D4CEC7',
-        borderRadius: '14px',
-        padding: '14px 16px',
-        margin: '0 14px',
+        borderLeft: '2px dashed #E4DDD2',
+        paddingLeft: '14px',
+        margin: '0 18px',
         cursor: 'pointer',
         animation: 'fadeUp 0.4s ease 0.08s both',
       }}
     >
       <span style={{
-        fontSize: '9px', fontWeight: 500, letterSpacing: '2.5px',
+        fontSize: '9px', fontWeight: 500, letterSpacing: '0.1em',
         textTransform: 'uppercase', color: C.driftwood,
         marginBottom: '6px', display: 'block',
       }}>
