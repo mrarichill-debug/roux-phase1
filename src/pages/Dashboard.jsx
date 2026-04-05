@@ -49,7 +49,7 @@ function formatGreetingDate(d) {
 function getMealName(meal) {
   if (!meal) return null
   if (meal.slot_type === 'leftover') return 'Leftovers'
-  if (meal.slot_type === 'takeout')  return 'Eating Out'
+  if (meal.slot_type === 'eating_out') return 'Eating Out'
   return meal.custom_name || meal.meals?.name || meal.recipes?.name || meal.note || null
 }
 
@@ -110,12 +110,14 @@ export default function Dashboard({ appUser }) {
           .eq('meal_plan_id', plan.id)
           .eq('day_of_week', todayDow)
           .eq('meal_type', 'dinner')
+          .eq('status', 'planned')
           .maybeSingle(),
 
         supabase.from('planned_meals')
           .select('day_of_week, status, tradition_id, slot_type, note, custom_name, created_at, updated_at')
           .eq('meal_plan_id', plan.id)
-          .eq('meal_type', 'dinner'),
+          .eq('meal_type', 'dinner')
+          .eq('status', 'planned'),
 
         supabase.from('shopping_lists')
           .select('id, status, estimated_cost, actual_cost, updated_at')
