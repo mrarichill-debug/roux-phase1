@@ -598,8 +598,6 @@ function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWe
   const total    = getTotalMinutes(recipe)
   const timeStr  = total > 0 ? formatTime(total) : null
   const catLabel = primaryTag || displayCategory(recipe.category)
-  const note     = recipe.personal_notes || null
-
   const animDelay = `${0.04 + index * 0.03}s`
 
   function handlePlanTap(e) {
@@ -651,16 +649,6 @@ function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWe
         }}>
           {recipe.name}
         </div>
-
-        {/* Handwritten note (Caveat) */}
-        {note && (
-          <div style={{
-            fontFamily: "'Caveat', cursive",
-            fontSize: '12px', color: C.walnut, opacity: 0.8, marginBottom: '4px',
-          }}>
-            {note}
-          </div>
-        )}
 
         {/* Meta: time + servings */}
         {(timeStr || recipe.servings) && (
