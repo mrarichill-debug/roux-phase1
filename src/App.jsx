@@ -46,6 +46,20 @@ import ScrollToTop from './components/ScrollToTop'
 import BottomNav from './components/BottomNav'
 // AppShell (Shell) removed — Phase 1 leftover, disconnected from routing
 
+function formatRelativeTime(dateStr) {
+  if (!dateStr) return ''
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'Just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  if (days === 1) return 'Yesterday'
+  if (days < 7) return `${days}d ago`
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
 function TraditionsPlaceholder() {
   const navigate = useNavigate()
   return (
@@ -285,13 +299,13 @@ function AuthenticatedApp({ appUser, setAppUser }) {
   const location = useLocation()
   const isOnboarding = location.pathname === '/onboarding'
   const [profileOpen, setProfileOpen] = useState(false)
-  const [sageSheetOpen, setSageSheetOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
+  const [sageActivity, setSageActivity] = useState([])
   const [approvalRoles, setApprovalRoles] = useState({}) // notifId → selected role
   const firstName = appUser?.name?.split(' ')[0] ?? ''
 
-  // Load unread notifications on mount
+  // Load unread notifications + sage activity on mount
   useEffect(() => {
     if (!appUser?.id) return
     supabase.from('notifications')
@@ -304,9 +318,19 @@ function AuthenticatedApp({ appUser, setAppUser }) {
         if (data) setNotifications(data)
         if (error) console.log('[Roux] notifications not available:', error.message)
       })
+    if (appUser.household_id) {
+      supabase.from('sage_background_activity')
+        .select('id, message, activity_type, created_at, seen, metadata')
+        .eq('household_id', appUser.household_id)
+        .eq('seen', false)
+        .order('created_at', { ascending: false })
+        .limit(5)
+        .then(({ data }) => { if (data) setSageActivity(data) })
+    }
   }, [appUser?.id])
 
   const unreadCount = notifications.filter(n => !n.is_read).length
+  const totalBadge = unreadCount + (sageActivity?.length ?? 0)
 
   async function handleNotifAction(notifId, action, targetId, role) {
     if (action === 'approve_member') {
@@ -383,22 +407,6 @@ function AuthenticatedApp({ appUser, setAppUser }) {
         padding: '0 14px', gap: '2px',
         zIndex: 150, pointerEvents: 'none',
       }}>
-        {/* Sage */}
-        <button
-          onClick={() => setSageSheetOpen(true)}
-          aria-label="Sage"
-          style={{
-            pointerEvents: 'auto',
-            width: '32px', height: '32px', borderRadius: '50%',
-            background: 'none', border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'rgba(210,230,200,0.7)',
-          }}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 19, height: 19 }}>
-            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-          </svg>
-        </button>
         {/* Bell */}
         <button
           onClick={() => setNotifOpen(true)}
@@ -415,7 +423,7 @@ function AuthenticatedApp({ appUser, setAppUser }) {
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
           </svg>
-          {unreadCount > 0 && (
+          {totalBadge > 0 && (
             <span style={{
               position: 'absolute', top: '4px', right: '4px',
               width: '8px', height: '8px', borderRadius: '50%',
@@ -449,38 +457,46 @@ function AuthenticatedApp({ appUser, setAppUser }) {
         onClose={() => setProfileOpen(false)}
       />
 
-      {/* ── Sage Summary Sheet ─────────────────────────────────────────── */}
-      <BottomSheet isOpen={sageSheetOpen} onClose={() => setSageSheetOpen(false)} maxHeight="70vh">
-        <div style={{ padding: '8px 22px 24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(122,140,110,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="#7A8C6E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
-                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-              </svg>
-            </div>
-            <div>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: '#2C2417' }}>✦</div>
-              <div style={{ fontSize: '11px', color: '#8C7B6B', fontWeight: 300 }}>Your kitchen companion</div>
-            </div>
-          </div>
-
-          <div style={{ textAlign: 'center', padding: '24px 0' }}>
-            <div style={{ fontSize: '14px', color: '#8C7B6B', fontStyle: 'italic', lineHeight: 1.6, fontFamily: "'Jost', sans-serif", fontWeight: 300 }}>
-              Nothing new right now, {firstName}. I'll surface suggestions as you plan and cook this week.
-            </div>
-          </div>
-        </div>
-      </BottomSheet>
-
-      {/* ── Notification Sheet ────────────────────────────────────────────── */}
-      <BottomSheet isOpen={notifOpen} onClose={() => setNotifOpen(false)} title="Notifications">
+      {/* ── Notification Sheet (includes sage activity + notifications) ── */}
+      <BottomSheet isOpen={notifOpen} onClose={() => {
+        setNotifOpen(false)
+        if (sageActivity?.length > 0) {
+          const ids = sageActivity.map(a => a.id)
+          supabase.from('sage_background_activity').update({ seen: true }).in('id', ids).then(() => {})
+          setSageActivity([])
+        }
+      }} title="Notifications">
         <div style={{ padding: '0 22px 40px' }}>
-          {notifications.length === 0 ? (
+          {sageActivity?.length > 0 && (
+            <>
+              {sageActivity.map(item => (
+                <div key={item.id} style={{
+                  padding: '12px 0',
+                  borderBottom: '0.5px solid #E4DDD2',
+                  display: 'flex', gap: 10, alignItems: 'flex-start',
+                }}>
+                  <span style={{ color: '#3D6B4F', fontSize: 12, marginTop: 2 }}>✦</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '13px', color: '#2C2417', lineHeight: 1.55, fontFamily: "'Jost', sans-serif", fontWeight: 300 }}>
+                      {item.message}
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#8C7B6B', marginTop: 3 }}>
+                      {formatRelativeTime(item.created_at)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {notifications.length > 0 && (
+                <div style={{ height: '0.5px', background: '#E4DDD2', margin: '4px 0' }} />
+              )}
+            </>
+          )}
+          {notifications.length === 0 && sageActivity?.length === 0 ? (
             <div style={{ fontSize: '13px', fontStyle: 'italic', color: '#8C7B6B', padding: '20px 0' }}>
               All caught up — nothing needs your attention.
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '8px', marginTop: sageActivity?.length > 0 ? '10px' : 0 }}>
               {notifications.map(n => (
                 <div key={n.id} style={{
                   padding: '14px', borderRadius: '12px',

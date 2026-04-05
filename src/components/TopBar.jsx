@@ -115,8 +115,8 @@ export default function TopBar({
                 {action.icon}
               </button>
             ))}
-            {/* Spacer for global icons (sage + bell + avatar) at z-index 150 */}
-            <div style={{ width: '100px' }} />
+            {/* Spacer for global icons (bell + avatar) at z-index 150 */}
+            <div style={{ width: '72px' }} />
           </div>
         </div>
 
