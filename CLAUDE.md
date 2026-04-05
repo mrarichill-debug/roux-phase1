@@ -1,5 +1,5 @@
 # CLAUDE.md — Roux Phase 2
-*Last updated: March 28, 2026*
+*Last updated: April 5, 2026*
 
 ## What Is Roux
 
@@ -60,6 +60,18 @@ If any answer is clearly "no" — stop and flag it before proceeding.
 
 ---
 
+## Writer/Reviewer Rule
+
+After any significant code change (component rewrites, new utilities, multi-file edits), run a review pass before presenting results:
+
+1. **Small changes** (single function, bug fix): Run `/simplify` against the changed files.
+2. **Large changes** (new screen, rewrite, 3+ files): Spawn a separate review agent in a worktree that reads the diff cold — no context of why it was written. It evaluates: unused code, missed edge cases, CLAUDE.md rule violations, unnecessary coupling, Roux pattern compliance (design tokens, fonts, card styles, activity logging).
+3. **Never skip the review.** If the build passes but the review wasn't run, the task isn't done.
+
+The reviewer's job is to find what the writer missed. The writer's job is to fix what the reviewer found. Both happen before showing results to Aric.
+
+---
+
 ## Deployment Rule
 
 Only deploy to Vercel at the explicit close of a build session when Aric asks. All development and testing during a session runs on localhost (`npm run dev`). Never push mid-session unless Aric specifically requests it.
@@ -72,9 +84,17 @@ Active. All meaningful user actions write to `activity_log` via `src/lib/activit
 
 ---
 
-## Session Notes (Mar 25, 2026)
+## Session Notes (Apr 5, 2026)
 
-Google Calendar sync is live and working for Hill house. Calendar selection UI built — Lauren can choose which calendars appear in Roux. `selectedCalendarIds` stored in `users.calendar_credentials`. Angels/Lakers excluded, Hill Family and personal calendars included.
+**Home screen rebuilt** — intelligence-first layout. Hero is now an Intelligence Card (arc-stage-aware message + "What can Roux do for you?" + action buttons). Tonight card slimmed down (kept wood grain). Week strip in a white card. Removed: SpendingSnapshot, QuickAccess tiles, SageNudgeCard stack, SageIntelligenceCard herb visual.
+
+**New utilities:** `src/lib/getIntelligenceMessage.js` (derives intelligence card from dashboard data), `src/lib/getArcStage.js` (stage 1–7), `src/lib/jokes.js` (20 dry-wit jokes, 10-day cooldown, cycle tracking in `users.preferences`).
+
+**BottomSheet scroll lock fixed** — three-layer approach: body `position: fixed` + `<html>` `overflow: hidden` + `.page-scroll-container` class on page wrappers. Document-level `touchmove` listener intercepts all touches, only allows scroll inside `[data-sheet-scroll]`.
+
+**Writer/Reviewer workflow** added to CLAUDE.md. After significant changes, run `/simplify` or spawn a review agent. Review caught: useMemo side effect, stale closure in `sageBusyNightDetection`, WeekStrip day-mapping bug, dead state vars + wasted Supabase queries.
+
+**Effort level** set to `high` in `.claude/settings.json`.
 
 ---
 
@@ -90,6 +110,8 @@ Google Calendar sync is live and working for Hill house. Calendar selection UI b
 | `docs/USER-EDUCATION.md` | Pre-launch — empty states, tooltips, Sage nudges |
 | `docs/ERROR_LOG.md` | Before any task — known bugs, root causes, fixes |
 | `docs/LESSONS.md` | Before any task — principles and patterns learned from the build |
+| `docs/INTELLIGENCE-ARC.md` | Building intelligence features — 7-stage arc, mental loads, stage triggers |
+| `docs/MESSAGE-POOL.md` | Writing intelligence messages — 110 messages, selection logic, OTO rules |
 
 ## Skills Index
 

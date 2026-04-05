@@ -10,7 +10,7 @@
  *   zIndex    — optional, default 200 (backdrop) / 201 (sheet)
  *   maxHeight — optional, default '85vh'
  */
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef } from 'react'
 import useKeyboardAware from '../hooks/useKeyboardAware'
 
 const C = {
@@ -49,7 +49,8 @@ export default function BottomSheet({ isOpen, onClose, title, children, zIndex =
       document.body.style.width = ''
       document.body.style.top = ''
       document.documentElement.style.overflow = ''
-      pageContainers.forEach(el => el.style.overflow = '')
+      // Re-query on cleanup in case DOM changed while sheet was open
+      document.querySelectorAll('.page-scroll-container').forEach(el => el.style.overflow = '')
       window.scrollTo(0, scrollYRef.current)
     }
   }, [isOpen])

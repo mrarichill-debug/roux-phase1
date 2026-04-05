@@ -335,7 +335,7 @@ export default function Dashboard({ appUser }) {
   const arcColor = getArcColor(arcStage)
 
   // Plan status text for greeting
-  const plannedCount = weekMeals.length
+  const plannedCount = Math.min(new Set(weekMeals.map(m => m.day_of_week)).size, 7)
 
   return (
     <div className="page-scroll-container" style={{

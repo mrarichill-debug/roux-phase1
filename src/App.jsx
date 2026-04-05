@@ -455,7 +455,7 @@ function AuthenticatedApp({ appUser, setAppUser }) {
               </svg>
             </div>
             <div>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: '#2C2417' }}>Sage</div>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: '#2C2417' }}>✦</div>
               <div style={{ fontSize: '11px', color: '#8C7B6B', fontWeight: 300 }}>Your kitchen companion</div>
             </div>
           </div>

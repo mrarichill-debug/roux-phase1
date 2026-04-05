@@ -73,6 +73,21 @@
 **Root cause:** String comparison was case-sensitive. Sage normalizes meal names to title case when storing `source_meal_name`, but `custom_name` in `planned_meals` preserves whatever case Lauren typed.
 **Rule going forward:** Any string comparison between user-entered meal names and stored `source_meal_name` values must use `.toLowerCase()` on both sides. Never assume consistent casing between these two fields.
 
+### Apr 5 — WeekStrip planned highlights shifted by one day
+**What happened:** Day tiles on the Home screen showed green "planned" fill on the wrong day (e.g., Wednesday's plan highlighted Tuesday).
+**Root cause:** `DOW_KEYS` is indexed by JS day (0=Sunday), but `getMondayBasedIndex()` returns a Monday-based index (0=Mon). Feeding the Monday-based index back into the Sunday-based array produced the wrong key.
+**Rule going forward:** `DOW_KEYS[d.getDay()]` — never pass a Monday-based index into a Sunday-based array. When mixing index systems, name the variable to indicate which system it uses.
+
+### Apr 5 — Stale closure passing empty weekMeals to sageBusyNightDetection
+**What happened:** `sageBusyNightDetection` always received an empty meals array, so busy night detection never compared against existing plans.
+**Root cause:** `weekMeals` in the async `loadDashboardData` closure captured the initial `useState([])` value. `setWeekMeals(weekRes.data)` updates state for the next render, not the current closure.
+**Rule going forward:** Inside async data-fetching functions, pass the fresh query result (`weekRes.data`) directly to downstream logic — never reference the React state variable from the same closure.
+
+### Apr 5 — Side effect (Supabase write) inside useMemo
+**What happened:** Joke persistence (`supabase.from('users').update(...)`) was inside a `useMemo`, which could fire multiple times if React recomputed the memo.
+**Root cause:** `useMemo` is not guaranteed to run exactly once — React Strict Mode double-invokes, and React may discard/recompute memos.
+**Rule going forward:** Never put side effects (DB writes, API calls, analytics) inside `useMemo`. Derive the value in `useMemo`, persist it in a separate `useEffect`.
+
 ### Mar 28 — shopping_trips status check constraint mismatch
 **What happened:** "Start a Trip" insert failed with 400 Bad Request — constraint violation on `shopping_trips.status`.
 **Root cause:** Original table had `CHECK (status IN ('planned', 'active', 'completed'))`. New code correctly used `'pending'` and `'in_progress'` but those values weren't in the constraint.

@@ -146,3 +146,23 @@
 ### Sage intelligence score is weighted by data quality
 **The lesson:** Receipt scans (x3) and weekly reviews (x4) are weighted higher than meals planned (x1) because they provide richer, more accurate data. Pantry staples (x2) are mid-weight.
 **Why it matters:** The score should reflect data quality, not just activity. A household that scans every receipt and reviews every week should advance faster than one that just plans meals.
+
+### Intelligence messages derive from already-fetched data only
+**The lesson:** `getIntelligenceMessage.js` must never add new Supabase queries. It receives the data that `loadDashboardData` already fetched and derives the message from that. If a data point isn't available, approximate or skip the condition.
+**Why it matters:** The Home screen already makes 6+ Supabase round-trips. Every new query adds latency to the most-visited screen in the app.
+
+### Never put side effects inside useMemo
+**The lesson:** `useMemo` is for pure derivation only. DB writes, API calls, and analytics must go in `useEffect`. React does not guarantee memos run exactly once — Strict Mode double-invokes, and React reserves the right to discard and recompute.
+**Why it matters:** A Supabase `.update()` inside `useMemo` caused the joke index to advance multiple times on re-renders. The fix was separating derivation (useMemo) from persistence (useEffect).
+
+### Don't reference React state variables inside the same async function that sets them
+**The lesson:** Inside `loadDashboardData`, `weekMeals` is the initial `[]` from `useState`, not the value that `setWeekMeals(weekRes.data)` just scheduled. Pass `weekRes.data` directly to downstream logic.
+**Why it matters:** `sageBusyNightDetection` always received an empty array, so it never detected conflicts with existing planned meals.
+
+### Writer/Reviewer is non-negotiable on significant changes
+**The lesson:** After any component rewrite or multi-file change, run `/simplify` (small) or spawn a review agent (large). The reviewer reads the diff cold — no context of why it was written.
+**Why it matters:** The Apr 5 Dashboard review caught a day-mapping bug (planned highlights on wrong day), a stale closure (busy night detection broken since initial build), and a useMemo side effect. All three would have shipped without the review pass.
+
+### Inner scroll containers defeat body scroll lock on mobile
+**The lesson:** `position: fixed` on `body` doesn't prevent scrolling inside inner containers with `overflow-y: auto` or tall content. Lock all three layers: body fixed, `<html>` overflow hidden, and any `.page-scroll-container` elements.
+**Why it matters:** BottomSheet's body lock worked on desktop but failed on the Week page because ThisWeek.jsx's content scrolled independently. Adding `document.documentElement.style.overflow = 'hidden'` and locking page containers fixed it.

@@ -1,5 +1,5 @@
 # BUILD FLAGS & PROGRESS TRACKER
-*Roux Phase 2 — Last updated March 18, 2026*
+*Roux Phase 2 — Last updated April 5, 2026*
 
 ---
 
@@ -22,7 +22,9 @@
 - [x] Build AddToPlanSheet (reusable week/day/slot picker with calendar)
 - [x] Build AddDayTypeSheet (reusable, used in both settings screens)
 - [ ] Build welcome / onboarding flow (5 screens — all prototypes approved)
-- [ ] Build dashboard improvements (spending snapshot, Sage nudge, "By Ingredient" destination)
+- [x] Build dashboard redesign — intelligence-first layout (Intelligence Card, slim Tonight Card, Week Strip in card)
+- [ ] Wire full message pool from `docs/MESSAGE-POOL.md` into `getIntelligenceMessage.js` (currently simplified, 8 conditions)
+- [ ] Build "By Ingredient" destination screen
 - [x] Build Save a Recipe flow (Photo capture + URL extraction + Manual entry, Sage ingredient review on save)
 - [ ] Build Traditions screen (`/meals/traditions`) — schema live, routes to placeholder
 - [ ] Build Sage screen (`/sage`) — placeholder only
@@ -42,13 +44,13 @@
 ## ⚠ Must-Fix Before Go-Live
 
 ### 1. "By Ingredient" Shortcut — Dead Tap
-The "By Ingredient" tile on the dashboard Quick Access and the Recipe Library currently go nowhere. Build the screen or replace with a working destination before launch.
+The "By Ingredient" tile was removed from the dashboard in the Apr 5 redesign. The Recipe Library version still goes nowhere. Build the screen or replace with a working destination before launch.
 
 ### 2. Publish → Shopping List Handoff — Undesigned
 When Lauren publishes the plan, the app must immediately surface a prompt to build the shopping list. The transition from This Week → Shopping List is the most important workflow handoff in the app. Currently undesigned at the transition moment.
 
-### 3. Tonight Card Empty State — Board Must Always Show
-The cutting board background must always be present regardless of plan status. Empty state = same wood grain + dashed groove + warm italic text. Never show a blank or unstyled container.
+### 3. Tonight Card Empty State — ✅ RESOLVED (Apr 5)
+Cutting board background always present. Empty state: wood grain + italic "What's for dinner?" + "Plan tonight" button. Slim design (no divider, no prep time row).
 
 ### 4. Recipe Library Results Count — ✅ RESOLVED
 Meals hub archive tiles show live counts (recipes, meals, traditions) that refresh on window focus. Recipe library grid count may still need verification against active filter state.
