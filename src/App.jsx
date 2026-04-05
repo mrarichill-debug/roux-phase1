@@ -391,6 +391,7 @@ function AuthenticatedApp({ appUser, setAppUser }) {
       <Routes>
         <Route path="/"              element={appUser.has_planned_first_meal === false ? <Navigate to="/onboarding" replace /> : <Dashboard appUser={appUser} />} />
         <Route path="/thisweek"     element={<ThisWeek      appUser={appUser} />} />
+        <Route path="/week"         element={<ThisWeek      appUser={appUser} />} />
         <Route path="/meals"         element={<Meals          appUser={appUser} />} />
         <Route path="/meals/recipes" element={<RecipeLibrary appUser={appUser} />} />
         <Route path="/meals/plan"    element={<PlanMeal       appUser={appUser} />} />
