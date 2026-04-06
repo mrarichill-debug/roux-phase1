@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from
 import { supabase } from './lib/supabase'
 import { loadAppUser } from './lib/auth'
 import { getBrowserTimezone } from './lib/dateUtils'
+import { autoClosePastWeeks } from './lib/autoClosePastWeeks'
 
 // Welcome screens
 import WelcomeScreen1  from './pages/welcome/WelcomeScreen1'
@@ -238,6 +239,9 @@ export default function App() {
               if (error) console.warn('[Roux] Could not sync timezone:', error.message)
             })
         }
+
+        // Auto-close any past weeks that were never reviewed (fire-and-forget)
+        autoClosePastWeeks(user.household_id).catch(() => {})
 
         // Compute arc stage (deferred, never blocks app load)
         Promise.all([

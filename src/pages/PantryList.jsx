@@ -808,25 +808,27 @@ export default function PantryList({ appUser }) {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '14px', color: C.ink }}>{sentenceCase(item.name)}</div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', lineHeight: 1.3 }}>
+                        <span style={{ fontSize: '14px', color: C.ink }}>{sentenceCase(item.name)}</span>
+                        {(item.quantity || item.unit) && (() => {
+                          const qtyStr = [item.quantity, item.unit].filter(Boolean).join(' ')
+                          const batchVal = (item.sourceMeals || []).reduce((b, name) => batchByMeal[name.toLowerCase()] || b, null)
+                          return (
+                            <span style={{ fontSize: '12px', color: C.driftwood }}>
+                              ({qtyStr}{batchVal && batchVal !== 1 && (
+                                <span style={{ fontSize: '9px', fontWeight: 600, color: arcColor, marginLeft: '2px' }}>
+                                  {batchVal === 0.5 ? '×½' : batchVal === 1.5 ? '×1½' : `×${batchVal}`}
+                                </span>
+                              )})
+                            </span>
+                          )
+                        })()}
+                      </div>
                       {isStaple && (
-                        <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic' }}>Pantry staple</div>
+                        <div style={{ fontSize: '11px', color: C.driftwood, fontStyle: 'italic' }}>Pantry staple</div>
                       )}
-                      {(item.quantity || item.unit) && (() => {
-                        const batchVal = (item.sourceMeals || []).reduce((b, name) => batchByMeal[name.toLowerCase()] || b, null)
-                        return (
-                          <div style={{ fontSize: '11px', color: C.driftwood }}>
-                            {[item.quantity, item.unit].filter(Boolean).join(' ')}
-                            {batchVal && batchVal !== 1 && (
-                              <span style={{ fontSize: '9px', fontWeight: 600, color: arcColor, marginLeft: '4px' }}>
-                                {batchVal === 0.5 ? '×½' : batchVal === 1.5 ? '×1½' : `×${batchVal}`}
-                              </span>
-                            )}
-                          </div>
-                        )
-                      })()}
                       {item.sourceMeals?.length > 0 && (
-                        <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic' }}>For {item.sourceMeals.join(', ')}</div>
+                        <div style={{ fontSize: '11px', color: C.driftwood, fontStyle: 'italic' }}>For {item.sourceMeals.join(', ')}</div>
                       )}
                     </div>
                     <div style={{ display: 'flex', flexDirection: assignedTrip ? 'column' : 'row', alignItems: assignedTrip ? 'flex-end' : 'center', gap: assignedTrip ? '4px' : '8px', flexShrink: 0, marginTop: '2px' }}>
