@@ -58,6 +58,11 @@ const ICONS = {
       <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/>
     </svg>
   ),
+  admin: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="#8C7B6B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
+      <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/>
+    </svg>
+  ),
 }
 
 export default function SettingsHub({ appUser }) {
@@ -84,6 +89,12 @@ export default function SettingsHub({ appUser }) {
     }
     setMemberCount(countRes.count ?? 0)
   }
+
+  const ADMIN_USER_IDS = [
+    '1fb645c3-14a4-4057-afb3-9e803c3cca78', // Aric
+    '18c38c61-fb49-4c29-a4c2-e8907a554dac',  // Lauren
+  ]
+  const isAdmin = ADMIN_USER_IDS.includes(appUser?.id)
 
   const firstName = appUser?.name?.split(' ')[0] ?? ''
   const initials = (appUser?.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
@@ -160,6 +171,16 @@ export default function SettingsHub({ appUser }) {
         {/* ── Account ────────────────────────────────────────────────── */}
         <SectionLabel text="Account" />
         <SettingsCard rows={accountRows} navigate={navigate} />
+
+        {/* ── Developer (admin only) ─────────────────────────────────── */}
+        {isAdmin && (
+          <>
+            <SectionLabel text="Developer" />
+            <SettingsCard rows={[
+              { key: 'admin', icon: ICONS.admin, title: 'Admin Dashboard', sub: 'App health, analytics, data', route: '/admin' },
+            ]} navigate={navigate} />
+          </>
+        )}
 
       </div>
 
