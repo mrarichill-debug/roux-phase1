@@ -744,7 +744,11 @@ export default function ThisWeek({ appUser }) {
     const endDate = new Date(weekEndDate + 'T20:00:00')
     return now > endDate
   })()
-  const ghostMeals = meals.filter(m => m.entry_type === 'ghost' && !m.linkedRecipes?.length && !m.removed_at)
+  // Only show ghost meal warnings for current or future weeks
+  const isCurrentOrFutureWeek = weekOffset >= 0
+  const ghostMeals = isCurrentOrFutureWeek
+    ? meals.filter(m => m.entry_type === 'ghost' && !m.linkedRecipes?.length && !m.removed_at)
+    : []
   const ghostNames = ghostMeals.map(m => m.custom_name || 'Untitled')
   const ghostMessage = ghostNames.length === 1
     ? `${ghostNames[0]} doesn't have a recipe yet — add one so your shopping list stays complete.`

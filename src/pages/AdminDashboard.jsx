@@ -20,8 +20,12 @@ export default function AdminDashboard({ appUser }) {
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState({})
 
-  // Gate: admin role only
-  if (!appUser || appUser.role !== 'admin') {
+  // ⚠️ PRE-LAUNCH: Replace with proper role-based auth before opening to other users
+  const ADMIN_USER_IDS = [
+    '1fb645c3-14a4-4057-afb3-9e803c3cca78', // Aric
+    '18c38c61-fb49-4c29-a4c2-e8907a554dac',  // Lauren
+  ]
+  if (!appUser || !ADMIN_USER_IDS.includes(appUser.id)) {
     return <Navigate to="/" replace />
   }
 
