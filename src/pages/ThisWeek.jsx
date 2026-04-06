@@ -542,6 +542,8 @@ export default function ThisWeek({ appUser }) {
 
   // ── Recipe link sheet for ghost meals ─────────────────────────
   function openLinkSheet(meal) {
+    // Dismiss active keyboard before opening sheet
+    if (document.activeElement) document.activeElement.blur()
     setLinkSheetMeal(meal)
     setLinkSearch('')
     setLinkResults([])
@@ -966,7 +968,7 @@ export default function ThisWeek({ appUser }) {
       {recipeLinkedTip && (
         <SageNudgeCard
           tier="teaching"
-          message={"You just linked a recipe — nice work! \uD83C\uDF3F A meal and its recipe aren't always the same thing. 'French Dip Sandwiches' might link to a slow cooker beef recipe AND a homemade French bread recipe. Other times they match — 'Chicken Enchiladas' linked to a chicken enchilada recipe. Each time you plan a meal, you choose which recipe fits that week. The more you link, the faster Roux anticipates what you need."}
+          message={"You just linked a recipe — nice work! A meal and its recipe aren't always the same thing. 'French Dip Sandwiches' might link to a slow cooker beef recipe AND a homemade French bread recipe. The more you link, the smarter your shopping list gets."}
           actionLabel="Got it, don't show again"
           onAction={async () => {
             const updated = await dismissTooltip(appUser.id, appUser.dismissed_tooltips, 'recipe_linked_first')

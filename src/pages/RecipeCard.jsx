@@ -73,6 +73,7 @@ export default function RecipeCard({ appUser }) {
   const backTo = location.state?.from || '/meals/recipes'
 
   const [recipe, setRecipe] = useState(null)
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [ingredients, setIngredients] = useState([])
   const [instructions, setInstructions] = useState([])
   const [loading, setLoading] = useState(true)
@@ -572,6 +573,58 @@ export default function RecipeCard({ appUser }) {
           </div>
         </>
       )}
+
+      {/* Delete recipe — quiet, bottom of page */}
+      {recipe && (
+        <div style={{ padding: '24px 22px 16px', textAlign: 'center' }}>
+          <button
+            onClick={() => setDeleteConfirm(true)}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: '12px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300,
+            }}
+          >
+            Delete recipe
+          </button>
+        </div>
+      )}
+
+      {/* Delete confirmation sheet */}
+      <BottomSheet isOpen={deleteConfirm} onClose={() => setDeleteConfirm(false)}>
+        <div style={{ padding: '16px 22px 24px' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '8px' }}>
+            Delete this recipe?
+          </div>
+          <div style={{ fontSize: '13px', color: C.driftwood, lineHeight: 1.6, marginBottom: '20px' }}>
+            This will permanently remove {recipe?.name || 'this recipe'} from your library. Meals linked to this recipe won't be affected.
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={async () => {
+                await supabase.from('recipes').delete().eq('id', recipe.id)
+                navigate(-1)
+              }}
+              style={{
+                flex: 1, padding: '12px', borderRadius: '12px',
+                background: 'none', color: '#A03030', border: '1px solid #E4DDD2',
+                fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500, cursor: 'pointer',
+              }}
+            >
+              Delete
+            </button>
+            <button
+              onClick={() => setDeleteConfirm(false)}
+              style={{
+                flex: 1, padding: '12px', borderRadius: '12px',
+                background: 'none', color: C.driftwood, border: '1px solid #E4DDD2',
+                fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 400, cursor: 'pointer',
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </BottomSheet>
 
       <BottomNav activeTab="meals" />
     </div>

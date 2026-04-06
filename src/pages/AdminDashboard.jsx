@@ -3,7 +3,7 @@
  * Visible to household admins only. No topbar, no bottom nav.
  */
 import { useEffect, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { getArcStage } from '../lib/getArcStage'
 import { getArcColor } from '../lib/getArcColor'
@@ -17,6 +17,7 @@ const C = {
 }
 
 export default function AdminDashboard({ appUser }) {
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState({})
 
@@ -142,11 +143,19 @@ export default function AdminDashboard({ appUser }) {
       padding: '24px 20px 60px',
     }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '28px' }}>
-        <span style={{ fontFamily: "'Slabo 27px', Georgia, serif", fontSize: '26px', fontWeight: 400, color: C.forest }}>
-          Roux.
-        </span>
-        <span style={{ fontSize: '13px', color: C.driftwood, letterSpacing: '1px' }}>Admin</span>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '12px 20px', borderBottom: '0.5px solid #E4DDD2', marginBottom: '24px',
+      }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', color: C.ink }}>
+          Roux. <span style={{ fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300 }}>Admin</span>
+        </div>
+        <button onClick={() => navigate('/')} style={{
+          fontSize: '13px', color: C.forest, background: 'none', border: 'none',
+          cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+        }}>
+          ← Back to app
+        </button>
       </div>
 
       {loading ? (
