@@ -39,9 +39,6 @@ export default function PantryList({ appUser }) {
   const navigate = useNavigate()
   const tz = appUser?.timezone || 'America/Chicago'
 
-  // Week navigation
-  const [weekOffset, setWeekOffset] = useState(0)
-  const [weekDates, setWeekDates] = useState(() => getWeekDatesTZ(tz, 0))
   const [selectedMealPlanId, setSelectedMealPlanId] = useState(null)
   const [noMealPlan, setNoMealPlan] = useState(false)
 
@@ -93,12 +90,12 @@ export default function PantryList({ appUser }) {
     if (!manualCatPick) setAddCategory(categorizeIngredient(val))
   }
 
-  // Load week + meal plan when offset or household changes
+  // Load all active lists on mount
   useEffect(() => {
-    if (appUser?.household_id) loadWeekAndList()
-  }, [appUser?.household_id, weekOffset])
+    if (appUser?.household_id) loadAllActiveLists()
+  }, [appUser?.household_id])
 
-  async function loadWeekAndList() {
+  async function loadAllActiveLists() {
     if (!appUser?.household_id) return
     setLoading(true)
     setNoMealPlan(false)
@@ -107,82 +104,84 @@ export default function PantryList({ appUser }) {
     setSelectedMealPlanId(null)
     setGhostMealsWithoutIngredients([])
 
-    const dates = getWeekDatesTZ(tz, weekOffset)
-    setWeekDates(dates)
-    const ws = getWeekStartTZ(tz, weekOffset)
-
     try {
-      // Find meal plan for this week
-      const { data: plan } = await supabase
-        .from('meal_plans')
-        .select('id, week_start_date, week_end_date')
-        .eq('household_id', appUser.household_id)
-        .eq('week_start_date', ws)
-        .maybeSingle()
+      // Current Monday
+      const now = new Date()
+      const dayOfWeek = now.getDay()
+      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+      const currentMonday = new Date(now)
+      currentMonday.setDate(now.getDate() - daysToMonday)
+      currentMonday.setHours(0, 0, 0, 0)
+      const currentMondayStr = currentMonday.toISOString().split('T')[0]
 
-      if (!plan) {
+      // All active meal plans (current + future weeks, plus any un-reviewed past weeks)
+      const { data: activePlans } = await supabase
+        .from('meal_plans')
+        .select('id, week_start_date')
+        .eq('household_id', appUser.household_id)
+        .or(`week_start_date.gte.${currentMondayStr},reviewed_at.is.null`)
+        .order('week_start_date')
+
+      if (!activePlans?.length) {
         setNoMealPlan(true)
-        // Still load stores (household-level)
         supabase.from('grocery_stores').select('id, name, is_primary, sort_order').eq('household_id', appUser.household_id).order('sort_order')
           .then(({ data }) => setStores(data || []))
         setLoading(false)
         return
       }
 
-      setSelectedMealPlanId(plan.id)
-      await loadList(plan.id)
-    } catch (err) {
-      console.error('[PantryList] Load week error:', err)
-      setLoading(false)
-    }
-  }
+      // Use current week's plan as primary (for writes, ghosts, refresh)
+      const currentWeekPlan = activePlans.find(p => p.week_start_date === currentMondayStr) || activePlans[0]
+      setSelectedMealPlanId(currentWeekPlan.id)
 
-  async function loadList(mealPlanId) {
-    const mpId = mealPlanId || selectedMealPlanId
-    if (!mpId) return
-    setLoading(true)
-    try {
-      // Get or create shopping list for this meal plan
-      const activeListId = await getOrCreateShoppingList(mpId, appUser.household_id)
-      if (!activeListId) { setLoading(false); return }
-      setListId(activeListId)
+      // Get all shopping lists for active plans
+      const planIds = activePlans.map(p => p.id)
+      const { data: activeLists } = await supabase
+        .from('shopping_lists')
+        .select('id, meal_plan_id')
+        .in('meal_plan_id', planIds)
 
-      // Load grocery stores (household-level)
-      supabase.from('grocery_stores').select('id, name, is_primary, sort_order').eq('household_id', appUser.household_id).order('sort_order')
-        .then(({ data }) => setStores(data || []))
+      if (!activeLists?.length) {
+        // Try to create list for current week's plan
+        await loadList(currentWeekPlan.id)
+        return
+      }
 
-      // Load pending trips scoped to this shopping list (include companion info)
-      supabase.from('shopping_trips').select('id, name, store_name, status, companion_trip_id, is_companion')
-        .eq('shopping_list_id', activeListId).in('status', ['pending', 'active'])
-        .order('created_at', { ascending: false })
-        .then(({ data }) => setPendingTrips(data || []))
+      // Use current week's list as primary (for writes)
+      const currentWeekList = activeLists.find(l => l.meal_plan_id === currentWeekPlan.id) || activeLists[0]
+      setListId(currentWeekList.id)
 
-      // Load completed trips for this shopping list
-      supabase.from('shopping_trips')
-        .select('id, name, store_name, status, completed_at, receipt_photo_url, item_count')
-        .eq('shopping_list_id', activeListId).eq('status', 'completed')
-        .order('completed_at', { ascending: false })
-        .then(({ data }) => setCompletedTrips(data || []))
-
-      // Load items for this list
-      const { data } = await supabase
+      // Load items from all active lists
+      const listIds = activeLists.map(l => l.id)
+      const { data: allItems } = await supabase
         .from('shopping_list_items')
         .select('*')
-        .eq('shopping_list_id', activeListId)
+        .in('shopping_list_id', listIds)
         .eq('approval_status', 'approved')
-        .order('created_at')
-      setItems(data || [])
+        .order('name')
 
-      // Load pantry staples (household-level)
+      setItems(allItems || [])
+
+      // Load stores, trips, staples, batch multipliers in parallel (household-level)
+      supabase.from('grocery_stores').select('id, name, is_primary, sort_order').eq('household_id', appUser.household_id).order('sort_order')
+        .then(({ data }) => setStores(data || []))
+      supabase.from('shopping_trips').select('id, name, store_name, status, companion_trip_id, is_companion')
+        .eq('shopping_list_id', currentWeekList.id).in('status', ['pending', 'active'])
+        .order('created_at', { ascending: false })
+        .then(({ data }) => setPendingTrips(data || []))
+      supabase.from('shopping_trips').select('id, name, store_name, status, completed_at, receipt_photo_url, item_count')
+        .eq('shopping_list_id', currentWeekList.id).eq('status', 'completed')
+        .order('completed_at', { ascending: false })
+        .then(({ data }) => setCompletedTrips(data || []))
       supabase.from('pantry_staples').select('id, name, category, staple_type, sage_tracks')
         .eq('household_id', appUser.household_id)
         .then(({ data: staples }) => setPantryStaples(staples || []))
 
-      // Load batch multipliers for source meals scoped to this meal plan
+      // Batch multipliers from current week's plan
       ;(async () => {
         const { data: pm } = await supabase.from('planned_meals')
           .select('custom_name, batch_multiplier, recipe_id')
-          .eq('meal_plan_id', mpId)
+          .eq('meal_plan_id', currentWeekPlan.id)
           .is('removed_at', null).not('batch_multiplier', 'is', null)
         const map = {}
         const recipeIds = []
@@ -200,10 +199,21 @@ export default function PantryList({ appUser }) {
         }
         setBatchByMeal(map)
       })()
+
+      setLoading(false)
     } catch (err) {
       console.error('[PantryList] Load error:', err)
+      setLoading(false)
     }
-    setLoading(false)
+  }
+
+  async function loadList(mealPlanId) {
+    // Lightweight refresh — ensures current week's list exists, then reloads everything
+    const mpId = mealPlanId || selectedMealPlanId
+    if (mpId && appUser?.household_id) {
+      await getOrCreateShoppingList(mpId, appUser.household_id)
+    }
+    await loadAllActiveLists()
   }
 
   // Show onboarding on first visit with items — before tutorial
@@ -431,7 +441,7 @@ export default function PantryList({ appUser }) {
     if (!appUser?.household_id) return
     setSecondWeekLoading(true)
     try {
-      const ws = getWeekStartTZ(tz, weekOffset + offset)
+      const ws = getWeekStartTZ(tz, offset)
       const { data: plan } = await supabase.from('meal_plans')
         .select('id').eq('household_id', appUser.household_id).eq('week_start_date', ws).maybeSingle()
       if (!plan) { setSecondWeekLoading(false); return }
@@ -440,7 +450,7 @@ export default function PantryList({ appUser }) {
       const { data: swItems } = await supabase.from('shopping_list_items')
         .select('*').eq('shopping_list_id', swListId).eq('approval_status', 'approved').eq('status', 'active')
       if (!swItems?.length) { setSecondWeekLoading(false); return }
-      const dates = getWeekDatesTZ(tz, weekOffset + offset)
+      const dates = getWeekDatesTZ(tz, offset)
       const label = `${dates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${dates[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
       setSecondWeek({ planId: plan.id, listId: swListId, label, items: swItems, offset })
     } catch (err) { console.error('[PantryList] Load second week error:', err) }
@@ -640,46 +650,10 @@ export default function PantryList({ appUser }) {
     setRefreshing(false)
   }
 
-  const dateRangeStr = weekDates.length === 7
-    ? `${weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekDates[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-    : ''
-
-  const weekSelector = (
-    <div style={{ padding: '10px 22px 0' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <button onClick={() => setWeekOffset(o => o - 1)} style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          color: C.driftwood, padding: '4px', display: 'flex', flexShrink: 0,
-        }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><path d="m15 18-6-6 6-6"/></svg>
-        </button>
-        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '17px', color: C.ink, textAlign: 'center', flex: 1 }}>
-          {dateRangeStr}
-        </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-          {selectedMealPlanId && (
-            <button onClick={refreshList} disabled={refreshing} style={{
-              background: 'none', border: 'none', cursor: refreshing ? 'default' : 'pointer',
-              fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 400,
-              padding: '10px 6px', minHeight: '44px', display: 'flex', alignItems: 'center',
-              opacity: refreshing ? 0.5 : 1,
-            }}>{refreshing ? 'Updating...' : '↻ Refresh'}</button>
-          )}
-          <button onClick={() => setWeekOffset(o => o + 1)} style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: C.driftwood, padding: '4px', display: 'flex',
-          }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><path d="m9 18 6-6-6-6"/></svg>
-          </button>
-        </div>
-      </div>
-    </div>
-  )
 
   if (loading) return (
     <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
       <TopBar />
-      {weekSelector}
       <div style={{ padding: '20px 22px' }}>
         {[60, 40, 40, 40].map((h, i) => <div key={i} className="shimmer-block" style={{ height: `${h}px`, borderRadius: '12px', marginBottom: '10px' }} />)}
       </div>
@@ -706,9 +680,10 @@ export default function PantryList({ appUser }) {
         <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink }}>
           The List.
         </div>
+        <div style={{ fontSize: '11px', color: C.driftwood, marginTop: '2px' }}>
+          Your family's living grocery list
+        </div>
       </div>
-
-      {weekSelector}
 
       {/* No meal plan for this week */}
       {noMealPlan && (
