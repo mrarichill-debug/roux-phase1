@@ -747,10 +747,10 @@ export default function ThisWeek({ appUser }) {
   const ghostMeals = meals.filter(m => m.entry_type === 'ghost' && !m.linkedRecipes?.length && !m.removed_at)
   const ghostNames = ghostMeals.map(m => m.custom_name || 'Untitled')
   const ghostMessage = ghostNames.length === 1
-    ? `${ghostNames[0]} doesn't have a recipe yet — add one so Sage can build your shopping list.`
+    ? `${ghostNames[0]} doesn't have a recipe yet — add one so your shopping list stays complete.`
     : ghostNames.length === 2
-    ? `${ghostNames[0]} and ${ghostNames[1]} don't have recipes yet — add them so Sage can build your shopping list.`
-    : `${ghostNames[0]}, ${ghostNames[1]}, and ${ghostNames.length - 2} other${ghostNames.length - 2 > 1 ? 's' : ''} don't have recipes yet — add them so Sage can build your shopping list.`
+    ? `${ghostNames[0]} and ${ghostNames[1]} don't have recipes yet — add them so your shopping list stays complete.`
+    : `${ghostNames[0]}, ${ghostNames[1]}, and ${ghostNames.length - 2} other${ghostNames.length - 2 > 1 ? 's' : ''} don't have recipes yet — add them so your shopping list stays complete.`
 
   const weekLabel = weekOffset === 0 ? "This Week's Menu"
     : weekOffset === 1 ? "Next Week's Menu"
@@ -847,7 +847,7 @@ export default function ThisWeek({ appUser }) {
         <div style={{ padding: '8px 0 0' }}>
           <SageNudgeCard
             tier="notice"
-            message="This week is done — want to close it out with Sage?"
+            message="This week is done — ready to close it out?"
             actionLabel="Quick review"
             onAction={() => navigate(`/review/${planId}?mode=quick`)}
             secondaryActionLabel="Full review"
@@ -928,7 +928,7 @@ export default function ThisWeek({ appUser }) {
                 Think of this as your family's weekly menu.
               </div>
               <div style={{ fontSize: '13px', color: C.driftwood, fontWeight: 300, lineHeight: 1.6 }}>
-                Tap any day and describe what you want to make — "Chicken tacos with rice" or "Pizza night." Sage will help you find a recipe or save a new one.
+                Tap any day and describe what you want to make — "Chicken tacos with rice" or "Pizza night." Roux will help you find a recipe or save a new one.
               </div>
               <div style={{ textAlign: 'right', marginTop: '10px' }}>
                 <button onClick={dismissHint} style={{
@@ -946,7 +946,7 @@ export default function ThisWeek({ appUser }) {
       {mealAddedTip && (
         <SageNudgeCard
           tier="teaching"
-          message={"Your first meal is on the menu! \uD83C\uDF89 The first time you add a meal you'll type it out manually — but Roux is already learning. Over time, autofill and Sage suggestions will make planning faster and faster. The more you build out your menu, the smarter Roux gets."}
+          message={"Your first meal is on the menu! \uD83C\uDF89 The first time you add a meal you'll type it out manually — but Roux is already learning. Over time, autofill and suggestions will make planning faster and faster. The more you build out your menu, the smarter Roux gets."}
           actionLabel="Got it, don't show again"
           onAction={async () => {
             const updated = await dismissTooltip(appUser.id, appUser.dismissed_tooltips, 'meal_added_first')
@@ -962,7 +962,7 @@ export default function ThisWeek({ appUser }) {
       {recipeLinkedTip && (
         <SageNudgeCard
           tier="teaching"
-          message={"You just linked a recipe — that's how Sage gets smart! \uD83C\uDF3F A meal and its recipe aren't always the same thing. 'French Dip Sandwiches' might link to a slow cooker beef recipe AND a homemade French bread recipe. Other times they match — 'Chicken Enchiladas' linked to a chicken enchilada recipe. Each time you plan a meal, you choose which recipe fits that week. The more you link, the faster Sage anticipates what you need."}
+          message={"You just linked a recipe — nice work! \uD83C\uDF3F A meal and its recipe aren't always the same thing. 'French Dip Sandwiches' might link to a slow cooker beef recipe AND a homemade French bread recipe. Other times they match — 'Chicken Enchiladas' linked to a chicken enchilada recipe. Each time you plan a meal, you choose which recipe fits that week. The more you link, the faster Roux anticipates what you need."}
           actionLabel="Got it, don't show again"
           onAction={async () => {
             const updated = await dismissTooltip(appUser.id, appUser.dismissed_tooltips, 'recipe_linked_first')
@@ -1130,7 +1130,7 @@ export default function ThisWeek({ appUser }) {
                             borderLeft: `3px solid ${C.sage}`,
                           }}>
                             <div style={{ fontSize: '13px', color: C.ink, marginBottom: '8px', lineHeight: 1.5 }}>
-                              <span style={{ color: C.sage }}>✦</span> I found some recipes that might work:
+                              <span style={{ color: C.sage }}>✦</span> Recipes that might work:
                             </div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                               {sageMatches.map(match => (
@@ -1208,7 +1208,7 @@ export default function ThisWeek({ appUser }) {
             background: arcColor, color: 'white', cursor: 'pointer',
             fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
             boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
-          }}>{categorizing ? 'Sage is organizing your ingredients…' : injecting ? 'Building...' : shoppingInjected ? 'View my list →' : 'Build my list →'}</button>
+          }}>{categorizing ? 'Organizing your ingredients…' : injecting ? 'Building...' : shoppingInjected ? 'View my list →' : 'Build my list →'}</button>
         </div>
       )}
 
@@ -1267,7 +1267,7 @@ export default function ThisWeek({ appUser }) {
               background: arcColor, color: 'white', cursor: 'pointer',
               fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
               boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
-            }}>{categorizing ? 'Sage is organizing your ingredients…' : injecting ? 'Building...' : 'Build my list →'}</button>
+            }}>{categorizing ? 'Organizing your ingredients…' : injecting ? 'Building...' : 'Build my list →'}</button>
             <button onClick={() => setShareSheetOpen(false)} style={{
               width: '100%', padding: '12px', borderRadius: '14px', border: 'none',
               background: 'none', color: C.driftwood, cursor: 'pointer',
@@ -1278,9 +1278,16 @@ export default function ThisWeek({ appUser }) {
       </BottomSheet>
 
       {/* ── Add Meal Sheet ───────────────────────────────────────── */}
-      <BottomSheet isOpen={addSheetOpen} onClose={() => setAddSheetOpen(false)}>
-        <div style={{ padding: '16px 22px 20px' }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
+      {/* ── Add Meal — full-screen overlay ──────────────────────────── */}
+      {addSheetOpen && (
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 200,
+        background: C.cream, overflowY: 'auto',
+        maxWidth: '430px', margin: '0 auto',
+      }}>
+        <TopBar leftAction={{ onClick: () => setAddSheetOpen(false), label: 'Back' }} />
+        <div style={{ padding: '16px 22px 40px' }}>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
                 {addSheetDate && `${DAY_NAMES[addSheetDate.getDay() === 0 ? 6 : addSheetDate.getDay() - 1]}, ${addSheetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
               </div>
 
@@ -1439,7 +1446,8 @@ export default function ThisWeek({ appUser }) {
                 {adding ? 'Adding...' : 'Add to menu'}
               </button>
             </div>
-      </BottomSheet>
+      </div>
+      )}
 
       {/* ── Meal Edit Sheet ──────────────────────────────────────── */}
       <BottomSheet isOpen={!!batchEditMealId} onClose={() => setBatchEditMealId(null)}>

@@ -145,7 +145,7 @@ export default function SaveRecipe({ appUser }) {
 
   function startExtractTimers() {
     const messages = [
-      'Sage is reading the page...',
+      'Reading the page...',
       'Pulling out the ingredients...',
       "Almost there — this one's a bit complex...",
       'Still working — some sites take a little longer...',
@@ -661,7 +661,7 @@ export default function SaveRecipe({ appUser }) {
                   Paste a URL
                 </div>
                 <div style={{ fontSize: '13px', color: C.driftwood, fontWeight: 300 }}>
-                  Share a link and Sage grabs everything
+                  Share a link and Roux reads it for you
                 </div>
               </div>
             </div>
@@ -712,7 +712,7 @@ export default function SaveRecipe({ appUser }) {
                   <div style={{ textAlign: 'center', marginBottom: '14px' }}>
                     <span style={{ fontSize: '24px', color: C.driftwood }}>✦</span>
                     <div style={{ fontSize: '14px', color: C.ink, lineHeight: 1.6, marginTop: '8px' }}>
-                      Sage had trouble reading that page — the site may be blocking access or took too long to respond.
+                      Had trouble reading that page — the site may be blocking access or took too long to respond.
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -737,10 +737,10 @@ export default function SaveRecipe({ appUser }) {
                 <>
                   <div style={{ fontSize: '14px', color: C.ink, lineHeight: 1.6, marginBottom: '14px' }}>
                     {urlError.type === 'fetch_failed' && (
-                      <>Sage couldn't reach that page — the link may be broken or the site may be temporarily down. Double-check the URL and try again, or use one of these instead:</>
+                      <>Couldn't reach that page — the link may be broken or the site may be temporarily down. Double-check the URL and try again, or use one of these instead:</>
                     )}
                     {urlError.type === 'parse_failed' && (
-                      <>Sage found the page but had trouble reading the recipe format. Try a photo of the recipe or enter it manually.</>
+                      <>Found the page but had trouble reading the recipe format. Try a photo of the recipe or enter it manually.</>
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: '10px' }}>
@@ -780,7 +780,7 @@ export default function SaveRecipe({ appUser }) {
               fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
               boxShadow: urlInput.trim() ? '0 4px 16px rgba(30,55,35,0.25)' : 'none',
             }}>
-              Let Sage extract it
+              Let Roux read it for you
             </button>
           )}
 
@@ -863,7 +863,7 @@ export default function SaveRecipe({ appUser }) {
               <div style={{ fontSize: '12px', color: C.driftwood, fontWeight: 300, textAlign: 'center', fontStyle: 'italic' }}>
                 {capturedPhotos.length === 1
                   ? 'Got both sides? Add another photo.'
-                  : `${capturedPhotos.length} photos — Sage will combine them into one recipe.`}
+                  : `${capturedPhotos.length} photos — Roux will combine them into one recipe.`}
               </div>
 
               {extractError && (
@@ -874,7 +874,7 @@ export default function SaveRecipe({ appUser }) {
                 <div style={{ textAlign: 'center', padding: '24px 0' }}>
                   <div style={{ display: 'inline-block', width: '32px', height: '32px', border: `3px solid ${C.linen}`, borderTop: `3px solid ${C.forest}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
                   <div style={{ marginTop: '12px', fontSize: '14px', color: C.driftwood, fontStyle: 'italic' }}>
-                    Sage is reading {capturedPhotos.length > 1 ? `all ${capturedPhotos.length} photos` : 'the recipe'}...
+                    Reading {capturedPhotos.length > 1 ? `all ${capturedPhotos.length} photos` : 'the recipe'}...
                   </div>
                 </div>
               ) : (
@@ -925,7 +925,7 @@ export default function SaveRecipe({ appUser }) {
               padding: '12px 14px', background: 'white', borderRadius: '10px',
               borderLeft: `3px solid ${C.sage}`, fontSize: '13px', color: C.driftwood, lineHeight: 1.5,
             }}>
-              Sage filled in what she could. Review and adjust anything before saving.
+              Here's what was found. Review and adjust anything before saving.
             </div>
           )}
 

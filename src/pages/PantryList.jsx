@@ -680,9 +680,6 @@ export default function PantryList({ appUser }) {
         <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink }}>
           The List.
         </div>
-        <div style={{ fontSize: '11px', color: C.driftwood, marginTop: '2px' }}>
-          Your family's living grocery list
-        </div>
       </div>
 
       {/* No meal plan for this week */}

@@ -34,6 +34,7 @@ import HouseholdDefaults from './pages/HouseholdDefaults'
 import EditRecipe from './pages/EditRecipe'
 import Profile from './pages/Profile'
 import SettingsHub from './pages/SettingsHub'
+import AdminDashboard from './pages/AdminDashboard'
 import Onboarding from './pages/Onboarding'
 import CalendarConnect from './pages/CalendarConnect'
 // DevReset — only loaded in dev, never bundled in production
@@ -422,6 +423,7 @@ function AuthenticatedApp({ appUser, setAppUser }) {
         <Route path="/settings/household" element={<HouseholdDefaults appUser={appUser} />} />
         <Route path="/onboarding"   element={<Onboarding     appUser={appUser} setAppUser={setAppUser} />} />
         <Route path="/settings/calendar" element={<CalendarConnect appUser={appUser} />} />
+        <Route path="/admin" element={<AdminDashboard appUser={appUser} />} />
         {import.meta.env.DEV && <Route path="/dev/reset" element={<Suspense fallback={null}><DevReset appUser={appUser} /></Suspense>} />}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
