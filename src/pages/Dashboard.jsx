@@ -64,6 +64,7 @@ export default function Dashboard({ appUser }) {
   const [shopTile, setShopTile]             = useState({ state: 'none', listCount: 0, totalSpent: 0, remaining: 0 })
   const [loading, setLoading]               = useState(true)
   const [sageMessages, setSageMessages] = useState([]) // unified Sage nudge queue
+  const [unreviewedPlanId, setUnreviewedPlanId] = useState(null)
   const [sageIntelligence, setSageIntelligence] = useState(null)
 
   const tz         = appUser?.timezone ?? 'America/Chicago'
@@ -142,6 +143,18 @@ export default function Dashboard({ appUser }) {
 
       // Sage intelligence — deferred, non-blocking
       getSageIntelligence(supabase, hid).then(data => setSageIntelligence(data))
+
+      // Check for unreviewed past weeks (deferred)
+      const now = new Date()
+      const dayOfWeek = now.getDay()
+      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+      const currentMonday = new Date(now)
+      currentMonday.setDate(now.getDate() - daysToMonday)
+      currentMonday.setHours(0, 0, 0, 0)
+      supabase.from('meal_plans').select('id').eq('household_id', hid)
+        .lt('week_start_date', currentMonday.toISOString().split('T')[0])
+        .is('reviewed_at', null).eq('auto_closed', false).limit(1).maybeSingle()
+        .then(({ data: pastPlan }) => { if (pastPlan) setUnreviewedPlanId(pastPlan.id) })
 
       // Shopping tile state
       if (allLists.length === 0) {
@@ -402,6 +415,28 @@ export default function Dashboard({ appUser }) {
 
         {/* ── Divider ──────────────────────────────────────────────────── */}
         {!loading && <div style={{ height: '0.5px', background: '#E4DDD2', margin: '16px 18px' }} />}
+
+        {/* ── Week closeout prompt ───────────────────────────────────── */}
+        {!loading && unreviewedPlanId && (
+          <div style={{
+            borderLeft: `2px solid ${C.linen}`, paddingLeft: '14px',
+            margin: '14px 18px 0',
+          }}>
+            <div style={{
+              fontFamily: "'Playfair Display', serif", fontSize: '14px', fontStyle: 'italic',
+              color: C.ink, lineHeight: 1.7, marginBottom: '8px',
+            }}>
+              Last week is ready to close out — takes about a minute.
+            </div>
+            <button onClick={() => navigate(`/review/${unreviewedPlanId}`)} style={{
+              background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+              fontSize: '12px', color: arcColor, fontWeight: 500,
+              fontFamily: "'Jost', sans-serif",
+            }}>
+              Close out last week →
+            </button>
+          </div>
+        )}
 
         {/* ── Intelligence section ─────────────────────────────────────── */}
         {loading ? (
