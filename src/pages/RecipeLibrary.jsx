@@ -316,6 +316,19 @@ export default function RecipeLibrary({ appUser }) {
 
       <TopBar />
 
+      {/* Sub-tab strip */}
+      <div style={{ display: 'flex', gap: '8px', padding: '12px 22px 8px' }}>
+        <button style={{
+          padding: '7px 18px', borderRadius: '20px', fontSize: '13px', fontWeight: 500,
+          border: 'none', background: arcColor, color: 'white',
+          cursor: 'default', fontFamily: "'Jost', sans-serif",
+        }}>Recipes</button>
+        <button onClick={() => navigate('/meals/history')} style={{
+          padding: '7px 18px', borderRadius: '20px', fontSize: '13px', fontWeight: 400,
+          border: `1px solid ${C.linen}`, background: 'white', color: C.ink,
+          cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+        }}>Meals</button>
+      </div>
 
       {/* ── Search + filter ─────────────────────────────────────────── */}
       <div style={{ padding: '0 18px 10px', display: 'flex', gap: '8px', alignItems: 'center' }}>

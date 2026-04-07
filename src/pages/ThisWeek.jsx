@@ -814,11 +814,6 @@ export default function ThisWeek({ appUser }) {
     ? meals.filter(m => m.entry_type === 'ghost' && !m.linkedRecipes?.length && !m.removed_at)
     : []
   const ghostNames = ghostMeals.map(m => m.custom_name || 'Untitled')
-  const ghostMessage = ghostNames.length === 1
-    ? `${ghostNames[0]} doesn't have a recipe yet — add one so your shopping list stays complete.`
-    : ghostNames.length === 2
-    ? `${ghostNames[0]} and ${ghostNames[1]} don't have recipes yet — add them so your shopping list stays complete.`
-    : `${ghostNames[0]}, ${ghostNames[1]}, and ${ghostNames.length - 2} other${ghostNames.length - 2 > 1 ? 's' : ''} don't have recipes yet — add them so your shopping list stays complete.`
 
   const weekLabel = weekOffset === 0 ? "This Week's Menu"
     : weekOffset === 1 ? "Next Week's Menu"
@@ -852,8 +847,19 @@ export default function ThisWeek({ appUser }) {
     }}>
       <TopBar />
 
-      {/* ── Week Header ──────────────────────────────────────────── */}
-      <div style={{ padding: '12px 22px 0', position: 'relative' }}>
+      {/* ── Week Header (swipe left/right to change weeks) ─────── */}
+      <div
+        onTouchStart={e => setTouchStart(e.touches[0].clientX)}
+        onTouchEnd={e => {
+          if (touchStart === null) return
+          const diff = touchStart - e.changedTouches[0].clientX
+          if (Math.abs(diff) > 50) {
+            if (diff > 0) setWeekOffset(o => o + 1)
+            else setWeekOffset(o => o - 1)
+          }
+          setTouchStart(null)
+        }}
+        style={{ padding: '12px 22px 0', position: 'relative' }}>
         {/* Row 1: context label + arrows */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', marginBottom: '2px' }}>
           <button onClick={() => setWeekOffset(o => o - 1)} style={{
@@ -919,18 +925,7 @@ export default function ThisWeek({ appUser }) {
       )}
 
       {/* ── Week Strip (sticky below topbar) ────────────────────── */}
-      <div
-        onTouchStart={e => setTouchStart(e.touches[0].clientX)}
-        onTouchEnd={e => {
-          if (touchStart === null) return
-          const diff = touchStart - e.changedTouches[0].clientX
-          if (Math.abs(diff) > 50) {
-            if (diff > 0) setWeekOffset(o => o + 1)
-            else setWeekOffset(o => o - 1)
-          }
-          setTouchStart(null)
-        }}
-        style={{
+      <div style={{
         display: 'flex', gap: '4px', padding: '8px 22px 12px',
         overflowX: 'auto', WebkitOverflowScrolling: 'touch',
         position: 'sticky', top: '66px', zIndex: 10,
@@ -941,6 +936,10 @@ export default function ThisWeek({ appUser }) {
           const dow = DOW_KEYS[i]
           const hasPlanned = meals.some(m => m.day_of_week === dow)
           const isOnList = onListDays.has(dow)
+          const tileDate = new Date(date); tileDate.setHours(0,0,0,0)
+          const nowDate = new Date(); nowDate.setHours(0,0,0,0)
+          const isPastOrToday = tileDate <= nowDate
+          const showFilled = isOnList && isPastOrToday
           return (
             <button key={i} onClick={() => {
               if (hasPlanned) handleDayTileTap(dow)
@@ -950,14 +949,14 @@ export default function ThisWeek({ appUser }) {
               if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
             }} style={{
               flex: '1 0 auto', minWidth: '44px', padding: '6px 8px', borderRadius: '8px',
-              border: isOnList ? 'none' : `0.5px solid ${C.linen}`,
+              border: showFilled ? 'none' : `0.5px solid ${C.linen}`,
               cursor: 'pointer', textAlign: 'center',
-              background: isOnList ? arcColor : hasPlanned ? 'white' : C.cream,
-              color: isOnList ? 'white' : hasPlanned ? C.ink : C.driftwood,
+              background: showFilled ? arcColor : 'white',
+              color: showFilled ? 'white' : hasPlanned ? C.ink : C.driftwood,
               fontFamily: "'Jost', sans-serif",
               transition: 'all 0.15s',
             }}>
-              <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase', opacity: isOnList ? 0.8 : 0.5 }}>
+              <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase', opacity: showFilled ? 0.8 : 0.5 }}>
                 {DAY_ABBR[i]}
               </div>
               <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', fontWeight: 500 }}>
@@ -965,7 +964,7 @@ export default function ThisWeek({ appUser }) {
               </div>
               <div style={{
                 width: '5px', height: '5px', borderRadius: '50%', margin: '2px auto 0',
-                background: isOnList ? 'rgba(255,255,255,0.7)' : hasPlanned ? arcColor : 'transparent',
+                background: showFilled ? 'rgba(255,255,255,0.7)' : hasPlanned ? arcColor : 'transparent',
               }} />
             </button>
           )
@@ -1035,16 +1034,6 @@ export default function ThisWeek({ appUser }) {
           }}
           secondaryActionLabel="Show me again next time"
           secondaryOnAction={() => setRecipeLinkedTip(false)}
-        />
-      )}
-
-      {/* ── Ghost meal notice (missing recipes) ─────────────────── */}
-      {ghostMeals.length > 0 && (
-        <SageNudgeCard
-          tier="notice"
-          message={ghostMessage}
-          actionLabel="Add recipes →"
-          onAction={() => navigate('/meals/recipes')}
         />
       )}
 
@@ -1145,10 +1134,23 @@ export default function ThisWeek({ appUser }) {
                   )
                 })()}
 
-                {/* Meals */}
+                {/* Meals — grouped by meal type */}
                 <div style={{ padding: dayMeals.length > 0 ? '4px 14px 8px' : '0' }}>
-                  {dayMeals.map(meal => {
+                  {(() => {
+                    const grouped = dayMeals.reduce((acc, meal) => {
+                      const type = meal.meal_type || 'dinner'
+                      if (!acc[type]) acc[type] = []
+                      acc[type].push(meal)
+                      return acc
+                    }, {})
+                    return Object.entries(grouped).map(([type, typeMeals]) => (
+                      <div key={type}>
+                        <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.driftwood, padding: '6px 0 2px' }}>
+                          {MEAL_TYPE_LABELS[type] || 'Dinner'}
+                        </div>
+                        {typeMeals.map(meal => {
                     const sageMatches = meal.sage_match_status === 'pending' && meal.sage_match_result?.matches
+                    const isGhost = meal.entry_type === 'ghost' && !meal.linkedRecipes?.length
                     return (
                       <div key={meal.id}>
                         <div onClick={() => setBatchEditMealId(meal.id)} style={{
@@ -1164,6 +1166,11 @@ export default function ThisWeek({ appUser }) {
                                 {(meal.status === 'eating_out' || meal.entry_type === 'eating_out') && <span>🍽️ </span>}
                                 {getMealName(meal)}
                               </span>
+                              {isGhost && (
+                                <svg viewBox="0 0 24 24" fill="none" stroke={C.honey} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12, flexShrink: 0, opacity: 0.8 }}>
+                                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>
+                                </svg>
+                              )}
                               {meal.entry_type === 'eating_out' && meal.eating_out_cost && (
                                 <span style={{ fontSize: '11px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300 }}>
                                   ~${Number(meal.eating_out_cost).toFixed(0)}
@@ -1180,9 +1187,6 @@ export default function ThisWeek({ appUser }) {
                                 </svg>
                               )}
                             </div>
-                            <span style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.driftwood }}>
-                              {MEAL_TYPE_LABELS[meal.meal_type] || 'Dinner'}
-                            </span>
                           </div>
                         </div>
 
@@ -1244,6 +1248,9 @@ export default function ThisWeek({ appUser }) {
                       </div>
                     )
                   })}
+                      </div>
+                    ))
+                  })()}
                 </div>
 
                 {/* Add button */}

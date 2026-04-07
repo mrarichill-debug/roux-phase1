@@ -21,7 +21,7 @@ const ARC_ANSWERS = {
 
 // ── Actions by stage ────────────────────────────────────────────────────────
 const STAGE_ACTIONS = {
-  1: { primary: { label: 'Plan a meal', route: '/plan' }, secondary: { label: 'View my list', route: '/shop' } },
+  1: { primary: { label: 'View my list', route: '/shop' }, secondary: null },
   2: { primary: { label: 'See the breakdown', route: '/shop' }, secondary: null },
   3: { primary: { label: 'View this week', route: '/plan' }, secondary: { label: 'Browse recipes', route: '/meals/recipes' } },
   4: { primary: { label: 'Browse recipes', route: '/meals/recipes' }, secondary: null },

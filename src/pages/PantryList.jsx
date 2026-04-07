@@ -85,6 +85,11 @@ export default function PantryList({ appUser }) {
   const [completedTripItems, setCompletedTripItems] = useState({}) // tripId → items[]
   const [expandedTrip, setExpandedTrip] = useState(null)
 
+  // Pull-to-refresh
+  const pullStartY = useRef(null)
+  const [pullDistance, setPullDistance] = useState(0)
+  const [pullRefreshing, setPullRefreshing] = useState(false)
+
   function handleAddInputChange(val) {
     setAddInput(val)
     if (!manualCatPick) setAddCategory(categorizeIngredient(val))
@@ -642,6 +647,28 @@ export default function PantryList({ appUser }) {
     loadList()
   }
 
+  function handlePullStart(e) {
+    if (window.scrollY <= 0) {
+      pullStartY.current = e.touches[0].clientY
+    }
+  }
+  function handlePullMove(e) {
+    if (pullStartY.current === null || pullRefreshing) return
+    const delta = e.touches[0].clientY - pullStartY.current
+    if (delta > 0) setPullDistance(Math.min(delta * 0.5, 80))
+  }
+  async function handlePullEnd() {
+    if (pullDistance > 60 && !pullRefreshing) {
+      setPullRefreshing(true)
+      setPullDistance(0)
+      await loadAllActiveLists()
+      setPullRefreshing(false)
+    } else {
+      setPullDistance(0)
+    }
+    pullStartY.current = null
+  }
+
   async function refreshList() {
     if (refreshing || !selectedMealPlanId || !appUser?.household_id) return
     setRefreshing(true)
@@ -661,12 +688,34 @@ export default function PantryList({ appUser }) {
   )
 
   return (
-    <div className="page-scroll-container" style={{
-      background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300,
-      minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
-      paddingBottom: 'calc(110px + env(safe-area-inset-bottom, 8px))',
-    }}>
+    <div
+      className="page-scroll-container"
+      onTouchStart={handlePullStart}
+      onTouchMove={handlePullMove}
+      onTouchEnd={handlePullEnd}
+      style={{
+        background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300,
+        minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
+        paddingBottom: 'calc(110px + env(safe-area-inset-bottom, 8px))',
+      }}>
       <TopBar />
+
+      {/* Pull-to-refresh indicator */}
+      {(pullDistance > 0 || pullRefreshing) && (
+        <div style={{
+          display: 'flex', justifyContent: 'center',
+          padding: pullRefreshing ? '12px 0' : `${Math.max(pullDistance * 0.3, 4)}px 0`,
+          transition: pullRefreshing ? 'none' : 'padding 0.1s',
+        }}>
+          <div style={{
+            width: 20, height: 20, border: '2px solid transparent',
+            borderTopColor: arcColor, borderRadius: '50%',
+            animation: pullRefreshing ? 'spin 0.8s linear infinite' : 'none',
+            opacity: pullDistance > 30 || pullRefreshing ? 1 : pullDistance / 30,
+            transform: pullRefreshing ? 'none' : `rotate(${pullDistance * 4}deg)`,
+          }} />
+        </div>
+      )}
 
 
       {/* No meal plan for this week */}

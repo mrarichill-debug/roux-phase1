@@ -1,6 +1,6 @@
 /**
- * Shared 5-tab bottom navigation — icons only, no labels.
- * Order: Home | Meals | Plan | Events | Shop
+ * Shared 4-tab bottom navigation — icons only, no labels.
+ * Order: Home | Meals | Plan | Shop
  */
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useArc } from '../context/ArcContext'
@@ -36,14 +36,6 @@ const NAV_TABS = [
     ),
   },
   {
-    key: 'events', path: '/events',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
-        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-      </svg>
-    ),
-  },
-  {
     key: 'shop', path: '/shop',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
@@ -63,6 +55,7 @@ const PATH_TO_TAB = {
   '/week/defaults': 'plan',
   '/meals': 'meals',
   '/meals/recipes': 'meals',
+  '/meals/history': 'meals',
   '/meals/plan': 'meals',
   '/meals/traditions': 'meals',
   '/meals/traditions/new': 'meals',
@@ -70,7 +63,6 @@ const PATH_TO_TAB = {
   '/recipes': 'meals',
   '/recipe': 'meals',
   '/save-recipe': 'meals',
-  '/events': 'events',
   '/shop': 'shop',
   '/shopping': 'shop',
   '/pantry': 'shop',
@@ -113,7 +105,7 @@ export default function BottomNav({ activeTab, onBeforeNavigate }) {
     }}>
       <div style={{
         height: '48px',
-        display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
+        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
         alignItems: 'center',
       }}>
       {NAV_TABS.map(tab => {
