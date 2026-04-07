@@ -341,7 +341,7 @@ export default function Pantry({ appUser }) {
         </div>
       </BottomSheet>
 
-      <BottomNav activeTab="pantry" />
+      <BottomNav activeTab="shop" />
     </div>
   )
 }

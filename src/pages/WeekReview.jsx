@@ -78,6 +78,9 @@ export default function WeekReview({ appUser }) {
       status: 'reviewed',
     }).eq('id', mealPlanId)
 
+    // Reset on_list for all meals in the closed week
+    await supabase.from('planned_meals').update({ on_list: false }).eq('meal_plan_id', mealPlanId)
+
     logActivity({ user: appUser, actionType: 'week_reviewed', targetType: 'meal_plan', targetId: mealPlanId })
     setDone(true)
   }

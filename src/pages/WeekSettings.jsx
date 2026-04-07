@@ -267,7 +267,7 @@ export default function WeekSettings({ appUser }) {
     if (hasChanges) {
       setConfirmLeaveOpen(true)
     } else {
-      navigate('/thisweek')
+      navigate('/plan')
     }
   }
 
@@ -347,7 +347,7 @@ export default function WeekSettings({ appUser }) {
 
       setHasChanges(false)
       showToast('Week settings saved')
-      setTimeout(() => navigate('/thisweek'), 800)
+      setTimeout(() => navigate('/plan'), 800)
     } catch (err) {
       console.error('[Roux] saveWeekSettings error:', err)
     } finally {
@@ -850,7 +850,7 @@ export default function WeekSettings({ appUser }) {
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button
-                onClick={() => { setConfirmLeaveOpen(false); navigate('/thisweek') }}
+                onClick={() => { setConfirmLeaveOpen(false); navigate('/plan') }}
                 style={{
                   flex: 1, padding: '12px', borderRadius: '10px',
                   border: `1px solid ${C.linen}`, background: 'none',
@@ -877,7 +877,7 @@ export default function WeekSettings({ appUser }) {
       )}
 
       {/* ── Bottom Nav ────────────────────────────────────────────────────── */}
-      <BottomNav activeTab="week" />
+      <BottomNav activeTab="plan" />
 
       {/* ── Add Tradition Sheet ────────────────────────────────────────── */}
       <BottomSheet isOpen={addTradSheetOpen} onClose={() => setAddTradSheetOpen(false)} title="Add a tradition">

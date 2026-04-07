@@ -41,7 +41,7 @@ export default function ShoppingTrip({ appUser }) {
     try {
       const { data: tripData } = await supabase.from('shopping_trips')
         .select('id, name, store_name, status, companion_trip_id, is_companion').eq('id', tripId).single()
-      if (!tripData) { navigate('/pantry'); return }
+      if (!tripData) { navigate('/shop'); return }
       setTrip(tripData)
 
       // Determine all trip IDs to load (primary + companion)
@@ -222,7 +222,7 @@ export default function ShoppingTrip({ appUser }) {
         boxShadow: '0 4px 16px rgba(30,55,35,0.25)', marginBottom: '12px',
       }}>Scan your receipt →</button>
 
-      <button onClick={() => navigate('/pantry')} style={{
+      <button onClick={() => navigate('/shop')} style={{
         width: '100%', maxWidth: '320px', padding: '16px', borderRadius: '14px',
         border: `1.5px solid ${C.linen}`, background: 'white', color: C.ink, cursor: 'pointer',
         fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
@@ -240,7 +240,7 @@ export default function ShoppingTrip({ appUser }) {
       {/* Header */}
       <div style={{ background: C.forest, padding: '20px 22px 16px', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <button onClick={() => navigate('/pantry')} style={{
+          <button onClick={() => navigate('/shop')} style={{
             background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(250,247,242,0.7)', padding: '4px', display: 'flex', alignItems: 'center',
           }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}><path d="m15 18-6-6 6-6"/></svg>
@@ -338,7 +338,7 @@ export default function ShoppingTrip({ appUser }) {
         }}>Done shopping →</button>
       </div>
 
-      <BottomNav activeTab="pantry" />
+      <BottomNav activeTab="shop" />
     </div>
   )
 }

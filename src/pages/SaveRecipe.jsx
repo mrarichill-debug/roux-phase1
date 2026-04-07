@@ -565,7 +565,7 @@ export default function SaveRecipe({ appUser }) {
 
       dirty.markClean()
       setToast('Recipe saved.')
-      setTimeout(() => navigate(returnTo === 'week' ? '/thisweek' : `/recipe/${recipeId}`), 1200)
+      setTimeout(() => navigate(returnTo === 'week' ? '/plan' : `/recipe/${recipeId}`), 1200)
     } catch (err) {
       console.error('[SaveRecipe] Save error:', err)
       setError('Something went wrong. Check your changes and try again.')

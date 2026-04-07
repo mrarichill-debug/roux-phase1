@@ -37,4 +37,10 @@ export async function autoClosePastWeeks(householdId) {
       auto_closed: true,
     })
     .in('id', ids)
+
+  // Reset on_list for all meals in closed weeks
+  await supabase
+    .from('planned_meals')
+    .update({ on_list: false })
+    .in('meal_plan_id', ids)
 }

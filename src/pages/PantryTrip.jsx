@@ -42,7 +42,7 @@ export default function PantryTrip({ appUser }) {
         .eq('id', tripId)
         .single()
 
-      if (!tripData) { navigate('/pantry'); return }
+      if (!tripData) { navigate('/shop'); return }
       setTrip(tripData)
       setStoreName(tripData.grocery_stores?.name || 'Store')
 
@@ -109,7 +109,7 @@ export default function PantryTrip({ appUser }) {
 
     logActivity({ user: appUser, actionType: 'shopping_trip_completed', targetType: 'shopping_trip', targetId: tripId, targetName: trip?.name || 'Trip', metadata: { store: storeName, items_purchased: checkedCount } })
 
-    navigate('/pantry')
+    navigate('/shop')
   }
 
   if (loading) return (
@@ -132,7 +132,7 @@ export default function PantryTrip({ appUser }) {
         position: 'sticky', top: 0, zIndex: 100,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <button onClick={() => navigate('/pantry')} style={{
+          <button onClick={() => navigate('/shop')} style={{
             background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(250,247,242,0.7)', padding: '4px',
             display: 'flex', alignItems: 'center',
           }}>
@@ -234,7 +234,7 @@ export default function PantryTrip({ appUser }) {
         </button>
       </div>
 
-      <BottomNav activeTab="pantry" />
+      <BottomNav activeTab="shop" />
     </div>
   )
 }

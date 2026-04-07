@@ -396,7 +396,7 @@ export default function Dashboard({ appUser }) {
             weekDates={weekDates}
             weekMeals={weekMeals}
             todayMbIdx={todayMbIdx}
-            onSeeAll={() => navigate('/thisweek')}
+            onSeeAll={() => navigate('/plan')}
             arcColor={arcColor}
           />
         )}
@@ -408,9 +408,9 @@ export default function Dashboard({ appUser }) {
         {loading ? (
           <ShimmerCard height="56px" margin="0 18px" />
         ) : tonightMeal ? (
-          <TonightCard meal={tonightMeal} arcColor={arcColor} onView={() => navigate(tonightMeal.recipe_id ? `/recipe/${tonightMeal.recipe_id}` : '/thisweek', tonightMeal.recipe_id ? { state: { from: '/' } } : undefined)} />
+          <TonightCard meal={tonightMeal} arcColor={arcColor} onView={() => navigate(tonightMeal.recipe_id ? `/recipe/${tonightMeal.recipe_id}` : '/plan', tonightMeal.recipe_id ? { state: { from: '/' } } : undefined)} />
         ) : (
-          <TonightEmpty onPlan={() => navigate('/thisweek')} />
+          <TonightEmpty onPlan={() => navigate('/plan')} />
         )}
 
         {/* ── Divider ──────────────────────────────────────────────────── */}
@@ -450,7 +450,7 @@ export default function Dashboard({ appUser }) {
       </div>
 
       {/* ── Bottom Nav ────────────────────────────────────────────────────── */}
-      <BottomNav activeTab="today" />
+      <BottomNav activeTab="home" />
 
     </div>
   )

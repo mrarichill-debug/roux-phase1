@@ -204,7 +204,7 @@ export default function EatingOutReceipt({ appUser }) {
       </div>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      <BottomNav activeTab="pantry" />
+      <BottomNav activeTab="shop" />
     </div>
   )
 }

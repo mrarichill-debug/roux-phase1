@@ -350,7 +350,7 @@ export default function CalendarConnect({ appUser }) {
         }}>{toast}</div>
       )}
 
-      <BottomNav activeTab="today" />
+      <BottomNav activeTab="home" />
     </div>
   )
 }

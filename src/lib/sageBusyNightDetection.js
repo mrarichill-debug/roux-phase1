@@ -89,7 +89,7 @@ export async function sageBusyNightDetection({ calendarEvents, meals, weekDates,
         activity_type: 'calendar_context',
         message: `${dayName} has ${dayEvents.length} calendar event${dayEvents.length !== 1 ? 's' : ''} and nothing planned for dinner yet.`,
         seen: false,
-        metadata: { date: dateStr, day_of_week: dowKey, has_meal: false, action_url: '/thisweek' },
+        metadata: { date: dateStr, day_of_week: dowKey, has_meal: false, action_url: '/plan' },
       })
     }
   }

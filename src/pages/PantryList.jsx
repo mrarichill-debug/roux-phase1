@@ -678,7 +678,7 @@ export default function PantryList({ appUser }) {
         padding: '12px 18px 10px',
       }}>
         <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink }}>
-          The List.
+          Our List.
         </div>
       </div>
 
@@ -686,7 +686,7 @@ export default function PantryList({ appUser }) {
       {noMealPlan && (
         <div style={{ textAlign: 'center', padding: '48px 22px' }}>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.ink, marginBottom: '8px' }}>No meals planned for this week</div>
-          <button onClick={() => navigate('/thisweek')} style={{
+          <button onClick={() => navigate('/plan')} style={{
             background: 'none', border: 'none', cursor: 'pointer',
             fontSize: '14px', color: arcColor, fontWeight: 500, fontFamily: "'Jost', sans-serif",
           }}>Plan your week →</button>
@@ -739,24 +739,65 @@ export default function PantryList({ appUser }) {
         />
       )}
 
-      {/* ── Ghost meal notices ────────────────────────────────────── */}
-      {ghostMealsWithoutIngredients.map(ghost => (
-        <SageNudgeCard
-          key={ghost.id}
-          tier="notice"
-          message={`${ghost.custom_name} is on your menu but has no recipe yet — you'll need to add those ingredients manually.`}
-          actionLabel="Add a recipe →"
-          onAction={() => navigate('/save-recipe', { state: { mealName: ghost.custom_name } })}
-          secondaryActionLabel="Add to list manually →"
-          secondaryOnAction={() => addToListManually(ghost)}
-        />
-      ))}
+      {/* ── Ghost meal notice (consolidated) ─────────────────────── */}
+      {ghostMealsWithoutIngredients.length > 0 && (() => {
+        const ghosts = ghostMealsWithoutIngredients
+        const names = ghosts.map(g => g.custom_name || 'Untitled')
+        let label
+        if (names.length === 1) {
+          label = `${names[0]} doesn't have a recipe yet — add one so your shopping list stays complete.`
+        } else if (names.length === 2) {
+          label = `${names[0]} and ${names[1]} don't have recipes yet — add them so your shopping list stays complete.`
+        } else if (names.length === 3) {
+          label = `${names[0]}, ${names[1]}, and ${names[2]} don't have recipes yet — add them so your shopping list stays complete.`
+        } else {
+          label = `${names[0]}, ${names[1]}, and ${names.length - 2} other${names.length - 2 > 1 ? 's' : ''} don't have recipes yet — add them so your shopping list stays complete.`
+        }
+        return (
+          <div style={{
+            margin: '0 22px 14px', background: 'white',
+            border: `0.5px solid ${C.linen}`, borderLeft: `3px solid ${C.honey}`,
+            borderRadius: '12px', padding: '14px 16px',
+          }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke={C.honey} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18, flexShrink: 0, marginTop: 1 }}>
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>
+              </svg>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '13px', color: C.ink, lineHeight: 1.55, marginBottom: '8px' }}>
+                  {label}
+                </div>
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <button onClick={() => navigate('/meals')} style={{
+                    fontSize: '12px', color: arcColor, background: 'none', border: 'none',
+                    padding: 0, cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontWeight: 500,
+                  }}>
+                    Add recipes →
+                  </button>
+                  {ghosts.length === 1 && (
+                    <button onClick={() => addToListManually(ghosts[0])} style={{
+                      fontSize: '12px', color: C.driftwood, background: 'none', border: 'none',
+                      padding: 0, cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontStyle: 'italic',
+                    }}>
+                      Add to list manually →
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       <div style={{ padding: '12px 22px' }}>
         {grouped.length === 0 && purchasedItems.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '40px 0' }}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.ink, marginBottom: '8px' }}>List is clear.</div>
-            <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic' }}>Add items below or plan meals to populate.</div>
+          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic', fontSize: '16px', color: C.driftwood, marginBottom: '8px' }}>
+              Your list is empty.
+            </div>
+            <div style={{ fontSize: '13px', color: C.driftwood }}>
+              Tap day tiles on your plan to add meals to your list.
+            </div>
           </div>
         )}
 
@@ -1251,7 +1292,7 @@ export default function PantryList({ appUser }) {
         />
       )}
 
-      <BottomNav activeTab="pantry" />
+      <BottomNav activeTab="shop" />
     </div>
   )
 }

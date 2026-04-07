@@ -132,7 +132,7 @@ export default function RecipeLibrary({ appUser }) {
       console.error('[Roux] selectRecipe error:', err)
     }
 
-    navigate('/thisweek')
+    navigate('/plan')
   }
 
   const [recipes,         setRecipes]         = useState([])
@@ -326,7 +326,7 @@ export default function RecipeLibrary({ appUser }) {
         padding: '12px 18px 10px',
       }}>
         <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink }}>
-          Our Meals
+          Our Meals.
         </div>
       </div>
 
@@ -423,7 +423,7 @@ export default function RecipeLibrary({ appUser }) {
             </div>
           </div>
           <button
-            onClick={() => navigate('/thisweek')}
+            onClick={() => navigate('/plan')}
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
               color: C.driftwood, padding: '4px', display: 'flex',
@@ -799,7 +799,7 @@ function WeekPickerSheetContent({ recipe, appUser, onClose }) {
               No plan for this week yet.
             </div>
             <div style={{ fontSize: '13px', color: C.driftwood }}>
-              Visit This Week to start planning.
+              Visit Our Plan to start planning.
             </div>
           </div>
         ) : added === 'error' ? (
@@ -811,7 +811,7 @@ function WeekPickerSheetContent({ recipe, appUser, onClose }) {
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.forest, marginBottom: '4px' }}>
               Added to {added} ✓
             </div>
-            <div style={{ fontSize: '12px', color: C.driftwoodSm }}>Dinner slot updated in This Week.</div>
+            <div style={{ fontSize: '12px', color: C.driftwoodSm }}>Dinner slot updated in Our Plan.</div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

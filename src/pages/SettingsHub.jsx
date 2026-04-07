@@ -184,7 +184,7 @@ export default function SettingsHub({ appUser }) {
 
       </div>
 
-      <BottomNav activeTab="today" />
+      <BottomNav activeTab="home" />
     </div>
   )
 }

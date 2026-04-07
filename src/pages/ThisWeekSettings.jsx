@@ -293,7 +293,7 @@ export default function ThisWeekSettings({ appUser }) {
 
   return (
     <div style={{ background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', paddingBottom: '100px' }}>
-      <TopBar leftAction={{ onClick: () => navigate('/thisweek'), icon: (
+      <TopBar leftAction={{ onClick: () => navigate('/plan'), icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><path d="m15 18-6-6 6-6"/></svg>
       )}} centerContent={
         <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>This Week</span>
@@ -530,7 +530,7 @@ export default function ThisWeekSettings({ appUser }) {
         </div>
       )}
 
-      <BottomNav activeTab="week" />
+      <BottomNav activeTab="plan" />
     </div>
   )
 }

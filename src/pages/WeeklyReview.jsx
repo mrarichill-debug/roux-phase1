@@ -312,7 +312,7 @@ export default function WeeklyReview({ appUser }) {
         </div>
       </div>
 
-      <BottomNav activeTab="week" />
+      <BottomNav activeTab="plan" />
     </div>
   )
 }

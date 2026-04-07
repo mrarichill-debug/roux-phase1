@@ -59,7 +59,7 @@ export default function Onboarding({ appUser, setAppUser }) {
       // Final screen — set flag in DB and update in-memory state before navigating
       await supabase.from('users').update({ has_planned_first_meal: true }).eq('id', appUser.id)
       if (setAppUser) setAppUser(prev => ({ ...prev, has_planned_first_meal: true }))
-      navigate('/thisweek')
+      navigate('/plan')
     }
   }
 

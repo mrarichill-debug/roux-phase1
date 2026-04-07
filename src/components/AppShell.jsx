@@ -12,9 +12,9 @@ export function Shell({ appUser }) {
 
   const menuItems = [
     { label: 'Home',          path: '/',          icon: <CalendarIcon /> },
-    { label: 'This Week',     path: '/thisweek',  icon: <CalendarIcon /> },
+    { label: 'Plan',           path: '/plan',      icon: <CalendarIcon /> },
     { label: 'Meals',         path: '/meals',     icon: <RecipesIcon /> },
-    { label: 'Pantry', path: '/pantry',  icon: <ShoppingIcon /> },
+    { label: 'Shop',   path: '/shop',    icon: <ShoppingIcon /> },
     // Sage removed from drawer — accessed via topbar sparkle icon
     { label: 'Family',        path: '/family',    icon: <FamilyIcon /> },
   ]

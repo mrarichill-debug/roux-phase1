@@ -88,6 +88,10 @@ export default function ThisWeek({ appUser }) {
   const [linkResults, setLinkResults] = useState([])
   const linkDebounceRef = useRef(null)
 
+  // Day-tile list control
+  const [onListDays, setOnListDays] = useState(new Set())
+  const [deselectConfirm, setDeselectConfirm] = useState(null) // { dow, dayName, mealNames }
+
   // Batch edit
   const [batchEditMealId, setBatchEditMealId] = useState(null)
 
@@ -195,9 +199,13 @@ export default function ThisWeek({ appUser }) {
           recipes: m.recipe_id ? legacyRecipeMap[m.recipe_id] || null : null,
         }))
         setMeals(enriched)
+        // Load on_list state for day tiles
+        const listedDays = new Set(enriched.filter(m => m.on_list).map(m => m.day_of_week))
+        setOnListDays(listedDays)
       } else {
         setPlanId(null)
         setMeals([])
+        setOnListDays(new Set())
       }
 
       // Load day types for display (no embedded join — separate queries)
@@ -541,6 +549,60 @@ export default function ThisWeek({ appUser }) {
   }
 
   // ── Recipe link sheet for ghost meals ─────────────────────────
+  // ── Day-tile list control ────────────────────────────────────────────────
+  async function selectDayForList(dow) {
+    if (!planId || !appUser?.household_id) return
+    // Optimistic update
+    setOnListDays(prev => new Set([...prev, dow]))
+    // DB: mark meals as on_list
+    await supabase.from('planned_meals').update({ on_list: true })
+      .eq('meal_plan_id', planId).eq('day_of_week', dow).is('removed_at', null)
+    // Inject ingredients for that day's meals
+    const dayMeals = meals.filter(m => m.day_of_week === dow && !m.removed_at)
+    for (const m of dayMeals) {
+      if (m.linkedRecipes?.length || m.recipe_id) {
+        try { await injectSingleMeal({ plannedMealId: m.id, householdId: appUser.household_id }) } catch {}
+      }
+    }
+  }
+
+  function requestDeselectDay(dow) {
+    const dayMeals = meals.filter(m => m.day_of_week === dow && !m.removed_at)
+    const mealNames = dayMeals.map(m => m.custom_name || 'Untitled')
+    const dayName = DOW_NAMES[DOW_KEYS.indexOf(dow)] || dow
+    setDeselectConfirm({ dow, dayName, mealNames })
+  }
+
+  async function confirmDeselectDay() {
+    if (!deselectConfirm || !planId || !appUser?.household_id) return
+    const { dow, mealNames } = deselectConfirm
+    // Optimistic update
+    setOnListDays(prev => { const next = new Set(prev); next.delete(dow); return next })
+    setDeselectConfirm(null)
+    // DB: mark meals as off list
+    await supabase.from('planned_meals').update({ on_list: false })
+      .eq('meal_plan_id', planId).eq('day_of_week', dow)
+    // Remove ingredients from shopping list by source_meal_name
+    const { data: lists } = await supabase.from('shopping_lists').select('id').eq('meal_plan_id', planId)
+    if (lists?.length) {
+      const listIds = lists.map(l => l.id)
+      for (const name of mealNames) {
+        if (name && name !== 'Untitled') {
+          await supabase.from('shopping_list_items').delete()
+            .in('shopping_list_id', listIds).eq('source_meal_name', name)
+        }
+      }
+    }
+  }
+
+  function handleDayTileTap(dow) {
+    if (onListDays.has(dow)) {
+      requestDeselectDay(dow)
+    } else {
+      selectDayForList(dow)
+    }
+  }
+
   function openLinkSheet(meal) {
     // Dismiss active keyboard before opening sheet
     if (document.activeElement) document.activeElement.blur()
@@ -732,7 +794,7 @@ export default function ThisWeek({ appUser }) {
     showToast(`Added ${count} item${count !== 1 ? 's' : ''} to your list`)
     setInjecting(false)
     setCategorizing(false)
-    setTimeout(() => navigate('/pantry'), 800)
+    setTimeout(() => navigate('/shop'), 800)
   }
 
   // ── Computed ──────────────────────────────────────────────────
@@ -800,7 +862,7 @@ export default function ThisWeek({ appUser }) {
         padding: '12px 18px 10px',
       }}>
         <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink }}>
-          This Week
+          Our Plan.
         </div>
         <div style={{ fontSize: '11px', color: C.driftwood, marginTop: '2px' }}>
           {weekDates.length === 7 ? `${weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekDates[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
@@ -882,24 +944,26 @@ export default function ThisWeek({ appUser }) {
         boxShadow: '0 2px 6px rgba(80,60,30,0.06)',
       }}>
         {weekDates.map((date, i) => {
-          const dateStr = toLocalDateStr(date)
-          const isToday = dateStr === todayStr
-          const hasPlanned = meals.some(m => m.day_of_week === DOW_KEYS[i])
-          const isSelected = selectedDay ? selectedDay === DOW_KEYS[i] : isToday
+          const dow = DOW_KEYS[i]
+          const hasPlanned = meals.some(m => m.day_of_week === dow)
+          const isOnList = onListDays.has(dow)
           return (
             <button key={i} onClick={() => {
-              setSelectedDay(DOW_KEYS[i])
-              const el = document.getElementById(`day-${DOW_KEYS[i]}`)
+              if (hasPlanned) handleDayTileTap(dow)
+              // Also scroll to that day card
+              setSelectedDay(dow)
+              const el = document.getElementById(`day-${dow}`)
               if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
             }} style={{
-              flex: '1 0 auto', minWidth: '44px', padding: '6px 8px', borderRadius: '10px',
-              border: 'none', cursor: 'pointer', textAlign: 'center',
-              background: isSelected ? arcColor : 'white',
-              color: isSelected ? 'white' : C.ink,
-              boxShadow: isSelected ? '0 2px 8px rgba(61,107,79,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
+              flex: '1 0 auto', minWidth: '44px', padding: '6px 8px', borderRadius: '8px',
+              border: isOnList ? 'none' : `0.5px solid ${C.linen}`,
+              cursor: 'pointer', textAlign: 'center',
+              background: isOnList ? arcColor : hasPlanned ? 'white' : C.cream,
+              color: isOnList ? 'white' : hasPlanned ? C.ink : C.driftwood,
               fontFamily: "'Jost', sans-serif",
+              transition: 'all 0.15s',
             }}>
-              <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase', opacity: isSelected ? 0.8 : 0.5 }}>
+              <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase', opacity: isOnList ? 0.8 : 0.5 }}>
                 {DAY_ABBR[i]}
               </div>
               <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', fontWeight: 500 }}>
@@ -907,7 +971,7 @@ export default function ThisWeek({ appUser }) {
               </div>
               <div style={{
                 width: '5px', height: '5px', borderRadius: '50%', margin: '2px auto 0',
-                background: hasPlanned ? (isToday ? 'rgba(255,255,255,0.7)' : C.sage) : 'transparent',
+                background: isOnList ? 'rgba(255,255,255,0.7)' : hasPlanned ? arcColor : 'transparent',
               }} />
             </button>
           )
@@ -1710,7 +1774,33 @@ export default function ThisWeek({ appUser }) {
         @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
 
-      <BottomNav activeTab="week" />
+      {/* ── Day deselect confirmation ──────────────────────────── */}
+      <BottomSheet isOpen={!!deselectConfirm} onClose={() => setDeselectConfirm(null)}>
+        {deselectConfirm && (
+          <div style={{ padding: '16px 22px 24px' }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '8px' }}>
+              Remove {deselectConfirm.dayName}'s ingredients?
+            </div>
+            <div style={{ fontSize: '13px', color: C.driftwood, lineHeight: 1.6, marginBottom: '20px' }}>
+              This will remove ingredients from {deselectConfirm.mealNames.join(', ')} from your list.
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={confirmDeselectDay} style={{
+                flex: 1, padding: '12px', borderRadius: '12px', border: 'none',
+                background: arcColor, color: 'white',
+                fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500, cursor: 'pointer',
+              }}>Remove from list</button>
+              <button onClick={() => setDeselectConfirm(null)} style={{
+                flex: 1, padding: '12px', borderRadius: '12px',
+                border: `1px solid ${C.linen}`, background: 'none', color: C.driftwood,
+                fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 400, cursor: 'pointer',
+              }}>Keep them</button>
+            </div>
+          </div>
+        )}
+      </BottomSheet>
+
+      <BottomNav activeTab="plan" />
     </div>
   )
 }

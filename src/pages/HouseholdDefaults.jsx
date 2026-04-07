@@ -345,7 +345,7 @@ export default function HouseholdDefaults({ appUser }) {
         </div>
       )}
 
-      <BottomNav activeTab="week" />
+      <BottomNav activeTab="plan" />
     </div>
   )
 }

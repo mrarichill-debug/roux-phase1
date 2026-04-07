@@ -346,7 +346,7 @@ export default function ShoppingList({ appUser }) {
           <div className="shimmer-block" style={{ height: '120px', borderRadius: '14px', marginBottom: '12px' }} />
           <div className="shimmer-block" style={{ height: '100px', borderRadius: '14px' }} />
         </div>
-        <BottomNav activeTab="pantry" />
+        <BottomNav activeTab="shop" />
       </div>
     )
   }
@@ -369,7 +369,7 @@ export default function ShoppingList({ appUser }) {
             Your shopping list will appear here once you've published this week's plan.
           </div>
           <button
-            onClick={() => navigate('/thisweek')}
+            onClick={() => navigate('/plan')}
             style={{
               background: arcColor, color: 'white', border: 'none',
               borderRadius: '12px', padding: '14px 28px',
@@ -380,7 +380,7 @@ export default function ShoppingList({ appUser }) {
             Go to This Week
           </button>
         </div>
-        <BottomNav activeTab="pantry" />
+        <BottomNav activeTab="shop" />
       </div>
     )
   }
@@ -802,7 +802,7 @@ export default function ShoppingList({ appUser }) {
       )}
 
       {/* ── Bottom nav ──────────────────────────────────────────────────────── */}
-      <BottomNav activeTab="pantry" />
+      <BottomNav activeTab="shop" />
 
       {/* ── Receipt capture overlay ──────────────────────────────────────────── */}
       <BottomSheet isOpen={receiptSheetOpen} onClose={() => setReceiptSheetOpen(false)} title="Add your receipt">

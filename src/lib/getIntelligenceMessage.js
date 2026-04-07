@@ -21,13 +21,13 @@ const ARC_ANSWERS = {
 
 // ── Actions by stage ────────────────────────────────────────────────────────
 const STAGE_ACTIONS = {
-  1: { primary: { label: 'Plan a meal', route: '/thisweek' }, secondary: { label: 'View my list', route: '/pantry' } },
-  2: { primary: { label: 'See the breakdown', route: '/pantry' }, secondary: null },
-  3: { primary: { label: 'View this week', route: '/thisweek' }, secondary: { label: 'Browse recipes', route: '/meals/recipes' } },
+  1: { primary: { label: 'Plan a meal', route: '/plan' }, secondary: { label: 'View my list', route: '/shop' } },
+  2: { primary: { label: 'See the breakdown', route: '/shop' }, secondary: null },
+  3: { primary: { label: 'View this week', route: '/plan' }, secondary: { label: 'Browse recipes', route: '/meals/recipes' } },
   4: { primary: { label: 'Browse recipes', route: '/meals/recipes' }, secondary: null },
-  5: { primary: { label: 'View my list', route: '/pantry' }, secondary: { label: 'Plan the week', route: '/thisweek' } },
-  6: { primary: { label: 'Plan next week', route: '/thisweek' }, secondary: null },
-  7: { primary: { label: 'Plan next week', route: '/thisweek' }, secondary: null },
+  5: { primary: { label: 'View my list', route: '/shop' }, secondary: { label: 'Plan the week', route: '/plan' } },
+  6: { primary: { label: 'Plan next week', route: '/plan' }, secondary: null },
+  7: { primary: { label: 'Plan next week', route: '/plan' }, secondary: null },
 }
 
 // ── Message pools — exact text from docs/MESSAGE-POOL.md ────────────────────

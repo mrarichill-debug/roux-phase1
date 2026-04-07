@@ -35,6 +35,7 @@ import EditRecipe from './pages/EditRecipe'
 import Profile from './pages/Profile'
 import SettingsHub from './pages/SettingsHub'
 import AdminDashboard from './pages/AdminDashboard'
+import EventsPage from './pages/EventsPage'
 import Onboarding from './pages/Onboarding'
 import CalendarConnect from './pages/CalendarConnect'
 // DevReset — only loaded in dev, never bundled in production
@@ -395,8 +396,12 @@ function AuthenticatedApp({ appUser, setAppUser }) {
       <ScrollToTop />
       <Routes>
         <Route path="/"              element={appUser.has_planned_first_meal === false ? <Navigate to="/onboarding" replace /> : <Dashboard appUser={appUser} />} />
-        <Route path="/thisweek"     element={<ThisWeek      appUser={appUser} />} />
-        <Route path="/week"         element={<ThisWeek      appUser={appUser} />} />
+        {/* Plan */}
+        <Route path="/plan"         element={<ThisWeek      appUser={appUser} />} />
+        <Route path="/thisweek"     element={<Navigate to="/plan" replace />} />
+        <Route path="/week"         element={<Navigate to="/plan" replace />} />
+        <Route path="/week-settings" element={<ThisWeekSettings appUser={appUser} />} />
+        {/* Meals */}
         <Route path="/meals"         element={<Meals          appUser={appUser} />} />
         <Route path="/meals/recipes" element={<RecipeLibrary appUser={appUser} />} />
         <Route path="/meals/plan"    element={<PlanMeal       appUser={appUser} />} />
@@ -408,15 +413,17 @@ function AuthenticatedApp({ appUser, setAppUser }) {
         <Route path="/recipe/:id"   element={<RecipeCard    appUser={appUser} />} />
         <Route path="/recipe/:id/edit" element={<EditRecipe  appUser={appUser} />} />
         <Route path="/save-recipe"  element={<SaveRecipe    appUser={appUser} />} />
-        <Route path="/pantry"         element={<PantryList    appUser={appUser} />} />
-        <Route path="/pantry/list"    element={<PantryList    appUser={appUser} />} />
+        {/* Events */}
+        <Route path="/events"       element={<EventsPage    appUser={appUser} />} />
+        {/* Shop */}
+        <Route path="/shop"           element={<PantryList    appUser={appUser} />} />
+        <Route path="/pantry"         element={<Navigate to="/shop" replace />} />
+        <Route path="/pantry/list"    element={<Navigate to="/shop" replace />} />
+        <Route path="/shopping"       element={<Navigate to="/shop" replace />} />
         <Route path="/pantry/trip/:id" element={<ShoppingTrip appUser={appUser} />} />
         <Route path="/pantry/trip/:tripId/receipt" element={<ReceiptScan appUser={appUser} />} />
         <Route path="/pantry/eating-out-receipt/:mealId" element={<EatingOutReceipt appUser={appUser} />} />
         <Route path="/review/:mealPlanId" element={<WeekReview appUser={appUser} />} />
-        <Route path="/shopping"       element={<ShoppingList  appUser={appUser} />} />
-        {/* /sage route removed — Sage has no standalone page */}
-        <Route path="/week-settings" element={<ThisWeekSettings appUser={appUser} />} />
         <Route path="/week/defaults" element={<HouseholdDefaults appUser={appUser} />} />
         <Route path="/profile"       element={<SettingsHub    appUser={appUser} />} />
         <Route path="/profile/edit"  element={<Profile        appUser={appUser} />} />
