@@ -569,7 +569,7 @@ export default function ThisWeek({ appUser }) {
   function requestDeselectDay(dow) {
     const dayMeals = meals.filter(m => m.day_of_week === dow && !m.removed_at)
     const mealNames = dayMeals.map(m => m.custom_name || 'Untitled')
-    const dayName = DOW_NAMES[DOW_KEYS.indexOf(dow)] || dow
+    const dayName = DAY_NAMES[DOW_KEYS.indexOf(dow)] || dow
     setDeselectConfirm({ dow, dayName, mealNames })
   }
 
@@ -852,23 +852,6 @@ export default function ThisWeek({ appUser }) {
     }}>
       <TopBar />
 
-      {/* ── Sticky page header ──────────────────────────────────────── */}
-      <div style={{
-        position: 'sticky',
-        top: '66px',
-        zIndex: 10,
-        background: C.cream,
-        boxShadow: '0 1px 0 #E4DDD2',
-        padding: '12px 18px 10px',
-      }}>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink }}>
-          Our Plan.
-        </div>
-        <div style={{ fontSize: '11px', color: C.driftwood, marginTop: '2px' }}>
-          {weekDates.length === 7 ? `${weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekDates[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
-        </div>
-      </div>
-
       {/* ── Week Header ──────────────────────────────────────────── */}
       <div style={{ padding: '12px 22px 0', position: 'relative' }}>
         {/* Row 1: context label + arrows */}
@@ -908,6 +891,17 @@ export default function ThisWeek({ appUser }) {
             </button>
           )}
         </div>
+        {weekOffset < 0 && planId && !weekReviewed && (
+          <div style={{ textAlign: 'center', marginBottom: '4px' }}>
+            <button onClick={() => navigate(`/review/${planId}`)} style={{
+              background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+              fontSize: '12px', color: arcColor, fontWeight: 400,
+              fontFamily: "'Jost', sans-serif",
+            }}>
+              Review this week →
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Weekly Review Nudge ──────────────────────────────────── */}

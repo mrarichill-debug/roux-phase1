@@ -4,6 +4,8 @@
  * Wordmark left, optional right actions, global avatar handled by App.jsx.
  */
 
+import { useLocation } from 'react-router-dom'
+
 const C = {
   forest: '#3D6B4F',
   cream:  '#FAF7F2',
@@ -53,6 +55,16 @@ export default function TopBar({
   notifCount = 0,
 }) {
   const barHeight = slim ? 58 : 66
+  const { pathname } = useLocation()
+
+  const topbarTitle = (() => {
+    if (pathname.startsWith('/meals')) return 'Meals.'
+    if (pathname.startsWith('/plan') || pathname.startsWith('/thisweek') || pathname.startsWith('/week')) return 'Plan.'
+    if (pathname.startsWith('/events')) return 'Traditions.'
+    if (pathname.startsWith('/shop') || pathname.startsWith('/pantry') || pathname.startsWith('/shopping')) return 'List.'
+    if (pathname.startsWith('/settings') || pathname.startsWith('/profile')) return 'Settings.'
+    return 'Roux.'
+  })()
 
   // Bell, search, and avatar are all global in App.jsx at z-index 150.
   // TopBar only renders custom rightActions if explicitly provided (e.g. fav star on RecipeCard).
@@ -86,10 +98,10 @@ export default function TopBar({
           ) : showWordmark ? (
             <div style={{
               fontFamily: "'Slabo 27px', Georgia, serif",
-              fontSize: '26px', fontWeight: 400,
+              fontSize: '20px', fontWeight: 400,
               color: 'rgba(250,247,242,0.95)', userSelect: 'none',
             }}>
-              Roux.
+              {topbarTitle}
             </div>
           ) : (
             <div style={{ width: '36px' }} />
