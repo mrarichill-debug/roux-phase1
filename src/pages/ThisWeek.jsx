@@ -10,6 +10,7 @@ import { logActivity } from '../lib/activityLog'
 import { sageMealMatch } from '../lib/sageMealMatch'
 import { injectMealPlanToList } from '../lib/injectMealPlanToList'
 import { injectSingleMeal } from '../lib/injectSingleMeal'
+import { getOrCreateShoppingList } from '../lib/getOrCreateShoppingList'
 import { getWeekDatesTZ, getWeekStartTZ, toLocalDateStr } from '../lib/dateUtils'
 import { fetchCalendarEvents, getEventsForDate } from '../lib/calendarSync'
 import { sageBusyNightDetection } from '../lib/sageBusyNightDetection'
@@ -557,11 +558,46 @@ export default function ThisWeek({ appUser }) {
     // DB: mark meals as on_list
     await supabase.from('planned_meals').update({ on_list: true })
       .eq('meal_plan_id', planId).eq('day_of_week', dow).is('removed_at', null)
-    // Inject ingredients for that day's meals
+    // Split meals by recipe availability
     const dayMeals = meals.filter(m => m.day_of_week === dow && !m.removed_at)
-    for (const m of dayMeals) {
-      if (m.linkedRecipes?.length || m.recipe_id) {
-        try { await injectSingleMeal({ plannedMealId: m.id, householdId: appUser.household_id }) } catch {}
+    const mealsWithRecipes = dayMeals.filter(m => m.linkedRecipes?.length || m.recipe_id)
+    const mealsWithoutRecipes = dayMeals.filter(m => !m.linkedRecipes?.length && !m.recipe_id)
+    // Inject ingredients for meals with recipes
+    for (const m of mealsWithRecipes) {
+      try {
+        await injectSingleMeal({
+          mealId: m.id,
+          mealName: m.custom_name || 'Untitled',
+          batchMultiplier: m.batch_multiplier || 1,
+          planId,
+          householdId: appUser.household_id,
+        })
+      } catch {}
+    }
+    // Add placeholder items for meals without recipes
+    if (mealsWithoutRecipes.length > 0) {
+      const listId = await getOrCreateShoppingList(planId, appUser.household_id)
+      if (listId) {
+        for (const m of mealsWithoutRecipes) {
+          const mealName = m.custom_name || 'Untitled'
+          if (mealName === 'Untitled') continue
+          // Skip if placeholder already exists for this meal
+          const { data: existing } = await supabase.from('shopping_list_items')
+            .select('id').eq('shopping_list_id', listId)
+            .eq('source_meal_name', mealName).eq('is_placeholder', true).limit(1)
+          if (existing?.length) continue
+          await supabase.from('shopping_list_items').insert({
+            shopping_list_id: listId,
+            household_id: appUser.household_id,
+            name: mealName,
+            grocery_category: 'other',
+            source_meal_name: mealName,
+            is_placeholder: true,
+            status: 'active',
+            item_type: 'manual',
+            approval_status: 'approved',
+          })
+        }
       }
     }
   }
@@ -582,7 +618,7 @@ export default function ThisWeek({ appUser }) {
     // DB: mark meals as off list
     await supabase.from('planned_meals').update({ on_list: false })
       .eq('meal_plan_id', planId).eq('day_of_week', dow)
-    // Remove ingredients from shopping list by source_meal_name
+    // Remove ingredients + placeholders from shopping list by source_meal_name
     const { data: lists } = await supabase.from('shopping_lists').select('id').eq('meal_plan_id', planId)
     if (lists?.length) {
       const listIds = lists.map(l => l.id)
