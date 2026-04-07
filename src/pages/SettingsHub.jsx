@@ -124,7 +124,7 @@ export default function SettingsHub({ appUser }) {
       minHeight: '100vh',
       maxWidth: '430px',
       margin: '0 auto',
-      paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 8px))',
+      paddingBottom: 'calc(120px + env(safe-area-inset-bottom, 8px))',
     }}>
       <TopBar />
 
