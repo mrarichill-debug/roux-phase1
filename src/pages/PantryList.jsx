@@ -308,6 +308,28 @@ export default function PantryList({ appUser }) {
     for (const id of ids) {
       await supabase.from('shopping_list_items').update({ have_it_this_week: true }).eq('id', id)
     }
+
+    // Create pantry_inventory row — source 'manual', on_hand immediately
+    let storageType = 'dry'
+    try {
+      const { data: ing } = await supabase.from('ingredients')
+        .select('storage_type').ilike('name', item.name).not('storage_type', 'is', null).limit(1).maybeSingle()
+      if (ing?.storage_type) storageType = ing.storage_type
+    } catch {}
+    const qtyNum = item.quantity ? parseFloat(item.quantity) : null
+    await supabase.from('pantry_inventory').insert({
+      household_id: appUser.household_id,
+      name: item.name,
+      quantity: qtyNum && !isNaN(qtyNum) ? qtyNum : null,
+      unit: item.unit || null,
+      storage_type: storageType,
+      status: 'on_hand',
+      source: 'manual',
+      shopping_list_item_id: ids[0],
+      meal_plan_context: (item.sourceMeals?.length ? `For ${item.sourceMeals.join(', ')}` : null),
+      purchased_date: new Date().toISOString().split('T')[0],
+    })
+
     logActivity({ user: appUser, actionType: 'item_have_it_this_week', targetType: 'shopping_item', targetName: item.name })
   }
 
