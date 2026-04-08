@@ -718,6 +718,15 @@ export default function PantryList({ appUser }) {
       )}
 
 
+      {/* View Pantry link */}
+      <div style={{ padding: '8px 22px 0', display: 'flex', justifyContent: 'flex-end' }}>
+        <button onClick={() => navigate('/pantry')} style={{
+          background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+          fontSize: '12px', color: arcColor, fontWeight: 400,
+          fontFamily: "'Jost', sans-serif",
+        }}>View Pantry →</button>
+      </div>
+
       {/* No meal plan for this week */}
       {noMealPlan && (
         <div style={{ textAlign: 'center', padding: '48px 22px' }}>
@@ -890,7 +899,9 @@ export default function PantryList({ appUser }) {
                           fontFamily: "'Jost', sans-serif",
                         }}>{assignedTrip.store_name}</button>
                       )}
-                      {isStaple ? (
+                      {item.pantry_status === 'pending' ? (
+                        <span style={{ fontSize: '11px', color: C.driftwood, fontStyle: 'italic', fontFamily: "'Jost', sans-serif" }}>In cart</span>
+                      ) : isStaple ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <button onClick={() => markStapleHaveIt(item)} style={{
                             background: 'none', border: 'none', cursor: 'pointer', padding: 0,

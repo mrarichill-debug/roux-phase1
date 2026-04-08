@@ -424,7 +424,7 @@ function AuthenticatedApp({ appUser, setAppUser }) {
         <Route path="/events"       element={<EventsPage    appUser={appUser} />} />
         {/* Shop */}
         <Route path="/shop"           element={<PantryList    appUser={appUser} />} />
-        <Route path="/pantry"         element={<Navigate to="/shop" replace />} />
+        <Route path="/pantry"         element={<Pantry          appUser={appUser} />} />
         <Route path="/pantry/list"    element={<Navigate to="/shop" replace />} />
         <Route path="/shopping"       element={<Navigate to="/shop" replace />} />
         <Route path="/pantry/trip/:id" element={<ShoppingTrip appUser={appUser} />} />

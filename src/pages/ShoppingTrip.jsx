@@ -111,13 +111,44 @@ export default function ShoppingTrip({ appUser }) {
 
     if (item.shopping_list_item_id) {
       if (!wasPurchased) {
+        // Mark as purchased + pending pantry
         await supabase.from('shopping_list_items').update({
           is_purchased: true, purchased_at: now, last_purchased_at: now, status: 'purchased',
+          pantry_status: 'pending',
         }).eq('id', item.shopping_list_item_id)
+
+        // Look up storage_type from ingredients table
+        let storageType = 'dry'
+        if (item.name) {
+          const { data: ing } = await supabase.from('ingredients')
+            .select('storage_type').ilike('name', item.name).not('storage_type', 'is', null).limit(1).maybeSingle()
+          if (ing?.storage_type) storageType = ing.storage_type
+        }
+
+        // Create pantry_inventory row
+        const qtyNum = item.quantity ? parseFloat(item.quantity) : null
+        await supabase.from('pantry_inventory').insert({
+          household_id: appUser.household_id,
+          name: item.name,
+          quantity: qtyNum && !isNaN(qtyNum) ? qtyNum : null,
+          unit: item.unit || null,
+          storage_type: storageType,
+          status: 'pending',
+          source: 'shopping_trip',
+          shopping_trip_id: tripId,
+          shopping_list_item_id: item.shopping_list_item_id,
+          meal_plan_context: item.source_meal_name ? `For ${item.source_meal_name}` : null,
+          purchased_date: now.split('T')[0],
+        })
       } else {
+        // Uncheck — revert pantry status + remove pantry_inventory
         await supabase.from('shopping_list_items').update({
           is_purchased: false, purchased_at: null, status: 'active',
+          pantry_status: null,
         }).eq('id', item.shopping_list_item_id)
+
+        await supabase.from('pantry_inventory').delete()
+          .eq('shopping_list_item_id', item.shopping_list_item_id)
       }
     }
   }
@@ -131,19 +162,41 @@ export default function ShoppingTrip({ appUser }) {
     if (item.shopping_list_item_id) {
       await supabase.from('shopping_list_items').update({
         assigned_trip_id: null, is_purchased: false, purchased_at: null, status: 'active',
+        pantry_status: null,
       }).eq('id', item.shopping_list_item_id)
+      // Clean up any pantry_inventory row created for this item
+      await supabase.from('pantry_inventory').delete()
+        .eq('shopping_list_item_id', item.shopping_list_item_id)
     }
     logActivity({ user: appUser, actionType: 'trip_item_removed', targetType: 'shopping_item', targetName: item.name })
   }
 
   async function finishTrip() {
     const now = new Date().toISOString()
+
+    // Flip checked items from pending → on_hand in pantry
+    const checkedItemIds = checked.map(i => i.shopping_list_item_id).filter(Boolean)
+    if (checkedItemIds.length > 0) {
+      await supabase.from('shopping_list_items')
+        .update({ pantry_status: 'on_hand' })
+        .in('id', checkedItemIds)
+      await supabase.from('pantry_inventory')
+        .update({ status: 'on_hand' })
+        .in('shopping_list_item_id', checkedItemIds)
+    }
+
     // Unassign unchecked items so they return to manifest
     for (const item of unchecked) {
       if (item.shopping_list_item_id) {
-        await supabase.from('shopping_list_items').update({ assigned_trip_id: null }).eq('id', item.shopping_list_item_id)
+        await supabase.from('shopping_list_items').update({ assigned_trip_id: null, pantry_status: null }).eq('id', item.shopping_list_item_id)
       }
     }
+    // Remove pantry_inventory rows for unchecked items
+    const uncheckedItemIds = unchecked.map(i => i.shopping_list_item_id).filter(Boolean)
+    if (uncheckedItemIds.length > 0) {
+      await supabase.from('pantry_inventory').delete().in('shopping_list_item_id', uncheckedItemIds)
+    }
+
     // Complete primary trip
     await supabase.from('shopping_trips').update({ status: 'completed', completed_at: now }).eq('id', tripId)
     // Complete companion trip if present
