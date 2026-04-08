@@ -10,6 +10,7 @@ import { logActivity } from '../lib/activityLog'
 import { getIngredientCostEstimate } from '../lib/getIngredientCostEstimate'
 import { hasSeenTooltip, dismissTooltip } from '../lib/tooltips'
 import BottomNav from '../components/BottomNav'
+import { useArc } from '../context/ArcContext'
 
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
@@ -27,12 +28,19 @@ const sentenceCase = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1) :
 export default function ShoppingTrip({ appUser }) {
   const { id: tripId } = useParams()
   const navigate = useNavigate()
+  const { color: arcColor } = useArc()
   const [trip, setTrip] = useState(null)
   const [tripItems, setTripItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [completed, setCompleted] = useState(false)
   const [costEstimates, setCostEstimates] = useState({}) // name → estimate obj
   const [receiptTipDismissed, setReceiptTipDismissed] = useState(() => hasSeenTooltip(appUser, 'receipt_value'))
+
+  // Add from list mid-shop
+  const [showAddFromList, setShowAddFromList] = useState(false)
+  const [availableListItems, setAvailableListItems] = useState([])
+  const [addItemsSet, setAddItemsSet] = useState(new Set())
+  useEffect(() => { if (showAddFromList) loadAvailableItems() }, [showAddFromList])
 
   useEffect(() => { if (tripId) loadTrip() }, [tripId])
 
@@ -207,6 +215,33 @@ export default function ShoppingTrip({ appUser }) {
     setCompleted(true)
   }
 
+  // ── Add from list mid-shop ──────────────────────────────
+  async function loadAvailableItems() {
+    const currentItemIds = new Set(tripItems.map(i => i.shopping_list_item_id))
+    const { data } = await supabase.from('shopping_list_items')
+      .select('id, name, quantity, unit, grocery_category, source_meal_name')
+      .eq('household_id', appUser.household_id)
+      .eq('status', 'active').eq('is_purchased', false)
+      .eq('approval_status', 'approved')
+      .is('assigned_trip_id', null)
+      .order('grocery_category')
+    setAvailableListItems((data ?? []).filter(i => !currentItemIds.has(i.id)))
+    setAddItemsSet(new Set())
+  }
+
+  async function confirmAddItems() {
+    if (addItemsSet.size === 0) return
+    const ids = Array.from(addItemsSet)
+    // Create shopping_trip_items rows and assign items to this trip
+    await supabase.from('shopping_trip_items').insert(ids.map(id => ({ trip_id: tripId, shopping_list_item_id: id })))
+    for (const id of ids) {
+      await supabase.from('shopping_list_items').update({ assigned_trip_id: tripId }).eq('id', id)
+    }
+    setShowAddFromList(false)
+    setAddItemsSet(new Set())
+    loadTrip() // refresh trip items
+  }
+
   if (loading) return (
     <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
       <div style={{ padding: '20px 22px' }}>
@@ -374,7 +409,71 @@ export default function ShoppingTrip({ appUser }) {
             ))}
           </div>
         )}
+        {/* Add from list */}
+        <button onClick={() => setShowAddFromList(true)} style={{
+          width: '100%', padding: '12px', marginTop: '12px', borderRadius: '10px',
+          border: `0.5px dashed ${C.linen}`, background: 'transparent',
+          color: arcColor, fontSize: '13px', fontFamily: "'Jost', sans-serif", cursor: 'pointer',
+        }}>+ Add from list</button>
       </div>
+
+      {/* Add from list overlay */}
+      {showAddFromList && (
+        <div style={{
+          position: 'fixed', inset: 0, background: C.cream, zIndex: 300,
+          display: 'flex', flexDirection: 'column', maxWidth: '430px', margin: '0 auto',
+        }}>
+          <div style={{ background: C.forest, padding: '10px 16px 12px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+            <button onClick={() => setShowAddFromList(false)} style={{
+              background: 'rgba(250,247,242,0.15)', border: 'none', borderRadius: '50%',
+              width: 32, height: 32, color: 'white', fontSize: 18, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>‹</button>
+            <span style={{ fontFamily: "'Slabo 27px', serif", fontSize: 18, color: 'rgba(250,247,242,0.95)' }}>Add from list</span>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px 22px' }}>
+            {availableListItems.map(item => {
+              const isSelected = addItemsSet.has(item.id)
+              return (
+                <div key={item.id} onClick={() => {
+                  setAddItemsSet(prev => { const next = new Set(prev); if (next.has(item.id)) next.delete(item.id); else next.add(item.id); return next })
+                }} style={{
+                  display: 'flex', alignItems: 'center', gap: '12px',
+                  padding: '12px 14px', marginBottom: '6px', borderRadius: '10px',
+                  border: `0.5px solid ${isSelected ? arcColor : C.linen}`,
+                  background: isSelected ? `${arcColor}10` : 'white', cursor: 'pointer',
+                }}>
+                  <div style={{
+                    width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                    border: `1.5px solid ${isSelected ? arcColor : C.linen}`,
+                    background: isSelected ? arcColor : 'white',
+                  }} />
+                  <div>
+                    <div style={{ fontSize: '14px', color: C.ink }}>{sentenceCase(item.name)}</div>
+                    {item.source_meal_name && (
+                      <div style={{ fontSize: '11px', color: C.driftwood }}>For {item.source_meal_name}</div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+            {availableListItems.length === 0 && (
+              <div style={{ textAlign: 'center', color: C.driftwood, fontSize: '14px', marginTop: '40px' }}>
+                No items left on your list.
+              </div>
+            )}
+          </div>
+          {addItemsSet.size > 0 && (
+            <div style={{ padding: '16px 22px', borderTop: `0.5px solid ${C.linen}`, flexShrink: 0 }}>
+              <button onClick={confirmAddItems} style={{
+                width: '100%', padding: '14px', borderRadius: '10px', border: 'none',
+                background: arcColor, color: 'white', fontSize: '15px',
+                fontFamily: "'Jost', sans-serif", cursor: 'pointer',
+              }}>Add {addItemsSet.size} item{addItemsSet.size > 1 ? 's' : ''}</button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Done shopping button */}
       <div style={{

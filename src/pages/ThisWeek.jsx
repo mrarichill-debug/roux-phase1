@@ -108,6 +108,10 @@ export default function ThisWeek({ appUser }) {
   const [selectedSourceMeal, setSelectedSourceMeal] = useState(null)
   const [leftoversFreeText, setLeftoversFreeText] = useState('')
 
+  // Family member tagging
+  const [familyMembers, setFamilyMembers] = useState([])
+  const [selectedMembers, setSelectedMembers] = useState(new Set())
+
   // Tooltips
   const [mealsVsRecipesDismissed, setMealsVsRecipesDismissed] = useState(() => hasSeenTooltip(appUser, 'meals_vs_recipes'))
   const [mealAddedTip, setMealAddedTip] = useState(false) // shows after first meal add
@@ -120,6 +124,14 @@ export default function ThisWeek({ appUser }) {
   useEffect(() => {
     if (appUser?.household_id) loadWeek()
   }, [appUser?.household_id, weekOffset])
+
+  // Load family members for tagging
+  useEffect(() => {
+    if (!appUser?.household_id) return
+    supabase.from('family_members').select('id, name, is_pet')
+      .eq('household_id', appUser.household_id).eq('is_pet', false).order('name')
+      .then(({ data }) => setFamilyMembers(data ?? []))
+  }, [appUser?.household_id])
 
   // Poll for Sage match results on ghost meals
   useEffect(() => {
@@ -203,10 +215,22 @@ export default function ThisWeek({ appUser }) {
           const { data: recipes } = await supabase.from('recipes').select('id, name, prep_time_minutes').in('id', legacyRecipeIds)
           legacyRecipeMap = Object.fromEntries((recipes || []).map(r => [r.id, r]))
         }
+        // Load member tags (separate query per LESSONS.md)
+        let memberMap = {} // planned_meal_id → [member_name]
+        if (mealIds.length > 0) {
+          const { data: memberRows } = await supabase.from('planned_meal_members')
+            .select('planned_meal_id, member_name').in('planned_meal_id', mealIds)
+          for (const mr of (memberRows || [])) {
+            if (!memberMap[mr.planned_meal_id]) memberMap[mr.planned_meal_id] = []
+            memberMap[mr.planned_meal_id].push(mr.member_name)
+          }
+        }
+
         const enriched = (mealsData || []).map(m => ({
           ...m,
           linkedRecipes: linkedRecipeMap[m.id] || [],
           recipes: m.recipe_id ? legacyRecipeMap[m.recipe_id] || null : null,
+          members: memberMap[m.id] || [],
         }))
         setMeals(enriched)
         // Load on_list state for day tiles
@@ -348,6 +372,7 @@ export default function ThisWeek({ appUser }) {
     setSelectedSourceMeal(null)
     setLeftoversFreeText('')
     setRecentMeals([])
+    setSelectedMembers(new Set())
     setAddSheetOpen(true)
   }
 
@@ -432,7 +457,14 @@ export default function ThisWeek({ appUser }) {
         }).select('*').single()
 
         if (error) throw error
-        setMeals(prev => [...prev, { ...data, linkedRecipes: [], recipes: null }])
+        // Write member tags if any
+        if (selectedMembers.size > 0) {
+          await supabase.from('planned_meal_members').insert(
+            Array.from(selectedMembers).map(name => ({ household_id: appUser.household_id, planned_meal_id: data.id, member_name: name }))
+          )
+        }
+        const members = Array.from(selectedMembers)
+        setMeals(prev => [...prev, { ...data, linkedRecipes: [], recipes: null, members }])
         setAddSheetOpen(false)
         showToast(`Added ${customName}`)
         logActivity({ user: appUser, actionType: 'meal_added_to_week', targetType: 'meal', targetId: data.id, targetName: customName, metadata: { entry_type: 'leftovers' } })
@@ -493,7 +525,15 @@ export default function ThisWeek({ appUser }) {
           )
         }
 
-        allEnriched.push({ ...data, linkedRecipes: hasRecipes ? [...addSheetRecipes] : [], recipes: null })
+        // Write member tags for each row
+        if (selectedMembers.size > 0) {
+          await supabase.from('planned_meal_members').insert(
+            Array.from(selectedMembers).map(name => ({ household_id: appUser.household_id, planned_meal_id: data.id, member_name: name }))
+          )
+        }
+
+        const members = Array.from(selectedMembers)
+        allEnriched.push({ ...data, linkedRecipes: hasRecipes ? [...addSheetRecipes] : [], recipes: null, members })
 
         // Fire Sage meal match for ghost entries (skip eating out) — only first row
         if (!hasRecipes && !isEatingOut && data === firstData) {
@@ -1349,6 +1389,16 @@ export default function ThisWeek({ appUser }) {
                                 ↩ {meal.source_meal_name || 'Leftovers'}
                               </div>
                             )}
+                            {meal.members?.length > 0 && (
+                              <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                                {meal.members.map(m => (
+                                  <span key={m} style={{
+                                    fontSize: '10px', padding: '2px 8px', borderRadius: '20px',
+                                    background: '#EFF4EC', color: arcColor, border: `0.5px solid ${arcColor}30`,
+                                  }}>{m.split(' ')[0]}</span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -1756,6 +1806,32 @@ export default function ThisWeek({ appUser }) {
                   ))}
                 </div>
               </div>
+              )}
+
+              {/* Member tagging — optional, all meal types */}
+              {familyMembers.length > 0 && (
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ fontSize: '11px', color: C.driftwood, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
+                    For (optional)
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {familyMembers.map(member => {
+                      const firstName = member.name.split(' ')[0]
+                      const isSelected = selectedMembers.has(member.name)
+                      return (
+                        <button key={member.id} onClick={() => {
+                          setSelectedMembers(prev => { const next = new Set(prev); if (next.has(member.name)) next.delete(member.name); else next.add(member.name); return next })
+                        }} style={{
+                          padding: '6px 12px', borderRadius: '20px',
+                          border: `0.5px solid ${isSelected ? arcColor : C.linen}`,
+                          background: isSelected ? `${arcColor}15` : 'white',
+                          color: isSelected ? arcColor : C.driftwood,
+                          fontSize: '12px', fontFamily: "'Jost', sans-serif", cursor: 'pointer',
+                        }}>{firstName}</button>
+                      )
+                    })}
+                  </div>
+                </div>
               )}
 
               {/* Add button */}
