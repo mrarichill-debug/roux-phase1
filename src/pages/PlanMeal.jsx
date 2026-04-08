@@ -12,7 +12,7 @@ import UnsavedChangesSheet from '../components/UnsavedChangesSheet'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import AddToPlanSheet from '../components/AddToPlanSheet'
-import BottomSheet from '../components/BottomSheet'
+
 
 const C = {
   forest: '#3D6B4F', forestDk: '#2E5038',
@@ -110,25 +110,26 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
     onClose()
   }
 
+  if (!open) return null
+
   return (
-    <BottomSheet isOpen={open} onClose={onClose} maxHeight="70vh">
+    <div style={{
+      position: 'fixed', inset: 0, background: C.cream, zIndex: 200,
+      display: 'flex', flexDirection: 'column', maxWidth: '430px', margin: '0 auto',
+    }}>
+      <div style={{ background: C.forest, padding: '10px 16px 12px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+        <button onClick={onClose} style={{ background: 'rgba(250,247,242,0.15)', border: 'none', borderRadius: '50%', width: 32, height: 32, color: 'white', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+        <span style={{ fontFamily: "'Slabo 27px', serif", fontSize: 18, color: 'rgba(250,247,242,0.95)' }}>Add a recipe</span>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 120 }}>
         {view === 'list' ? (
           <>
-            {/* Header */}
             <div style={{ padding: '16px 22px 0' }}>
-              <div style={{
-                fontFamily: "'Playfair Display', serif", fontSize: '20px',
-                fontWeight: 500, color: C.ink, marginBottom: '12px',
-              }}>
-                Add a recipe
-              </div>
-
-              {/* Search */}
               <input
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Search recipes..."
+                placeholder="Search recipes..." autoFocus
                 style={{
                   width: '100%', padding: '10px 14px', fontSize: '14px',
                   fontFamily: "'Jost', sans-serif", fontWeight: 300,
@@ -141,7 +142,6 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
               />
             </div>
 
-            {/* Recipe list */}
             <div style={{
               flex: 1, overflowY: 'auto', padding: '12px 22px',
               WebkitOverflowScrolling: 'touch',
@@ -358,7 +358,8 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
             </button>
           </div>
         )}
-    </BottomSheet>
+      </div>
+    </div>
   )
 }
 

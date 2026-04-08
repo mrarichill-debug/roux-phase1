@@ -796,9 +796,14 @@ export default function Profile({ appUser }) {
         </>
       )}
 
-      {/* ── Add Member Sheet ─────────────────────────────────────────── */}
-      <BottomSheet isOpen={addMemberOpen} onClose={() => setAddMemberOpen(false)} title={editMemberId ? 'Edit family member' : 'Add a family member'}>
-            <div style={{ padding: '0 22px 40px' }}>
+      {/* ── Add Member — full-page overlay (keyboard safe) ──────── */}
+      {addMemberOpen && (
+      <div style={{ position: 'fixed', inset: 0, background: C.cream, zIndex: 200, display: 'flex', flexDirection: 'column', maxWidth: '430px', margin: '0 auto' }}>
+        <div style={{ background: '#3D6B4F', padding: '10px 16px 12px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <button onClick={() => setAddMemberOpen(false)} style={{ background: 'rgba(250,247,242,0.15)', border: 'none', borderRadius: '50%', width: 32, height: 32, color: 'white', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+          <span style={{ fontFamily: "'Slabo 27px', serif", fontSize: 18, color: 'rgba(250,247,242,0.95)' }}>{editMemberId ? 'Edit family member' : 'Add a family member'}</span>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 22px', paddingBottom: 120 }}>
               <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '6px' }}>Name</div>
               <input type="text" value={newMemberName} onChange={e => setNewMemberName(e.target.value)} placeholder={newMemberIsPet ? "Pet's name" : 'First and last name'} autoFocus style={{
                 width: '100%', padding: '12px 14px', border: `1px solid ${C.linen}`, borderRadius: '10px',
@@ -891,12 +896,18 @@ export default function Profile({ appUser }) {
                 width: '100%', background: 'none', border: 'none', color: C.driftwood,
                 fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300, padding: '10px', cursor: 'pointer',
               }}>Cancel</button>
-            </div>
-      </BottomSheet>
+        </div>
+      </div>
+      )}
 
-      {/* ── Add Store Sheet ──────────────────────────────────────────── */}
-      <BottomSheet isOpen={addStoreOpen} onClose={() => setAddStoreOpen(false)} title="Add a store">
-            <div style={{ padding: '0 22px 40px' }}>
+      {/* ── Add Store — full-page overlay (keyboard safe) ──────── */}
+      {addStoreOpen && (
+      <div style={{ position: 'fixed', inset: 0, background: C.cream, zIndex: 200, display: 'flex', flexDirection: 'column', maxWidth: '430px', margin: '0 auto' }}>
+        <div style={{ background: '#3D6B4F', padding: '10px 16px 12px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <button onClick={() => setAddStoreOpen(false)} style={{ background: 'rgba(250,247,242,0.15)', border: 'none', borderRadius: '50%', width: 32, height: 32, color: 'white', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+          <span style={{ fontFamily: "'Slabo 27px', serif", fontSize: 18, color: 'rgba(250,247,242,0.95)' }}>Add a store</span>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 22px', paddingBottom: 120 }}>
               <input type="text" value={newStoreName} onChange={e => setNewStoreName(e.target.value)} placeholder="Store name" autoFocus
                 onKeyDown={e => { if (e.key === 'Enter') addStore() }}
                 style={{
@@ -912,8 +923,9 @@ export default function Profile({ appUser }) {
                 width: '100%', background: 'none', border: 'none', color: C.driftwood,
                 fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300, padding: '10px', cursor: 'pointer',
               }}>Cancel</button>
-            </div>
-      </BottomSheet>
+        </div>
+      </div>
+      )}
 
       {/* ── Admin Transfer Sheet ─────────────────────────────────────── */}
       <BottomSheet isOpen={transferOpen} onClose={() => setTransferOpen(false)} zIndex={300} title="Transfer Admin">

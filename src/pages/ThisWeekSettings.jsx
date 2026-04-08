@@ -475,8 +475,13 @@ export default function ThisWeekSettings({ appUser }) {
       </BottomSheet>
 
       {/* ── Save Template Sheet ───────────────────────────────────────── */}
-      <BottomSheet isOpen={saveSheetOpen} onClose={() => setSaveSheetOpen(false)} title="Save as template">
-        <div style={{ padding: '8px 22px 40px' }}>
+      {saveSheetOpen && (
+      <div style={{ position: 'fixed', inset: 0, background: C.cream, zIndex: 200, display: 'flex', flexDirection: 'column', maxWidth: '430px', margin: '0 auto' }}>
+        <div style={{ background: C.forest, padding: '10px 16px 12px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <button onClick={() => setSaveSheetOpen(false)} style={{ background: 'rgba(250,247,242,0.15)', border: 'none', borderRadius: '50%', width: 32, height: 32, color: 'white', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+          <span style={{ fontFamily: "'Slabo 27px', serif", fontSize: 18, color: 'rgba(250,247,242,0.95)' }}>Save as template</span>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 22px', paddingBottom: 120 }}>
           <input type="text" value={templateName} onChange={e => setTemplateName(e.target.value)} placeholder="Template name"
             autoFocus style={{
               width: '100%', padding: '12px 14px', fontSize: '14px', fontFamily: "'Jost', sans-serif",
@@ -490,7 +495,8 @@ export default function ThisWeekSettings({ appUser }) {
             {savingTemplate ? 'Saving...' : 'Save template'}
           </button>
         </div>
-      </BottomSheet>
+      </div>
+      )}
 
       {/* ── Reset Confirmation ────────────────────────────────────────── */}
       <BottomSheet isOpen={confirmReset} onClose={() => setConfirmReset(false)}>

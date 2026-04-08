@@ -880,123 +880,61 @@ export default function WeekSettings({ appUser }) {
       <BottomNav activeTab="plan" />
 
       {/* ── Add Tradition Sheet ────────────────────────────────────────── */}
-      <BottomSheet isOpen={addTradSheetOpen} onClose={() => setAddTradSheetOpen(false)} title="Add a tradition">
-        <div style={{ padding: '16px 22px 40px' }}>
-          {/* Name */}
-          <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '6px' }}>
-            Name
-          </div>
-          <input
-            type="text"
-            value={newTradName}
-            onChange={e => setNewTradName(e.target.value)}
-            placeholder="e.g. Taco Tuesday, Pizza Friday"
-            autoFocus={addTradSheetOpen}
-            style={{
-              width: '100%', padding: '12px 14px',
-              border: `1px solid ${C.linen}`, borderRadius: '10px',
-              fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300,
-              color: C.ink, outline: 'none', background: C.cream,
-              boxSizing: 'border-box', marginBottom: '16px',
-            }}
-          />
-
-          {/* Day of week */}
-          <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '6px' }}>
-            Day
-          </div>
+      {addTradSheetOpen && (
+      <div style={{ position: 'fixed', inset: 0, background: C.cream, zIndex: 200, display: 'flex', flexDirection: 'column', maxWidth: '430px', margin: '0 auto' }}>
+        <div style={{ background: C.forest, padding: '10px 16px 12px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <button onClick={() => setAddTradSheetOpen(false)} style={{ background: 'rgba(250,247,242,0.15)', border: 'none', borderRadius: '50%', width: 32, height: 32, color: 'white', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+          <span style={{ fontFamily: "'Slabo 27px', serif", fontSize: 18, color: 'rgba(250,247,242,0.95)' }}>Add a tradition</span>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 22px', paddingBottom: 120 }}>
+          <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '6px' }}>Name</div>
+          <input type="text" value={newTradName} onChange={e => setNewTradName(e.target.value)}
+            placeholder="e.g. Taco Tuesday, Pizza Friday" autoFocus
+            style={{ width: '100%', padding: '12px 14px', border: `1px solid ${C.linen}`, borderRadius: '10px', fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300, color: C.ink, outline: 'none', background: C.cream, boxSizing: 'border-box', marginBottom: '16px' }} />
+          <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '6px' }}>Day</div>
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
             {DOW_KEYS.map((dow, i) => (
-              <button
-                key={dow}
-                onClick={() => setNewTradDay(dow)}
-                style={{
-                  padding: '6px 12px', fontSize: '12px',
-                  fontFamily: "'Jost', sans-serif", fontWeight: newTradDay === dow ? 500 : 400,
-                  borderRadius: '14px', cursor: 'pointer',
-                  border: `1.5px solid ${newTradDay === dow ? C.forest : C.linen}`,
-                  background: newTradDay === dow ? C.forest : 'transparent',
-                  color: newTradDay === dow ? 'white' : C.ink,
-                  transition: 'all 0.15s',
-                }}
-              >
-                {DAYS[i].slice(0, 3)}
-              </button>
+              <button key={dow} onClick={() => setNewTradDay(dow)} style={{
+                padding: '6px 12px', fontSize: '12px', fontFamily: "'Jost', sans-serif", fontWeight: newTradDay === dow ? 500 : 400,
+                borderRadius: '14px', cursor: 'pointer', border: `1.5px solid ${newTradDay === dow ? C.forest : C.linen}`,
+                background: newTradDay === dow ? C.forest : 'transparent', color: newTradDay === dow ? 'white' : C.ink, transition: 'all 0.15s',
+              }}>{DAYS[i].slice(0, 3)}</button>
             ))}
           </div>
-
-          {/* Save / Cancel */}
-          <button
-            onClick={saveTradition}
-            disabled={!newTradName.trim() || savingTrad}
-            style={{
-              width: '100%', background: newTradName.trim() ? C.forest : C.linen,
-              color: newTradName.trim() ? 'white' : C.driftwood,
-              border: 'none', borderRadius: '12px', padding: '14px',
-              fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
-              cursor: newTradName.trim() ? 'pointer' : 'default',
-              marginBottom: '8px',
-            }}
-          >
-            {savingTrad ? 'Saving…' : 'Save tradition'}
-          </button>
-          <button
-            onClick={() => setAddTradSheetOpen(false)}
-            style={{
-              width: '100%', background: 'none', border: 'none', color: C.driftwood,
-              fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300,
-              padding: '10px', cursor: 'pointer',
-            }}
-          >
-            Cancel
-          </button>
+          <button onClick={saveTradition} disabled={!newTradName.trim() || savingTrad} style={{
+            width: '100%', background: newTradName.trim() ? C.forest : C.linen, color: newTradName.trim() ? 'white' : C.driftwood,
+            border: 'none', borderRadius: '12px', padding: '14px', fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
+            cursor: newTradName.trim() ? 'pointer' : 'default', marginBottom: '8px',
+          }}>{savingTrad ? 'Saving…' : 'Save tradition'}</button>
+          <button onClick={() => setAddTradSheetOpen(false)} style={{
+            width: '100%', background: 'none', border: 'none', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300, padding: '10px', cursor: 'pointer',
+          }}>Cancel</button>
         </div>
-      </BottomSheet>
+      </div>
+      )}
 
-      {/* ── Save Template Sheet ────────────────────────────────────────── */}
-      <BottomSheet isOpen={saveSheetOpen} onClose={() => setSaveSheetOpen(false)} title="Name this template">
-        <div style={{ padding: '16px 22px 40px' }}>
-          <input
-            type="text"
-            value={templateName}
-            onChange={e => setTemplateName(e.target.value)}
-            onFocus={e => e.target.select()}
-            autoFocus={saveSheetOpen}
-            style={{
-              width: '100%', padding: '14px 16px',
-              border: `1px solid ${C.linen}`, borderRadius: '12px',
-              fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300,
-              color: C.ink, outline: 'none', background: C.cream,
-              boxSizing: 'border-box', marginBottom: '16px',
-            }}
-            onKeyDown={e => { if (e.key === 'Enter') saveTemplate() }}
-          />
-          <button
-            onClick={saveTemplate}
-            disabled={!templateName.trim() || saving}
-            style={{
-              width: '100%', background: templateName.trim() ? C.forest : C.linen,
-              color: templateName.trim() ? 'white' : C.driftwood,
-              border: 'none', borderRadius: '12px', padding: '14px',
-              fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
-              cursor: templateName.trim() ? 'pointer' : 'default',
-              marginBottom: '8px',
-            }}
-          >
-            {saving ? 'Saving…' : 'Save template'}
-          </button>
-          <button
-            onClick={() => setSaveSheetOpen(false)}
-            style={{
-              width: '100%', background: 'none', border: 'none', color: C.driftwood,
-              fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300,
-              padding: '10px', cursor: 'pointer',
-            }}
-          >
-            Cancel
-          </button>
+      {/* ── Save Template — full-page overlay (keyboard safe) ──── */}
+      {saveSheetOpen && (
+      <div style={{ position: 'fixed', inset: 0, background: C.cream, zIndex: 200, display: 'flex', flexDirection: 'column', maxWidth: '430px', margin: '0 auto' }}>
+        <div style={{ background: C.forest, padding: '10px 16px 12px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <button onClick={() => setSaveSheetOpen(false)} style={{ background: 'rgba(250,247,242,0.15)', border: 'none', borderRadius: '50%', width: 32, height: 32, color: 'white', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+          <span style={{ fontFamily: "'Slabo 27px', serif", fontSize: 18, color: 'rgba(250,247,242,0.95)' }}>Name this template</span>
         </div>
-      </BottomSheet>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 22px', paddingBottom: 120 }}>
+          <input type="text" value={templateName} onChange={e => setTemplateName(e.target.value)}
+            onFocus={e => e.target.select()} autoFocus onKeyDown={e => { if (e.key === 'Enter') saveTemplate() }}
+            style={{ width: '100%', padding: '14px 16px', border: `1px solid ${C.linen}`, borderRadius: '12px', fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 300, color: C.ink, outline: 'none', background: C.cream, boxSizing: 'border-box', marginBottom: '16px' }} />
+          <button onClick={saveTemplate} disabled={!templateName.trim() || saving} style={{
+            width: '100%', background: templateName.trim() ? C.forest : C.linen, color: templateName.trim() ? 'white' : C.driftwood,
+            border: 'none', borderRadius: '12px', padding: '14px', fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
+            cursor: templateName.trim() ? 'pointer' : 'default', marginBottom: '8px',
+          }}>{saving ? 'Saving…' : 'Save template'}</button>
+          <button onClick={() => setSaveSheetOpen(false)} style={{
+            width: '100%', background: 'none', border: 'none', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300, padding: '10px', cursor: 'pointer',
+          }}>Cancel</button>
+        </div>
+      </div>
+      )}
 
       {/* ── Apply Template Confirmation Sheet ───────────────────────────── */}
       <BottomSheet isOpen={!!applyConfirmId} onClose={() => setApplyConfirmId(null)} title="Apply this template?">

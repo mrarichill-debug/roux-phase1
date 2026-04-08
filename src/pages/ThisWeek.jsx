@@ -1557,13 +1557,30 @@ export default function ThisWeek({ appUser }) {
       )}
 
       {/* ── Meal Edit Sheet ──────────────────────────────────────── */}
-      <BottomSheet isOpen={!!batchEditMealId} onClose={() => setBatchEditMealId(null)}>
-        {batchEditMealId && (() => {
-          const editMeal = meals.find(m => m.id === batchEditMealId)
-          if (!editMeal) return null
-          const currentBatch = editMeal.batch_multiplier || 1
-          return (
-            <div style={{ padding: '16px 22px 20px' }}>
+      {/* ── Meal Edit — full-page overlay (keyboard safe for cost inputs) ── */}
+      {!!batchEditMealId && (() => {
+        const editMeal = meals.find(m => m.id === batchEditMealId)
+        if (!editMeal) return null
+        const currentBatch = editMeal.batch_multiplier || 1
+        return (
+          <div style={{
+            position: 'fixed', inset: 0, background: C.cream, zIndex: 200,
+            display: 'flex', flexDirection: 'column', maxWidth: '430px', margin: '0 auto',
+          }}>
+            <div style={{
+              background: C.forest, padding: '10px 16px 12px',
+              display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
+            }}>
+              <button onClick={() => setBatchEditMealId(null)} style={{
+                background: 'rgba(250,247,242,0.15)', border: 'none', borderRadius: '50%',
+                width: 32, height: 32, color: 'white', fontSize: 18, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>‹</button>
+              <span style={{ fontFamily: "'Slabo 27px', serif", fontSize: 18, color: 'rgba(250,247,242,0.95)' }}>
+                Edit meal
+              </span>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 22px', paddingBottom: 120 }}>
                 {/* 1. Meal name */}
                 <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '18px' }}>
                   {getMealName(editMeal)}
@@ -1722,80 +1739,96 @@ export default function ThisWeek({ appUser }) {
                     fontSize: '13px', color: '#C0392B', fontFamily: "'Jost', sans-serif", fontWeight: 400,
                   }}>Remove this meal →</button>
                 </div>
-              </div>
-          )
-        })()}
-      </BottomSheet>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ── Recipe Link Sheet (multi-select) ──────────────────────── */}
-      <BottomSheet isOpen={!!linkSheetMeal} onClose={closeLinkSheet} zIndex={300} maxHeight="70vh">
-        {linkSheetMeal && (() => {
-          const linkedSet = addSheetLinkOpen
-            ? new Set(addSheetRecipes.map(r => r.recipe_id))
-            : new Set((meals.find(m => m.id === linkSheetMeal.id)?.linkedRecipes || []).map(r => r.recipe_id))
-          const sheetMealName = addSheetLinkOpen ? (addInput.trim() || 'New meal') : getMealName(linkSheetMeal)
-          return (
-            <div style={{ padding: '16px 22px 20px' }}>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
-                  Link recipes to {sheetMealName}
-                </div>
-                <input
-                  type="text" value={linkSearch} onChange={e => handleLinkSearch(e.target.value)}
-                  placeholder="Search recipes..." autoFocus
-                  style={{
-                    width: '100%', padding: '12px 14px', fontSize: '14px',
-                    fontFamily: "'Jost', sans-serif", fontWeight: 300,
-                    border: `1.5px solid ${C.linen}`, borderRadius: '12px',
-                    outline: 'none', color: C.ink, boxSizing: 'border-box', marginBottom: '10px',
-                  }}
-                />
-                <div style={{ maxHeight: '220px', overflowY: 'auto' }}>
-                  {linkResults.length === 0 && (
-                    <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', padding: '12px 0' }}>
-                      {linkSearch.trim() ? 'No recipes found' : 'Loading recipes...'}
-                    </div>
-                  )}
-                  {linkResults.map(r => {
-                    const isLinked = linkedSet.has(r.id)
-                    return (
-                      <button key={r.id} onClick={() => isLinked ? unlinkFromSheet(r.id) : linkFromSheet(r.id, r.name)} style={{
-                        display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
-                        padding: '12px 0', background: 'none', border: 'none',
-                        borderBottom: '1px solid rgba(200,185,160,0.15)',
-                        cursor: 'pointer', textAlign: 'left', fontFamily: "'Jost', sans-serif",
-                      }}>
-                        {isLinked ? (
-                          <div style={{ width: 18, height: 18, borderRadius: '4px', background: arcColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}><path d="M20 6L9 17l-5-5"/></svg>
-                          </div>
-                        ) : (
-                          <div style={{ width: 18, height: 18, borderRadius: '4px', border: `1.5px solid ${C.linen}`, flexShrink: 0 }} />
-                        )}
-                        <span style={{ fontSize: '14px', color: isLinked ? arcColor : C.ink, fontWeight: isLinked ? 500 : 300 }}>{r.name}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-                {/* Save a new recipe link */}
-                <button onClick={() => {
-                  closeLinkSheet()
-                  setAddSheetOpen(false)
-                  navigate('/save-recipe', { state: { returnTo: 'week', mealName: sheetMealName } })
-                }} style={{
-                  background: 'none', border: 'none', cursor: 'pointer', padding: '10px 0 0',
-                  fontSize: '13px', color: arcColor, fontFamily: "'Jost', sans-serif", fontWeight: 400,
-                  width: '100%', textAlign: 'left',
-                }}>+ Save a new recipe</button>
-                <button onClick={closeLinkSheet} style={{
-                  width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
-                  background: arcColor, color: 'white', cursor: 'pointer', marginTop: '12px',
-                  fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
-                  boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
-                }}>Done</button>
+      {/* ── Recipe Link — full-page overlay (keyboard safe) ────── */}
+      {!!linkSheetMeal && (() => {
+        const linkedSet = addSheetLinkOpen
+          ? new Set(addSheetRecipes.map(r => r.recipe_id))
+          : new Set((meals.find(m => m.id === linkSheetMeal.id)?.linkedRecipes || []).map(r => r.recipe_id))
+        const sheetMealName = addSheetLinkOpen ? (addInput.trim() || 'New meal') : getMealName(linkSheetMeal)
+        return (
+          <div style={{
+            position: 'fixed', inset: 0, background: C.cream, zIndex: 300,
+            display: 'flex', flexDirection: 'column', maxWidth: '430px', margin: '0 auto',
+          }}>
+            <div style={{
+              background: C.forest, padding: '10px 16px 12px',
+              display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
+            }}>
+              <button onClick={closeLinkSheet} style={{
+                background: 'rgba(250,247,242,0.15)', border: 'none', borderRadius: '50%',
+                width: 32, height: 32, color: 'white', fontSize: 18, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>‹</button>
+              <span style={{ fontFamily: "'Slabo 27px', serif", fontSize: 18, color: 'rgba(250,247,242,0.95)' }}>
+                Link recipes
+              </span>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 22px', paddingBottom: 120 }}>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
+                {sheetMealName}
               </div>
-          )
-        })()}
-      </BottomSheet>
+              <input
+                type="text" value={linkSearch} onChange={e => handleLinkSearch(e.target.value)}
+                placeholder="Search recipes..." autoFocus
+                style={{
+                  width: '100%', padding: '12px 14px', fontSize: '14px',
+                  fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                  border: `1.5px solid ${C.linen}`, borderRadius: '12px',
+                  outline: 'none', color: C.ink, boxSizing: 'border-box', marginBottom: '10px',
+                }}
+              />
+              <div>
+                {linkResults.length === 0 && (
+                  <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', padding: '12px 0' }}>
+                    {linkSearch.trim() ? 'No recipes found' : 'Loading recipes...'}
+                  </div>
+                )}
+                {linkResults.map(r => {
+                  const isLinked = linkedSet.has(r.id)
+                  return (
+                    <button key={r.id} onClick={() => isLinked ? unlinkFromSheet(r.id) : linkFromSheet(r.id, r.name)} style={{
+                      display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
+                      padding: '12px 0', background: 'none', border: 'none',
+                      borderBottom: '1px solid rgba(200,185,160,0.15)',
+                      cursor: 'pointer', textAlign: 'left', fontFamily: "'Jost', sans-serif",
+                    }}>
+                      {isLinked ? (
+                        <div style={{ width: 18, height: 18, borderRadius: '4px', background: arcColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}><path d="M20 6L9 17l-5-5"/></svg>
+                        </div>
+                      ) : (
+                        <div style={{ width: 18, height: 18, borderRadius: '4px', border: `1.5px solid ${C.linen}`, flexShrink: 0 }} />
+                      )}
+                      <span style={{ fontSize: '14px', color: isLinked ? arcColor : C.ink, fontWeight: isLinked ? 500 : 300 }}>{r.name}</span>
+                    </button>
+                  )
+                })}
+              </div>
+              <button onClick={() => {
+                closeLinkSheet()
+                setAddSheetOpen(false)
+                navigate('/save-recipe', { state: { returnTo: 'week', mealName: sheetMealName } })
+              }} style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: '10px 0 0',
+                fontSize: '13px', color: arcColor, fontFamily: "'Jost', sans-serif", fontWeight: 400,
+                width: '100%', textAlign: 'left',
+              }}>+ Save a new recipe</button>
+              <button onClick={closeLinkSheet} style={{
+                width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
+                background: arcColor, color: 'white', cursor: 'pointer', marginTop: '12px',
+                fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
+                boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
+              }}>Done</button>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ── Toast ────────────────────────────────────────────────── */}
       {toast && (
