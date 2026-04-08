@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 import { loadAppUser } from './lib/auth'
 import { getBrowserTimezone } from './lib/dateUtils'
 import { autoClosePastWeeks } from './lib/autoClosePastWeeks'
+import { backfillStorageTypes } from './lib/storageTypeBackfill'
 
 // Welcome screens
 import WelcomeScreen1  from './pages/welcome/WelcomeScreen1'
@@ -356,6 +357,11 @@ function AuthenticatedApp({ appUser, setAppUser }) {
         .then(({ data }) => { if (data) setSageActivity(data) })
     }
   }, [appUser?.id])
+
+  // One-time backfill: classify storage_type for existing ingredients
+  useEffect(() => {
+    if (appUser?.household_id) backfillStorageTypes()
+  }, [appUser?.household_id])
 
   const unreadCount = notifications.filter(n => !n.is_read).length
   const totalBadge = unreadCount + (sageActivity?.length ?? 0)

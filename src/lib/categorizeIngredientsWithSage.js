@@ -1,6 +1,6 @@
 /**
  * categorizeIngredientsWithSage.js — Background Sage call to categorize ingredients.
- * Fire-and-forget after recipe save. Updates ingredient rows with grocery_category + categorization_status.
+ * Fire-and-forget after recipe save. Updates ingredient rows with grocery_category, storage_type, + categorization_status.
  * Logs to sage_background_activity on success.
  * Never blocks UI. Never surfaces errors to Lauren.
  */
@@ -10,6 +10,8 @@ const VALID_CATEGORIES = new Set([
   'produce', 'meat', 'seafood', 'dairy', 'bakery', 'pantry',
   'frozen', 'beverages', 'household', 'personal_care', 'other',
 ])
+
+const VALID_STORAGE_TYPES = new Set(['cold', 'dry', 'frozen'])
 
 export async function categorizeIngredientsWithSage(ingredients, { recipeName, recipeId, appUser } = {}) {
   if (!ingredients?.length) return false
@@ -46,12 +48,19 @@ export async function categorizeIngredientsWithSage(ingredients, { recipeName, r
       return false
     }
 
-    // Update each ingredient row with category + status
+    // Update each ingredient row with category, storage_type, + status
     let successCount = 0
     for (const ing of toCategorize) {
-      const cat = categories[ing.name]
+      const result = categories[ing.name]
+      // Handle both new format { grocery_category, storage_type } and legacy string format
+      const cat = typeof result === 'object' ? result?.grocery_category : result
+      const storageType = typeof result === 'object' ? result?.storage_type : null
       if (cat && VALID_CATEGORIES.has(cat)) {
-        await supabase.from('ingredients').update({ grocery_category: cat, categorization_status: 'done' }).eq('id', ing.id)
+        const update = { grocery_category: cat, categorization_status: 'done' }
+        if (storageType && VALID_STORAGE_TYPES.has(storageType)) {
+          update.storage_type = storageType
+        }
+        await supabase.from('ingredients').update(update).eq('id', ing.id)
         successCount++
       } else {
         await supabase.from('ingredients').update({ categorization_status: 'skipped' }).eq('id', ing.id)
