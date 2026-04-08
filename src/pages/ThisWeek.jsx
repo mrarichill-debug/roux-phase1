@@ -306,6 +306,7 @@ export default function ThisWeek({ appUser }) {
       .select('id, custom_name, planned_date, meal_type')
       .eq('household_id', appUser.household_id)
       .neq('meal_type', 'leftovers').neq('meal_type', 'eating_out')
+      .not('custom_name', 'ilike', 'Leftovers%')
       .is('removed_at', null)
       .gte('planned_date', twoWeeksAgo.toISOString().split('T')[0])
       .order('planned_date', { ascending: false })
@@ -322,11 +323,13 @@ export default function ThisWeek({ appUser }) {
 
   function formatMealDate(dateStr) {
     if (!dateStr) return ''
-    const diff = Math.floor((new Date() - new Date(dateStr)) / (1000 * 60 * 60 * 24))
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const date = new Date(dateStr); date.setHours(0, 0, 0, 0)
+    const diff = Math.floor((today - date) / (1000 * 60 * 60 * 24))
     if (diff === 0) return 'today'
     if (diff === 1) return 'yesterday'
-    if (diff < 7) return `${diff} days ago`
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    if (diff < 0) return 'upcoming'
+    return `${diff} days ago`
   }
 
   // ── Add meal ──────────────────────────────────────────────────
@@ -1589,18 +1592,32 @@ export default function ThisWeek({ appUser }) {
               </>
               )}
 
-              {/* Meal type selector */}
-              <div style={{ display: 'flex', gap: '6px', marginBottom: '16px' }}>
-                {MEAL_TYPES.map(mt => (
-                  <button key={mt} onClick={() => setAddMealType(mt)} style={{
-                    flex: 1, padding: '8px', borderRadius: '10px', fontSize: '12px',
-                    border: addMealType === mt ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
-                    background: addMealType === mt ? 'rgba(61,107,79,0.08)' : 'white',
-                    color: addMealType === mt ? arcColor : C.ink,
-                    cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-                    fontWeight: addMealType === mt ? 500 : 400,
-                  }}>{MEAL_TYPE_LABELS[mt]}</button>
-                ))}
+              {/* Meal type selector — two rows */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {['breakfast', 'lunch', 'dinner', 'snack'].map(mt => (
+                    <button key={mt} onClick={() => setAddMealType(mt)} style={{
+                      flex: 1, padding: '8px', borderRadius: '10px', fontSize: '12px',
+                      border: addMealType === mt ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
+                      background: addMealType === mt ? 'rgba(61,107,79,0.08)' : 'white',
+                      color: addMealType === mt ? arcColor : C.ink,
+                      cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+                      fontWeight: addMealType === mt ? 500 : 400,
+                    }}>{MEAL_TYPE_LABELS[mt]}</button>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {['other', 'leftovers', 'eating_out'].map(mt => (
+                    <button key={mt} onClick={() => setAddMealType(mt)} style={{
+                      flex: 1, padding: '8px', borderRadius: '10px', fontSize: '12px',
+                      border: addMealType === mt ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
+                      background: addMealType === mt ? 'rgba(61,107,79,0.08)' : 'white',
+                      color: addMealType === mt ? arcColor : C.ink,
+                      cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+                      fontWeight: addMealType === mt ? 500 : 400,
+                    }}>{MEAL_TYPE_LABELS[mt]}</button>
+                  ))}
+                </div>
               </div>
 
               {/* Leftovers source selector */}
