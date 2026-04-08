@@ -30,8 +30,8 @@ const C = {
 const DOW_KEYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']
 const DAY_ABBR = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
-const MEAL_TYPES = ['breakfast','lunch','dinner','other','eating_out']
-const MEAL_TYPE_LABELS = { dinner: 'Dinner', lunch: 'Lunch', breakfast: 'Breakfast', other: 'Other', eating_out: 'Eating Out' }
+const MEAL_TYPES = ['breakfast','lunch','dinner','snack','other','leftovers','eating_out']
+const MEAL_TYPE_LABELS = { dinner: 'Dinner', lunch: 'Lunch', breakfast: 'Breakfast', snack: 'Snack', other: 'Other', leftovers: 'Leftovers', eating_out: 'Eating Out' }
 
 export default function ThisWeek({ appUser }) {
   const { color: arcColor } = useArc()
@@ -102,6 +102,11 @@ export default function ThisWeek({ appUser }) {
   // Repeat days for breakfast/snack
   const [repeatDays, setRepeatDays] = useState(new Set())
   const [showRepeatPicker, setShowRepeatPicker] = useState(false)
+
+  // Leftovers source
+  const [recentMeals, setRecentMeals] = useState([])
+  const [selectedSourceMeal, setSelectedSourceMeal] = useState(null)
+  const [leftoversFreeText, setLeftoversFreeText] = useState('')
 
   // Tooltips
   const [mealsVsRecipesDismissed, setMealsVsRecipesDismissed] = useState(() => hasSeenTooltip(appUser, 'meals_vs_recipes'))
@@ -288,7 +293,41 @@ export default function ThisWeek({ appUser }) {
   useEffect(() => {
     setRepeatDays(new Set())
     setShowRepeatPicker(addMealType === 'breakfast' || addMealType === 'snack')
+    setSelectedSourceMeal(null)
+    setLeftoversFreeText('')
   }, [addMealType])
+
+  // Load recent meals when leftovers selected
+  useEffect(() => {
+    if (addMealType !== 'leftovers' || !appUser?.household_id) return
+    const twoWeeksAgo = new Date()
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
+    supabase.from('planned_meals')
+      .select('id, custom_name, planned_date, meal_type')
+      .eq('household_id', appUser.household_id)
+      .neq('meal_type', 'leftovers').neq('meal_type', 'eating_out')
+      .is('removed_at', null)
+      .gte('planned_date', twoWeeksAgo.toISOString().split('T')[0])
+      .order('planned_date', { ascending: false })
+      .limit(15)
+      .then(({ data }) => {
+        const seen = new Set()
+        setRecentMeals((data ?? []).filter(m => {
+          if (!m.custom_name || seen.has(m.custom_name)) return false
+          seen.add(m.custom_name)
+          return true
+        }))
+      })
+  }, [addMealType])
+
+  function formatMealDate(dateStr) {
+    if (!dateStr) return ''
+    const diff = Math.floor((new Date() - new Date(dateStr)) / (1000 * 60 * 60 * 24))
+    if (diff === 0) return 'today'
+    if (diff === 1) return 'yesterday'
+    if (diff < 7) return `${diff} days ago`
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
 
   // ── Add meal ──────────────────────────────────────────────────
   function openAddSheet(date) {
@@ -303,6 +342,9 @@ export default function ThisWeek({ appUser }) {
     setAddEatingOutCost('')
     setRepeatDays(new Set())
     setShowRepeatPicker(false)
+    setSelectedSourceMeal(null)
+    setLeftoversFreeText('')
+    setRecentMeals([])
     setAddSheetOpen(true)
   }
 
@@ -348,11 +390,56 @@ export default function ThisWeek({ appUser }) {
   }
 
   async function addMeal() {
-    if (!addInput.trim() || adding) return
+    const isLeftovers = addMealType === 'leftovers'
+    const leftoversSource = selectedSourceMeal?.custom_name || leftoversFreeText.trim()
+
+    // Leftovers: require a source, not a meal name
+    if (isLeftovers) {
+      if (!leftoversSource || adding) return
+    } else {
+      if (!addInput.trim() || adding) return
+    }
+
     setAdding(true)
     try {
       const mpId = await ensurePlan()
       if (!mpId) { setAdding(false); return }
+
+      // Leftovers — single row, no recipes, no Sage match, no injection
+      if (isLeftovers) {
+        const dateStr = toLocalDateStr(addSheetDate)
+        const dowKey = DOW_KEYS[addSheetDate.getDay() === 0 ? 6 : addSheetDate.getDay() - 1]
+        const customName = `Leftovers — ${leftoversSource}`
+
+        const { data, error } = await supabase.from('planned_meals').insert({
+          household_id: appUser.household_id,
+          meal_plan_id: mpId,
+          day_of_week: dowKey,
+          meal_type: 'leftovers',
+          planned_date: dateStr,
+          custom_name: customName,
+          recipe_id: null,
+          entry_type: 'ghost',
+          slot_type: 'note',
+          status: 'planned',
+          sort_order: meals.filter(m => m.day_of_week === dowKey).length,
+          batch_multiplier: 1,
+          source_meal_id: selectedSourceMeal?.id || null,
+          source_meal_name: leftoversSource,
+        }).select('*').single()
+
+        if (error) throw error
+        setMeals(prev => [...prev, { ...data, linkedRecipes: [], recipes: null }])
+        setAddSheetOpen(false)
+        showToast(`Added ${customName}`)
+        logActivity({ user: appUser, actionType: 'meal_added_to_week', targetType: 'meal', targetId: data.id, targetName: customName, metadata: { entry_type: 'leftovers' } })
+        if (showHint || !appUser.has_planned_first_meal) {
+          setShowHint(false)
+          supabase.from('users').update({ has_planned_first_meal: true }).eq('id', appUser.id)
+        }
+        setAdding(false)
+        return
+      }
 
       const isEatingOut = addMealType === 'eating_out'
       const hasRecipes = !isEatingOut && addSheetRecipes.length > 0
@@ -1254,6 +1341,11 @@ export default function ThisWeek({ appUser }) {
                                 </svg>
                               )}
                             </div>
+                            {meal.meal_type === 'leftovers' && (
+                              <div style={{ fontSize: '11px', color: C.driftwood, marginTop: '2px' }}>
+                                ↩ {meal.source_meal_name || 'Leftovers'}
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -1456,7 +1548,9 @@ export default function ThisWeek({ appUser }) {
                 </div>
               )}
 
-              {/* Input */}
+              {/* Input — hidden for leftovers (source selector replaces it) */}
+              {addMealType !== 'leftovers' && (
+              <>
               <div style={{ position: 'relative', marginBottom: '12px' }}>
                 <input
                   type="text"
@@ -1492,6 +1586,8 @@ export default function ThisWeek({ appUser }) {
                   ))}
                 </div>
               )}
+              </>
+              )}
 
               {/* Meal type selector */}
               <div style={{ display: 'flex', gap: '6px', marginBottom: '16px' }}>
@@ -1506,6 +1602,42 @@ export default function ThisWeek({ appUser }) {
                   }}>{MEAL_TYPE_LABELS[mt]}</button>
                 ))}
               </div>
+
+              {/* Leftovers source selector */}
+              {addMealType === 'leftovers' && (
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ fontSize: '11px', color: C.driftwood, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>
+                    What are these leftovers from?
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
+                    {recentMeals.map(meal => (
+                      <button key={meal.id} onClick={() => { setSelectedSourceMeal(meal); setLeftoversFreeText('') }} style={{
+                        padding: '12px 14px', borderRadius: '10px',
+                        border: `0.5px solid ${selectedSourceMeal?.id === meal.id ? arcColor : C.linen}`,
+                        background: selectedSourceMeal?.id === meal.id ? `${arcColor}15` : 'white',
+                        textAlign: 'left', cursor: 'pointer',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        fontFamily: "'Jost', sans-serif",
+                      }}>
+                        <span style={{ fontSize: '14px', color: C.ink }}>{meal.custom_name}</span>
+                        <span style={{ fontSize: '11px', color: C.driftwood }}>{formatMealDate(meal.planned_date)}</span>
+                      </button>
+                    ))}
+                    {recentMeals.length === 0 && (
+                      <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', padding: '8px 0' }}>No recent meals found</div>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '6px' }}>Don't see it? Type the meal name:</div>
+                  <input type="text" placeholder="e.g. Birthday dinner leftovers" value={leftoversFreeText}
+                    onChange={e => { setLeftoversFreeText(e.target.value); setSelectedSourceMeal(null) }}
+                    style={{
+                      width: '100%', padding: '10px 14px', borderRadius: '10px',
+                      border: `0.5px solid ${C.linen}`, fontSize: '14px',
+                      fontFamily: "'Jost', sans-serif", color: C.ink, background: 'white',
+                      outline: 'none', boxSizing: 'border-box',
+                    }} />
+                </div>
+              )}
 
               {/* Repeat days picker — auto for breakfast/snack, toggle for lunch */}
               {(addMealType === 'breakfast' || addMealType === 'snack' || (addMealType === 'lunch' && showRepeatPicker)) && addSheetDate && (
@@ -1561,8 +1693,8 @@ export default function ThisWeek({ appUser }) {
                 </div>
               )}
 
-              {/* Link recipes (optional) — hidden for eating out */}
-              {addMealType !== 'eating_out' && (
+              {/* Link recipes (optional) — hidden for eating out and leftovers */}
+              {addMealType !== 'eating_out' && addMealType !== 'leftovers' && (
                 <div style={{ marginBottom: '16px' }}>
                   <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '8px' }}>Link a recipe (optional)</div>
                   {addSheetRecipes.length > 0 && (
@@ -1590,8 +1722,8 @@ export default function ThisWeek({ appUser }) {
                 </div>
               )}
 
-              {/* Batch size — hidden for eating out */}
-              {addMealType !== 'eating_out' && (
+              {/* Batch size — hidden for eating out and leftovers */}
+              {addMealType !== 'eating_out' && addMealType !== 'leftovers' && (
                 <div style={{ marginBottom: '16px' }}>
                   <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '6px' }}>Batch size</div>
                   <div style={{ display: 'flex', gap: '6px' }}>
@@ -1610,16 +1742,23 @@ export default function ThisWeek({ appUser }) {
               )}
 
               {/* Add button */}
-              <button onClick={addMeal} disabled={!addInput.trim() || adding} style={{
-                width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
-                background: addInput.trim() ? arcColor : C.linen,
-                color: addInput.trim() ? 'white' : C.driftwood,
-                cursor: addInput.trim() ? 'pointer' : 'default',
-                fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
-                boxShadow: addInput.trim() ? '0 4px 16px rgba(30,55,35,0.25)' : 'none',
-              }}>
-                {adding ? 'Adding...' : 'Add to menu'}
-              </button>
+              {(() => {
+                const canSave = addMealType === 'leftovers'
+                  ? !!(selectedSourceMeal || leftoversFreeText.trim())
+                  : !!addInput.trim()
+                return (
+                <button onClick={addMeal} disabled={!canSave || adding} style={{
+                  width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
+                  background: canSave ? arcColor : C.linen,
+                  color: canSave ? 'white' : C.driftwood,
+                  cursor: canSave ? 'pointer' : 'default',
+                  fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
+                  boxShadow: canSave ? '0 4px 16px rgba(30,55,35,0.25)' : 'none',
+                }}>
+                  {adding ? 'Adding...' : 'Add to menu'}
+                </button>
+                )
+              })()}
             </div>
       </div>
       )}
