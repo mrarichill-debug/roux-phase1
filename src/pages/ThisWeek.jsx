@@ -99,6 +99,10 @@ export default function ThisWeek({ appUser }) {
   // Swipe navigation
   const [touchStart, setTouchStart] = useState(null)
 
+  // Repeat days for breakfast/snack
+  const [repeatDays, setRepeatDays] = useState(new Set())
+  const [showRepeatPicker, setShowRepeatPicker] = useState(false)
+
   // Tooltips
   const [mealsVsRecipesDismissed, setMealsVsRecipesDismissed] = useState(() => hasSeenTooltip(appUser, 'meals_vs_recipes'))
   const [mealAddedTip, setMealAddedTip] = useState(false) // shows after first meal add
@@ -280,6 +284,12 @@ export default function ThisWeek({ appUser }) {
     return data.id
   }
 
+  // Reset repeat days when meal type changes
+  useEffect(() => {
+    setRepeatDays(new Set())
+    setShowRepeatPicker(addMealType === 'breakfast' || addMealType === 'snack')
+  }, [addMealType])
+
   // ── Add meal ──────────────────────────────────────────────────
   function openAddSheet(date) {
     setAddSheetDate(date)
@@ -291,6 +301,8 @@ export default function ThisWeek({ appUser }) {
     setAddSheetRecipes([])
     setAddSheetLinkOpen(false)
     setAddEatingOutCost('')
+    setRepeatDays(new Set())
+    setShowRepeatPicker(false)
     setAddSheetOpen(true)
   }
 
@@ -342,70 +354,89 @@ export default function ThisWeek({ appUser }) {
       const mpId = await ensurePlan()
       if (!mpId) { setAdding(false); return }
 
-      const dateStr = toLocalDateStr(addSheetDate)
-      const dowKey = DOW_KEYS[addSheetDate.getDay() === 0 ? 6 : addSheetDate.getDay() - 1]
-
       const isEatingOut = addMealType === 'eating_out'
       const hasRecipes = !isEatingOut && addSheetRecipes.length > 0
       const eatingOutCost = isEatingOut && addEatingOutCost.trim() ? parseFloat(addEatingOutCost.replace(/[^0-9.]/g, '')) : null
 
-      const { data, error } = await supabase.from('planned_meals').insert({
-        household_id: appUser.household_id,
-        meal_plan_id: mpId,
-        day_of_week: dowKey,
-        meal_type: addMealType,
-        planned_date: dateStr,
-        custom_name: addInput.trim(),
-        recipe_id: null,
-        entry_type: isEatingOut ? 'eating_out' : hasRecipes ? 'linked' : 'ghost',
-        slot_type: isEatingOut ? 'note' : hasRecipes ? 'recipe' : 'note',
-        status: 'planned',
-        sort_order: meals.filter(m => m.day_of_week === dowKey).length,
-        batch_multiplier: isEatingOut ? 1 : addBatchMultiplier,
-        previous_batch_multiplier: isEatingOut ? 1 : addBatchMultiplier,
-        eating_out_cost: eatingOutCost && !isNaN(eatingOutCost) ? eatingOutCost : null,
-      }).select('*').single()
-
-      if (error) throw error
-
-      // Write linked recipes to junction table (skip for eating out)
-      if (hasRecipes) {
-        await supabase.from('planned_meal_recipes').insert(
-          addSheetRecipes.map((r, i) => ({ planned_meal_id: data.id, recipe_id: r.recipe_id, sort_order: i }))
-        )
+      // Build list of dates: current day + any repeat days
+      const datesToCreate = [addSheetDate]
+      if (repeatDays.size > 0) {
+        for (const dowIdx of repeatDays) {
+          const repeatDate = new Date(weekDates[dowIdx])
+          const currentDateStr = toLocalDateStr(addSheetDate)
+          const repeatDateStr = toLocalDateStr(repeatDate)
+          if (repeatDateStr !== currentDateStr) datesToCreate.push(repeatDate)
+        }
       }
 
-      const enriched = { ...data, linkedRecipes: hasRecipes ? [...addSheetRecipes] : [], recipes: null }
-      setMeals(prev => [...prev, enriched])
+      const allEnriched = []
+      let firstData = null
+
+      for (const targetDate of datesToCreate) {
+        const dateStr = toLocalDateStr(targetDate)
+        const dowKey = DOW_KEYS[targetDate.getDay() === 0 ? 6 : targetDate.getDay() - 1]
+
+        const { data, error } = await supabase.from('planned_meals').insert({
+          household_id: appUser.household_id,
+          meal_plan_id: mpId,
+          day_of_week: dowKey,
+          meal_type: addMealType,
+          planned_date: dateStr,
+          custom_name: addInput.trim(),
+          recipe_id: null,
+          entry_type: isEatingOut ? 'eating_out' : hasRecipes ? 'linked' : 'ghost',
+          slot_type: isEatingOut ? 'note' : hasRecipes ? 'recipe' : 'note',
+          status: 'planned',
+          sort_order: meals.filter(m => m.day_of_week === dowKey).length,
+          batch_multiplier: isEatingOut ? 1 : addBatchMultiplier,
+          previous_batch_multiplier: isEatingOut ? 1 : addBatchMultiplier,
+          eating_out_cost: eatingOutCost && !isNaN(eatingOutCost) ? eatingOutCost : null,
+        }).select('*').single()
+
+        if (error) throw error
+        if (!firstData) firstData = data
+
+        // Write linked recipes to junction table for each row
+        if (hasRecipes) {
+          await supabase.from('planned_meal_recipes').insert(
+            addSheetRecipes.map((r, i) => ({ planned_meal_id: data.id, recipe_id: r.recipe_id, sort_order: i }))
+          )
+        }
+
+        allEnriched.push({ ...data, linkedRecipes: hasRecipes ? [...addSheetRecipes] : [], recipes: null })
+
+        // Fire Sage meal match for ghost entries (skip eating out) — only first row
+        if (!hasRecipes && !isEatingOut && data === firstData) {
+          sageMealMatch({ mealId: data.id, mealName: addInput.trim(), householdId: appUser.household_id })
+        }
+
+        // Auto-inject if shopping list already built and recipes linked
+        if (hasRecipes && shoppingInjected && mpId) {
+          injectSingleMeal({
+            mealId: data.id,
+            mealName: addInput.trim(),
+            batchMultiplier: addBatchMultiplier,
+            planId: mpId,
+            householdId: appUser.household_id,
+          })
+        }
+      }
+
+      setMeals(prev => [...prev, ...allEnriched])
       setAddSheetOpen(false)
-      showToast(`Added ${addInput.trim()}`)
+      const dayCount = datesToCreate.length
+      showToast(dayCount > 1 ? `Added ${addInput.trim()} to ${dayCount} days` : `Added ${addInput.trim()}`)
 
       logActivity({
         user: appUser, actionType: 'meal_added_to_week', targetType: 'meal',
-        targetId: data.id, targetName: addInput.trim(),
-        metadata: { day_of_week: dowKey, entry_type: isEatingOut ? 'eating_out' : hasRecipes ? 'linked' : 'ghost' },
+        targetId: firstData.id, targetName: addInput.trim(),
+        metadata: { day_count: dayCount, entry_type: isEatingOut ? 'eating_out' : hasRecipes ? 'linked' : 'ghost' },
       })
 
       // Dismiss first-time hint and mark user
       if (showHint || !appUser.has_planned_first_meal) {
         setShowHint(false)
         supabase.from('users').update({ has_planned_first_meal: true }).eq('id', appUser.id)
-      }
-
-      // Fire Sage meal match for ghost entries (skip eating out)
-      if (!hasRecipes && !isEatingOut) {
-        sageMealMatch({ mealId: data.id, mealName: addInput.trim(), householdId: appUser.household_id })
-      }
-
-      // Auto-inject if shopping list already built and recipes linked (skip eating out)
-      if (hasRecipes && shoppingInjected && mpId) {
-        injectSingleMeal({
-          mealId: data.id,
-          mealName: addInput.trim(),
-          batchMultiplier: addBatchMultiplier,
-          planId: mpId,
-          householdId: appUser.household_id,
-        })
       }
 
       // Show first-meal-added tooltip
@@ -1475,6 +1506,43 @@ export default function ThisWeek({ appUser }) {
                   }}>{MEAL_TYPE_LABELS[mt]}</button>
                 ))}
               </div>
+
+              {/* Repeat days picker — auto for breakfast/snack, toggle for lunch */}
+              {(addMealType === 'breakfast' || addMealType === 'snack' || (addMealType === 'lunch' && showRepeatPicker)) && addSheetDate && (
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ fontSize: '11px', color: C.driftwood, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
+                    Repeat this week
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    {weekDates.map((d, i) => {
+                      const isCurrentDay = toLocalDateStr(d) === toLocalDateStr(addSheetDate)
+                      const isSelected = repeatDays.has(i)
+                      return (
+                        <button key={i} onClick={() => {
+                          if (isCurrentDay) return
+                          setRepeatDays(prev => { const next = new Set(prev); if (next.has(i)) next.delete(i); else next.add(i); return next })
+                        }} style={{
+                          flex: 1, padding: '8px 0', borderRadius: '8px',
+                          border: `0.5px solid ${isSelected ? arcColor : C.linen}`,
+                          background: isCurrentDay ? C.linen : isSelected ? arcColor : 'white',
+                          color: isCurrentDay ? C.driftwood : isSelected ? 'white' : C.driftwood,
+                          fontSize: '11px', fontFamily: "'Jost', sans-serif",
+                          cursor: isCurrentDay ? 'default' : 'pointer',
+                          opacity: isCurrentDay ? 0.5 : 1,
+                        }}>
+                          {DAY_ABBR[i].charAt(0)}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+              {addMealType === 'lunch' && !showRepeatPicker && (
+                <button onClick={() => setShowRepeatPicker(true)} style={{
+                  fontSize: '12px', color: arcColor, background: 'none', border: 'none',
+                  padding: '0 0 12px', cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+                }}>+ Repeat this week</button>
+              )}
 
               {/* Eating out: cost input */}
               {addMealType === 'eating_out' && (
