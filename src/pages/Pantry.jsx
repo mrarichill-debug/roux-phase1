@@ -65,7 +65,7 @@ export default function Pantry({ appUser }) {
       minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
       paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 8px))',
     }}>
-      <TopBar leftAction={{ onClick: () => navigate('/shop'), label: 'Back' }} />
+      <TopBar />
 
       {loading ? (
         <div style={{ padding: '20px 22px' }}>
