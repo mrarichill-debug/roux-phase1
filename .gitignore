@@ -9,6 +9,9 @@ dist/
 .env.local
 .env.*.local
 
+# Claude config (contains API keys)
+.claude.json
+
 # Editor
 .DS_Store
 .vscode/

@@ -895,9 +895,7 @@ export default function PantryList({ appUser }) {
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', lineHeight: 1.3 }}>
                         <span style={{ fontSize: '14px', color: C.ink }}>{sentenceCase(item.name)}</span>
-                        {item.is_placeholder ? (
-                          <span style={{ fontSize: '11px', color: C.driftwood, fontStyle: 'italic' }}>No recipe linked</span>
-                        ) : (item.quantity || item.unit) ? (() => {
+                        {(item.quantity || item.unit) ? (() => {
                           const qtyStr = [item.quantity, item.unit].filter(Boolean).join(' ')
                           const batchVal = (item.sourceMeals || []).reduce((b, name) => batchByMeal[name.toLowerCase()] || b, null)
                           return (
