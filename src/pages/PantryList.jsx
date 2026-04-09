@@ -249,6 +249,11 @@ export default function PantryList({ appUser }) {
         .select('meal_name').eq('household_id', appUser.household_id).eq('suppressed', true)
       const suppressedNames = new Set((skips || []).map(s => (s.meal_name || '').toLowerCase()))
 
+      // Cross-reference sage_meal_preferences — exclude keep-as-is meals
+      const { data: prefs } = await supabase.from('sage_meal_preferences')
+        .select('meal_name').eq('household_id', appUser.household_id).eq('no_recipe_needed', true)
+      for (const p of (prefs || [])) suppressedNames.add((p.meal_name || '').toLowerCase())
+
       const itemNames = new Set(items.map(i => (i.source_meal_name || '').toLowerCase()))
       const uncovered = ghosts.filter(g => {
         const name = (g.custom_name || '').toLowerCase()
@@ -892,7 +897,7 @@ export default function PantryList({ appUser }) {
                         <span style={{ fontSize: '14px', color: C.ink }}>{sentenceCase(item.name)}</span>
                         {item.is_placeholder ? (
                           <span style={{ fontSize: '11px', color: C.driftwood, fontStyle: 'italic' }}>No recipe linked</span>
-                        ) : (item.quantity || item.unit) && (() => {
+                        ) : (item.quantity || item.unit) ? (() => {
                           const qtyStr = [item.quantity, item.unit].filter(Boolean).join(' ')
                           const batchVal = (item.sourceMeals || []).reduce((b, name) => batchByMeal[name.toLowerCase()] || b, null)
                           return (
@@ -904,7 +909,9 @@ export default function PantryList({ appUser }) {
                               )})
                             </span>
                           )
-                        })()}
+                        })() : item.ids?.length > 1 ? (
+                          <span style={{ fontSize: '12px', color: C.driftwood }}>({item.ids.length} each)</span>
+                        ) : null}
                       </div>
                       {isStaple && (
                         <div style={{ fontSize: '11px', color: C.driftwood, fontStyle: 'italic' }}>Pantry staple</div>

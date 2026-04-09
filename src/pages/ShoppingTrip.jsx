@@ -10,6 +10,7 @@ import { logActivity } from '../lib/activityLog'
 import { getIngredientCostEstimate } from '../lib/getIngredientCostEstimate'
 import { hasSeenTooltip, dismissTooltip } from '../lib/tooltips'
 import BottomNav from '../components/BottomNav'
+import BottomSheet from '../components/BottomSheet'
 import { useArc } from '../context/ArcContext'
 
 const C = {
@@ -35,6 +36,9 @@ export default function ShoppingTrip({ appUser }) {
   const [completed, setCompleted] = useState(false)
   const [costEstimates, setCostEstimates] = useState({}) // name → estimate obj
   const [receiptTipDismissed, setReceiptTipDismissed] = useState(() => hasSeenTooltip(appUser, 'receipt_value'))
+
+  // Cancel trip
+  const [cancelConfirm, setCancelConfirm] = useState(false)
 
   // Add from list mid-shop
   const [showAddFromList, setShowAddFromList] = useState(false)
@@ -213,6 +217,43 @@ export default function ShoppingTrip({ appUser }) {
     }
     logActivity({ user: appUser, actionType: 'shopping_trip_completed', targetType: 'shopping_trip', targetId: tripId, targetName: trip?.name, metadata: { items_purchased: checkedCount, items_total: total, multi_week: !!trip?.companion_trip_id } })
     setCompleted(true)
+  }
+
+  async function confirmCancelTrip() {
+    const now = new Date().toISOString()
+
+    // 1. Cancel primary trip
+    await supabase
+      .from('shopping_trips')
+      .update({ status: 'cancelled', completed_at: now })
+      .eq('id', tripId)
+    // Cancel companion trip if present
+    if (trip?.companion_trip_id) {
+      await supabase
+        .from('shopping_trips')
+        .update({ status: 'cancelled', completed_at: now })
+        .eq('id', trip.companion_trip_id)
+    }
+
+    // 2. Clear pantry_inventory rows that were pending from this trip
+    await supabase
+      .from('pantry_inventory')
+      .delete()
+      .eq('shopping_trip_id', tripId)
+      .eq('status', 'pending')
+
+    // 3. Unassign all items so they return to manifest
+    for (const item of tripItems) {
+      if (item.shopping_list_item_id) {
+        await supabase.from('shopping_list_items').update({
+          assigned_trip_id: null, is_purchased: false, purchased_at: null, status: 'active', pantry_status: null,
+        }).eq('id', item.shopping_list_item_id)
+      }
+    }
+
+    logActivity({ user: appUser, actionType: 'shopping_trip_cancelled', targetType: 'shopping_trip', targetId: tripId, targetName: trip?.name })
+    setCancelConfirm(false)
+    navigate('/shop')
   }
 
   // ── Add from list mid-shop ──────────────────────────────
@@ -409,6 +450,25 @@ export default function ShoppingTrip({ appUser }) {
             ))}
           </div>
         )}
+        {/* Cancel trip */}
+        <div style={{ textAlign: 'center', marginTop: '20px' }}>
+          <button
+            onClick={() => setCancelConfirm(true)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: C.driftwood,
+              fontSize: 12,
+              fontFamily: "'Jost', sans-serif",
+              cursor: 'pointer',
+              padding: '12px 0',
+              textDecoration: 'underline',
+            }}
+          >
+            Cancel trip
+          </button>
+        </div>
+
         {/* Add from list */}
         <button onClick={() => setShowAddFromList(true)} style={{
           width: '100%', padding: '12px', marginTop: '12px', borderRadius: '10px',
@@ -489,6 +549,32 @@ export default function ShoppingTrip({ appUser }) {
           boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
         }}>Done shopping →</button>
       </div>
+
+      {/* Cancel trip confirmation */}
+      <BottomSheet isOpen={cancelConfirm} onClose={() => setCancelConfirm(false)}>
+        <div style={{ padding: '20px 22px 24px' }}>
+          <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, color: C.ink, marginBottom: 8, marginTop: 0 }}>
+            Cancel this trip?
+          </p>
+          <p style={{ fontSize: 13, color: C.driftwood, marginBottom: 20, marginTop: 0 }}>
+            Items you've already checked off will stay on your list.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <button onClick={confirmCancelTrip} style={{
+              width: '100%', padding: '15px', borderRadius: '14px',
+              border: `1.5px solid ${C.driftwood}`, background: 'white',
+              color: C.ink, cursor: 'pointer',
+              fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
+            }}>Yes, cancel trip</button>
+            <button onClick={() => setCancelConfirm(false)} style={{
+              width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
+              background: arcColor, color: 'white', cursor: 'pointer',
+              fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
+              boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
+            }}>Keep shopping</button>
+          </div>
+        </div>
+      </BottomSheet>
 
       <BottomNav activeTab="shop" />
     </div>

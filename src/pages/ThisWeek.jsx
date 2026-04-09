@@ -89,6 +89,9 @@ export default function ThisWeek({ appUser }) {
   const [linkResults, setLinkResults] = useState([])
   const linkDebounceRef = useRef(null)
 
+  // Keep as-is memory — meals that don't need recipes
+  const [dismissedMeals, setDismissedMeals] = useState(new Set())
+
   // Day-tile list control
   const [onListDays, setOnListDays] = useState(new Set())
   const [deselectConfirm, setDeselectConfirm] = useState(null) // { dow, dayName, mealNames }
@@ -236,6 +239,13 @@ export default function ThisWeek({ appUser }) {
         // Load on_list state for day tiles
         const listedDays = new Set(enriched.filter(m => m.on_list).map(m => m.day_of_week))
         setOnListDays(listedDays)
+        // Load keep-as-is meal preferences
+        const { data: prefs } = await supabase
+          .from('sage_meal_preferences')
+          .select('meal_name, no_recipe_needed')
+          .eq('household_id', appUser.household_id)
+          .eq('no_recipe_needed', true)
+        setDismissedMeals(new Set((prefs ?? []).map(p => p.meal_name.toLowerCase())))
       } else {
         setPlanId(null)
         setMeals([])
@@ -677,6 +687,20 @@ export default function ThisWeek({ appUser }) {
         householdId: appUser.household_id,
       })
     }
+    // Update sage_meal_preferences — recipe now preferred
+    const linkedMealName = meal?.custom_name || recipeName
+    if (linkedMealName) {
+      const key = linkedMealName.toLowerCase().trim()
+      setDismissedMeals(prev => { const next = new Set(prev); next.delete(key); return next })
+      await supabase
+        .from('sage_meal_preferences')
+        .upsert({
+          household_id: appUser.household_id,
+          meal_name: key,
+          no_recipe_needed: false,
+          recipe_id: recipeId,
+        }, { onConflict: 'household_id,meal_name' })
+    }
     // Show first-recipe-linked tooltip
     if (!hasSeenTooltip(appUser, 'recipe_linked_first')) {
       setRecipeLinkedTip(true)
@@ -704,10 +728,24 @@ export default function ThisWeek({ appUser }) {
   }
 
   async function dismissSageMatch(mealId) {
+    const meal = meals.find(m => m.id === mealId)
+    const mealName = meal?.custom_name || ''
     setMeals(prev => prev.map(m =>
       m.id === mealId ? { ...m, sage_match_status: 'resolved' } : m
     ))
     await supabase.from('planned_meals').update({ sage_match_status: 'resolved' }).eq('id', mealId)
+    // Persist keep-as-is preference
+    if (mealName) {
+      const key = mealName.toLowerCase().trim()
+      setDismissedMeals(prev => new Set([...prev, key]))
+      await supabase
+        .from('sage_meal_preferences')
+        .upsert({
+          household_id: appUser.household_id,
+          meal_name: key,
+          no_recipe_needed: true,
+        }, { onConflict: 'household_id,meal_name' })
+    }
   }
 
   // ── Recipe link sheet for ghost meals ─────────────────────────
@@ -1008,7 +1046,7 @@ export default function ThisWeek({ appUser }) {
   // Only show ghost meal warnings for current or future weeks
   const isCurrentOrFutureWeek = weekOffset >= 0
   const ghostMeals = isCurrentOrFutureWeek
-    ? meals.filter(m => m.entry_type === 'ghost' && !m.linkedRecipes?.length && !m.removed_at)
+    ? meals.filter(m => m.entry_type === 'ghost' && !m.linkedRecipes?.length && !m.removed_at && !dismissedMeals.has((m.custom_name || '').toLowerCase()))
     : []
   const ghostNames = ghostMeals.map(m => m.custom_name || 'Untitled')
 
@@ -1133,10 +1171,7 @@ export default function ThisWeek({ appUser }) {
           const dow = DOW_KEYS[i]
           const hasPlanned = meals.some(m => m.day_of_week === dow)
           const isOnList = onListDays.has(dow)
-          const tileDate = new Date(date); tileDate.setHours(0,0,0,0)
-          const nowDate = new Date(); nowDate.setHours(0,0,0,0)
-          const isPastOrToday = tileDate <= nowDate
-          const showFilled = isOnList && isPastOrToday
+          const showFilled = isOnList
           return (
             <button key={i} onClick={() => {
               if (hasPlanned) handleDayTileTap(dow)
@@ -1250,33 +1285,45 @@ export default function ThisWeek({ appUser }) {
 
             return (
               <div key={dowKey} id={`day-${dowKey}`} style={{
-                background: 'white', borderRadius: '14px', marginBottom: '12px',
-                border: isToday ? `1.5px solid ${arcColor}` : '1px solid rgba(200,185,160,0.45)',
+                background: 'white', borderRadius: 12, marginBottom: '12px',
+                border: `0.5px solid ${isToday ? C.linen : 'rgba(200,185,160,0.45)'}`,
+                borderLeft: isToday ? `3px solid ${arcColor}` : undefined,
                 overflow: 'hidden',
                 scrollMarginTop: '145px',
                 animation: `fadeUp 0.35s ease ${0.02 + i * 0.03}s both`,
               }}>
                 {/* Day header */}
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '10px 14px',
-                  background: isToday ? arcColor : 'transparent',
-                  color: isToday ? 'white' : C.ink,
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '15px', fontWeight: 500 }}>
-                      {isToday ? 'Today' : DAY_NAMES[i]}
-                    </span>
-                    <span style={{ fontSize: '12px', opacity: 0.6 }}>{date.getDate()}</span>
-                  </div>
-                  {dt && (
-                    <span style={{
-                      fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px', textTransform: 'uppercase',
-                      padding: '2px 8px', borderRadius: '4px',
-                      background: isToday ? 'rgba(255,255,255,0.15)' : `${dt.color}18`,
-                      color: isToday ? 'rgba(255,255,255,0.8)' : dt.color,
-                    }}>{dt.name}</span>
+                <div style={{ padding: '12px 14px' }}>
+                  {isToday && (
+                    <div style={{
+                      fontSize: 11,
+                      color: arcColor,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.1em',
+                      fontWeight: 500,
+                      marginBottom: 4,
+                    }}>
+                      Today
+                    </div>
                   )}
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '15px', fontWeight: 500, color: C.ink }}>
+                        {DAY_NAMES[i]}
+                      </span>
+                      <span style={{ fontSize: '12px', color: C.ink, opacity: 0.6 }}>{date.getDate()}</span>
+                    </div>
+                    {dt && (
+                      <span style={{
+                        fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px', textTransform: 'uppercase',
+                        padding: '2px 8px', borderRadius: '4px',
+                        background: `${dt.color}18`,
+                        color: dt.color,
+                      }}>{dt.name}</span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Calendar events — vertical, sorted by start time */}
@@ -1347,7 +1394,7 @@ export default function ThisWeek({ appUser }) {
                         </div>
                         {typeMeals.map(meal => {
                     const sageMatches = meal.sage_match_status === 'pending' && meal.sage_match_result?.matches
-                    const isGhost = meal.entry_type === 'ghost' && !meal.linkedRecipes?.length
+                    const isGhost = meal.entry_type === 'ghost' && !meal.linkedRecipes?.length && !dismissedMeals.has((meal.custom_name || '').toLowerCase())
                     return (
                       <div key={meal.id}>
                         <div onClick={() => setBatchEditMealId(meal.id)} style={{
@@ -1615,30 +1662,49 @@ export default function ThisWeek({ appUser }) {
                   style={{
                     width: '100%', padding: '14px 16px', fontSize: '16px',
                     fontFamily: "'Jost', sans-serif", fontWeight: 300,
-                    border: `1.5px solid ${C.linen}`, borderRadius: '12px',
+                    border: `1.5px solid ${C.linen}`, borderRadius: recipeSuggestions.length > 0 ? '12px 12px 0 0' : '12px',
                     outline: 'none', color: C.ink, boxSizing: 'border-box',
                   }}
                 />
+                {/* Meal name suggestions — traditional dropdown */}
+                {recipeSuggestions.length > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    background: 'white',
+                    border: `0.5px solid ${C.linen}`,
+                    borderTop: 'none',
+                    borderRadius: '0 0 10px 10px',
+                    boxShadow: '0 4px 12px rgba(44,36,23,0.08)',
+                    zIndex: 50,
+                    maxHeight: 200,
+                    overflowY: 'auto',
+                  }}>
+                    {recipeSuggestions.map((r, idx) => (
+                      <div
+                        key={r.id}
+                        onMouseDown={() => selectRecipeSuggestion(r)}
+                        style={{
+                          padding: '12px 14px',
+                          fontSize: 14,
+                          color: C.ink,
+                          borderBottom: idx < recipeSuggestions.length - 1 ? `0.5px solid ${C.linen}` : 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          fontFamily: "'Jost', sans-serif",
+                        }}
+                      >
+                        <span style={{ fontSize: 11, color: C.driftwood }}>↩</span>
+                        {r.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-
-              {/* Meal name suggestions from history */}
-              {recipeSuggestions.length > 0 && (
-                <div style={{
-                  marginBottom: '12px', background: C.cream, borderRadius: '10px',
-                  border: `1px solid ${C.linen}`, maxHeight: '140px', overflowY: 'auto',
-                }}>
-                  {recipeSuggestions.map(r => (
-                    <button key={r.id} onClick={() => selectRecipeSuggestion(r)} style={{
-                      display: 'block', width: '100%', padding: '10px 14px',
-                      background: 'none', border: 'none', borderBottom: `1px solid ${C.linen}`,
-                      cursor: 'pointer', textAlign: 'left', fontSize: '14px', color: C.ink,
-                      fontFamily: "'Jost', sans-serif",
-                    }}>
-                      {r.name}
-                    </button>
-                  ))}
-                </div>
-              )}
               </>
               )}
 
