@@ -39,9 +39,17 @@ export default function ThisWeek({ appUser }) {
   const navigate = useNavigate()
   const tz = appUser?.timezone || 'America/Chicago'
 
-  const [weekOffset, setWeekOffset] = useState(0)
-  const [weekDates, setWeekDates] = useState(() => getWeekDatesTZ(tz, 0))
-  const [weekStart, setWeekStart] = useState(() => getWeekStartTZ(tz, 0))
+  const [weekOffset, _setWeekOffset] = useState(() => {
+    const stored = sessionStorage.getItem('roux_weekOffset')
+    return stored ? parseInt(stored, 10) : 0
+  })
+  const setWeekOffset = (v) => {
+    const val = typeof v === 'function' ? v(weekOffset) : v
+    sessionStorage.setItem('roux_weekOffset', String(val))
+    _setWeekOffset(val)
+  }
+  const [weekDates, setWeekDates] = useState(() => getWeekDatesTZ(tz, weekOffset))
+  const [weekStart, setWeekStart] = useState(() => getWeekStartTZ(tz, weekOffset))
   const [planId, setPlanId] = useState(null)
   const [meals, setMeals] = useState([])
   const [loading, setLoading] = useState(true)
