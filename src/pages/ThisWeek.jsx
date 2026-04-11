@@ -75,7 +75,6 @@ export default function ThisWeek({ appUser }) {
   const [categorizing, setCategorizing] = useState(false)
 
   // Delete confirm
-  const [selectedDay, setSelectedDay] = useState(null) // DOW_KEY of selected pill
   const [deleteConfirmId, setDeleteConfirmId] = useState(null)
   const [ingredientDialog, setIngredientDialog] = useState(null) // { mealId, mealName, itemCount }
   const [householdMemberCount, setHouseholdMemberCount] = useState(1)
@@ -1172,10 +1171,6 @@ export default function ThisWeek({ appUser }) {
           return (
             <button key={i} onClick={() => {
               if (hasPlanned) handleDayTileTap(dow)
-              // Also scroll to that day card
-              setSelectedDay(dow)
-              const el = document.getElementById(`day-${dow}`)
-              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
             }} style={{
               flex: '1 0 auto', minWidth: '44px', padding: '6px 8px', borderRadius: '8px',
               border: showFilled ? 'none' : `0.5px solid ${C.linen}`,
