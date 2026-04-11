@@ -32,6 +32,7 @@ const DAY_ABBR = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
 const MEAL_TYPES = ['breakfast','lunch','dinner','snack','other','leftovers','eating_out']
 const MEAL_TYPE_LABELS = { dinner: 'Dinner', lunch: 'Lunch', breakfast: 'Breakfast', snack: 'Snack', other: 'Other', leftovers: 'Leftovers', eating_out: 'Eating Out' }
+const MEAL_TYPE_ORDER = { breakfast: 0, snack: 1, lunch: 2, dinner: 3, leftovers: 4, other: 5, eating_out: 6 }
 
 export default function ThisWeek({ appUser }) {
   const { color: arcColor } = useArc()
@@ -780,11 +781,7 @@ export default function ThisWeek({ appUser }) {
         for (const m of mealsWithoutRecipes) {
           const mealName = m.custom_name || 'Untitled'
           if (mealName === 'Untitled') continue
-          // Skip if placeholder already exists for this meal
-          const { data: existing } = await supabase.from('shopping_list_items')
-            .select('id').eq('shopping_list_id', listId)
-            .eq('source_meal_name', mealName).eq('is_placeholder', true).limit(1)
-          if (existing?.length) continue
+          // Insert one placeholder per planned meal (no dedup — each day-tap adds one)
           await supabase.from('shopping_list_items').insert({
             shopping_list_id: listId,
             household_id: appUser.household_id,
@@ -1387,7 +1384,9 @@ export default function ThisWeek({ appUser }) {
                       acc[type].push(meal)
                       return acc
                     }, {})
-                    return Object.entries(grouped).map(([type, typeMeals]) => (
+                    return Object.entries(grouped)
+                      .sort(([a], [b]) => (MEAL_TYPE_ORDER[a] ?? 99) - (MEAL_TYPE_ORDER[b] ?? 99))
+                      .map(([type, typeMeals]) => (
                       <div key={type}>
                         <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.driftwood, padding: '6px 0 2px' }}>
                           {MEAL_TYPE_LABELS[type] || 'Dinner'}
