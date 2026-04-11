@@ -19,7 +19,7 @@ const C = {
   linen: '#E8E0D0', sage: '#7A8C6E', honey: '#C49A3C', red: '#A03030',
 }
 
-const METHOD_OPTIONS = ['Stovetop', 'Baked', 'Slow Cooker', 'No-Cook', 'Grilled', 'Other']
+// METHOD_OPTIONS retired — methods now loaded from recipe_method_definitions
 const DIFFICULTY_OPTIONS = [
   { key: 'easy', label: 'Easy' },
   { key: 'medium', label: 'Medium' },
@@ -81,6 +81,10 @@ export default function EditRecipe({ appUser }) {
   const [selectedTagIds, setSelectedTagIds] = useState(new Set())
   const [newTagOpen, setNewTagOpen] = useState(false)
   const [newTagName, setNewTagName] = useState('')
+  const [methodDefs, setMethodDefs] = useState([])
+  const [selectedMethodIds, setSelectedMethodIds] = useState(new Set())
+  const [newMethodOpen, setNewMethodOpen] = useState(false)
+  const [newMethodName, setNewMethodName] = useState('')
   const [altFormKey, setAltFormKey] = useState(null) // _key of ingredient showing alt form
   const [altQty, setAltQty] = useState('')
   const [altUnit, setAltUnit] = useState('piece')
@@ -93,12 +97,14 @@ export default function EditRecipe({ appUser }) {
 
   async function loadRecipe() {
     setLoading(true)
-    const [recRes, ingRes, insRes, tagDefsRes, recipeTagsRes] = await Promise.all([
+    const [recRes, ingRes, insRes, tagDefsRes, recipeTagsRes, methodDefsRes, recipeMethodsRes] = await Promise.all([
       supabase.from('recipes').select('*').eq('id', id).single(),
       supabase.from('ingredients').select('*').eq('recipe_id', id).order('sort_order'),
       supabase.from('instructions').select('*').eq('recipe_id', id).order('step_number'),
       supabase.from('recipe_tag_definitions').select('*').eq('household_id', appUser.household_id).order('sort_order'),
       supabase.from('recipe_tags').select('tag_id').eq('recipe_id', id),
+      supabase.from('recipe_method_definitions').select('*').eq('household_id', appUser.household_id).order('name'),
+      supabase.from('recipe_methods').select('method_definition_id').eq('recipe_id', id),
     ])
     // Fetch alternatives for all ingredients
     const ingIds = (ingRes.data || []).map(i => i.id)
@@ -131,6 +137,8 @@ export default function EditRecipe({ appUser }) {
     setInstructions((insRes.data || []).map(i => ({ ...i, _key: i.id })))
     setTagDefs(tagDefsRes.data || [])
     setSelectedTagIds(new Set((recipeTagsRes.data || []).map(t => t.tag_id)))
+    setMethodDefs(methodDefsRes.data || [])
+    setSelectedMethodIds(new Set((recipeMethodsRes.data || []).map(m => m.method_definition_id)))
     setLoading(false)
   }
 
@@ -215,6 +223,23 @@ export default function EditRecipe({ appUser }) {
     setNewTagOpen(false)
   }
 
+  // Method helpers
+  async function handleCreateMethod() {
+    if (!newMethodName.trim()) return
+    const { data } = await supabase.from('recipe_method_definitions').insert({
+      household_id: appUser.household_id,
+      name: newMethodName.trim(),
+      is_default: false,
+    }).select('*').single()
+    if (data) {
+      setMethodDefs(prev => [...prev, data])
+      setSelectedMethodIds(prev => new Set([...prev, data.id]))
+      dirty.markDirty()
+    }
+    setNewMethodName('')
+    setNewMethodOpen(false)
+  }
+
   // Instruction helpers
   function addInstruction() {
     setInstructions(prev => [...prev, { _key: tempId(), instruction: '', step_number: prev.length + 1 }])
@@ -244,7 +269,6 @@ export default function EditRecipe({ appUser }) {
         source_url: s(sourceUrl) || null,
         category: s(category) || null,
         cuisine: s(cuisine) || null,
-        method: s(method) || null,
         difficulty: s(difficulty) || null,
         prep_time_minutes: prep,
         cook_time_minutes: cook,
@@ -341,6 +365,14 @@ export default function EditRecipe({ appUser }) {
       if (selectedTagIds.size > 0) {
         await supabase.from('recipe_tags').insert(
           [...selectedTagIds].map(tagId => ({ recipe_id: id, tag_id: tagId }))
+        )
+      }
+
+      // 4b. Save methods — delete and re-insert
+      await supabase.from('recipe_methods').delete().eq('recipe_id', id)
+      if (selectedMethodIds.size > 0) {
+        await supabase.from('recipe_methods').insert(
+          [...selectedMethodIds].map(mid => ({ recipe_id: id, method_definition_id: mid, household_id: appUser.household_id }))
         )
       }
 
@@ -496,17 +528,58 @@ export default function EditRecipe({ appUser }) {
         </div>
         <div>
           <div style={label}>Method</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-            {METHOD_OPTIONS.map(m => (
-              <button key={m} onClick={() => setMethod(method === m.toLowerCase() ? '' : m.toLowerCase())} style={{
-                padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
-                border: method === m.toLowerCase() ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
-                background: method === m.toLowerCase() ? 'rgba(61,107,79,0.08)' : 'white',
-                color: method === m.toLowerCase() ? C.forest : C.ink, cursor: 'pointer',
-                fontFamily: "'Jost', sans-serif",
-              }}>{m}</button>
-            ))}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: methodDefs.some(m => !m.is_default) ? '0' : '6px' }}>
+            {methodDefs.filter(m => m.is_default).map(md => {
+              const active = selectedMethodIds.has(md.id)
+              return (
+                <button key={md.id} onClick={() => { setSelectedMethodIds(prev => { const n = new Set(prev); n.has(md.id) ? n.delete(md.id) : n.add(md.id); return n }); dirty.markDirty() }} style={{
+                  padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
+                  border: active ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                  background: active ? 'rgba(61,107,79,0.08)' : 'white',
+                  color: active ? C.forest : C.ink, cursor: 'pointer',
+                  fontFamily: "'Jost', sans-serif", fontWeight: active ? 500 : 400,
+                }}>{md.name}</button>
+              )
+            })}
           </div>
+          {methodDefs.some(m => !m.is_default) && (
+            <>
+              <div style={{ fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 300, margin: '10px 0 6px', fontFamily: "'Jost', sans-serif" }}>Your methods</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
+                {methodDefs.filter(m => !m.is_default).map(md => {
+                  const active = selectedMethodIds.has(md.id)
+                  return (
+                    <button key={md.id} onClick={() => { setSelectedMethodIds(prev => { const n = new Set(prev); n.has(md.id) ? n.delete(md.id) : n.add(md.id); return n }); dirty.markDirty() }} style={{
+                      padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
+                      border: active ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                      background: active ? 'rgba(61,107,79,0.08)' : 'white',
+                      color: active ? C.forest : C.ink, cursor: 'pointer',
+                      fontFamily: "'Jost', sans-serif", fontWeight: active ? 500 : 400,
+                    }}>{md.name}</button>
+                  )
+                })}
+              </div>
+            </>
+          )}
+          {newMethodOpen ? (
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <input type="text" value={newMethodName} onChange={e => setNewMethodName(e.target.value)}
+                placeholder="Type a method name..." autoFocus
+                style={{ ...inputStyle, fontSize: '12px', flex: 1 }}
+                onKeyDown={e => { if (e.key === 'Enter') handleCreateMethod() }} />
+              <button onClick={handleCreateMethod} disabled={!newMethodName.trim()} style={{
+                padding: '6px 12px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 500,
+                background: newMethodName.trim() ? C.forest : C.linen,
+                color: newMethodName.trim() ? 'white' : C.driftwood,
+                cursor: newMethodName.trim() ? 'pointer' : 'default', fontFamily: "'Jost', sans-serif",
+              }}>Add</button>
+            </div>
+          ) : (
+            <button onClick={() => setNewMethodOpen(true)} style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
+              fontSize: '12px', color: C.driftwood, fontWeight: 300, fontFamily: "'Jost', sans-serif",
+            }}>+ Add a method</button>
+          )}
         </div>
         <div>
           <div style={label}>Difficulty</div>
