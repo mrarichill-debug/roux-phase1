@@ -24,7 +24,7 @@ import { useArc } from '../context/ArcContext'
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
   driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E', linen: '#E8E0D0',
-  sage: '#7A8C6E', honey: '#C49A3C', red: '#A03030',
+  sage: '#7A8C6E', honey: '#C49A3C', honeyDark: '#7A5C14', red: '#A03030',
 }
 
 const DOW_KEYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']
@@ -51,7 +51,8 @@ export default function ThisWeek({ appUser }) {
   const [addSheetOpen, setAddSheetOpen] = useState(false)
   const [addSheetDate, setAddSheetDate] = useState(null) // Date object
   const [addInput, setAddInput] = useState('')
-  const [addMealType, setAddMealType] = useState('dinner')
+  const [addMealType, setAddMealType] = useState('dinner') // meal time: breakfast/lunch/dinner/snack
+  const [addMealCategory, setAddMealCategory] = useState(null) // null | 'other' | 'leftovers' | 'eating_out'
   const [recipeSuggestions, setRecipeSuggestions] = useState([])
   const [selectedRecipe, setSelectedRecipe] = useState(null)
   const [adding, setAdding] = useState(false)
@@ -91,6 +92,9 @@ export default function ThisWeek({ appUser }) {
 
   // Keep as-is memory — meals that don't need recipes
   const [dismissedMeals, setDismissedMeals] = useState(new Set())
+
+  // Accordion — collapse past days by default
+  const [collapsedDays, setCollapsedDays] = useState(new Set())
 
   // Day-tile list control
   const [onListDays, setOnListDays] = useState(new Set())
@@ -162,6 +166,16 @@ export default function ThisWeek({ appUser }) {
 
     return () => clearInterval(interval)
   }, [meals, planId])
+
+  // Initialize accordion — collapse past days when week changes
+  useEffect(() => {
+    const today = toLocalDateStr(new Date())
+    const collapsed = new Set()
+    weekDates.forEach((date, i) => {
+      if (toLocalDateStr(date) < today) collapsed.add(DOW_KEYS[i])
+    })
+    setCollapsedDays(collapsed)
+  }, [weekStart])
 
   async function loadWeek() {
     setLoading(true)
@@ -323,17 +337,21 @@ export default function ThisWeek({ appUser }) {
     return data.id
   }
 
-  // Reset repeat days when meal type changes
+  // Reset repeat days when meal time changes
   useEffect(() => {
     setRepeatDays(new Set())
     setShowRepeatPicker(addMealType === 'breakfast' || addMealType === 'snack')
+  }, [addMealType])
+
+  // Reset category-specific state when category changes
+  useEffect(() => {
     setSelectedSourceMeal(null)
     setLeftoversFreeText('')
-  }, [addMealType])
+  }, [addMealCategory])
 
   // Load recent meals when leftovers selected
   useEffect(() => {
-    if (addMealType !== 'leftovers' || !appUser?.household_id) return
+    if (addMealCategory !== 'leftovers' || !appUser?.household_id) return
     const twoWeeksAgo = new Date()
     twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
     supabase.from('planned_meals')
@@ -353,7 +371,7 @@ export default function ThisWeek({ appUser }) {
           return true
         }))
       })
-  }, [addMealType])
+  }, [addMealCategory])
 
   function formatMealDate(dateStr) {
     if (!dateStr) return ''
@@ -371,6 +389,7 @@ export default function ThisWeek({ appUser }) {
     setAddSheetDate(date)
     setAddInput('')
     setAddMealType('dinner')
+    setAddMealCategory(null)
     setRecipeSuggestions([])
     setSelectedRecipe(null)
     setAddBatchMultiplier(1.0)
@@ -422,13 +441,18 @@ export default function ThisWeek({ appUser }) {
   function selectRecipeSuggestion(suggestion) {
     setAddInput(suggestion.name)
     setSelectedRecipe(null) // Never auto-link from add sheet — Sage surfaces matches after save
-    // Pre-select the meal type from history
-    if (suggestion.meal_type) setAddMealType(suggestion.meal_type)
+    // Pre-select meal time from history — guard against legacy category values
+    const mealTimes = new Set(['breakfast', 'lunch', 'dinner', 'snack'])
+    const categories = new Set(['other', 'leftovers', 'eating_out'])
+    if (suggestion.meal_type) {
+      if (mealTimes.has(suggestion.meal_type)) setAddMealType(suggestion.meal_type)
+      else if (categories.has(suggestion.meal_type)) setAddMealCategory(suggestion.meal_type)
+    }
     setRecipeSuggestions([])
   }
 
   async function addMeal() {
-    const isLeftovers = addMealType === 'leftovers'
+    const isLeftovers = addMealCategory === 'leftovers'
     const leftoversSource = selectedSourceMeal?.custom_name || leftoversFreeText.trim()
 
     // Leftovers: require a source, not a meal name
@@ -453,7 +477,7 @@ export default function ThisWeek({ appUser }) {
           household_id: appUser.household_id,
           meal_plan_id: mpId,
           day_of_week: dowKey,
-          meal_type: 'leftovers',
+          meal_type: addMealType,
           planned_date: dateStr,
           custom_name: customName,
           recipe_id: null,
@@ -486,7 +510,7 @@ export default function ThisWeek({ appUser }) {
         return
       }
 
-      const isEatingOut = addMealType === 'eating_out'
+      const isEatingOut = addMealCategory === 'eating_out'
       const hasRecipes = !isEatingOut && addSheetRecipes.length > 0
       const eatingOutCost = isEatingOut && addEatingOutCost.trim() ? parseFloat(addEatingOutCost.replace(/[^0-9.]/g, '')) : null
 
@@ -1069,6 +1093,15 @@ export default function ThisWeek({ appUser }) {
     return `×${val}`
   }
 
+  function toggleDayCollapse(dowKey) {
+    setCollapsedDays(prev => {
+      const next = new Set(prev)
+      if (next.has(dowKey)) next.delete(dowKey)
+      else next.add(dowKey)
+      return next
+    })
+  }
+
   // ── Render ────────────────────────────────────────────────────
   return (
     <div className="page-scroll-container" style={{
@@ -1274,6 +1307,7 @@ export default function ThisWeek({ appUser }) {
             const isToday = dateStr === todayStr
             const dayMeals = meals.filter(m => m.day_of_week === dowKey)
             const dt = dayTypes[dowKey]
+            const isCollapsed = collapsedDays.has(dowKey)
 
             return (
               <div key={dowKey} id={`day-${dowKey}`} style={{
@@ -1284,8 +1318,8 @@ export default function ThisWeek({ appUser }) {
                 scrollMarginTop: '145px',
                 animation: `fadeUp 0.35s ease ${0.02 + i * 0.03}s both`,
               }}>
-                {/* Day header */}
-                <div style={{ padding: '12px 14px' }}>
+                {/* Day header — tap to toggle */}
+                <div onClick={() => toggleDayCollapse(dowKey)} style={{ padding: '12px 14px', cursor: 'pointer', userSelect: 'none' }}>
                   {isToday && (
                     <div style={{
                       fontSize: 11,
@@ -1306,17 +1340,39 @@ export default function ThisWeek({ appUser }) {
                         {DAY_NAMES[i]}
                       </span>
                       <span style={{ fontSize: '12px', color: C.ink, opacity: 0.6 }}>{date.getDate()}</span>
+                      {isCollapsed && dayMeals.length > 0 && (
+                        <span style={{ fontSize: '12px', color: C.driftwood, fontWeight: 300 }}>
+                          · {dayMeals.length} meal{dayMeals.length !== 1 ? 's' : ''}
+                        </span>
+                      )}
                     </div>
-                    {dt && (
-                      <span style={{
-                        fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px', textTransform: 'uppercase',
-                        padding: '2px 8px', borderRadius: '4px',
-                        background: `${dt.color}18`,
-                        color: dt.color,
-                      }}>{dt.name}</span>
-                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {dt && (
+                        <span style={{
+                          fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px', textTransform: 'uppercase',
+                          padding: '2px 8px', borderRadius: '4px',
+                          background: `${dt.color}18`,
+                          color: dt.color,
+                        }}>{dt.name}</span>
+                      )}
+                      <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{
+                        width: 14, height: 14, opacity: 0.5,
+                        transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                        transition: 'transform 200ms ease-out',
+                      }}>
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
+
+                {/* Collapsible content */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateRows: isCollapsed ? '0fr' : '1fr',
+                  transition: 'grid-template-rows 200ms ease-out',
+                }}>
+                <div style={{ overflow: 'hidden' }}>
 
                 {/* Calendar events — vertical, sorted by start time */}
                 {(() => {
@@ -1343,28 +1399,29 @@ export default function ThisWeek({ appUser }) {
                     return `${startStr} – ${fmt(endDt)}`
                   }
 
-                  const textColor = C.driftwoodSm // always on white background, even Today card
-
                   return (
-                    <div style={{ padding: '8px 14px 4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <div style={{ padding: '8px 14px 4px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       {shown.map(ev => {
                         const timeStr = formatEventTime(ev)
-                        const isAllDay = ev.allDay || !timeStr
                         const title = ev.title || ''
                         return (
                           <div key={ev.id} style={{
-                            fontSize: '13px', fontFamily: "'Jost', sans-serif", fontWeight: 300,
-                            color: isAllDay ? C.driftwood : textColor,
-                            display: 'flex', alignItems: 'center', gap: '12px',
+                            fontSize: '12px', fontFamily: "'Jost', sans-serif", fontWeight: 400,
+                            color: C.honeyDark,
+                            display: 'inline-flex', alignItems: 'center', gap: '6px',
+                            background: 'rgba(196,154,60,0.12)',
+                            border: '0.5px solid rgba(196,154,60,0.3)',
+                            borderRadius: '20px',
+                            padding: '3px 10px',
+                            alignSelf: 'flex-start',
                           }}>
-                            {!isAllDay && <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: C.honey, flexShrink: 0 }} />}
-                            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: isAllDay ? 'italic' : 'normal' }}>{title}</span>
-                            {timeStr && <span style={{ flexShrink: 0, opacity: 0.8, fontSize: '12px' }}>{timeStr}</span>}
+                            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
+                            {timeStr && <span style={{ flexShrink: 0, fontSize: '11px', opacity: 0.8 }}>{timeStr}</span>}
                           </div>
                         )
                       })}
                       {overflow > 0 && (
-                        <div style={{ fontSize: '12px', color: textColor, opacity: 0.6, paddingLeft: '9px' }}>+{overflow} more</div>
+                        <div style={{ fontSize: '11px', color: C.honeyDark, opacity: 0.6, paddingLeft: '4px' }}>+{overflow} more</div>
                       )}
                     </div>
                   )
@@ -1425,9 +1482,9 @@ export default function ThisWeek({ appUser }) {
                                 </svg>
                               )}
                             </div>
-                            {meal.meal_type === 'leftovers' && (
+                            {meal.source_meal_name && (
                               <div style={{ fontSize: '11px', color: C.driftwood, marginTop: '2px' }}>
-                                ↩ {meal.source_meal_name || 'Leftovers'}
+                                ↩ {meal.source_meal_name}
                               </div>
                             )}
                             {meal.members?.length > 0 && (
@@ -1518,6 +1575,9 @@ export default function ThisWeek({ appUser }) {
                 }}>
                   {dayMeals.length > 0 ? '+ Add another' : `+ Add to ${isToday ? 'Today' : DAY_NAMES[i]}`}
                 </button>
+
+                </div>{/* end overflow hidden */}
+                </div>{/* end grid accordion */}
               </div>
             )
           })}
@@ -1643,7 +1703,7 @@ export default function ThisWeek({ appUser }) {
               )}
 
               {/* Input — hidden for leftovers (source selector replaces it) */}
-              {addMealType !== 'leftovers' && (
+              {addMealCategory !== 'leftovers' && (
               <>
               <div style={{ position: 'relative', marginBottom: '12px' }}>
                 <input
@@ -1702,36 +1762,35 @@ export default function ThisWeek({ appUser }) {
               </>
               )}
 
-              {/* Meal type selector — two rows */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  {['breakfast', 'lunch', 'dinner', 'snack'].map(mt => (
-                    <button key={mt} onClick={() => setAddMealType(mt)} style={{
-                      flex: 1, padding: '8px', borderRadius: '10px', fontSize: '12px',
-                      border: addMealType === mt ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
-                      background: addMealType === mt ? 'rgba(61,107,79,0.08)' : 'white',
-                      color: addMealType === mt ? arcColor : C.ink,
-                      cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-                      fontWeight: addMealType === mt ? 500 : 400,
-                    }}>{MEAL_TYPE_LABELS[mt]}</button>
-                  ))}
-                </div>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  {['other', 'leftovers', 'eating_out'].map(mt => (
-                    <button key={mt} onClick={() => setAddMealType(mt)} style={{
-                      flex: 1, padding: '8px', borderRadius: '10px', fontSize: '12px',
-                      border: addMealType === mt ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
-                      background: addMealType === mt ? 'rgba(61,107,79,0.08)' : 'white',
-                      color: addMealType === mt ? arcColor : C.ink,
-                      cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-                      fontWeight: addMealType === mt ? 500 : 400,
-                    }}>{MEAL_TYPE_LABELS[mt]}</button>
-                  ))}
-                </div>
+              {/* Meal time selector — always one selected */}
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                {['breakfast', 'lunch', 'dinner', 'snack'].map(mt => (
+                  <button key={mt} onClick={() => setAddMealType(mt)} style={{
+                    flex: 1, padding: '8px', borderRadius: '10px', fontSize: '12px',
+                    border: addMealType === mt ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
+                    background: addMealType === mt ? 'rgba(61,107,79,0.08)' : 'white',
+                    color: addMealType === mt ? arcColor : C.ink,
+                    cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+                    fontWeight: addMealType === mt ? 500 : 400,
+                  }}>{MEAL_TYPE_LABELS[mt]}</button>
+                ))}
+              </div>
+              {/* Category selector — toggleable, none by default */}
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '16px' }}>
+                {['other', 'leftovers', 'eating_out'].map(cat => (
+                  <button key={cat} onClick={() => setAddMealCategory(prev => prev === cat ? null : cat)} style={{
+                    flex: 1, padding: '8px', borderRadius: '10px', fontSize: '12px',
+                    border: addMealCategory === cat ? `1.5px solid ${C.honey}` : `1px solid ${C.linen}`,
+                    background: addMealCategory === cat ? 'rgba(196,154,60,0.08)' : 'white',
+                    color: addMealCategory === cat ? C.honeyDark : C.driftwood,
+                    cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+                    fontWeight: addMealCategory === cat ? 500 : 400,
+                  }}>{MEAL_TYPE_LABELS[cat]}</button>
+                ))}
               </div>
 
               {/* Leftovers source selector */}
-              {addMealType === 'leftovers' && (
+              {addMealCategory === 'leftovers' && (
                 <div style={{ marginBottom: '16px' }}>
                   <div style={{ fontSize: '11px', color: C.driftwood, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>
                     What are these leftovers from?
@@ -1804,7 +1863,7 @@ export default function ThisWeek({ appUser }) {
               )}
 
               {/* Eating out: cost input */}
-              {addMealType === 'eating_out' && (
+              {addMealCategory === 'eating_out' && (
                 <div style={{ marginBottom: '16px' }}>
                   <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '6px' }}>Estimated spend? (optional)</div>
                   <div style={{ position: 'relative' }}>
@@ -1821,7 +1880,7 @@ export default function ThisWeek({ appUser }) {
               )}
 
               {/* Link recipes (optional) — hidden for eating out and leftovers */}
-              {addMealType !== 'eating_out' && addMealType !== 'leftovers' && (
+              {addMealCategory !== 'eating_out' && addMealCategory !== 'leftovers' && (
                 <div style={{ marginBottom: '16px' }}>
                   <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '8px' }}>Link a recipe (optional)</div>
                   {addSheetRecipes.length > 0 && (
@@ -1850,7 +1909,7 @@ export default function ThisWeek({ appUser }) {
               )}
 
               {/* Batch size — hidden for eating out and leftovers */}
-              {addMealType !== 'eating_out' && addMealType !== 'leftovers' && (
+              {addMealCategory !== 'eating_out' && addMealCategory !== 'leftovers' && (
                 <div style={{ marginBottom: '16px' }}>
                   <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '6px' }}>Batch size</div>
                   <div style={{ display: 'flex', gap: '6px' }}>
@@ -1896,7 +1955,7 @@ export default function ThisWeek({ appUser }) {
 
               {/* Add button */}
               {(() => {
-                const canSave = addMealType === 'leftovers'
+                const canSave = addMealCategory === 'leftovers'
                   ? !!(selectedSourceMeal || leftoversFreeText.trim())
                   : !!addInput.trim()
                 return (
