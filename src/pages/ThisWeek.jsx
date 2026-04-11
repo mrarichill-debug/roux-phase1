@@ -411,8 +411,8 @@ export default function ThisWeek({ appUser }) {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     if (val.trim().length < 2) { setRecipeSuggestions([]); return }
     debounceRef.current = setTimeout(async () => {
-      // Query planned_meals history first — deduplicated by name
-      const { data: historyData } = await supabase
+      // Query planned_meals history — eating out gets restaurant names, others get regular meals
+      let query = supabase
         .from('planned_meals')
         .select('id, custom_name, recipe_id, entry_type, meal_type')
         .eq('household_id', appUser.household_id)
@@ -420,6 +420,12 @@ export default function ThisWeek({ appUser }) {
         .ilike('custom_name', `%${val.trim()}%`)
         .order('created_at', { ascending: false })
         .limit(10)
+      if (addMealCategory === 'eating_out') {
+        query = query.eq('entry_type', 'eating_out')
+      } else {
+        query = query.neq('entry_type', 'eating_out')
+      }
+      const { data: historyData } = await query
       const seen = new Set()
       const suggestions = (historyData || []).filter(m => {
         const key = m.custom_name.toLowerCase()
@@ -1458,7 +1464,6 @@ export default function ThisWeek({ appUser }) {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <span style={{ fontSize: '14px', fontWeight: 500, color: meal.status === 'cooked' ? C.sage : (meal.status === 'eating_out' || meal.entry_type === 'eating_out') ? C.driftwood : meal.linkedRecipes?.length > 0 ? arcColor : C.ink }}>
                                 {meal.status === 'cooked' && <span style={{ color: C.sage }}>✓ </span>}
-                                {(meal.status === 'eating_out' || meal.entry_type === 'eating_out') && <span>🍽️ </span>}
                                 {getMealName(meal)}
                               </span>
                               {isGhost && (
