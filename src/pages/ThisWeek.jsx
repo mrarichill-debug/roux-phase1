@@ -4,7 +4,7 @@
  * Each day is a card. Lauren adds meals by typing. Meal type is optional metadata.
  */
 import { useEffect, useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { logActivity } from '../lib/activityLog'
 import { sageMealMatch } from '../lib/sageMealMatch'
@@ -37,6 +37,7 @@ const MEAL_TYPE_ORDER = { breakfast: 0, snack: 1, lunch: 2, dinner: 3, leftovers
 export default function ThisWeek({ appUser }) {
   const { color: arcColor } = useArc()
   const navigate = useNavigate()
+  const location = useLocation()
   const tz = appUser?.timezone || 'America/Chicago'
 
   const [weekOffset, _setWeekOffset] = useState(() => {
@@ -397,8 +398,20 @@ export default function ThisWeek({ appUser }) {
     return `${diff} days ago`
   }
 
+  // ── Prefill from Meals tab navigation ──────────────────────────
+  const prefillHandled = useRef(false)
+  useEffect(() => {
+    const s = location.state
+    if (s?.prefillMeal && weekDates.length > 0 && !loading && !prefillHandled.current) {
+      prefillHandled.current = true
+      const todayDate = weekDates.find(d => toLocalDateStr(d) === toLocalDateStr(new Date())) || weekDates[0]
+      openAddSheet(todayDate, { name: s.prefillMeal, mealType: s.prefillType })
+      navigate('/plan', { replace: true, state: {} })
+    }
+  }, [location.state?.prefillMeal, loading])
+
   // ── Add meal ──────────────────────────────────────────────────
-  function openAddSheet(date) {
+  function openAddSheet(date, prefill) {
     setAddSheetDate(date)
     setAddInput('')
     setAddMealType('dinner')
@@ -415,6 +428,10 @@ export default function ThisWeek({ appUser }) {
     setLeftoversFreeText('')
     setRecentMeals([])
     setSelectedMembers(new Set())
+    if (prefill) {
+      if (prefill.name) setAddInput(prefill.name)
+      if (prefill.mealType) setAddMealType(prefill.mealType)
+    }
     setAddSheetOpen(true)
   }
 
