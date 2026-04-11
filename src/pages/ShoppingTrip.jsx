@@ -368,17 +368,19 @@ export default function ShoppingTrip({ appUser }) {
     }}>
       {/* Header */}
       <div style={{ background: C.forest, padding: '20px 22px 16px', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+        <div style={{ marginBottom: '8px' }}>
           <button onClick={() => navigate('/shop')} style={{
             background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(250,247,242,0.7)', padding: '4px', display: 'flex', alignItems: 'center',
           }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}><path d="m15 18-6-6 6-6"/></svg>
           </button>
-          <span style={{ fontSize: '12px', color: 'rgba(250,247,242,0.6)' }}>{checkedCount} of {total}</span>
         </div>
         <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 500, color: 'rgba(250,247,242,0.95)', display: 'flex', alignItems: 'center', gap: '8px' }}>
           {trip?.name || trip?.store_name || 'Shopping Trip'}
           {trip?.companion_trip_id && <span style={{ fontSize: '10px', fontFamily: "'Jost', sans-serif", fontWeight: 500, padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.15)', color: 'rgba(250,247,242,0.7)' }}>2 weeks</span>}
+        </div>
+        <div style={{ fontSize: '11px', fontWeight: 300, letterSpacing: '0.5px', color: 'rgba(250,247,242,0.55)', marginTop: '4px', fontFamily: "'Jost', sans-serif" }}>
+          {checkedCount} of {total} items checked
         </div>
         <div style={{ marginTop: '12px', height: '3px', background: 'rgba(255,255,255,0.15)', borderRadius: '2px' }}>
           <div style={{ height: '100%', background: 'rgba(250,247,242,0.7)', borderRadius: '2px', width: `${progress * 100}%`, transition: 'width 0.3s ease' }} />
