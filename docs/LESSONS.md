@@ -166,3 +166,23 @@
 ### Inner scroll containers defeat body scroll lock on mobile
 **The lesson:** `position: fixed` on `body` doesn't prevent scrolling inside inner containers with `overflow-y: auto` or tall content. Lock all three layers: body fixed, `<html>` overflow hidden, and any `.page-scroll-container` elements.
 **Why it matters:** BottomSheet's body lock worked on desktop but failed on the Week page because ThisWeek.jsx's content scrolled independently. Adding `document.documentElement.style.overflow = 'hidden'` and locking page containers fixed it.
+
+### Meal time and meal category are two independent dimensions
+**The lesson:** Breakfast/Lunch/Dinner/Snack is a meal time. Eating Out/Leftovers/Other is a category. These must be separate state variables (`addMealType` + `addMealCategory`) with independent selectors — never a single mutually exclusive group.
+**Why it matters:** When they're one flat list, selecting "Eating Out" loses the meal time. Lauren needs both — "Dinner, Eating Out" is a valid plan entry.
+
+### Guard historical data against refactored state models
+**The lesson:** When splitting a state variable into two (e.g., `addMealType` into time + category), autocomplete suggestions from history may contain legacy values from before the split. Guard the suggestion handler to route legacy values to the correct new bucket.
+**Why it matters:** A suggestion with `meal_type: 'eating_out'` from old data would set the meal time to an invalid value, silently storing the wrong type in the DB.
+
+### new Date("YYYY-MM-DD") parses as UTC midnight — off by one day west of UTC
+**The lesson:** `new Date("2026-04-13")` creates a UTC midnight date. For any timezone west of UTC, `.getDate()` returns the previous day. Use `new Date(y, m-1, d)` to construct dates in local time.
+**Why it matters:** Week-end dates calculated with `new Date(dateString)` were off by one day in America/Chicago, causing meal plan date ranges to be wrong.
+
+### Use sessionStorage for UI state that should survive navigation but not page refresh
+**The lesson:** `sessionStorage` is the right persistence layer for "remember where I was" state like `weekOffset`. It clears on tab close/refresh (fresh start) but survives React Router navigation (no remount reset).
+**Why it matters:** `weekOffset` in `useState(0)` reset to current week every time Lauren navigated away from the planner and back. `sessionStorage` keeps her on the week she was viewing.
+
+### Add hardcoded colors to the design token object
+**The lesson:** Never use inline hex colors like `#96731F` in JSX. Add them to the `C` token object (e.g., `honeyDark`) so they're discoverable, reusable, and changeable in one place.
+**Why it matters:** Three separate usages of the same hardcoded hex create a maintenance problem. One token in `C` keeps it consistent.

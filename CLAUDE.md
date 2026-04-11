@@ -96,6 +96,22 @@ Active. All meaningful user actions write to `activity_log` via `src/lib/activit
 
 **Effort level** set to `high` in `.claude/settings.json`.
 
+## Session Notes (Apr 11, 2026)
+
+**Accordion day cards** — Past days collapse by default (day name + date + meal count), today always expanded with arc color border, future expanded. Tap header to toggle. Uses `grid-template-rows: 0fr/1fr` with 200ms ease-out.
+
+**Calendar event honey pills** — Events now render as rounded pills with `rgba(196,154,60,0.12)` background, honey border, `C.honeyDark` (`#7A5C14`) text. Added `honeyDark` to design tokens.
+
+**Meal time / category split** — `addMealType` (breakfast/lunch/dinner/snack) and `addMealCategory` (null/other/leftovers/eating_out) are now independent state. Category row uses honey accent and toggles off on re-tap. DB stores actual meal time in `meal_type`, `entry_type` handles eating_out/ghost. Leftovers display keyed on `source_meal_name` not `meal_type`.
+
+**Move meal to another day** — Edit sheet now has "Move to another day" link. Opens BottomSheet (z-index 300) with 14-day picker (this week + next week). Creates target week plan if needed. Updates `planned_date`, `day_of_week`, `meal_plan_id`. Activity logged as `meal_moved`.
+
+**Persistent week navigation** — `weekOffset` now stored in `sessionStorage`. Survives React Router navigation, resets on fresh load.
+
+**Autocomplete split** — Eating Out category shows only restaurant history (`entry_type: 'eating_out'`). All other meal types exclude eating out entries.
+
+**Eating out icon removed** — 🍽️ emoji no longer renders next to eating out meal names on day cards.
+
 ---
 
 ## Documentation Index

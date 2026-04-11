@@ -92,3 +92,13 @@
 **What happened:** "Start a Trip" insert failed with 400 Bad Request — constraint violation on `shopping_trips.status`.
 **Root cause:** Original table had `CHECK (status IN ('planned', 'active', 'completed'))`. New code correctly used `'pending'` and `'in_progress'` but those values weren't in the constraint.
 **Rule going forward:** When designing status columns, always check for existing CHECK constraints before writing insert code. Claude.ai can verify constraints with `SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = '[constraint_name]'`.
+
+### Apr 11 — new Date("YYYY-MM-DD") off by one day in Central Time
+**What happened:** When moving a meal to next week, the auto-created meal plan had `week_end_date` off by one day.
+**Root cause:** `new Date("2026-04-13")` parses as UTC midnight. In America/Chicago (UTC-5), `.getDate()` returns 12 instead of 13. The `endDate.setDate(endDate.getDate() + 6)` calculation was one day short.
+**Rule going forward:** Never construct dates from `"YYYY-MM-DD"` strings with `new Date(str)`. Always split and use `new Date(year, month-1, day)` which creates a local-time date. This applies to any date arithmetic — not just meal plans.
+
+### Apr 11 — Autocomplete suggestions injecting legacy meal_type values after state refactor
+**What happened:** After splitting `addMealType` into meal time + meal category, autocomplete history suggestions with `meal_type: 'eating_out'` set the meal time to an invalid value.
+**Root cause:** `selectRecipeSuggestion` blindly set `addMealType` from the suggestion's `meal_type` field. Old data had `'eating_out'` and `'leftovers'` as meal types, but the new model only accepts `'breakfast'`/`'lunch'`/`'dinner'`/`'snack'` as meal times.
+**Rule going forward:** When refactoring a state variable into multiple variables, audit every code path that writes to the original state. History data, autocomplete, and DB reads all carry legacy values that must be routed to the correct new bucket.
