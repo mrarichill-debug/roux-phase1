@@ -119,7 +119,15 @@ export default function SaveRecipe({ appUser }) {
     supabase.from('recipe_tag_definitions').select('*').eq('household_id', appUser.household_id).order('sort_order')
       .then(({ data }) => setTagDefs(data || []))
     supabase.from('recipe_method_definitions').select('*').eq('household_id', appUser.household_id).order('name')
-      .then(({ data }) => setMethodDefs(data || []))
+      .then(async ({ data }) => {
+        if (data?.length) { setMethodDefs(data); return }
+        // Seed defaults if none exist for this household
+        const defaults = ['Stovetop', 'Baked', 'Slow Cooker', 'Instant Pot', 'Air Fryer', 'Grilled', 'No-Cook', 'Other']
+        const { data: seeded } = await supabase.from('recipe_method_definitions')
+          .insert(defaults.map(name => ({ household_id: appUser.household_id, name, is_default: true })))
+          .select('*')
+        setMethodDefs(seeded || [])
+      })
   }, [appUser?.household_id])
 
   // ── Multi-photo capture ──────────────────────────────────────

@@ -137,7 +137,16 @@ export default function EditRecipe({ appUser }) {
     setInstructions((insRes.data || []).map(i => ({ ...i, _key: i.id })))
     setTagDefs(tagDefsRes.data || [])
     setSelectedTagIds(new Set((recipeTagsRes.data || []).map(t => t.tag_id)))
-    setMethodDefs(methodDefsRes.data || [])
+    let methods = methodDefsRes.data || []
+    if (!methods.length) {
+      // Seed defaults if none exist for this household
+      const defaults = ['Stovetop', 'Baked', 'Slow Cooker', 'Instant Pot', 'Air Fryer', 'Grilled', 'No-Cook', 'Other']
+      const { data: seeded } = await supabase.from('recipe_method_definitions')
+        .insert(defaults.map(name => ({ household_id: appUser.household_id, name, is_default: true })))
+        .select('*')
+      methods = seeded || []
+    }
+    setMethodDefs(methods)
     setSelectedMethodIds(new Set((recipeMethodsRes.data || []).map(m => m.method_definition_id)))
     setLoading(false)
   }
