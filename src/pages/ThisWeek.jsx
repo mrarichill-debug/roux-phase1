@@ -2306,13 +2306,22 @@ export default function ThisWeek({ appUser }) {
 
             return (
               <>
-                <div style={{ fontSize: '11px', color: C.driftwood, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>This week</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '16px' }}>
-                  {thisWeekDates.map((date, i) => {
-                    const count = meals.filter(m => m.day_of_week === DOW_KEYS[i]).length
-                    return renderDay(date, count)
-                  })}
-                </div>
+                {(() => {
+                  const thisWeekFiltered = thisWeekDates.filter(date => toLocalDateStr(date) >= todayStr)
+                  if (thisWeekFiltered.length === 0) return null
+                  return (
+                    <>
+                      <div style={{ fontSize: '11px', color: C.driftwood, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>This week</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '16px' }}>
+                        {thisWeekFiltered.map(date => {
+                          const dayIdx = date.getDay() === 0 ? 6 : date.getDay() - 1
+                          const count = meals.filter(m => m.day_of_week === DOW_KEYS[dayIdx]).length
+                          return renderDay(date, count)
+                        })}
+                      </div>
+                    </>
+                  )
+                })()}
                 <div style={{ fontSize: '11px', color: C.driftwood, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>Next week</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   {nextWeekDates.map(date => {
