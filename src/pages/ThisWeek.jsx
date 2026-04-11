@@ -103,6 +103,11 @@ export default function ThisWeek({ appUser }) {
   // Batch edit
   const [batchEditMealId, setBatchEditMealId] = useState(null)
 
+  // Move meal to another day
+  const [moveDayPickerOpen, setMoveDayPickerOpen] = useState(false)
+  const [moveMealId, setMoveMealId] = useState(null)
+  const [moveNextWeekCounts, setMoveNextWeekCounts] = useState({}) // dateStr → count
+
   // Swipe navigation
   const [touchStart, setTouchStart] = useState(null)
 
@@ -617,6 +622,83 @@ export default function ThisWeek({ appUser }) {
       console.error('[Menu] Add meal error:', err)
     }
     setAdding(false)
+  }
+
+  // ── Move meal to another day ────────────────────────────────
+  async function openMovePicker(mealId) {
+    setMoveMealId(mealId)
+    setMoveDayPickerOpen(true)
+    // Fetch next week meal counts
+    const nextDates = getWeekDatesTZ(tz, weekOffset + 1)
+    const startStr = toLocalDateStr(nextDates[0])
+    const endStr = toLocalDateStr(nextDates[6])
+    const { data } = await supabase
+      .from('planned_meals')
+      .select('planned_date')
+      .eq('household_id', appUser.household_id)
+      .is('removed_at', null)
+      .gte('planned_date', startStr)
+      .lte('planned_date', endStr)
+    const counts = {}
+    ;(data || []).forEach(m => {
+      counts[m.planned_date] = (counts[m.planned_date] || 0) + 1
+    })
+    setMoveNextWeekCounts(counts)
+  }
+
+  async function moveMealToDay(targetDate) {
+    const meal = meals.find(m => m.id === moveMealId)
+    if (!meal) return
+    const dateStr = toLocalDateStr(targetDate)
+    const dayIdx = targetDate.getDay() === 0 ? 6 : targetDate.getDay() - 1
+    const newDow = DOW_KEYS[dayIdx]
+
+    // Ensure a plan exists for the target week
+    const targetWeekStart = getWeekStartTZ(tz, toLocalDateStr(targetDate) >= toLocalDateStr(getWeekDatesTZ(tz, weekOffset + 1)[0]) ? weekOffset + 1 : weekOffset)
+    let targetPlanId = planId
+    if (targetWeekStart !== weekStart) {
+      const { data: existingPlan } = await supabase
+        .from('meal_plans')
+        .select('id')
+        .eq('household_id', appUser.household_id)
+        .eq('week_start_date', targetWeekStart)
+        .maybeSingle()
+      if (existingPlan) {
+        targetPlanId = existingPlan.id
+      } else {
+        const [y, m, d] = targetWeekStart.split('-').map(Number)
+        const endDate = new Date(y, m - 1, d + 6)
+        const { data: newPlan, error: planErr } = await supabase.from('meal_plans').insert({
+          household_id: appUser.household_id,
+          week_start_date: targetWeekStart,
+          week_end_date: toLocalDateStr(endDate),
+          status: 'draft',
+          created_by: appUser.id,
+        }).select('id').single()
+        if (planErr || !newPlan) { console.error('[Menu] Create plan for move:', planErr); return }
+        targetPlanId = newPlan.id
+      }
+    }
+
+    const { error } = await supabase.from('planned_meals').update({
+      planned_date: dateStr,
+      day_of_week: newDow,
+      meal_plan_id: targetPlanId,
+    }).eq('id', moveMealId)
+
+    if (!error) {
+      // Remove from local state (it moved away from the current view, or moved within it)
+      if (targetWeekStart === weekStart) {
+        setMeals(prev => prev.map(m => m.id === moveMealId ? { ...m, planned_date: dateStr, day_of_week: newDow } : m))
+      } else {
+        setMeals(prev => prev.filter(m => m.id !== moveMealId))
+      }
+      showToast(`Moved ${getMealName(meal)} to ${DAY_NAMES[dayIdx]}`)
+      logActivity({ user: appUser, actionType: 'meal_moved', targetType: 'meal', targetId: moveMealId, targetName: getMealName(meal), metadata: { from_date: meal.planned_date, to_date: dateStr } })
+    }
+    setMoveDayPickerOpen(false)
+    setMoveMealId(null)
+    setBatchEditMealId(null)
   }
 
   async function initDeleteMeal(mealId) {
@@ -2156,8 +2238,12 @@ export default function ThisWeek({ appUser }) {
                   boxShadow: '0 4px 16px rgba(30,55,35,0.25)', marginBottom: '16px',
                 }}>Done</button>
 
-                {/* Divider + Remove */}
-                <div style={{ borderTop: `1px solid ${C.linen}`, paddingTop: '14px', textAlign: 'center' }}>
+                {/* Divider + Move / Remove */}
+                <div style={{ borderTop: `1px solid ${C.linen}`, paddingTop: '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                  <button onClick={() => openMovePicker(editMeal.id)} style={{
+                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                    fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 400,
+                  }}>Move to another day →</button>
                   <button onClick={() => { setBatchEditMealId(null); initDeleteMeal(editMeal.id) }} style={{
                     background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                     fontSize: '13px', color: '#C0392B', fontFamily: "'Jost', sans-serif", fontWeight: 400,
@@ -2167,6 +2253,71 @@ export default function ThisWeek({ appUser }) {
           </div>
         )
       })()}
+
+      {/* ── Move Meal Day Picker ─────────────────────────────────── */}
+      <BottomSheet isOpen={moveDayPickerOpen} onClose={() => { setMoveDayPickerOpen(false); setMoveMealId(null) }} zIndex={300}>
+        <div style={{ padding: '20px 22px 24px' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '16px' }}>
+            Move to another day
+          </div>
+          {(() => {
+            const thisWeekDates = weekDates
+            const nextWeekDates = getWeekDatesTZ(tz, weekOffset + 1)
+            const movingMeal = meals.find(m => m.id === moveMealId)
+            const currentDateStr = movingMeal ? movingMeal.planned_date : null
+
+            function renderDay(date, mealCount) {
+              const dateStr = toLocalDateStr(date)
+              const dayIdx = date.getDay() === 0 ? 6 : date.getDay() - 1
+              const isCurrent = dateStr === currentDateStr
+              const isToday = dateStr === todayStr
+              return (
+                <button key={dateStr} onClick={() => !isCurrent && moveMealToDay(date)} disabled={isCurrent} style={{
+                  width: '100%', padding: '12px 14px', borderRadius: '10px',
+                  border: `0.5px solid ${isCurrent ? C.linen : 'rgba(200,185,160,0.3)'}`,
+                  background: isCurrent ? C.linen : 'white',
+                  cursor: isCurrent ? 'default' : 'pointer',
+                  opacity: isCurrent ? 0.5 : 1,
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  fontFamily: "'Jost', sans-serif",
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '14px', fontWeight: isToday ? 500 : 400, color: isToday ? arcColor : C.ink }}>
+                      {DAY_NAMES[dayIdx]}
+                    </span>
+                    <span style={{ fontSize: '12px', color: C.driftwood }}>
+                      {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '12px', color: C.driftwood }}>
+                    {mealCount > 0 ? `${mealCount} meal${mealCount !== 1 ? 's' : ''}` : ''}
+                  </span>
+                </button>
+              )
+            }
+
+            return (
+              <>
+                <div style={{ fontSize: '11px', color: C.driftwood, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>This week</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '16px' }}>
+                  {thisWeekDates.map((date, i) => {
+                    const count = meals.filter(m => m.day_of_week === DOW_KEYS[i]).length
+                    return renderDay(date, count)
+                  })}
+                </div>
+                <div style={{ fontSize: '11px', color: C.driftwood, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>Next week</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {nextWeekDates.map(date => {
+                    const dateStr = toLocalDateStr(date)
+                    const count = moveNextWeekCounts[dateStr] || 0
+                    return renderDay(date, count)
+                  })}
+                </div>
+              </>
+            )
+          })()}
+        </div>
+      </BottomSheet>
 
       {/* ── Recipe Link Sheet (multi-select) ──────────────────────── */}
       {/* ── Recipe Link — full-page overlay (keyboard safe) ────── */}
