@@ -33,6 +33,7 @@ export default function Staples({ appUser }) {
   const [addIngUnit, setAddIngUnit] = useState('')
   const [addCategory, setAddCategory] = useState('other')
   const [saving, setSaving] = useState(false)
+  const [editStaple, setEditStaple] = useState(null)
 
   useEffect(() => {
     if (!appUser?.household_id) return
@@ -62,6 +63,26 @@ export default function Staples({ appUser }) {
       setStaples(recipes.map(r => ({ ...r, primaryIng: ingMap[r.id] || null })))
     }
     setLoading(false)
+  }
+
+  function openEdit(staple) {
+    setEditStaple(staple)
+    setAddName(staple.name || '')
+    setAddIngName(staple.primaryIng?.name || '')
+    setAddIngQty(staple.primaryIng?.quantity || '')
+    setAddIngUnit(staple.primaryIng?.unit || '')
+    setAddCategory(staple.category || 'other')
+    setShowAdd(true)
+  }
+
+  function openAdd() {
+    setEditStaple(null)
+    setAddName('')
+    setAddIngName('')
+    setAddIngQty('')
+    setAddIngUnit('')
+    setAddCategory('other')
+    setShowAdd(true)
   }
 
   async function handleSave() {
@@ -116,6 +137,47 @@ export default function Staples({ appUser }) {
     setSaving(false)
   }
 
+  async function handleUpdate() {
+    if (!addName.trim() || !editStaple || saving) return
+    setSaving(true)
+    try {
+      await supabase.from('recipes').update({
+        name: addName.trim(),
+        category: addCategory,
+      }).eq('id', editStaple.id)
+
+      await supabase.from('ingredients').delete().eq('recipe_id', editStaple.id)
+      if (addIngName.trim()) {
+        const nameLower = addIngName.trim().toLowerCase()
+        let { data: existing } = await supabase.from('pantry_items').select('id')
+          .eq('household_id', appUser.household_id).ilike('name', nameLower).maybeSingle()
+        if (!existing) {
+          const { data: created } = await supabase.from('pantry_items').insert({
+            household_id: appUser.household_id, name: nameLower, default_unit: addIngUnit || 'piece',
+          }).select('id').single()
+          existing = created
+        }
+        await supabase.from('ingredients').insert({
+          recipe_id: editStaple.id,
+          name: addIngName.trim(),
+          quantity: addIngQty.trim() || null,
+          unit: addIngUnit.trim() || null,
+          sort_order: 0,
+          grocery_category: addCategory,
+          pantry_item_id: existing?.id || null,
+        })
+      }
+
+      logActivity({ user: appUser, actionType: 'recipe_edited', targetType: 'recipe', targetId: editStaple.id, targetName: addName.trim(), metadata: { recipe_type: 'quick' } })
+      setShowAdd(false)
+      setEditStaple(null)
+      loadStaples()
+    } catch (err) {
+      console.error('[Roux] Update staple error:', err.message)
+    }
+    setSaving(false)
+  }
+
   const inputStyle = {
     width: '100%', padding: '12px 14px', borderRadius: '10px',
     border: `1px solid ${C.linen}`, fontFamily: "'Jost', sans-serif",
@@ -166,7 +228,7 @@ export default function Staples({ appUser }) {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {staples.map((s, i) => (
-              <div key={s.id} onClick={() => navigate(`/recipe/${s.id}`)} style={{
+              <div key={s.id} onClick={() => openEdit(s)} style={{
                 background: 'white', borderRadius: '14px', padding: '14px 16px',
                 border: `1px solid ${C.linen}`, cursor: 'pointer',
                 opacity: 0, animation: `fadeUp 0.4s ease ${0.03 * i}s forwards`,
@@ -188,7 +250,7 @@ export default function Staples({ appUser }) {
 
       {/* ── FAB: Add a Staple ─────────────────────────────────────── */}
       <button
-        onClick={() => setShowAdd(true)}
+        onClick={openAdd}
         style={{
           position: 'fixed', bottom: 'calc(58px + env(safe-area-inset-bottom, 8px))', right: '20px',
           width: '56px', height: '56px', borderRadius: '50%',
@@ -214,13 +276,13 @@ export default function Staples({ appUser }) {
             background: C.forest, padding: '10px 16px 12px',
             display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
           }}>
-            <button onClick={() => setShowAdd(false)} style={{
+            <button onClick={() => { setShowAdd(false); setEditStaple(null) }} style={{
               background: 'rgba(250,247,242,0.15)', border: 'none', borderRadius: '50%',
               width: 32, height: 32, color: 'white', fontSize: 18, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>‹</button>
             <span style={{ fontFamily: "'Slabo 27px', serif", fontSize: 18, color: 'rgba(250,247,242,0.95)' }}>
-              Add a Staple
+              {editStaple ? 'Edit Staple' : 'Add a Staple'}
             </span>
           </div>
 
@@ -258,14 +320,14 @@ export default function Staples({ appUser }) {
               ))}
             </div>
 
-            <button onClick={handleSave} disabled={!addName.trim() || saving} style={{
+            <button onClick={editStaple ? handleUpdate : handleSave} disabled={!addName.trim() || saving} style={{
               width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
               background: addName.trim() ? arcColor : C.linen,
               color: addName.trim() ? 'white' : C.driftwood,
               cursor: addName.trim() ? 'pointer' : 'default',
               fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
               boxShadow: addName.trim() ? '0 4px 16px rgba(30,55,35,0.25)' : 'none',
-            }}>{saving ? 'Saving...' : 'Save Staple'}</button>
+            }}>{saving ? 'Saving...' : editStaple ? 'Update Staple' : 'Save Staple'}</button>
           </div>
         </div>
       )}
