@@ -67,8 +67,12 @@ export default function Meals({ appUser }) {
   function formatLastDate(dateStr) {
     if (!dateStr) return ''
     const [y, m, d] = dateStr.split('-').map(Number)
+    const today = new Date(); today.setHours(0,0,0,0)
     const date = new Date(y, m - 1, d)
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    if (date.getTime() === today.getTime()) return 'Today'
+    if (date > today) return `Coming ${label}`
+    return `Last ${label}`
   }
 
   function addToWeek(meal) {
@@ -144,7 +148,7 @@ export default function Meals({ appUser }) {
                       </span>
                       {m.lastDate && (
                         <span style={{ fontSize: '12px', color: C.driftwood, fontWeight: 300 }}>
-                          · Last {formatLastDate(m.lastDate)}
+                          · {formatLastDate(m.lastDate)}
                         </span>
                       )}
                     </div>
