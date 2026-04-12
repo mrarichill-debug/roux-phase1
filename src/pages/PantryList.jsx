@@ -56,7 +56,6 @@ export default function PantryList({ appUser }) {
   const [ghostMealsWithoutIngredients, setGhostMealsWithoutIngredients] = useState([])
 
   // Batch multipliers by meal name (case-insensitive)
-  const [batchByMeal, setBatchByMeal] = useState({})
 
   // Trips + stores
   const [stores, setStores] = useState([])
@@ -182,28 +181,6 @@ export default function PantryList({ appUser }) {
         .eq('household_id', appUser.household_id)
         .then(({ data: staples }) => setPantryStaples(staples || []))
 
-      // Batch multipliers from current week's plan
-      ;(async () => {
-        const { data: pm } = await supabase.from('planned_meals')
-          .select('custom_name, batch_multiplier, recipe_id')
-          .eq('meal_plan_id', currentWeekPlan.id)
-          .is('removed_at', null).not('batch_multiplier', 'is', null)
-        const map = {}
-        const recipeIds = []
-        for (const m of (pm || [])) {
-          if (!m.batch_multiplier || m.batch_multiplier === 1) continue
-          if (m.custom_name) map[m.custom_name.toLowerCase()] = m.batch_multiplier
-          if (m.recipe_id) recipeIds.push(m.recipe_id)
-        }
-        if (recipeIds.length) {
-          const { data: recipes } = await supabase.from('recipes').select('id, name').in('id', recipeIds)
-          for (const r of (recipes || [])) {
-            const meal = (pm || []).find(m => m.recipe_id === r.id && m.batch_multiplier !== 1)
-            if (meal && r.name) map[r.name.toLowerCase()] = meal.batch_multiplier
-          }
-        }
-        setBatchByMeal(map)
-      })()
 
       setLoading(false)
     } catch (err) {
@@ -593,12 +570,11 @@ export default function PantryList({ appUser }) {
       if (!key) continue
       if (map.has(key)) {
         const existing = map.get(key)
-        // Combine quantities if units match
-        if (item.quantity && existing.unit === item.unit) {
+        // Sum quantities when units match (or both null)
+        if (item.quantity && (existing.unit || null) === (item.unit || null)) {
           const a = parseFloat(existing.quantity) || 0
           const b = parseFloat(item.quantity) || 0
-          if (a > 0 && b > 0) existing.quantity = String(a + b)
-          else if (!existing.quantity) existing.quantity = item.quantity
+          existing.quantity = String(Math.round((a + b) * 100) / 100)
         } else if (item.quantity && !existing.quantity) {
           existing.quantity = item.quantity
           existing.unit = item.unit
@@ -897,14 +873,9 @@ export default function PantryList({ appUser }) {
                         <span style={{ fontSize: '14px', color: C.ink }}>{sentenceCase(item.name)}</span>
                         {(item.quantity || item.unit) ? (() => {
                           const qtyStr = [item.quantity, item.unit].filter(Boolean).join(' ')
-                          const batchVal = (item.sourceMeals || []).reduce((b, name) => batchByMeal[name.toLowerCase()] || b, null)
                           return (
                             <span style={{ fontSize: '12px', color: C.driftwood }}>
-                              ({qtyStr}{batchVal && batchVal !== 1 && (
-                                <span style={{ fontSize: '9px', fontWeight: 600, color: arcColor, marginLeft: '2px' }}>
-                                  {batchVal === 0.5 ? '×½' : batchVal === 1.5 ? '×1½' : `×${batchVal}`}
-                                </span>
-                              )})
+                              ({qtyStr})
                             </span>
                           )
                         })() : item.ids?.length > 1 ? (

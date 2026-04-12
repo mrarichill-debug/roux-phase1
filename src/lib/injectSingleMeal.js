@@ -94,30 +94,45 @@ export async function injectSingleMeal({ mealId, mealName, batchMultiplier, plan
     const listId = await getOrCreateShoppingList(planId, householdId)
     if (!listId) return { count: 0 }
 
-    // Check existing items to avoid duplicates
+    // Fetch existing items so we can sum quantities for duplicates
     const { data: existingItems } = await supabase
       .from('shopping_list_items')
-      .select('name')
+      .select('id, name, quantity, unit')
       .eq('shopping_list_id', listId)
       .eq('status', 'active')
-    const existingNames = new Set((existingItems || []).map(i => i.name.toLowerCase()))
+    const existingByName = new Map((existingItems || []).map(i => [i.name.toLowerCase().trim(), i]))
 
     const multiplier = batchMultiplier || 1
     const displayName = mealName || 'Meal'
     const newItems = []
+    const updates = []
     for (const ing of ingredients) {
       if (!ing.name?.trim()) continue
-      if (existingNames.has(ing.name.trim().toLowerCase())) continue
-      existingNames.add(ing.name.trim().toLowerCase())
-
+      const nameLower = ing.name.trim().toLowerCase()
       const rawUnit = ing.unit?.trim() || null
       const unit = rawUnit === 'piece' ? null : rawUnit
+      const scaledQty = multiplyQuantity(ing.quantity, multiplier)
+
+      const existing = existingByName.get(nameLower)
+      if (existing) {
+        // Sum quantities when units match (or both null)
+        if (scaledQty && (existing.unit || null) === (unit || null)) {
+          const a = parseFloat(existing.quantity) || 0
+          const b = parseFloat(scaledQty) || 0
+          if (a > 0 && b > 0) {
+            updates.push({ id: existing.id, quantity: toFriendly(a + b) })
+            existing.quantity = toFriendly(a + b)
+          }
+        }
+        continue
+      }
+      existingByName.set(nameLower, { id: null, name: ing.name.trim(), quantity: scaledQty, unit })
 
       newItems.push({
         shopping_list_id: listId,
         household_id: householdId,
         name: ing.name.trim(),
-        quantity: multiplyQuantity(ing.quantity, multiplier),
+        quantity: scaledQty,
         unit,
         item_type: 'recipe',
         status: 'active',
@@ -130,8 +145,11 @@ export async function injectSingleMeal({ mealId, mealName, batchMultiplier, plan
     if (newItems.length > 0) {
       await supabase.from('shopping_list_items').insert(newItems)
     }
+    for (const u of updates) {
+      await supabase.from('shopping_list_items').update({ quantity: u.quantity }).eq('id', u.id)
+    }
 
-    return { count: newItems.length }
+    return { count: newItems.length + updates.length }
   } catch (err) {
     console.error('[injectSingleMeal] Error:', err.message)
     return { count: 0 }
