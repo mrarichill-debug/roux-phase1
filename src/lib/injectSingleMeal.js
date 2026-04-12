@@ -41,7 +41,7 @@ function toFriendly(val) {
   return String(Math.round(val * 100) / 100)
 }
 
-export async function injectSingleMeal({ mealId, mealName, batchMultiplier, planId, householdId }) {
+export async function injectSingleMeal({ mealId, mealName, batchMultiplier, planId, householdId, legacyRecipeId }) {
   if (!mealId || !planId || !householdId) return { count: 0 }
 
   try {
@@ -51,9 +51,14 @@ export async function injectSingleMeal({ mealId, mealName, batchMultiplier, plan
       .select('recipe_id')
       .eq('planned_meal_id', mealId)
 
-    if (!pmrRows?.length) return { count: 0 }
+    let recipeIds = (pmrRows || []).map(r => r.recipe_id)
 
-    const recipeIds = pmrRows.map(r => r.recipe_id)
+    // Fall back to legacy recipe_id on planned_meals (from Sage match)
+    if (!recipeIds.length && legacyRecipeId) {
+      recipeIds = [legacyRecipeId]
+    }
+
+    if (!recipeIds.length) return { count: 0 }
 
     // Get recipe names for display
     const { data: recipes } = await supabase

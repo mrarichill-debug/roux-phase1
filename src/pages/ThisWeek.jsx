@@ -618,6 +618,7 @@ export default function ThisWeek({ appUser }) {
             batchMultiplier: addBatchMultiplier,
             planId: mpId,
             householdId: appUser.household_id,
+            legacyRecipeId: data.recipe_id || null,
           })
         }
       }
@@ -822,6 +823,7 @@ export default function ThisWeek({ appUser }) {
         batchMultiplier: meal?.batch_multiplier || 1,
         planId,
         householdId: appUser.household_id,
+        legacyRecipeId: recipeId || meal?.recipe_id || null,
       })
     }
     // Update sage_meal_preferences — recipe now preferred
@@ -907,6 +909,7 @@ export default function ThisWeek({ appUser }) {
           batchMultiplier: m.batch_multiplier || 1,
           planId,
           householdId: appUser.household_id,
+          legacyRecipeId: m.recipe_id || null,
         })
       } catch {}
     }

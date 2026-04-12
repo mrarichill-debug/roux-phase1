@@ -166,7 +166,26 @@ export default function PantryList({ appUser }) {
 
       setItems(allItems || [])
 
-      // Load stores, trips, staples, batch multipliers in parallel (household-level)
+      // Cleanup: remove stale items from old weeks (> 2 weeks past)
+      const twoWeeksAgo = new Date(currentMonday)
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
+      const cutoff = twoWeeksAgo.toISOString().split('T')[0]
+      const { data: stalePlans } = await supabase
+        .from('meal_plans').select('id')
+        .eq('household_id', appUser.household_id)
+        .lt('week_start_date', cutoff)
+      if (stalePlans?.length) {
+        const stalePlanIds = stalePlans.map(p => p.id)
+        const { data: staleLists } = await supabase
+          .from('shopping_lists').select('id').in('meal_plan_id', stalePlanIds)
+        if (staleLists?.length) {
+          const staleListIds = staleLists.map(l => l.id)
+          await supabase.from('shopping_list_items').delete()
+            .in('shopping_list_id', staleListIds).eq('status', 'active')
+        }
+      }
+
+      // Load stores, trips, staples in parallel (household-level)
       supabase.from('grocery_stores').select('id, name, is_primary, sort_order').eq('household_id', appUser.household_id).order('sort_order')
         .then(({ data }) => setStores(data || []))
       supabase.from('shopping_trips').select('id, name, store_name, status, companion_trip_id, is_companion')
@@ -558,7 +577,7 @@ export default function PantryList({ appUser }) {
   const stapleMap = new Map(pantryStaples.map(s => [(s.name || '').toLowerCase().trim(), s]))
   // Active manifest items: not completed-trip, not have_it_this_week — includes staples inline
   const manifestItems = items.filter(i => i.status === 'active' && !completedTripIds.has(i.assigned_trip_id) && !i.have_it_this_week)
-  // "Already have this week" section: have_it_this_week = true
+  // "Already have it" section: have_it_this_week = true
   const haveThisWeekItems = items.filter(i => i.status === 'active' && i.have_it_this_week)
   const purchasedItems = items.filter(i => i.status === 'purchased')
 
@@ -958,7 +977,7 @@ export default function PantryList({ appUser }) {
             fontFamily: "'Jost', sans-serif",
           }}>
             <span style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', color: C.driftwood }}>
-              Already have this week ({haveThisWeekItems.length})
+              Already have it ({haveThisWeekItems.length})
             </span>
             <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, transform: haveThisWeekExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }}>
               <path d="m6 9 6 6 6-6" />
