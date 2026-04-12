@@ -317,17 +317,21 @@ export default function RecipeLibrary({ appUser }) {
       <TopBar />
 
       {/* Sub-tab strip */}
-      <div style={{ display: 'flex', gap: '8px', padding: '12px 22px 8px' }}>
-        <button style={{
-          padding: '7px 18px', borderRadius: '20px', fontSize: '13px', fontWeight: 500,
-          border: 'none', background: arcColor, color: 'white',
-          cursor: 'default', fontFamily: "'Jost', sans-serif",
-        }}>Recipes</button>
-        <button onClick={() => navigate('/meals/history')} style={{
-          padding: '7px 18px', borderRadius: '20px', fontSize: '13px', fontWeight: 400,
-          border: `1px solid ${C.linen}`, background: 'white', color: C.ink,
-          cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-        }}>Meals</button>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', margin: '0 22px' }}>
+        {[['Recipes', '/meals/recipes'], ['Meals', '/meals/history']].map(([label, path]) => {
+          const active = label === 'Recipes'
+          return (
+            <button key={label} onClick={() => !active && navigate(path)} style={{
+              padding: '14px', textAlign: 'center',
+              fontFamily: "'Jost', sans-serif", fontSize: '12px',
+              fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase',
+              color: active ? arcColor : C.driftwood,
+              cursor: active ? 'default' : 'pointer', border: 'none', background: 'none',
+              borderBottom: active ? `2px solid ${arcColor}` : '2px solid transparent',
+              transition: 'color 0.2s cubic-bezier(0.22,1,0.36,1), border-color 0.2s cubic-bezier(0.22,1,0.36,1)',
+            }}>{label}</button>
+          )
+        })}
       </div>
 
       {/* ── Search + filter ─────────────────────────────────────────── */}
