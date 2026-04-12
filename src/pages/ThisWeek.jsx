@@ -19,6 +19,7 @@ import TopBar from '../components/TopBar'
 import SageNudgeCard from '../components/SageNudgeCard'
 import BottomSheet from '../components/BottomSheet'
 import BottomNav from '../components/BottomNav'
+import AddMealFlow from '../components/AddMealFlow'
 import { useArc } from '../context/ArcContext'
 
 const C = {
@@ -59,17 +60,10 @@ export default function ThisWeek({ appUser }) {
   // Add sheet state
   const [addSheetOpen, setAddSheetOpen] = useState(false)
   const [addSheetDate, setAddSheetDate] = useState(null) // Date object
-  const [addInput, setAddInput] = useState('')
-  const [addMealType, setAddMealType] = useState('dinner') // meal time: breakfast/lunch/dinner/snack
-  const [addMealCategory, setAddMealCategory] = useState(null) // null | 'other' | 'leftovers' | 'eating_out'
-  const [recipeSuggestions, setRecipeSuggestions] = useState([])
-  const [selectedRecipe, setSelectedRecipe] = useState(null)
-  const [adding, setAdding] = useState(false)
-  const [addBatchMultiplier, setAddBatchMultiplier] = useState(1.0)
+  const [addInput, setAddInput] = useState('') // shared: read by link sheet for meal name display
+  const [addSheetPrefill, setAddSheetPrefill] = useState(null)
   const [addSheetRecipes, setAddSheetRecipes] = useState([]) // [{ recipe_id, recipe_name }]
   const [addSheetLinkOpen, setAddSheetLinkOpen] = useState(false) // link sheet opened from add flow
-  const [addEatingOutCost, setAddEatingOutCost] = useState('')
-  const debounceRef = useRef(null)
 
   // Calendar events
   const [calendarEvents, setCalendarEvents] = useState([])
@@ -122,17 +116,8 @@ export default function ThisWeek({ appUser }) {
   const [touchStart, setTouchStart] = useState(null)
 
   // Repeat days for breakfast/snack
-  const [repeatDays, setRepeatDays] = useState(new Set())
-  const [showRepeatPicker, setShowRepeatPicker] = useState(false)
-
-  // Leftovers source
-  const [recentMeals, setRecentMeals] = useState([])
-  const [selectedSourceMeal, setSelectedSourceMeal] = useState(null)
-  const [leftoversFreeText, setLeftoversFreeText] = useState('')
-
-  // Family member tagging
+  // Family member tagging (shared with edit sheet)
   const [familyMembers, setFamilyMembers] = useState([])
-  const [selectedMembers, setSelectedMembers] = useState(new Set())
 
   // Tooltips
   const [mealsVsRecipesDismissed, setMealsVsRecipesDismissed] = useState(() => hasSeenTooltip(appUser, 'meals_vs_recipes'))
@@ -352,52 +337,7 @@ export default function ThisWeek({ appUser }) {
     return data.id
   }
 
-  // Reset repeat days when meal time changes
-  useEffect(() => {
-    setRepeatDays(new Set())
-    setShowRepeatPicker(addMealType === 'breakfast' || addMealType === 'snack')
-  }, [addMealType])
 
-  // Reset category-specific state when category changes
-  useEffect(() => {
-    setSelectedSourceMeal(null)
-    setLeftoversFreeText('')
-  }, [addMealCategory])
-
-  // Load recent meals when leftovers selected
-  useEffect(() => {
-    if (addMealCategory !== 'leftovers' || !appUser?.household_id) return
-    const twoWeeksAgo = new Date()
-    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
-    supabase.from('planned_meals')
-      .select('id, custom_name, planned_date, meal_type')
-      .eq('household_id', appUser.household_id)
-      .neq('meal_type', 'leftovers').neq('meal_type', 'eating_out')
-      .not('custom_name', 'ilike', 'Leftovers%')
-      .is('removed_at', null)
-      .gte('planned_date', twoWeeksAgo.toISOString().split('T')[0])
-      .order('planned_date', { ascending: false })
-      .limit(15)
-      .then(({ data }) => {
-        const seen = new Set()
-        setRecentMeals((data ?? []).filter(m => {
-          if (!m.custom_name || seen.has(m.custom_name)) return false
-          seen.add(m.custom_name)
-          return true
-        }))
-      })
-  }, [addMealCategory])
-
-  function formatMealDate(dateStr) {
-    if (!dateStr) return ''
-    const today = new Date(); today.setHours(0, 0, 0, 0)
-    const date = new Date(dateStr); date.setHours(0, 0, 0, 0)
-    const diff = Math.floor((today - date) / (1000 * 60 * 60 * 24))
-    if (diff === 0) return 'today'
-    if (diff === 1) return 'yesterday'
-    if (diff < 0) return 'upcoming'
-    return `${diff} days ago`
-  }
 
   // ── Prefill from Meals tab navigation ──────────────────────────
   const prefillHandled = useRef(false)
@@ -415,280 +355,12 @@ export default function ThisWeek({ appUser }) {
   function openAddSheet(date, prefill) {
     setAddSheetDate(date)
     setAddInput('')
-    setAddMealType('dinner')
-    setAddMealCategory(null)
-    setRecipeSuggestions([])
-    setSelectedRecipe(null)
-    setAddBatchMultiplier(1.0)
     setAddSheetRecipes([])
     setAddSheetLinkOpen(false)
-    setAddEatingOutCost('')
-    setRepeatDays(new Set())
-    setShowRepeatPicker(false)
-    setSelectedSourceMeal(null)
-    setLeftoversFreeText('')
-    setRecentMeals([])
-    setSelectedMembers(new Set())
-    if (prefill) {
-      if (prefill.name) setAddInput(prefill.name)
-      if (prefill.mealType) setAddMealType(prefill.mealType)
-    }
+    setAddSheetPrefill(prefill || null)
     setAddSheetOpen(true)
   }
 
-  function handleAddInputChange(val) {
-    setAddInput(val)
-    setSelectedRecipe(null)
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (val.trim().length < 2) { setRecipeSuggestions([]); return }
-    debounceRef.current = setTimeout(async () => {
-      // Query planned_meals history — eating out gets restaurant names, others get regular meals
-      let query = supabase
-        .from('planned_meals')
-        .select('id, custom_name, recipe_id, entry_type, meal_type')
-        .eq('household_id', appUser.household_id)
-        .not('custom_name', 'is', null)
-        .ilike('custom_name', `%${val.trim()}%`)
-        .order('created_at', { ascending: false })
-        .limit(10)
-      if (addMealCategory === 'eating_out') {
-        query = query.eq('entry_type', 'eating_out')
-      } else {
-        query = query.neq('entry_type', 'eating_out')
-      }
-      const { data: historyData } = await query
-      const seen = new Set()
-      const suggestions = (historyData || []).filter(m => {
-        const key = m.custom_name.toLowerCase()
-        if (seen.has(key)) return false
-        seen.add(key)
-        return true
-      }).slice(0, 6).map(m => ({
-        id: m.id,
-        name: m.custom_name,
-        recipe_id: m.recipe_id || null,
-        entry_type: m.entry_type,
-        meal_type: m.meal_type,
-        source: 'history',
-      }))
-      setRecipeSuggestions(suggestions)
-    }, 200)
-  }
-
-  async function checkMealPreference(mealName) {
-    if (!mealName?.trim() || !appUser?.household_id) return
-    const key = mealName.trim().toLowerCase()
-    const { data: pref } = await supabase.from('sage_meal_preferences')
-      .select('recipe_id, no_recipe_needed')
-      .eq('household_id', appUser.household_id)
-      .eq('meal_name', key)
-      .maybeSingle()
-    if (!pref) return
-    if (pref.no_recipe_needed) {
-      setDismissedMeals(prev => new Set([...prev, key]))
-      return
-    }
-    if (pref.recipe_id) {
-      const { data: recipe } = await supabase.from('recipes').select('id, name').eq('id', pref.recipe_id).maybeSingle()
-      if (recipe) {
-        setAddSheetRecipes(prev => {
-          if (prev.some(r => r.recipe_id === recipe.id)) return prev
-          return [{ recipe_id: recipe.id, recipe_name: recipe.name }]
-        })
-      }
-    }
-  }
-
-  function selectRecipeSuggestion(suggestion) {
-    setAddInput(suggestion.name)
-    // Pre-select meal time from history — guard against legacy category values
-    const mealTimes = new Set(['breakfast', 'lunch', 'dinner', 'snack'])
-    const categories = new Set(['other', 'leftovers', 'eating_out'])
-    if (suggestion.meal_type) {
-      if (mealTimes.has(suggestion.meal_type)) setAddMealType(suggestion.meal_type)
-      else if (categories.has(suggestion.meal_type)) setAddMealCategory(suggestion.meal_type)
-    }
-    setRecipeSuggestions([])
-    checkMealPreference(suggestion.name)
-  }
-
-  async function addMeal() {
-    const isLeftovers = addMealCategory === 'leftovers'
-    const leftoversSource = selectedSourceMeal?.custom_name || leftoversFreeText.trim()
-
-    // Leftovers: require a source, not a meal name
-    if (isLeftovers) {
-      if (!leftoversSource || adding) return
-    } else {
-      if (!addInput.trim() || adding) return
-    }
-
-    setAdding(true)
-    try {
-      const mpId = await ensurePlan()
-      if (!mpId) { setAdding(false); return }
-
-      // Leftovers — single row, no recipes, no Sage match, no injection
-      if (isLeftovers) {
-        const dateStr = toLocalDateStr(addSheetDate)
-        const dowKey = DOW_KEYS[addSheetDate.getDay() === 0 ? 6 : addSheetDate.getDay() - 1]
-        const customName = `Leftovers — ${leftoversSource}`
-
-        const { data, error } = await supabase.from('planned_meals').insert({
-          household_id: appUser.household_id,
-          meal_plan_id: mpId,
-          day_of_week: dowKey,
-          meal_type: addMealType,
-          planned_date: dateStr,
-          custom_name: customName,
-          recipe_id: null,
-          entry_type: 'ghost',
-          slot_type: 'note',
-          status: 'planned',
-          sort_order: meals.filter(m => m.day_of_week === dowKey).length,
-          batch_multiplier: 1,
-          source_meal_id: selectedSourceMeal?.id || null,
-          source_meal_name: leftoversSource,
-        }).select('*').single()
-
-        if (error) throw error
-        // Write member tags if any
-        if (selectedMembers.size > 0) {
-          await supabase.from('planned_meal_members').insert(
-            Array.from(selectedMembers).map(name => ({ household_id: appUser.household_id, planned_meal_id: data.id, member_name: name }))
-          )
-        }
-        const members = Array.from(selectedMembers)
-        setMeals(prev => [...prev, { ...data, linkedRecipes: [], recipes: null, members }])
-        setAddSheetOpen(false)
-        showToast(`Added ${customName}`)
-        logActivity({ user: appUser, actionType: 'meal_added_to_week', targetType: 'meal', targetId: data.id, targetName: customName, metadata: { entry_type: 'leftovers' } })
-        if (showHint || !appUser.has_planned_first_meal) {
-          setShowHint(false)
-          supabase.from('users').update({ has_planned_first_meal: true }).eq('id', appUser.id)
-        }
-        setAdding(false)
-        return
-      }
-
-      const isEatingOut = addMealCategory === 'eating_out'
-      const hasRecipes = !isEatingOut && addSheetRecipes.length > 0
-      const eatingOutCost = isEatingOut && addEatingOutCost.trim() ? parseFloat(addEatingOutCost.replace(/[^0-9.]/g, '')) : null
-
-      // Build list of dates: current day + any repeat days
-      const datesToCreate = [addSheetDate]
-      if (repeatDays.size > 0) {
-        for (const dowIdx of repeatDays) {
-          const repeatDate = new Date(weekDates[dowIdx])
-          const currentDateStr = toLocalDateStr(addSheetDate)
-          const repeatDateStr = toLocalDateStr(repeatDate)
-          if (repeatDateStr !== currentDateStr) datesToCreate.push(repeatDate)
-        }
-      }
-
-      const allEnriched = []
-      let firstData = null
-
-      for (const targetDate of datesToCreate) {
-        const dateStr = toLocalDateStr(targetDate)
-        const dowKey = DOW_KEYS[targetDate.getDay() === 0 ? 6 : targetDate.getDay() - 1]
-
-        const { data, error } = await supabase.from('planned_meals').insert({
-          household_id: appUser.household_id,
-          meal_plan_id: mpId,
-          day_of_week: dowKey,
-          meal_type: addMealType,
-          planned_date: dateStr,
-          custom_name: addInput.trim(),
-          recipe_id: null,
-          entry_type: isEatingOut ? 'eating_out' : hasRecipes ? 'linked' : 'ghost',
-          slot_type: isEatingOut ? 'note' : hasRecipes ? 'recipe' : 'note',
-          status: 'planned',
-          sort_order: meals.filter(m => m.day_of_week === dowKey).length,
-          batch_multiplier: isEatingOut ? 1 : addBatchMultiplier,
-          previous_batch_multiplier: isEatingOut ? 1 : addBatchMultiplier,
-          eating_out_cost: eatingOutCost && !isNaN(eatingOutCost) ? eatingOutCost : null,
-        }).select('*').single()
-
-        if (error) throw error
-        if (!firstData) firstData = data
-
-        // Write linked recipes to junction table for each row
-        if (hasRecipes) {
-          await supabase.from('planned_meal_recipes').insert(
-            addSheetRecipes.map((r, i) => ({ planned_meal_id: data.id, recipe_id: r.recipe_id, sort_order: i }))
-          )
-        }
-
-        // Write member tags for each row
-        if (selectedMembers.size > 0) {
-          await supabase.from('planned_meal_members').insert(
-            Array.from(selectedMembers).map(name => ({ household_id: appUser.household_id, planned_meal_id: data.id, member_name: name }))
-          )
-        }
-
-        const members = Array.from(selectedMembers)
-        allEnriched.push({ ...data, linkedRecipes: hasRecipes ? [...addSheetRecipes] : [], recipes: null, members })
-
-        // Fire Sage meal match for ghost entries (skip eating out) — only first row
-        if (!hasRecipes && !isEatingOut && data === firstData) {
-          sageMealMatch({ mealId: data.id, mealName: addInput.trim(), householdId: appUser.household_id })
-        }
-
-        // Auto-inject if shopping list already built and recipes linked
-        if (hasRecipes && shoppingInjected && mpId) {
-          injectSingleMeal({
-            mealId: data.id,
-            mealName: addInput.trim(),
-            batchMultiplier: addBatchMultiplier,
-            planId: mpId,
-            householdId: appUser.household_id,
-            legacyRecipeId: data.recipe_id || null,
-          })
-        }
-      }
-
-      // Write meal preference if recipes were linked during add
-      if (hasRecipes && addInput.trim()) {
-        const key = addInput.trim().toLowerCase()
-        console.log('[Roux] PREF WRITE (addMeal):', { key, recipe_id: addSheetRecipes[0].recipe_id, household_id: appUser.household_id })
-        supabase.from('sage_meal_preferences').upsert({
-          household_id: appUser.household_id,
-          meal_name: key,
-          no_recipe_needed: false,
-          recipe_id: addSheetRecipes[0].recipe_id,
-        }, { onConflict: 'household_id,meal_name' }).then(({ data, error }) => {
-          console.log('[Roux] PREF WRITE (addMeal) result:', { data, error: error?.message })
-        })
-        setDismissedMeals(prev => { const next = new Set(prev); next.delete(key); return next })
-      }
-
-      setMeals(prev => [...prev, ...allEnriched])
-      setAddSheetOpen(false)
-      const dayCount = datesToCreate.length
-      showToast(dayCount > 1 ? `Added ${addInput.trim()} to ${dayCount} days` : `Added ${addInput.trim()}`)
-
-      logActivity({
-        user: appUser, actionType: 'meal_added_to_week', targetType: 'meal',
-        targetId: firstData.id, targetName: addInput.trim(),
-        metadata: { day_count: dayCount, entry_type: isEatingOut ? 'eating_out' : hasRecipes ? 'linked' : 'ghost' },
-      })
-
-      // Dismiss first-time hint and mark user
-      if (showHint || !appUser.has_planned_first_meal) {
-        setShowHint(false)
-        supabase.from('users').update({ has_planned_first_meal: true }).eq('id', appUser.id)
-      }
-
-      // Show first-meal-added tooltip
-      if (!hasSeenTooltip(appUser, 'meal_added_first')) {
-        setMealAddedTip(true)
-      }
-    } catch (err) {
-      console.error('[Menu] Add meal error:', err)
-    }
-    setAdding(false)
-  }
 
   // ── Move meal to another day ────────────────────────────────
   async function openMovePicker(mealId) {
@@ -1821,316 +1493,32 @@ export default function ThisWeek({ appUser }) {
         </div>
       </BottomSheet>
 
-      {/* ── Add Meal Sheet ───────────────────────────────────────── */}
-      {/* ── Add Meal — full-screen overlay ──────────────────────────── */}
-      {addSheetOpen && (
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 200,
-        background: C.cream, overflowY: 'auto',
-        maxWidth: '430px', margin: '0 auto',
-      }}>
-        <TopBar leftAction={{ onClick: () => setAddSheetOpen(false), label: 'Back' }} />
-        <div style={{ padding: '16px 22px 40px' }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
-                {addSheetDate && `${DAY_NAMES[addSheetDate.getDay() === 0 ? 6 : addSheetDate.getDay() - 1]}, ${addSheetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
-              </div>
-
-              {/* Meals vs recipes education tooltip */}
-              {!mealsVsRecipesDismissed && (
-                <div style={{
-                  padding: '12px 14px', marginBottom: '14px', background: 'white',
-                  borderRadius: '10px', borderLeft: `3px solid ${C.sage}`,
-                  border: `1px solid rgba(200,185,160,0.4)`,
-                }}>
-                  <div style={{ fontSize: '13px', color: C.ink, lineHeight: 1.6, marginBottom: '10px' }}>
-                    <span style={{ color: C.sage }}>✦</span> Think of this page as your family's weekly menu. Each day card is that day's menu — add what you're having: "Hamburgers", "Tacos", "Spaghetti". These are menu items, not recipes. Recipes live behind the scenes and power your shopping list. Each menu item can have one or more recipes linked to it — and you choose which recipe to use each time you plan that meal.
-                  </div>
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <button onClick={async () => {
-                      const updated = await dismissTooltip(appUser.id, appUser.dismissed_tooltips, 'meals_vs_recipes')
-                      appUser.dismissed_tooltips = updated
-                      setMealsVsRecipesDismissed(true)
-                    }} style={{
-                      background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                      fontSize: '12px', color: arcColor, fontWeight: 500, fontFamily: "'Jost', sans-serif",
-                    }}>Got it, don't show again</button>
-                    <button onClick={() => setAddSheetOpen(false)} style={{
-                      background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                      fontSize: '12px', color: C.driftwood, fontWeight: 300, fontFamily: "'Jost', sans-serif",
-                    }}>Show me again next time</button>
-                  </div>
-                </div>
-              )}
-
-              {/* Input — hidden for leftovers (source selector replaces it) */}
-              {addMealCategory !== 'leftovers' && (
-              <>
-              <div style={{ position: 'relative', marginBottom: '12px' }}>
-                <input
-                  type="text"
-                  value={addInput}
-                  onChange={e => handleAddInputChange(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') addMeal() }}
-                  onBlur={() => { if (addInput.trim() && !addSheetRecipes.length) checkMealPreference(addInput) }}
-                  placeholder="What are you making?"
-                  autoFocus
-                  style={{
-                    width: '100%', padding: '14px 16px', fontSize: '16px',
-                    fontFamily: "'Jost', sans-serif", fontWeight: 300,
-                    border: `1.5px solid ${C.linen}`, borderRadius: recipeSuggestions.length > 0 ? '0 0 12px 12px' : '12px',
-                    outline: 'none', color: C.ink, boxSizing: 'border-box',
-                  }}
-                />
-                {/* Meal name suggestions — renders above input to avoid keyboard */}
-                {recipeSuggestions.length > 0 && (
-                  <div style={{
-                    position: 'absolute',
-                    bottom: '100%',
-                    left: 0,
-                    right: 0,
-                    background: 'white',
-                    border: `0.5px solid ${C.linen}`,
-                    borderBottom: 'none',
-                    borderRadius: '10px 10px 0 0',
-                    boxShadow: '0 -4px 12px rgba(44,36,23,0.08)',
-                    zIndex: 50,
-                    maxHeight: 200,
-                    overflowY: 'auto',
-                  }}>
-                    {recipeSuggestions.map((r, idx) => (
-                      <div
-                        key={r.id}
-                        onMouseDown={() => selectRecipeSuggestion(r)}
-                        style={{
-                          padding: '12px 14px',
-                          fontSize: 14,
-                          color: C.ink,
-                          borderBottom: idx < recipeSuggestions.length - 1 ? `0.5px solid ${C.linen}` : 'none',
-                          cursor: 'pointer',
-                          fontFamily: "'Jost', sans-serif",
-                        }}
-                      >
-                        {r.name}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              </>
-              )}
-
-              {/* Meal time selector — always one selected */}
-              <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-                {['breakfast', 'lunch', 'dinner', 'snack'].map(mt => (
-                  <button key={mt} onClick={() => setAddMealType(mt)} style={{
-                    flex: 1, padding: '8px', borderRadius: '10px', fontSize: '12px',
-                    border: addMealType === mt ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
-                    background: addMealType === mt ? 'rgba(61,107,79,0.08)' : 'white',
-                    color: addMealType === mt ? arcColor : C.ink,
-                    cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-                    fontWeight: addMealType === mt ? 500 : 400,
-                  }}>{MEAL_TYPE_LABELS[mt]}</button>
-                ))}
-              </div>
-              {/* Category selector — toggleable, none by default */}
-              <div style={{ display: 'flex', gap: '6px', marginBottom: '16px' }}>
-                {['other', 'leftovers', 'eating_out'].map(cat => (
-                  <button key={cat} onClick={() => setAddMealCategory(prev => prev === cat ? null : cat)} style={{
-                    flex: 1, padding: '8px', borderRadius: '10px', fontSize: '12px',
-                    border: addMealCategory === cat ? `1.5px solid ${C.honey}` : `1px solid ${C.linen}`,
-                    background: addMealCategory === cat ? 'rgba(196,154,60,0.08)' : 'white',
-                    color: addMealCategory === cat ? C.honeyDark : C.driftwood,
-                    cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-                    fontWeight: addMealCategory === cat ? 500 : 400,
-                  }}>{MEAL_TYPE_LABELS[cat]}</button>
-                ))}
-              </div>
-
-              {/* Leftovers source selector */}
-              {addMealCategory === 'leftovers' && (
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ fontSize: '11px', color: C.driftwood, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>
-                    What are these leftovers from?
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
-                    {recentMeals.map(meal => (
-                      <button key={meal.id} onClick={() => { setSelectedSourceMeal(meal); setLeftoversFreeText('') }} style={{
-                        padding: '12px 14px', borderRadius: '10px',
-                        border: `0.5px solid ${selectedSourceMeal?.id === meal.id ? arcColor : C.linen}`,
-                        background: selectedSourceMeal?.id === meal.id ? `${arcColor}15` : 'white',
-                        textAlign: 'left', cursor: 'pointer',
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        fontFamily: "'Jost', sans-serif",
-                      }}>
-                        <span style={{ fontSize: '14px', color: C.ink }}>{meal.custom_name}</span>
-                        <span style={{ fontSize: '11px', color: C.driftwood }}>{formatMealDate(meal.planned_date)}</span>
-                      </button>
-                    ))}
-                    {recentMeals.length === 0 && (
-                      <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', padding: '8px 0' }}>No recent meals found</div>
-                    )}
-                  </div>
-                  <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '6px' }}>Don't see it? Type the meal name:</div>
-                  <input type="text" placeholder="e.g. Birthday dinner leftovers" value={leftoversFreeText}
-                    onChange={e => { setLeftoversFreeText(e.target.value); setSelectedSourceMeal(null) }}
-                    style={{
-                      width: '100%', padding: '10px 14px', borderRadius: '10px',
-                      border: `0.5px solid ${C.linen}`, fontSize: '14px',
-                      fontFamily: "'Jost', sans-serif", color: C.ink, background: 'white',
-                      outline: 'none', boxSizing: 'border-box',
-                    }} />
-                </div>
-              )}
-
-              {/* Repeat days picker — auto for breakfast/snack, toggle for lunch */}
-              {(addMealType === 'breakfast' || addMealType === 'snack' || (addMealType === 'lunch' && showRepeatPicker)) && addSheetDate && (
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ fontSize: '11px', color: C.driftwood, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
-                    Repeat this week
-                  </div>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    {weekDates.map((d, i) => {
-                      const isCurrentDay = toLocalDateStr(d) === toLocalDateStr(addSheetDate)
-                      const isSelected = repeatDays.has(i)
-                      return (
-                        <button key={i} onClick={() => {
-                          if (isCurrentDay) return
-                          setRepeatDays(prev => { const next = new Set(prev); if (next.has(i)) next.delete(i); else next.add(i); return next })
-                        }} style={{
-                          flex: 1, padding: '8px 0', borderRadius: '8px',
-                          border: `0.5px solid ${isSelected ? arcColor : C.linen}`,
-                          background: isCurrentDay ? C.linen : isSelected ? arcColor : 'white',
-                          color: isCurrentDay ? C.driftwood : isSelected ? 'white' : C.driftwood,
-                          fontSize: '11px', fontFamily: "'Jost', sans-serif",
-                          cursor: isCurrentDay ? 'default' : 'pointer',
-                          opacity: isCurrentDay ? 0.5 : 1,
-                        }}>
-                          {DAY_ABBR[i].charAt(0)}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-              {addMealType === 'lunch' && !showRepeatPicker && (
-                <button onClick={() => setShowRepeatPicker(true)} style={{
-                  fontSize: '12px', color: arcColor, background: 'none', border: 'none',
-                  padding: '0 0 12px', cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-                }}>+ Repeat this week</button>
-              )}
-
-              {/* Eating out: cost input */}
-              {addMealCategory === 'eating_out' && (
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '6px' }}>Estimated spend? (optional)</div>
-                  <div style={{ position: 'relative' }}>
-                    <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px', color: C.driftwood }}>$</span>
-                    <input type="text" inputMode="decimal" value={addEatingOutCost} onChange={e => setAddEatingOutCost(e.target.value)}
-                      placeholder="0.00" style={{
-                        width: '100%', padding: '12px 14px 12px 28px', fontSize: '15px',
-                        fontFamily: "'Jost', sans-serif", fontWeight: 300,
-                        border: `1.5px solid ${C.linen}`, borderRadius: '12px',
-                        outline: 'none', color: C.ink, boxSizing: 'border-box',
-                      }} />
-                  </div>
-                </div>
-              )}
-
-              {/* Link recipes (optional) — hidden for eating out and leftovers */}
-              {addMealCategory !== 'eating_out' && addMealCategory !== 'leftovers' && (
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '8px' }}>Link a recipe (optional)</div>
-                  {addSheetRecipes.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
-                      {addSheetRecipes.map(lr => (
-                        <span key={lr.recipe_id} style={{
-                          display: 'inline-flex', alignItems: 'center', gap: '4px',
-                          padding: '5px 10px', borderRadius: '8px', fontSize: '12px',
-                          background: 'rgba(61,107,79,0.08)', color: arcColor,
-                          fontFamily: "'Jost', sans-serif", fontWeight: 500,
-                        }}>
-                          {lr.recipe_name}
-                          <button onClick={() => setAddSheetRecipes(prev => prev.filter(r => r.recipe_id !== lr.recipe_id))} style={{
-                            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                            fontSize: '14px', color: C.driftwood, lineHeight: 1, marginLeft: '2px',
-                          }}>×</button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <button onClick={() => { setAddSheetLinkOpen(true); openLinkSheet({ id: '__add_sheet__', custom_name: addInput.trim() || 'New meal', linkedRecipes: addSheetRecipes }) }} style={{
-                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                    fontSize: '12px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 400,
-                  }}>{addSheetRecipes.length > 0 ? '+ Add another recipe' : '+ Link a recipe'}</button>
-                </div>
-              )}
-
-              {/* Batch size — hidden for eating out and leftovers */}
-              {addMealCategory !== 'eating_out' && addMealCategory !== 'leftovers' && (
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '6px' }}>Batch size</div>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    {BATCH_OPTIONS.map(val => (
-                      <button key={val} onClick={() => setAddBatchMultiplier(val)} style={{
-                        flex: 1, padding: '8px', borderRadius: '10px', fontSize: '13px',
-                        border: addBatchMultiplier === val ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
-                        background: addBatchMultiplier === val ? 'rgba(61,107,79,0.08)' : 'white',
-                        color: addBatchMultiplier === val ? arcColor : C.ink,
-                        cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-                        fontWeight: addBatchMultiplier === val ? 600 : 400,
-                      }}>{BATCH_LABELS[val]}</button>
-                  ))}
-                </div>
-              </div>
-              )}
-
-              {/* Member tagging — optional, all meal types */}
-              {familyMembers.length > 0 && (
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ fontSize: '11px', color: C.driftwood, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
-                    For (optional)
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {familyMembers.map(member => {
-                      const firstName = member.name.split(' ')[0]
-                      const isSelected = selectedMembers.has(member.name)
-                      return (
-                        <button key={member.id} onClick={() => {
-                          setSelectedMembers(prev => { const next = new Set(prev); if (next.has(member.name)) next.delete(member.name); else next.add(member.name); return next })
-                        }} style={{
-                          padding: '6px 12px', borderRadius: '20px',
-                          border: `0.5px solid ${isSelected ? arcColor : C.linen}`,
-                          background: isSelected ? `${arcColor}15` : 'white',
-                          color: isSelected ? arcColor : C.driftwood,
-                          fontSize: '12px', fontFamily: "'Jost', sans-serif", cursor: 'pointer',
-                        }}>{firstName}</button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Add button */}
-              {(() => {
-                const canSave = addMealCategory === 'leftovers'
-                  ? !!(selectedSourceMeal || leftoversFreeText.trim())
-                  : !!addInput.trim()
-                return (
-                <button onClick={addMeal} disabled={!canSave || adding} style={{
-                  width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
-                  background: canSave ? arcColor : C.linen,
-                  color: canSave ? 'white' : C.driftwood,
-                  cursor: canSave ? 'pointer' : 'default',
-                  fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
-                  boxShadow: canSave ? '0 4px 16px rgba(30,55,35,0.25)' : 'none',
-                }}>
-                  {adding ? 'Adding...' : 'Add to menu'}
-                </button>
-                )
-              })()}
-            </div>
-      </div>
-      )}
+      {/* ── Add Meal Flow ───────────────────────────────────────── */}
+      <AddMealFlow
+        isOpen={addSheetOpen}
+        date={addSheetDate}
+        prefill={addSheetPrefill}
+        onClose={() => setAddSheetOpen(false)}
+        onMealsAdded={newMeals => setMeals(prev => [...prev, ...newMeals])}
+        appUser={appUser}
+        arcColor={arcColor}
+        weekDates={weekDates}
+        meals={meals}
+        planId={planId}
+        ensurePlan={ensurePlan}
+        shoppingInjected={shoppingInjected}
+        familyMembers={familyMembers}
+        dismissedMeals={dismissedMeals}
+        setDismissedMeals={setDismissedMeals}
+        showToast={showToast}
+        showHint={showHint}
+        setShowHint={setShowHint}
+        addSheetRecipes={addSheetRecipes}
+        setAddSheetRecipes={setAddSheetRecipes}
+        setAddSheetLinkOpen={setAddSheetLinkOpen}
+        openLinkSheet={openLinkSheet}
+        onFirstMealAdded={() => { if (!hasSeenTooltip(appUser, 'meal_added_first')) setMealAddedTip(true) }}
+      />
 
       {/* ── Meal Edit Sheet ──────────────────────────────────────── */}
       {/* ── Meal Edit — full-page overlay (keyboard safe for cost inputs) ── */}
