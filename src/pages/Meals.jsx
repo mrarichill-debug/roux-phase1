@@ -1,9 +1,9 @@
 /**
  * Meals.jsx — Meals history sub-tab.
  * Shows unique meal names from planned_meals with week count.
- * Tab strip at top: [ Recipes ] [ Meals ] — Meals is active here.
+ * Tab strip: [ Meals ] [ Recipes ] [ Staples ]
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { logActivity } from '../lib/activityLog'
@@ -14,7 +14,7 @@ import { useArc } from '../context/ArcContext'
 
 const C = {
   forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', linen: '#E8E0D0',
+  driftwood: '#8C7B6B', linen: '#E8E0D0', honey: '#C49A3C',
 }
 
 const MEAL_TYPE_LABELS = {
@@ -22,47 +22,168 @@ const MEAL_TYPE_LABELS = {
   snack: 'Snack', other: 'Other',
 }
 
+const TYPE_FILTERS = ['Breakfast', 'Lunch', 'Dinner', 'Snack']
+// TODO: upgrade to ingredient-based matching
+const PROTEIN_FILTERS = ['Chicken', 'Beef', 'Pork', 'Fish', 'Vegetarian']
+
 export default function Meals({ appUser }) {
   const navigate = useNavigate()
   const { color: arcColor } = useArc()
   const [meals, setMeals] = useState([])
   const [loading, setLoading] = useState(true)
-  const [selectedMeal, setSelectedMeal] = useState(null) // { name, meal_type }
+  const [selectedMeal, setSelectedMeal] = useState(null)
+
+  // Favorites
+  const [familyMembers, setFamilyMembers] = useState([])
+  const [allFavorites, setAllFavorites] = useState([]) // [{ family_member_id, meal_name }]
+  const [favPickerOpen, setFavPickerOpen] = useState(false)
+  const [favPickerMeal, setFavPickerMeal] = useState(null)
+  const [favPickerSelected, setFavPickerSelected] = useState(new Set())
+
+  // Search + filters
+  const [search, setSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState(null)
+  const [proteinFilter, setProteinFilter] = useState(null)
+  const [showFavsOnly, setShowFavsOnly] = useState(false)
+  const [showNotRecent, setShowNotRecent] = useState(false)
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false)
 
   useEffect(() => {
     if (!appUser?.household_id) return
-    async function load() {
-      const { data } = await supabase
-        .from('planned_meals')
-        .select('custom_name, meal_type, meal_plan_id, planned_date')
-        .eq('household_id', appUser.household_id)
-        .not('custom_name', 'is', null)
-        .is('removed_at', null)
-        .not('meal_type', 'in', '("eating_out","leftovers")')
-        .neq('entry_type', 'eating_out')
-      if (data) {
-        const grouped = {}
-        for (const m of data) {
-          const name = String(m.custom_name).trim()
-          if (!name) continue
-          const lk = name.toLowerCase()
-          if (!grouped[lk]) grouped[lk] = { name, meal_type: m.meal_type || 'dinner', plans: new Set(), dates: new Set(), lastDate: null }
-          if (m.meal_plan_id) grouped[lk].plans.add(m.meal_plan_id)
-          if (m.planned_date) grouped[lk].dates.add(m.planned_date)
-          if (m.planned_date && (!grouped[lk].lastDate || m.planned_date > grouped[lk].lastDate)) {
-            grouped[lk].lastDate = m.planned_date
-            grouped[lk].meal_type = m.meal_type || grouped[lk].meal_type
-          }
-        }
-        const sorted = Object.values(grouped)
-          .map(g => ({ name: g.name, meal_type: g.meal_type, weekCount: g.plans.size || g.dates.size, lastDate: g.lastDate }))
-          .sort((a, b) => a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }))
-        setMeals(sorted)
-      }
-      setLoading(false)
-    }
     load()
+    supabase.from('family_members').select('id, name, is_pet')
+      .eq('household_id', appUser.household_id).eq('is_pet', false).order('name')
+      .then(({ data }) => setFamilyMembers(data ?? []))
+    supabase.from('meal_favorites').select('family_member_id, meal_name')
+      .eq('household_id', appUser.household_id)
+      .then(({ data }) => setAllFavorites(data ?? []))
   }, [appUser?.household_id])
+
+  async function load() {
+    const { data } = await supabase
+      .from('planned_meals')
+      .select('custom_name, meal_type, meal_plan_id, planned_date')
+      .eq('household_id', appUser.household_id)
+      .not('custom_name', 'is', null)
+      .is('removed_at', null)
+      .not('meal_type', 'in', '("eating_out","leftovers")')
+      .neq('entry_type', 'eating_out')
+    if (data) {
+      const grouped = {}
+      for (const m of data) {
+        const name = String(m.custom_name).trim()
+        if (!name) continue
+        const lk = name.toLowerCase()
+        if (!grouped[lk]) grouped[lk] = { name, meal_type: m.meal_type || 'dinner', plans: new Set(), dates: new Set(), lastDate: null }
+        if (m.meal_plan_id) grouped[lk].plans.add(m.meal_plan_id)
+        if (m.planned_date) grouped[lk].dates.add(m.planned_date)
+        if (m.planned_date && (!grouped[lk].lastDate || m.planned_date > grouped[lk].lastDate)) {
+          grouped[lk].lastDate = m.planned_date
+          grouped[lk].meal_type = m.meal_type || grouped[lk].meal_type
+        }
+      }
+      const sorted = Object.values(grouped)
+        .map(g => ({ name: g.name, meal_type: g.meal_type, weekCount: g.plans.size || g.dates.size, lastDate: g.lastDate }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }))
+      setMeals(sorted)
+    }
+    setLoading(false)
+  }
+
+  // Favorites helpers
+  const favsByMeal = useMemo(() => {
+    const map = {}
+    for (const f of allFavorites) {
+      const key = f.meal_name
+      if (!map[key]) map[key] = []
+      map[key].push(f.family_member_id)
+    }
+    return map
+  }, [allFavorites])
+
+  function getMealFavMembers(mealName) {
+    const key = mealName.toLowerCase().trim()
+    const memberIds = favsByMeal[key] || []
+    return familyMembers.filter(m => memberIds.includes(m.id))
+  }
+
+  function openFavPicker(meal) {
+    setFavPickerMeal(meal)
+    const key = meal.name.toLowerCase().trim()
+    const existing = (favsByMeal[key] || [])
+    setFavPickerSelected(new Set(existing))
+    setFavPickerOpen(true)
+  }
+
+  async function toggleFav(memberId) {
+    if (!favPickerMeal || !appUser?.household_id) return
+    const key = favPickerMeal.name.toLowerCase().trim()
+    const next = new Set(favPickerSelected)
+    if (next.has(memberId)) {
+      next.delete(memberId)
+      await supabase.from('meal_favorites').delete()
+        .eq('household_id', appUser.household_id)
+        .eq('family_member_id', memberId)
+        .eq('meal_name', key)
+      setAllFavorites(prev => prev.filter(f => !(f.meal_name === key && f.family_member_id === memberId)))
+    } else {
+      next.add(memberId)
+      await supabase.from('meal_favorites').upsert({
+        household_id: appUser.household_id,
+        family_member_id: memberId,
+        meal_name: key,
+      }, { onConflict: 'household_id,family_member_id,meal_name' })
+      setAllFavorites(prev => [...prev, { family_member_id: memberId, meal_name: key }])
+    }
+    setFavPickerSelected(next)
+  }
+
+  // Filtered meals
+  const hasActiveFilters = !!search.trim() || typeFilter || proteinFilter || showFavsOnly || showNotRecent
+
+  const filteredMeals = useMemo(() => {
+    let result = [...meals]
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      result = result.filter(m => m.name.toLowerCase().includes(q))
+    }
+    if (typeFilter) {
+      const tf = typeFilter.toLowerCase()
+      result = result.filter(m => m.meal_type === tf)
+    }
+    if (proteinFilter) {
+      const pf = proteinFilter.toLowerCase()
+      result = result.filter(m => m.name.toLowerCase().includes(pf))
+    }
+    if (showFavsOnly) {
+      result = result.filter(m => (favsByMeal[m.name.toLowerCase().trim()] || []).length > 0)
+    }
+    if (showNotRecent) {
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      const cutoff = thirtyDaysAgo.toISOString().split('T')[0]
+      result = result.filter(m => !m.lastDate || m.lastDate < cutoff)
+      result.sort((a, b) => (a.lastDate || '').localeCompare(b.lastDate || ''))
+    }
+    return result
+  }, [meals, search, typeFilter, proteinFilter, showFavsOnly, showNotRecent, favsByMeal])
+
+  const filterSummary = useMemo(() => {
+    const parts = []
+    if (typeFilter) parts.push(typeFilter)
+    if (proteinFilter) parts.push(proteinFilter)
+    if (showFavsOnly) parts.push('Favorites')
+    if (showNotRecent) parts.push('Not recent')
+    return parts.length > 0 ? `Filtered by ${parts.join(' + ')}` : ''
+  }, [typeFilter, proteinFilter, showFavsOnly, showNotRecent])
+
+  function clearFilters() {
+    setSearch('')
+    setTypeFilter(null)
+    setProteinFilter(null)
+    setShowFavsOnly(false)
+    setShowNotRecent(false)
+  }
 
   function formatLastDate(dateStr) {
     if (!dateStr) return ''
@@ -80,6 +201,17 @@ export default function Meals({ appUser }) {
     logActivity({ user: appUser, actionType: 'meal_reuse_from_history', targetType: 'meal', targetName: meal.name })
     navigate('/plan', { state: { prefillMeal: meal.name, prefillType: meal.meal_type } })
   }
+
+  const filterPill = (label, active, onClick) => (
+    <button onClick={onClick} style={{
+      padding: '6px 14px', borderRadius: '20px',
+      border: active ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
+      background: active ? 'rgba(61,107,79,0.08)' : 'white',
+      color: active ? arcColor : C.ink,
+      fontFamily: "'Jost', sans-serif", fontSize: '13px',
+      fontWeight: active ? 500 : 400, cursor: 'pointer',
+    }}>{label}</button>
+  )
 
   return (
     <div style={{
@@ -107,37 +239,81 @@ export default function Meals({ appUser }) {
         })}
       </div>
 
+      {/* Search + filter icon */}
+      <div style={{ padding: '8px 18px 10px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ flex: 1, position: 'relative' }}>
+          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: C.driftwood, display: 'flex', alignItems: 'center' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ width: 15, height: 15 }}>
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+          </span>
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search meals…" style={{
+              width: '100%', background: 'white',
+              border: '1px solid rgba(200,185,160,0.55)', borderRadius: '10px',
+              padding: '10px 14px 10px 36px',
+              fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 300,
+              color: C.ink, outline: 'none', boxSizing: 'border-box',
+            }} />
+        </div>
+        <button onClick={() => setFilterSheetOpen(true)} style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          position: 'relative', padding: '6px', flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+            <line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/>
+            <line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/>
+            <line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/>
+            <line x1="1" x2="7" y1="14" y2="14"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="17" x2="23" y1="16" y2="16"/>
+          </svg>
+          {hasActiveFilters && (
+            <span style={{ position: 'absolute', top: '4px', right: '4px', width: '6px', height: '6px', borderRadius: '50%', background: C.honey }} />
+          )}
+        </button>
+      </div>
+      {/* Active filter summary */}
+      {hasActiveFilters && filterSummary && (
+        <button onClick={() => setFilterSheetOpen(true)} style={{
+          display: 'block', width: '100%', textAlign: 'left',
+          padding: '0 22px 8px', background: 'none', border: 'none',
+          cursor: 'pointer', fontFamily: "'Jost', sans-serif",
+          fontSize: '12px', fontWeight: 300, color: C.driftwood,
+        }}>{filterSummary}</button>
+      )}
+
       <div style={{ padding: '8px 22px 0' }}>
         {loading ? (
           <div>
             {[1,2,3,4,5].map(i => <div key={i} className="shimmer-block" style={{ height: '72px', borderRadius: '14px', marginBottom: '10px' }} />)}
           </div>
-        ) : meals.length === 0 ? (
+        ) : filteredMeals.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 20px' }}>
             <div style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic', fontSize: '16px', color: C.driftwood, lineHeight: 1.7 }}>
-              No meals planned yet.
+              {hasActiveFilters ? 'No meals match your filters.' : 'No meals planned yet.'}
             </div>
-            <div style={{ fontSize: '13px', color: C.driftwood, marginTop: '4px' }}>
-              Meals you add to your weekly plan will show up here.
-            </div>
+            {!hasActiveFilters && (
+              <div style={{ fontSize: '13px', color: C.driftwood, marginTop: '4px' }}>
+                Meals you add to your weekly plan will show up here.
+              </div>
+            )}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {meals.map((m, i) => (
-              <button key={i} onClick={() => setSelectedMeal(m)} style={{
-                background: 'white', borderRadius: '14px', padding: '14px 16px',
-                border: `1px solid ${C.linen}`, cursor: 'pointer',
-                textAlign: 'left', width: '100%',
-                opacity: 0, animation: `fadeUp 0.4s ease ${0.03 * i}s forwards`,
-              }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+            {filteredMeals.map((m, i) => {
+              const favMembers = getMealFavMembers(m.name)
+              return (
+                <button key={i} onClick={() => setSelectedMeal(m)} style={{
+                  background: 'white', borderRadius: '14px', padding: '14px 16px',
+                  border: `1px solid ${C.linen}`, cursor: 'pointer',
+                  textAlign: 'left', width: '100%',
+                  opacity: 0, animation: `fadeUp 0.4s ease ${0.03 * Math.min(i, 10)}s forwards`,
+                }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
                       fontFamily: "'Playfair Display', serif", fontSize: '16px',
                       fontWeight: 500, color: C.ink, marginBottom: '6px',
-                    }}>
-                      {m.name}
-                    </div>
+                    }}>{m.name}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       {MEAL_TYPE_LABELS[m.meal_type] && (
                         <span style={{
@@ -156,16 +332,24 @@ export default function Meals({ appUser }) {
                         </span>
                       )}
                     </div>
+                    {favMembers.length > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px' }}>
+                        <span style={{ fontSize: '11px', color: C.honey }}>★</span>
+                        <span style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300 }}>
+                          {favMembers.map(fm => fm.name.split(' ')[0]).join(', ')}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              )
+            })}
           </div>
         )}
       </div>
 
       {/* Tap-to-add bottom sheet */}
-      <BottomSheet isOpen={!!selectedMeal} onClose={() => setSelectedMeal(null)}>
+      <BottomSheet isOpen={!!selectedMeal && !favPickerOpen} onClose={() => setSelectedMeal(null)}>
         <div style={{ padding: '20px 22px 24px' }}>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '16px' }}>
             {selectedMeal?.name}
@@ -177,11 +361,93 @@ export default function Meals({ appUser }) {
               fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
               boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
             }}>Add to this week</button>
+            <button onClick={() => { setSelectedMeal(null); openFavPicker(selectedMeal) }} style={{
+              width: '100%', padding: '12px', borderRadius: '14px',
+              border: `1px solid ${C.linen}`, background: 'white',
+              color: C.ink, cursor: 'pointer',
+              fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 400,
+            }}>★ Mark as favorite</button>
             <button onClick={() => setSelectedMeal(null)} style={{
               width: '100%', padding: '12px', borderRadius: '14px', border: 'none',
               background: 'none', color: C.driftwood, cursor: 'pointer',
               fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 300,
             }}>Close</button>
+          </div>
+        </div>
+      </BottomSheet>
+
+      {/* Favorites member picker */}
+      <BottomSheet isOpen={favPickerOpen} onClose={() => setFavPickerOpen(false)}>
+        <div style={{ padding: '20px 22px 24px' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '4px' }}>
+            {favPickerMeal?.name}
+          </div>
+          <div style={{ fontSize: '12px', color: C.driftwood, marginBottom: '16px' }}>Who loves this meal?</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
+            {familyMembers.map(member => {
+              const isSelected = favPickerSelected.has(member.id)
+              return (
+                <button key={member.id} onClick={() => toggleFav(member.id)} style={{
+                  padding: '8px 16px', borderRadius: '20px',
+                  border: `1px solid ${isSelected ? C.honey : C.linen}`,
+                  background: isSelected ? 'rgba(196,154,60,0.1)' : 'white',
+                  color: isSelected ? C.honey : C.driftwood,
+                  fontSize: '13px', fontFamily: "'Jost', sans-serif", cursor: 'pointer',
+                  fontWeight: isSelected ? 500 : 400,
+                }}>{isSelected ? '★ ' : ''}{member.name.split(' ')[0]}</button>
+              )
+            })}
+          </div>
+          <button onClick={() => setFavPickerOpen(false)} style={{
+            width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
+            background: arcColor, color: 'white', cursor: 'pointer',
+            fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
+          }}>Done</button>
+        </div>
+      </BottomSheet>
+
+      {/* Filter sheet */}
+      <BottomSheet isOpen={filterSheetOpen} onClose={() => setFilterSheetOpen(false)} maxHeight="70vh">
+        <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <div>
+            <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '10px' }}>
+              Meal type
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {TYPE_FILTERS.map(t => filterPill(t, typeFilter === t, () => setTypeFilter(typeFilter === t ? null : t)))}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '10px' }}>
+              {/* TODO: upgrade to ingredient-based matching */}
+              Protein
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {PROTEIN_FILTERS.map(p => filterPill(p, proteinFilter === p, () => setProteinFilter(proteinFilter === p ? null : p)))}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '10px' }}>
+              More
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {filterPill('★ Favorites', showFavsOnly, () => setShowFavsOnly(!showFavsOnly))}
+              {filterPill('Not recent', showNotRecent, () => setShowNotRecent(!showNotRecent))}
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <button onClick={() => setFilterSheetOpen(false)} style={{
+              width: '100%', padding: '14px', borderRadius: '12px',
+              background: arcColor, color: 'white', border: 'none',
+              fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500, cursor: 'pointer',
+            }}>Show meals</button>
+            {hasActiveFilters && (
+              <button onClick={clearFilters} style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontFamily: "'Jost', sans-serif", fontSize: '12px',
+                color: C.driftwood, fontWeight: 300, padding: '4px',
+              }}>Clear all</button>
+            )}
           </div>
         </div>
       </BottomSheet>
