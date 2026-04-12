@@ -77,7 +77,7 @@ export default function PantryList({ appUser }) {
   const [pantryStaples, setPantryStaples] = useState([]) // household-level staples
   const [haveItExpansion, setHaveItExpansion] = useState(null) // item id showing inline choice
   const [stapleSheetItem, setStapleSheetItem] = useState(null) // item for staple type bottom sheet
-  const [haveThisWeekExpanded, setHaveThisWeekExpanded] = useState(false) // collapsed "already have" section
+  const [haveThisWeekExpanded, setHaveThisWeekExpanded] = useState(true)
 
   // Completed trips this week
   const [completedTrips, setCompletedTrips] = useState([])
