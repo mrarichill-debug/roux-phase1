@@ -38,8 +38,8 @@ const AISLE_SECTIONS = [
   { key: 'frozen',     label: 'Frozen' },
   { key: 'beverages',  label: 'Beverages' },
   { key: 'pantry',     label: 'Pantry & Dry Goods' },
-  { key: 'household',  label: 'Household & Other' },
-  { key: 'other',      label: 'Household & Other' },
+  { key: 'household',  label: 'Home & Other' },
+  { key: 'other',      label: 'Home & Other' },
 ]
 
 // ── Week start helper is now timezone-aware (see dateUtils.js) ────────────────

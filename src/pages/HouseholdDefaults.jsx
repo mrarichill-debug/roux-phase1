@@ -155,7 +155,7 @@ export default function HouseholdDefaults({ appUser }) {
       <TopBar leftAction={{ onClick: () => navigate('/profile'), icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><path d="m15 18-6-6 6-6"/></svg>
       )}} centerContent={
-        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>Household Defaults</span>
+        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>Home Defaults</span>
       } />
 
       {loading ? (

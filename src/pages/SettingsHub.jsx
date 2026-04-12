@@ -104,10 +104,10 @@ export default function SettingsHub({ appUser }) {
   const schemeName = SCHEME_NAMES?.[colorScheme] || 'Garden'
 
   const kitchenRows = [
-    { key: 'household', icon: ICONS.household, title: 'Household', sub: `${householdName || 'Home'}${memberCount ? ` · ${memberCount} member${memberCount !== 1 ? 's' : ''}` : ''}`, route: '/settings/household' },
+    { key: 'household', icon: ICONS.household, title: 'Home', sub: `${householdName || 'Home'}${memberCount ? ` · ${memberCount} member${memberCount !== 1 ? 's' : ''}` : ''}`, route: '/settings/household' },
     { key: 'calendar', icon: ICONS.calendar, title: 'Calendar', sub: calConnected ? 'Google · connected' : 'Not connected', route: '/settings/calendar', dot: calConnected },
     { key: 'appearance', icon: ICONS.appearance, title: 'Appearance', sub: schemeName, route: '/settings/appearance' },
-    { key: 'defaults', icon: ICONS.defaults, title: 'Household defaults', sub: 'Meal types, day settings', route: '/settings/household' },
+    { key: 'defaults', icon: ICONS.defaults, title: 'Home defaults', sub: 'Meal types, day settings', route: '/settings/household' },
   ]
 
   const accountRows = [

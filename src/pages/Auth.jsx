@@ -147,7 +147,7 @@ function SignupForm({ onSignupComplete }) {
         required
       />
       <Field
-        label="Household name"
+        label="Home name"
         type="text"
         placeholder="e.g. Your Family Kitchen"
         value={householdName}
@@ -179,7 +179,7 @@ function SignupForm({ onSignupComplete }) {
         disabled={loading}
         className="w-full py-3 bg-stone-900 text-white text-sm font-medium rounded-lg hover:bg-stone-700 disabled:opacity-50 transition-colors"
       >
-        {loading ? 'Creating your household…' : 'Create account'}
+        {loading ? 'Creating your home…' : 'Create account'}
       </button>
     </form>
   )

@@ -168,7 +168,7 @@ export default function AdminDashboard({ appUser }) {
         }}>
 
           {/* ── Section 1: Household Health ──────────────────────────── */}
-          <Card title="Household Health">
+          <Card title="Home Health">
             <Row label="Total users" value={d.userCount} />
             <Row label="Lauren last active" value={timeAgo(d.lauren?.last_sign_in_at || d.lauren?.updated_at)} />
             <Row label="Arc stage" value={
