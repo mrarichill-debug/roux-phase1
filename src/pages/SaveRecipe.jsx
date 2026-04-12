@@ -628,7 +628,7 @@ export default function SaveRecipe({ appUser }) {
 
   const topBarTitle = step === 'choose' ? 'Save a Recipe'
     : step === 'url' ? 'Paste a URL'
-    : step === 'photo' ? 'Take a Photo'
+    : step === 'photo' ? 'Take or Upload a Photo'
     : 'New Recipe'
 
   // ════════════════════════════════════════════════════════════
@@ -669,10 +669,10 @@ export default function SaveRecipe({ appUser }) {
               </div>
               <div>
                 <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, marginBottom: '4px' }}>
-                  Take a Photo
+                  Take or Upload a Photo
                 </div>
                 <div style={{ fontSize: '13px', opacity: 0.85, fontWeight: 300 }}>
-                  Snap a recipe card or cookbook page
+                  Snap or upload a recipe card, cookbook page, or screenshot
                 </div>
               </div>
             </div>
@@ -837,7 +837,6 @@ export default function SaveRecipe({ appUser }) {
             ref={photoInputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             style={{ display: 'none' }}
             onChange={handlePhotoCaptured}
           />
@@ -936,8 +935,8 @@ export default function SaveRecipe({ appUser }) {
                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                 <circle cx="12" cy="13" r="4"/>
               </svg>
-              <div style={{ fontSize: '15px', fontWeight: 400 }}>Tap to take a photo</div>
-              <div style={{ fontSize: '12px', color: C.driftwood, fontWeight: 300 }}>Recipe card, cookbook page, or handwritten note</div>
+              <div style={{ fontSize: '15px', fontWeight: 400 }}>Tap to take or upload a photo</div>
+              <div style={{ fontSize: '12px', color: C.driftwood, fontWeight: 300 }}>Recipe card, cookbook page, screenshot, or handwritten note</div>
             </button>
           )}
 
