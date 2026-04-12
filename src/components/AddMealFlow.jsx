@@ -158,8 +158,11 @@ export default function AddMealFlow({
       return
     }
     if (pref?.recipe_id) {
-      const { data: recipe } = await supabase.from('recipes').select('id, name').eq('id', pref.recipe_id).maybeSingle()
-      if (recipe) setAddSheetRecipes([{ recipe_id: recipe.id, recipe_name: recipe.name }])
+      const { data: recipe } = await supabase.from('recipes').select('id, name, recipe_type').eq('id', pref.recipe_id).maybeSingle()
+      if (recipe) {
+        setAddSheetRecipes([{ recipe_id: recipe.id, recipe_name: recipe.name }])
+        if (recipe.recipe_type === 'quick') { setStep('details'); return }
+      }
     }
     setStep('confirm')
   }

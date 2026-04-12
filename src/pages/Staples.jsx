@@ -133,7 +133,7 @@ export default function Staples({ appUser }) {
 
       {/* Sub-tab strip */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', margin: '0 22px' }}>
-        {[['Recipes', '/meals/recipes'], ['Meals', '/meals/history'], ['Staples', '/meals/staples']].map(([label, path]) => {
+        {[['Meals', '/meals/history'], ['Recipes', '/meals/recipes'], ['Staples', '/meals/staples']].map(([label, path]) => {
           const active = label === 'Staples'
           return (
             <button key={label} onClick={() => !active && navigate(path)} style={{

@@ -409,7 +409,7 @@ function AuthenticatedApp({ appUser, setAppUser }) {
         <Route path="/week"         element={<Navigate to="/plan" replace />} />
         <Route path="/week-settings" element={<ThisWeekSettings appUser={appUser} />} />
         {/* Meals */}
-        <Route path="/meals"         element={<Navigate to="/meals/recipes" replace />} />
+        <Route path="/meals"         element={<Navigate to="/meals/history" replace />} />
         <Route path="/meals/recipes" element={<RecipeLibrary appUser={appUser} />} />
         <Route path="/meals/history" element={<Meals          appUser={appUser} />} />
         <Route path="/meals/plan"    element={<PlanMeal       appUser={appUser} />} />
