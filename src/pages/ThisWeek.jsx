@@ -542,9 +542,8 @@ export default function ThisWeek({ appUser }) {
     const linkedMealName = meal?.custom_name || recipeName
     if (linkedMealName) {
       const key = linkedMealName.toLowerCase().trim()
-      console.log('[Roux] PREF WRITE (linkRecipe):', { key, recipe_id: recipeId, household_id: appUser.household_id })
       setDismissedMeals(prev => { const next = new Set(prev); next.delete(key); return next })
-      const { data: prefData, error: prefErr } = await supabase
+      await supabase
         .from('sage_meal_preferences')
         .upsert({
           household_id: appUser.household_id,
@@ -552,7 +551,6 @@ export default function ThisWeek({ appUser }) {
           no_recipe_needed: false,
           recipe_id: recipeId,
         }, { onConflict: 'household_id,meal_name' })
-      console.log('[Roux] PREF WRITE (linkRecipe) result:', { data: prefData, error: prefErr?.message })
     }
     // Show first-recipe-linked tooltip
     if (!hasSeenTooltip(appUser, 'recipe_linked_first')) {
@@ -590,16 +588,14 @@ export default function ThisWeek({ appUser }) {
     // Persist keep-as-is preference
     if (mealName) {
       const key = mealName.toLowerCase().trim()
-      console.log('[Roux] PREF WRITE (keepAsIs):', { key, household_id: appUser.household_id })
       setDismissedMeals(prev => new Set([...prev, key]))
-      const { data: kasData, error: kasErr } = await supabase
+      await supabase
         .from('sage_meal_preferences')
         .upsert({
           household_id: appUser.household_id,
           meal_name: key,
           no_recipe_needed: true,
         }, { onConflict: 'household_id,meal_name' })
-      console.log('[Roux] PREF WRITE (keepAsIs) result:', { data: kasData, error: kasErr?.message })
     }
   }
 

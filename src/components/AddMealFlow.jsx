@@ -49,6 +49,10 @@ export default function AddMealFlow({
   const [leftoversFreeText, setLeftoversFreeText] = useState('')
   const [selectedMembers, setSelectedMembers] = useState(new Set())
   const [noRecipeNeeded, setNoRecipeNeeded] = useState(false)
+  const [linkedRecipes, setLinkedRecipes] = useState([])
+
+  // Sync internal linkedRecipes from parent prop (link sheet writes to parent)
+  useEffect(() => { setLinkedRecipes(addSheetRecipes) }, [addSheetRecipes])
 
   useEffect(() => {
     if (!isOpen) return
@@ -160,7 +164,9 @@ export default function AddMealFlow({
     if (pref?.recipe_id) {
       const { data: recipe } = await supabase.from('recipes').select('id, name, recipe_type').eq('id', pref.recipe_id).maybeSingle()
       if (recipe) {
-        setAddSheetRecipes([{ recipe_id: recipe.id, recipe_name: recipe.name }])
+        const linked = [{ recipe_id: recipe.id, recipe_name: recipe.name }]
+        setLinkedRecipes(linked)
+        setAddSheetRecipes(linked)
         if (recipe.recipe_type === 'quick') { setStep('details'); return }
       }
     }
@@ -208,7 +214,7 @@ export default function AddMealFlow({
       }
 
       const isEatingOut = addMealCategory === 'eating_out'
-      const hasRecipes = !isEatingOut && addSheetRecipes.length > 0
+      const hasRecipes = !isEatingOut && linkedRecipes.length > 0
       const eatingOutCost = isEatingOut && addEatingOutCost.trim() ? parseFloat(addEatingOutCost.replace(/[^0-9.]/g, '')) : null
       const datesToCreate = [date]
       if (repeatDays.size > 0) {
@@ -235,15 +241,15 @@ export default function AddMealFlow({
         }).select('*').single()
         if (error) throw error
         if (!firstData) firstData = data
-        if (hasRecipes) await supabase.from('planned_meal_recipes').insert(addSheetRecipes.map((r, i) => ({ planned_meal_id: data.id, recipe_id: r.recipe_id, sort_order: i })))
+        if (hasRecipes) await supabase.from('planned_meal_recipes').insert(linkedRecipes.map((r, i) => ({ planned_meal_id: data.id, recipe_id: r.recipe_id, sort_order: i })))
         if (selectedMembers.size > 0) await supabase.from('planned_meal_members').insert(Array.from(selectedMembers).map(n => ({ household_id: appUser.household_id, planned_meal_id: data.id, member_name: n })))
-        allEnriched.push({ ...data, linkedRecipes: hasRecipes ? [...addSheetRecipes] : [], recipes: null, members: Array.from(selectedMembers) })
+        allEnriched.push({ ...data, linkedRecipes: hasRecipes ? [...linkedRecipes] : [], recipes: null, members: Array.from(selectedMembers) })
         if (!hasRecipes && !isEatingOut && data === firstData) sageMealMatch({ mealId: data.id, mealName: addInput.trim(), householdId: appUser.household_id })
         if (hasRecipes && shoppingInjected && mpId) injectSingleMeal({ mealId: data.id, mealName: addInput.trim(), batchMultiplier: addBatchMultiplier, planId: mpId, householdId: appUser.household_id, legacyRecipeId: data.recipe_id || null })
       }
       if (hasRecipes && addInput.trim()) {
         const key = addInput.trim().toLowerCase()
-        supabase.from('sage_meal_preferences').upsert({ household_id: appUser.household_id, meal_name: key, no_recipe_needed: false, recipe_id: addSheetRecipes[0].recipe_id }, { onConflict: 'household_id,meal_name' })
+        supabase.from('sage_meal_preferences').upsert({ household_id: appUser.household_id, meal_name: key, no_recipe_needed: false, recipe_id: linkedRecipes[0].recipe_id }, { onConflict: 'household_id,meal_name' })
         setDismissedMeals(prev => { const next = new Set(prev); next.delete(key); return next })
       }
       onMealsAdded(allEnriched)
@@ -422,11 +428,11 @@ export default function AddMealFlow({
       <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '4px' }}>{addInput}</div>
       <div style={{ fontSize: '12px', color: C.driftwood, marginBottom: '20px' }}>{MEAL_TYPE_LABELS[addMealType]} · {dateLabel}</div>
 
-      {addSheetRecipes.length > 0 ? (
+      {linkedRecipes.length > 0 ? (
         <div style={{ marginBottom: '20px' }}>
           {sectionLabel('Linked recipe')}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
-            {addSheetRecipes.map(lr => (
+            {linkedRecipes.map(lr => (
               <span key={lr.recipe_id} style={{
                 display: 'inline-flex', alignItems: 'center', gap: '4px',
                 padding: '6px 12px', borderRadius: '8px', fontSize: '13px',
@@ -434,14 +440,14 @@ export default function AddMealFlow({
                 fontFamily: "'Jost', sans-serif", fontWeight: 500,
               }}>
                 {lr.recipe_name}
-                <button onClick={() => setAddSheetRecipes(prev => prev.filter(r => r.recipe_id !== lr.recipe_id))} style={{
+                <button onClick={() => { const next = linkedRecipes.filter(r => r.recipe_id !== lr.recipe_id); setLinkedRecipes(next); setAddSheetRecipes(next) }} style={{
                   background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                   fontSize: '14px', color: C.driftwood, lineHeight: 1, marginLeft: '2px',
                 }}>×</button>
               </span>
             ))}
           </div>
-          <button onClick={() => { setAddSheetLinkOpen(true); openLinkSheet({ id: '__add_sheet__', custom_name: addInput.trim(), linkedRecipes: addSheetRecipes }) }} style={{
+          <button onClick={() => { setAddSheetLinkOpen(true); openLinkSheet({ id: '__add_sheet__', custom_name: addInput.trim(), linkedRecipes }) }} style={{
             background: 'none', border: 'none', cursor: 'pointer', padding: 0,
             fontSize: '12px', color: C.driftwood, fontFamily: "'Jost', sans-serif",
           }}>Change link</button>
@@ -449,7 +455,7 @@ export default function AddMealFlow({
       ) : (
         <div style={{ marginBottom: '20px' }}>
           <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', marginBottom: '8px' }}>No recipe linked</div>
-          <button onClick={() => { setAddSheetLinkOpen(true); openLinkSheet({ id: '__add_sheet__', custom_name: addInput.trim(), linkedRecipes: addSheetRecipes }) }} style={{
+          <button onClick={() => { setAddSheetLinkOpen(true); openLinkSheet({ id: '__add_sheet__', custom_name: addInput.trim(), linkedRecipes }) }} style={{
             background: 'none', border: 'none', cursor: 'pointer', padding: 0,
             fontSize: '12px', color: arcColor, fontFamily: "'Jost', sans-serif",
           }}>+ Link a recipe</button>
