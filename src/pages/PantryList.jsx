@@ -39,6 +39,8 @@ export default function PantryList({ appUser }) {
   const navigate = useNavigate()
   const tz = appUser?.timezone || 'America/Chicago'
 
+  const [shopTab, setShopTab] = useState('items') // 'items' | 'on-hand' | 'trips'
+
   const [selectedMealPlanId, setSelectedMealPlanId] = useState(null)
   const [noMealPlan, setNoMealPlan] = useState(false)
 
@@ -722,6 +724,24 @@ export default function PantryList({ appUser }) {
       }}>
       <TopBar />
 
+      {/* Sub-tab strip */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', margin: '0 22px' }}>
+        {[['Items to Buy', 'items'], ['On Hand', 'on-hand'], ['Trips', 'trips']].map(([label, key]) => {
+          const active = shopTab === key
+          return (
+            <button key={key} onClick={() => setShopTab(key)} style={{
+              padding: '14px', textAlign: 'center',
+              fontFamily: "'Jost', sans-serif", fontSize: '12px',
+              fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase',
+              color: active ? arcColor : C.driftwood,
+              cursor: active ? 'default' : 'pointer', border: 'none', background: 'none',
+              borderBottom: active ? `2px solid ${arcColor}` : '2px solid transparent',
+              transition: 'color 0.2s cubic-bezier(0.22,1,0.36,1), border-color 0.2s cubic-bezier(0.22,1,0.36,1)',
+            }}>{label}</button>
+          )
+        })}
+      </div>
+
       {/* Pull-to-refresh indicator */}
       {(pullDistance > 0 || pullRefreshing) && (
         <div style={{
@@ -740,6 +760,8 @@ export default function PantryList({ appUser }) {
       )}
 
 
+      {/* ═══ ITEMS TO BUY TAB ═══ */}
+      {shopTab === 'items' && <>
       {/* View Pantry link */}
       <div style={{ padding: '8px 22px 0', display: 'flex', justifyContent: 'flex-end' }}>
         <button onClick={() => navigate('/pantry')} style={{
@@ -760,7 +782,12 @@ export default function PantryList({ appUser }) {
         </div>
       )}
 
+      </>}
+
       {!noMealPlan && <>
+
+      {/* ═══ TRIPS TAB — Start a Trip + pending + completed ═══ */}
+      {shopTab === 'trips' && <>
       {/* ── Start a Trip + pending trip cards ─────────────────── */}
       <div style={{ padding: '10px 22px 6px', display: 'flex', gap: '10px', overflowX: 'auto' }}>
         <button onClick={openTripSheet} style={{
@@ -855,7 +882,10 @@ export default function PantryList({ appUser }) {
           </div>
         )
       })()}
+      </>}
 
+      {/* ═══ ITEMS TO BUY — main grouped list ═══ */}
+      {shopTab === 'items' && <>
       <div style={{ padding: '12px 22px' }}>
         {grouped.length === 0 && purchasedItems.length === 0 && (
           <div style={{ textAlign: 'center', padding: '40px 20px' }}>
@@ -968,8 +998,20 @@ export default function PantryList({ appUser }) {
         ))}
       </div>
 
-      {/* ── Already have this week ─────────────────────────────── */}
-      {haveThisWeekItems.length > 0 && (
+      </>}
+
+      {/* ═══ ON HAND TAB ═══ */}
+      {shopTab === 'on-hand' && <>
+      {haveThisWeekItems.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic', fontSize: '16px', color: C.driftwood, lineHeight: 1.7 }}>
+            Nothing on hand yet.
+          </div>
+          <div style={{ fontSize: '13px', color: C.driftwood, marginTop: '4px' }}>
+            Tap "Have it" on an item to move it here.
+          </div>
+        </div>
+      ) : (
         <div style={{ padding: '0 22px 12px' }}>
           <button onClick={() => setHaveThisWeekExpanded(!haveThisWeekExpanded)} style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%',
@@ -1007,6 +1049,11 @@ export default function PantryList({ appUser }) {
         </div>
       )}
 
+      </>}
+
+      {/* ═══ TRIPS TAB — completed ═══ */}
+      {/* (Also add empty state for trips tab) */}
+      {shopTab === 'trips' && <>
       {/* ── Completed trips this week ─────────────────────────────── */}
       {completedTrips.length > 0 && (
         <div style={{ padding: '0 22px 16px' }}>
@@ -1084,7 +1131,10 @@ export default function PantryList({ appUser }) {
         </div>
       )}
 
-      {/* ── Add item ─────────────────────────────────────────────── */}
+      </>}
+
+      {/* ── Add item (Items to Buy tab only) ────────────────────── */}
+      {shopTab === 'items' && <>
       <div style={{
         position: 'fixed', bottom: 'calc(48px + env(safe-area-inset-bottom, 8px))',
         left: '50%', transform: 'translateX(-50%)',
@@ -1124,6 +1174,8 @@ export default function PantryList({ appUser }) {
           }}>+</button>
         </div>
       </div>
+
+      </>}
 
       {/* ── Trip creation sheet — 2-step ────────────────────────── */}
       <BottomSheet isOpen={tripSheetOpen} onClose={() => { setTripSheetOpen(false); setTripSheetStep(1) }} maxHeight="75vh">

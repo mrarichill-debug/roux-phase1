@@ -62,7 +62,7 @@ export default function TopBar({
     if (pathname.startsWith('/plan') || pathname.startsWith('/thisweek') || pathname.startsWith('/week')) return 'Plan.'
     if (pathname.startsWith('/events')) return 'Traditions.'
     if (pathname === '/pantry') return 'Pantry.'
-    if (pathname.startsWith('/shop') || pathname.startsWith('/pantry') || pathname.startsWith('/shopping')) return 'List.'
+    if (pathname.startsWith('/shop') || pathname.startsWith('/pantry') || pathname.startsWith('/shopping')) return 'Lists.'
     if (pathname.startsWith('/settings') || pathname.startsWith('/profile')) return 'Settings.'
     return 'Roux.'
   })()
