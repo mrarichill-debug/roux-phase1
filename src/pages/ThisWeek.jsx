@@ -97,6 +97,7 @@ export default function ThisWeek({ appUser }) {
   const [linkSheetMeal, setLinkSheetMeal] = useState(null) // { id, custom_name }
   const [linkSearch, setLinkSearch] = useState('')
   const [linkResults, setLinkResults] = useState([])
+  const [linkType, setLinkType] = useState('full') // 'full' | 'quick'
   const linkDebounceRef = useRef(null)
 
   // Keep as-is memory — meals that don't need recipes
@@ -474,9 +475,32 @@ export default function ThisWeek({ appUser }) {
     }, 200)
   }
 
+  async function checkMealPreference(mealName) {
+    if (!mealName?.trim() || !appUser?.household_id) return
+    const key = mealName.trim().toLowerCase()
+    const { data: pref } = await supabase.from('sage_meal_preferences')
+      .select('recipe_id, no_recipe_needed')
+      .eq('household_id', appUser.household_id)
+      .eq('meal_name', key)
+      .maybeSingle()
+    if (!pref) return
+    if (pref.no_recipe_needed) {
+      setDismissedMeals(prev => new Set([...prev, key]))
+      return
+    }
+    if (pref.recipe_id) {
+      const { data: recipe } = await supabase.from('recipes').select('id, name').eq('id', pref.recipe_id).maybeSingle()
+      if (recipe) {
+        setAddSheetRecipes(prev => {
+          if (prev.some(r => r.recipe_id === recipe.id)) return prev
+          return [{ recipe_id: recipe.id, recipe_name: recipe.name }]
+        })
+      }
+    }
+  }
+
   function selectRecipeSuggestion(suggestion) {
     setAddInput(suggestion.name)
-    setSelectedRecipe(null) // Never auto-link from add sheet — Sage surfaces matches after save
     // Pre-select meal time from history — guard against legacy category values
     const mealTimes = new Set(['breakfast', 'lunch', 'dinner', 'snack'])
     const categories = new Set(['other', 'leftovers', 'eating_out'])
@@ -485,6 +509,7 @@ export default function ThisWeek({ appUser }) {
       else if (categories.has(suggestion.meal_type)) setAddMealCategory(suggestion.meal_type)
     }
     setRecipeSuggestions([])
+    checkMealPreference(suggestion.name)
   }
 
   async function addMeal() {
@@ -621,6 +646,21 @@ export default function ThisWeek({ appUser }) {
             legacyRecipeId: data.recipe_id || null,
           })
         }
+      }
+
+      // Write meal preference if recipes were linked during add
+      if (hasRecipes && addInput.trim()) {
+        const key = addInput.trim().toLowerCase()
+        console.log('[Roux] PREF WRITE (addMeal):', { key, recipe_id: addSheetRecipes[0].recipe_id, household_id: appUser.household_id })
+        supabase.from('sage_meal_preferences').upsert({
+          household_id: appUser.household_id,
+          meal_name: key,
+          no_recipe_needed: false,
+          recipe_id: addSheetRecipes[0].recipe_id,
+        }, { onConflict: 'household_id,meal_name' }).then(({ data, error }) => {
+          console.log('[Roux] PREF WRITE (addMeal) result:', { data, error: error?.message })
+        })
+        setDismissedMeals(prev => { const next = new Set(prev); next.delete(key); return next })
       }
 
       setMeals(prev => [...prev, ...allEnriched])
@@ -830,8 +870,9 @@ export default function ThisWeek({ appUser }) {
     const linkedMealName = meal?.custom_name || recipeName
     if (linkedMealName) {
       const key = linkedMealName.toLowerCase().trim()
+      console.log('[Roux] PREF WRITE (linkRecipe):', { key, recipe_id: recipeId, household_id: appUser.household_id })
       setDismissedMeals(prev => { const next = new Set(prev); next.delete(key); return next })
-      await supabase
+      const { data: prefData, error: prefErr } = await supabase
         .from('sage_meal_preferences')
         .upsert({
           household_id: appUser.household_id,
@@ -839,6 +880,7 @@ export default function ThisWeek({ appUser }) {
           no_recipe_needed: false,
           recipe_id: recipeId,
         }, { onConflict: 'household_id,meal_name' })
+      console.log('[Roux] PREF WRITE (linkRecipe) result:', { data: prefData, error: prefErr?.message })
     }
     // Show first-recipe-linked tooltip
     if (!hasSeenTooltip(appUser, 'recipe_linked_first')) {
@@ -876,14 +918,16 @@ export default function ThisWeek({ appUser }) {
     // Persist keep-as-is preference
     if (mealName) {
       const key = mealName.toLowerCase().trim()
+      console.log('[Roux] PREF WRITE (keepAsIs):', { key, household_id: appUser.household_id })
       setDismissedMeals(prev => new Set([...prev, key]))
-      await supabase
+      const { data: kasData, error: kasErr } = await supabase
         .from('sage_meal_preferences')
         .upsert({
           household_id: appUser.household_id,
           meal_name: key,
           no_recipe_needed: true,
         }, { onConflict: 'household_id,meal_name' })
+      console.log('[Roux] PREF WRITE (keepAsIs) result:', { data: kasData, error: kasErr?.message })
     }
   }
 
@@ -975,31 +1019,32 @@ export default function ThisWeek({ appUser }) {
   }
 
   function openLinkSheet(meal) {
-    // Dismiss active keyboard before opening sheet
     if (document.activeElement) document.activeElement.blur()
     setLinkSheetMeal(meal)
     setLinkSearch('')
     setLinkResults([])
-    // Load all recipes initially
-    supabase.from('recipes').select('id, name').eq('household_id', appUser.household_id)
-      .order('name').limit(50)
-      .then(({ data }) => setLinkResults(data || []))
+    setLinkType('full')
+    loadLinkResults('', 'full')
+  }
+
+  function loadLinkResults(search, type) {
+    const rType = type || linkType
+    let q = supabase.from('recipes').select('id, name').eq('household_id', appUser.household_id)
+      .eq('recipe_type', rType === 'quick' ? 'quick' : 'full')
+    if (search.trim()) q = q.ilike('name', `%${search.trim()}%`)
+    q.order('name').limit(50).then(({ data }) => setLinkResults(data || []))
   }
 
   function handleLinkSearch(val) {
     setLinkSearch(val)
     if (linkDebounceRef.current) clearTimeout(linkDebounceRef.current)
-    linkDebounceRef.current = setTimeout(async () => {
-      if (val.trim().length < 1) {
-        const { data } = await supabase.from('recipes').select('id, name')
-          .eq('household_id', appUser.household_id).order('name').limit(50)
-        setLinkResults(data || [])
-      } else {
-        const { data } = await supabase.from('recipes').select('id, name')
-          .eq('household_id', appUser.household_id).ilike('name', `%${val.trim()}%`).order('name').limit(30)
-        setLinkResults(data || [])
-      }
-    }, 200)
+    linkDebounceRef.current = setTimeout(() => loadLinkResults(val), 200)
+  }
+
+  function handleLinkTypeChange(type) {
+    setLinkType(type)
+    setLinkSearch('')
+    loadLinkResults('', type)
   }
 
   async function linkFromSheet(recipeId, recipeName) {
@@ -1826,27 +1871,28 @@ export default function ThisWeek({ appUser }) {
                   value={addInput}
                   onChange={e => handleAddInputChange(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') addMeal() }}
+                  onBlur={() => { if (addInput.trim() && !addSheetRecipes.length) checkMealPreference(addInput) }}
                   placeholder="What are you making?"
                   autoFocus
                   style={{
                     width: '100%', padding: '14px 16px', fontSize: '16px',
                     fontFamily: "'Jost', sans-serif", fontWeight: 300,
-                    border: `1.5px solid ${C.linen}`, borderRadius: recipeSuggestions.length > 0 ? '12px 12px 0 0' : '12px',
+                    border: `1.5px solid ${C.linen}`, borderRadius: recipeSuggestions.length > 0 ? '0 0 12px 12px' : '12px',
                     outline: 'none', color: C.ink, boxSizing: 'border-box',
                   }}
                 />
-                {/* Meal name suggestions — traditional dropdown */}
+                {/* Meal name suggestions — renders above input to avoid keyboard */}
                 {recipeSuggestions.length > 0 && (
                   <div style={{
                     position: 'absolute',
-                    top: '100%',
+                    bottom: '100%',
                     left: 0,
                     right: 0,
                     background: 'white',
                     border: `0.5px solid ${C.linen}`,
-                    borderTop: 'none',
-                    borderRadius: '0 0 10px 10px',
-                    boxShadow: '0 4px 12px rgba(44,36,23,0.08)',
+                    borderBottom: 'none',
+                    borderRadius: '10px 10px 0 0',
+                    boxShadow: '0 -4px 12px rgba(44,36,23,0.08)',
                     zIndex: 50,
                     maxHeight: 200,
                     overflowY: 'auto',
@@ -1861,13 +1907,9 @@ export default function ThisWeek({ appUser }) {
                           color: C.ink,
                           borderBottom: idx < recipeSuggestions.length - 1 ? `0.5px solid ${C.linen}` : 'none',
                           cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 8,
                           fontFamily: "'Jost', sans-serif",
                         }}
                       >
-                        <span style={{ fontSize: 11, color: C.driftwood }}>↩</span>
                         {r.name}
                       </div>
                     ))}
@@ -2385,9 +2427,23 @@ export default function ThisWeek({ appUser }) {
               <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
                 {sheetMealName}
               </div>
+              {/* Recipe / Staple toggle */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', marginBottom: '12px' }}>
+                {[['full', 'Recipes'], ['quick', 'Staples']].map(([type, label]) => (
+                  <button key={type} onClick={() => handleLinkTypeChange(type)} style={{
+                    padding: '10px', textAlign: 'center',
+                    fontFamily: "'Jost', sans-serif", fontSize: '12px',
+                    fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase',
+                    color: linkType === type ? arcColor : C.driftwood,
+                    cursor: linkType === type ? 'default' : 'pointer', border: 'none', background: 'none',
+                    borderBottom: linkType === type ? `2px solid ${arcColor}` : '2px solid transparent',
+                    transition: 'color 0.2s, border-color 0.2s',
+                  }}>{label}</button>
+                ))}
+              </div>
               <input
                 type="text" value={linkSearch} onChange={e => handleLinkSearch(e.target.value)}
-                placeholder="Search recipes..." autoFocus
+                placeholder={linkType === 'quick' ? 'Search staples...' : 'Search recipes...'} autoFocus
                 style={{
                   width: '100%', padding: '12px 14px', fontSize: '14px',
                   fontFamily: "'Jost', sans-serif", fontWeight: 300,
@@ -2398,7 +2454,7 @@ export default function ThisWeek({ appUser }) {
               <div>
                 {linkResults.length === 0 && (
                   <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', padding: '12px 0' }}>
-                    {linkSearch.trim() ? 'No recipes found' : 'Loading recipes...'}
+                    {linkSearch.trim() ? `No ${linkType === 'quick' ? 'staples' : 'recipes'} found` : `Loading ${linkType === 'quick' ? 'staples' : 'recipes'}...`}
                   </div>
                 )}
                 {linkResults.map(r => {

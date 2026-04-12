@@ -90,8 +90,8 @@ export default function Meals({ appUser }) {
       <TopBar />
 
       {/* Sub-tab strip */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', margin: '0 22px' }}>
-        {[['Recipes', '/meals/recipes'], ['Meals', '/meals/history']].map(([label, path]) => {
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', margin: '0 22px' }}>
+        {[['Recipes', '/meals/recipes'], ['Meals', '/meals/history'], ['Staples', '/meals/staples']].map(([label, path]) => {
           const active = label === 'Meals'
           return (
             <button key={label} onClick={() => !active && navigate(path)} style={{

@@ -20,6 +20,7 @@ import RecipeLibrary  from './pages/RecipeLibrary'
 import RecipeCard     from './pages/RecipeCard'
 import SaveRecipe     from './pages/SaveRecipe'
 import ShoppingList from './pages/ShoppingList'
+import Staples from './pages/Staples'
 import Pantry from './pages/Pantry'
 import PantryList from './pages/PantryList'
 import ShoppingTrip from './pages/ShoppingTrip'
@@ -413,6 +414,7 @@ function AuthenticatedApp({ appUser, setAppUser }) {
         <Route path="/meals/history" element={<Meals          appUser={appUser} />} />
         <Route path="/meals/plan"    element={<PlanMeal       appUser={appUser} />} />
         <Route path="/meals/plan/:id" element={<PlanMeal       appUser={appUser} />} />
+        <Route path="/meals/staples"  element={<Staples         appUser={appUser} />} />
         <Route path="/meals/traditions" element={<TraditionsPlaceholder />} />
         <Route path="/meals/traditions/new" element={<TraditionsPlaceholder />} />
         <Route path="/meals/saved"     element={<SavedMeals   appUser={appUser} />} />
