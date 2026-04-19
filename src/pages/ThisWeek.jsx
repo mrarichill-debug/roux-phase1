@@ -1573,8 +1573,8 @@ export default function ThisWeek({ appUser }) {
                   }}>{(editMeal.linkedRecipes || []).length > 0 ? '+ Add another recipe' : '+ Link a recipe'}</button>
                 </div>
 
-                {/* 3. Cooked / Ate out — for past meals that haven't been reviewed */}
-                {editMeal.planned_date && editMeal.planned_date < todayStr && editMeal.status !== 'cooked' && editMeal.status !== 'eating_out' && !editMeal.removed_at && (
+                {/* 3. Cooked / Ate out — for past non-eating-out meals that haven't been reviewed */}
+                {editMeal.planned_date && editMeal.planned_date < todayStr && editMeal.status !== 'cooked' && editMeal.status !== 'eating_out' && editMeal.entry_type !== 'eating_out' && !editMeal.removed_at && (
                   <div style={{ marginBottom: '16px' }}>
                     <div style={{ display: 'flex', gap: '8px', marginBottom: showAteOutInput ? '10px' : 0 }}>
                       <button onClick={() => markAsCooked(editMeal.id)} style={{
@@ -1588,7 +1588,7 @@ export default function ThisWeek({ appUser }) {
                         border: `1.5px solid ${C.linen}`, background: showAteOutInput ? 'rgba(140,123,107,0.06)' : 'white', color: C.driftwood,
                         cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 400,
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                      }}>🍽️ Ate out</button>
+                      }}>Ate out</button>
                     </div>
                     {showAteOutInput && (
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -1627,7 +1627,7 @@ export default function ThisWeek({ appUser }) {
                       width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '10px',
                       background: 'rgba(140,123,107,0.06)', textAlign: 'center',
                       fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 400,
-                    }}>🍽️ {editMeal.status === 'eating_out' ? 'Ate out' : 'Eating out'}{editMeal.eating_out_cost ? ` · Est. $${Number(editMeal.eating_out_cost).toFixed(2)}` : ''}</div>
+                    }}>{editMeal.status === 'eating_out' ? 'Ate out' : 'Eating out'}{editMeal.eating_out_cost ? ` · Est. $${Number(editMeal.eating_out_cost).toFixed(2)}` : ''}</div>
 
                     {/* Actual cost capture — for past meals */}
                     {editMeal.planned_date && editMeal.planned_date < todayStr && (

@@ -788,16 +788,9 @@ export default function PantryList({ appUser }) {
 
       {/* ═══ TRIPS TAB — Start a Trip + pending + completed ═══ */}
       {shopTab === 'trips' && <>
-      {/* ── Start a Trip + pending trip cards ─────────────────── */}
+      {/* ── Pending trip cards (Start a Trip is now a FAB below) ── */}
+      {pendingTrips.filter(t => !t.is_companion).length > 0 && (
       <div style={{ padding: '10px 22px 6px', display: 'flex', gap: '10px', overflowX: 'auto' }}>
-        <button onClick={openTripSheet} style={{
-          padding: '12px 16px', borderRadius: '12px', cursor: 'pointer',
-          background: arcColor, color: 'white', textAlign: 'left',
-          border: 'none', fontFamily: "'Jost', sans-serif", flexShrink: 0,
-          boxShadow: '0 2px 8px rgba(30,55,35,0.2)',
-        }}>
-          <div style={{ fontSize: '13px', fontWeight: 500 }}>+ Start a Trip</div>
-        </button>
         {pendingTrips.filter(t => !t.is_companion).map(trip => (
           <button key={trip.id} onClick={() => navigate(`/pantry/trip/${trip.id}`)} style={{
             padding: '10px 14px', borderRadius: '12px', cursor: 'pointer',
@@ -818,6 +811,7 @@ export default function PantryList({ appUser }) {
           </button>
         ))}
       </div>
+      )}
 
       {/* ── Shopping workflow education tooltip ─────────────────────── */}
       {!shoppingTipDismissed && items.length > 0 && (
@@ -1176,6 +1170,23 @@ export default function PantryList({ appUser }) {
       </div>
 
       </>}
+
+      {/* ── FAB: Start a Trip (Trips tab only) ──────────────────── */}
+      {shopTab === 'trips' && (
+        <button onClick={openTripSheet} style={{
+          position: 'fixed', bottom: 'calc(58px + env(safe-area-inset-bottom, 8px))', right: '20px',
+          width: '56px', height: '56px', borderRadius: '50%',
+          background: arcColor, border: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          zIndex: 50,
+          animation: 'fabIn 0.35s cubic-bezier(0.22,1,0.36,1) 0.1s both',
+        }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" style={{ width: 24, height: 24 }}>
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+      )}
 
       {/* ── Trip creation sheet — 2-step ────────────────────────── */}
       <BottomSheet isOpen={tripSheetOpen} onClose={() => { setTripSheetOpen(false); setTripSheetStep(1) }} maxHeight="75vh">
