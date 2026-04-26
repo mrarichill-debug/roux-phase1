@@ -231,6 +231,13 @@ export default function ThisWeek({ appUser }) {
           const { data: recipes } = await supabase.from('recipes').select('id, name, prep_time_minutes').in('id', legacyRecipeIds)
           legacyRecipeMap = Object.fromEntries((recipes || []).map(r => [r.id, r]))
         }
+        // Resolve meal_id → canonical meals row (dual-read; falls back to custom_name)
+        const mealRecordIds = [...new Set((mealsData || []).filter(m => m.meal_id).map(m => m.meal_id))]
+        let mealRecordMap = {}
+        if (mealRecordIds.length > 0) {
+          const { data: mealRows } = await supabase.from('meals').select('id, name, photo_url').in('id', mealRecordIds)
+          mealRecordMap = Object.fromEntries((mealRows || []).map(r => [r.id, r]))
+        }
         // Load member tags (separate query per LESSONS.md)
         let memberMap = {} // planned_meal_id → [member_name]
         if (mealIds.length > 0) {
@@ -246,6 +253,7 @@ export default function ThisWeek({ appUser }) {
           ...m,
           linkedRecipes: linkedRecipeMap[m.id] || [],
           recipes: m.recipe_id ? legacyRecipeMap[m.recipe_id] || null : null,
+          meals: m.meal_id ? mealRecordMap[m.meal_id] || null : null,
           members: memberMap[m.id] || [],
         }))
         setMeals(enriched)
@@ -975,7 +983,9 @@ export default function ThisWeek({ appUser }) {
     : ''
 
   function getMealName(m) {
-    return m.custom_name || m.recipes?.name || m.note || 'Untitled'
+    // Dual-read: prefer canonical meals.name when meal_id is set, fall back to
+    // custom_name for unbackfilled / eating-out / soft-deleted-orphan rows.
+    return m.meals?.name || m.custom_name || m.recipes?.name || m.note || 'Untitled'
   }
 
   const BATCH_OPTIONS = [0.5, 1, 1.5, 2, 3]

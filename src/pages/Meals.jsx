@@ -60,33 +60,71 @@ export default function Meals({ appUser }) {
   }, [appUser?.household_id])
 
   async function load() {
-    const { data } = await supabase
-      .from('planned_meals')
-      .select('custom_name, meal_type, meal_plan_id, planned_date')
-      .eq('household_id', appUser.household_id)
-      .not('custom_name', 'is', null)
-      .is('removed_at', null)
-      .not('meal_type', 'in', '("eating_out","leftovers")')
-      .neq('entry_type', 'eating_out')
-    if (data) {
-      const grouped = {}
-      for (const m of data) {
-        const name = String(m.custom_name).trim()
-        if (!name) continue
-        const lk = name.toLowerCase()
-        if (!grouped[lk]) grouped[lk] = { name, meal_type: m.meal_type || 'dinner', plans: new Set(), dates: new Set(), lastDate: null }
-        if (m.meal_plan_id) grouped[lk].plans.add(m.meal_plan_id)
-        if (m.planned_date) grouped[lk].dates.add(m.planned_date)
-        if (m.planned_date && (!grouped[lk].lastDate || m.planned_date > grouped[lk].lastDate)) {
-          grouped[lk].lastDate = m.planned_date
-          grouped[lk].meal_type = m.meal_type || grouped[lk].meal_type
-        }
+    // Dual-read pass (PR 2 of meals-as-records, see docs/HANDOFF-MEALS-AS-RECORDS.md):
+    // primary source is the `meals` table; weekCount / lastDate / meal_type are
+    // aggregated by joining back through planned_meals.meal_id. Any planned_meals
+    // row without a meal_id (orphan / pre-backfill) falls back to grouping by
+    // custom_name. Both paths render identical card shapes.
+    const [{ data: mealRecords }, { data: pmRows }] = await Promise.all([
+      supabase
+        .from('meals')
+        .select('id, name, photo_url, is_archived')
+        .eq('household_id', appUser.household_id)
+        .eq('is_archived', false),
+      supabase
+        .from('planned_meals')
+        .select('meal_id, custom_name, meal_type, meal_plan_id, planned_date')
+        .eq('household_id', appUser.household_id)
+        .is('removed_at', null)
+        .not('meal_type', 'in', '("eating_out","leftovers")')
+        .neq('entry_type', 'eating_out'),
+    ])
+
+    // Aggregate planned_meals signals keyed by meal_id when present, else
+    // by lowercased custom_name (the legacy bucket).
+    const aggByMealId = {}
+    const aggByName = {}
+    for (const m of (pmRows || [])) {
+      const bucket = m.meal_id
+        ? (aggByMealId[m.meal_id] ||= { plans: new Set(), dates: new Set(), lastDate: null, meal_type: m.meal_type || 'dinner' })
+        : (() => {
+            const name = String(m.custom_name || '').trim()
+            if (!name) return null
+            const lk = name.toLowerCase()
+            return (aggByName[lk] ||= { name, plans: new Set(), dates: new Set(), lastDate: null, meal_type: m.meal_type || 'dinner' })
+          })()
+      if (!bucket) continue
+      if (m.meal_plan_id) bucket.plans.add(m.meal_plan_id)
+      if (m.planned_date) bucket.dates.add(m.planned_date)
+      if (m.planned_date && (!bucket.lastDate || m.planned_date > bucket.lastDate)) {
+        bucket.lastDate = m.planned_date
+        bucket.meal_type = m.meal_type || bucket.meal_type
       }
-      const sorted = Object.values(grouped)
-        .map(g => ({ name: g.name, meal_type: g.meal_type, weekCount: g.plans.size || g.dates.size, lastDate: g.lastDate }))
-        .sort((a, b) => a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }))
-      setMeals(sorted)
     }
+
+    const fromRecords = (mealRecords || []).map(r => {
+      const agg = aggByMealId[r.id] || { plans: new Set(), dates: new Set(), lastDate: null, meal_type: 'dinner' }
+      return {
+        id: r.id,
+        name: r.name,
+        photo_url: r.photo_url || null,
+        meal_type: agg.meal_type,
+        weekCount: agg.plans.size || agg.dates.size,
+        lastDate: agg.lastDate,
+      }
+    })
+    const fromOrphans = Object.values(aggByName).map(g => ({
+      id: null,
+      name: g.name,
+      photo_url: null,
+      meal_type: g.meal_type,
+      weekCount: g.plans.size || g.dates.size,
+      lastDate: g.lastDate,
+    }))
+
+    const sorted = [...fromRecords, ...fromOrphans]
+      .sort((a, b) => a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }))
+    setMeals(sorted)
     setLoading(false)
   }
 
