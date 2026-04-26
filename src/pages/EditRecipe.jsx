@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import { runSageIngredientReview } from '../lib/sageReview'
 import { categorizeIngredientsWithSage } from '../lib/categorizeIngredientsWithSage'
 import { logActivity } from '../lib/activityLog'
+import { uploadRecipePhoto } from '../lib/uploadRecipePhoto'
 import useUnsavedChanges from '../hooks/useUnsavedChanges'
 import UnsavedChangesSheet from '../components/UnsavedChangesSheet'
 import TopBar from '../components/TopBar'
@@ -151,16 +152,38 @@ export default function EditRecipe({ appUser }) {
     setLoading(false)
   }
 
-  // Photo upload
+  // Photo upload — household-scoped storage path, immediate persistence to
+  // recipes.photo_url + recipe_photos primary row. Surfaces failures.
   async function handlePhotoUpload(e) {
     const file = e.target.files?.[0]
     if (!file) return
-    const ext = file.name.split('.').pop()
-    const path = `recipes/${id}/${Date.now()}.${ext}`
-    const { error: upErr } = await supabase.storage.from('recipe-photos').upload(path, file)
-    if (upErr) { console.error('[Roux] Photo upload error:', upErr); return }
-    const { data } = supabase.storage.from('recipe-photos').getPublicUrl(path)
-    if (data?.publicUrl) setPhotoUrl(data.publicUrl)
+    try {
+      const { publicUrl, storagePath } = await uploadRecipePhoto({
+        file,
+        householdId: appUser.household_id,
+        scopeKey: id,
+      })
+      setPhotoUrl(publicUrl)
+
+      // Persist photo_url on recipes immediately so it sticks if Save is abandoned
+      const { error: recErr } = await supabase.from('recipes').update({ photo_url: publicUrl }).eq('id', id)
+      if (recErr) console.error('[Roux] Photo url save error:', recErr)
+
+      // Demote any existing primary, then insert new primary recipe_photos row
+      await supabase.from('recipe_photos').update({ is_primary: false }).eq('recipe_id', id).eq('is_primary', true)
+      const { error: rpErr } = await supabase.from('recipe_photos').insert({
+        recipe_id: id,
+        url: publicUrl,
+        storage_path: storagePath,
+        is_primary: true,
+        sort_order: 0,
+        source_type: 'camera',
+      })
+      if (rpErr) console.error('[Roux] recipe_photos insert error:', rpErr)
+    } catch (err) {
+      console.error('[Roux] Photo upload failed:', err)
+      alert(`Photo upload failed: ${err.message || err}`)
+    }
   }
 
   // Ingredient helpers

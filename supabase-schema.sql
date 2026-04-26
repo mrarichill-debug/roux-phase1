@@ -342,6 +342,27 @@ CREATE TABLE instructions (
 );
 
 
+-- ── Table 10b: recipe_photos ──────────────────────────────────────────────────
+-- One row per uploaded photo for a recipe. The recipe's hero image is the row
+-- with `is_primary = true`; recipes.photo_url holds a denormalized copy of that
+-- primary URL for fast list rendering. Storage lives in the `recipe-photos`
+-- bucket under `${household_id}/${recipe_id}/${ts}.${ext}` (RLS keys on the
+-- household_id path prefix). Source of upload tracked via `source_type`
+-- ('upload' default, 'camera' for SaveRecipe/EditRecipe pickers).
+
+CREATE TABLE recipe_photos (
+  id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  recipe_id    UUID        NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
+  storage_path TEXT        NOT NULL,
+  url          TEXT        NOT NULL,
+  sort_order   INTEGER     NOT NULL DEFAULT 0,
+  is_primary   BOOLEAN     NOT NULL DEFAULT FALSE,
+  source_type  TEXT        NOT NULL DEFAULT 'upload',
+  caption      TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+
 -- ── Table 11: meals ───────────────────────────────────────────────────────────
 -- A meal is a named combination of recipes (e.g., "French Dip Night").
 -- Component recipe slots live in meal_recipes.

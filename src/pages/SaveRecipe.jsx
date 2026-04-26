@@ -11,6 +11,7 @@ import { runSageIngredientReview } from '../lib/sageReview'
 import { categorizeIngredientsWithSage } from '../lib/categorizeIngredientsWithSage'
 import { sageReverseMatch } from '../lib/sageReverseMatch'
 import { logActivity } from '../lib/activityLog'
+import { uploadRecipePhoto } from '../lib/uploadRecipePhoto'
 import useUnsavedChanges from '../hooks/useUnsavedChanges'
 import UnsavedChangesSheet from '../components/UnsavedChangesSheet'
 import TopBar from '../components/TopBar'
@@ -402,49 +403,65 @@ export default function SaveRecipe({ appUser }) {
   }
 
   // ── Photo upload for recipe form ─────────────────────────────
+  // Hero photo for non-extraction flows (manual / URL / paste). Recipe row
+  // doesn't exist yet, so upload to a temp scopeKey; handleSave persists the
+  // resulting publicUrl via recipes.photo_url.
   async function handleRecipePhotoUpload(e) {
     const file = e.target.files?.[0]
     if (!file) return
-    const ext = file.name.split('.').pop()
-    const path = `recipes/new-${Date.now()}/${Date.now()}.${ext}`
-    const { error: upErr } = await supabase.storage.from('recipe-photos').upload(path, file)
-    if (upErr) { console.error('[SaveRecipe] Photo upload error:', upErr); return }
-    const { data } = supabase.storage.from('recipe-photos').getPublicUrl(path)
-    if (data?.publicUrl) setPhotoUrl(data.publicUrl)
+    if (!appUser?.household_id) {
+      alert('Cannot upload photo: no household_id available.')
+      return
+    }
+    try {
+      const { publicUrl } = await uploadRecipePhoto({
+        file,
+        householdId: appUser.household_id,
+        scopeKey: `new-${Date.now()}`,
+      })
+      setPhotoUrl(publicUrl)
+    } catch (err) {
+      console.error('[SaveRecipe] Photo upload failed:', err)
+      alert(`Photo upload failed: ${err.message || err}`)
+    }
   }
 
   // ── Upload captured photos to Supabase Storage + recipe_photos table ──
   async function uploadCapturedPhotos(recipeId) {
     if (!capturedPhotos.length || !appUser?.household_id) return
-    const basePath = `recipe-photos/${appUser.household_id}/${recipeId}`
+
+    // Demote any pre-existing primary on this recipe before inserting new ones.
+    await supabase.from('recipe_photos')
+      .update({ is_primary: false })
+      .eq('recipe_id', recipeId)
+      .eq('is_primary', true)
 
     for (let i = 0; i < capturedPhotos.length; i++) {
       const photo = capturedPhotos[i]
-      const ext = photo.file.name?.split('.').pop() || 'jpg'
-      const fileName = `${Date.now()}-${i}.${ext}`
-      const storagePath = `${basePath}/${fileName}`
+      try {
+        const { publicUrl, storagePath } = await uploadRecipePhoto({
+          file: photo.file,
+          householdId: appUser.household_id,
+          scopeKey: recipeId,
+        })
 
-      const { error: upErr } = await supabase.storage.from('recipe-photos').upload(storagePath, photo.file)
-      if (upErr) {
-        console.error('[SaveRecipe] Photo upload error:', upErr)
-        continue
-      }
-      const { data: urlData } = supabase.storage.from('recipe-photos').getPublicUrl(storagePath)
-      const publicUrl = urlData?.publicUrl
-      if (!publicUrl) continue
+        const { error: rpErr } = await supabase.from('recipe_photos').insert({
+          recipe_id: recipeId,
+          storage_path: storagePath,
+          url: publicUrl,
+          sort_order: i,
+          is_primary: i === 0,
+          source_type: 'camera',
+        })
+        if (rpErr) console.error('[SaveRecipe] recipe_photos insert error:', rpErr)
 
-      await supabase.from('recipe_photos').insert({
-        recipe_id: recipeId,
-        storage_path: storagePath,
-        url: publicUrl,
-        sort_order: i,
-        is_primary: i === 0,
-        source_type: 'camera',
-      })
-
-      // Set the first photo as the recipe's primary photo_url for backwards compat
-      if (i === 0) {
-        await supabase.from('recipes').update({ photo_url: publicUrl }).eq('id', recipeId)
+        // First photo also becomes recipes.photo_url for list/card fallbacks
+        if (i === 0) {
+          await supabase.from('recipes').update({ photo_url: publicUrl }).eq('id', recipeId)
+        }
+      } catch (err) {
+        console.error('[SaveRecipe] Photo upload failed:', err)
+        alert(`Photo ${i + 1} failed to upload: ${err.message || err}`)
       }
     }
   }
