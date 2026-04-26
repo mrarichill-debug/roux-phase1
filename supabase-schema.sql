@@ -486,7 +486,8 @@ CREATE TABLE meal_plan_day_types (
   meal_plan_id UUID        NOT NULL REFERENCES meal_plans(id) ON DELETE CASCADE,
   day_of_week  TEXT        NOT NULL CHECK (day_of_week IN
                  ('monday','tuesday','wednesday','thursday','friday','saturday','sunday')),
-  day_type_id  UUID        NOT NULL REFERENCES day_types(id) ON DELETE CASCADE,
+  day_type_id  UUID        REFERENCES day_types(id) ON DELETE CASCADE,
+  notes        TEXT,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(meal_plan_id, day_of_week)
 );

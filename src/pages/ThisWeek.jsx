@@ -56,6 +56,9 @@ export default function ThisWeek({ appUser }) {
   const [meals, setMeals] = useState([])
   const [loading, setLoading] = useState(true)
   const [dayTypes, setDayTypes] = useState({}) // dowKey → day type name
+  const [dayNotes, setDayNotes] = useState({}) // dowKey → notes string
+  const [editingNoteDow, setEditingNoteDow] = useState(null) // dowKey currently being edited
+  const [noteDraft, setNoteDraft] = useState('')
 
   // Add sheet state
   const [addSheetOpen, setAddSheetOpen] = useState(false)
@@ -266,21 +269,27 @@ export default function ThisWeek({ appUser }) {
         setOnListDays(new Set())
       }
 
-      // Load day types for display (no embedded join — separate queries)
+      // Load day types + per-day notes (no embedded join — separate queries)
       if (plan) {
         const { data: dtAssignments } = await supabase
           .from('meal_plan_day_types')
-          .select('day_of_week, day_type_id')
+          .select('day_of_week, day_type_id, notes')
           .eq('meal_plan_id', plan.id)
-        if (dtAssignments?.length) {
-          const dtIds = [...new Set(dtAssignments.map(a => a.day_type_id))]
+        const noteMap = {}
+        for (const a of (dtAssignments || [])) {
+          if (a.notes) noteMap[a.day_of_week] = a.notes
+        }
+        setDayNotes(noteMap)
+        const withDayType = (dtAssignments || []).filter(a => a.day_type_id)
+        if (withDayType.length) {
+          const dtIds = [...new Set(withDayType.map(a => a.day_type_id))]
           const { data: dtDefs } = await supabase
             .from('day_types')
             .select('id, name, color')
             .in('id', dtIds)
           const defMap = Object.fromEntries((dtDefs || []).map(d => [d.id, d]))
           const dtMap = {}
-          for (const a of dtAssignments) {
+          for (const a of withDayType) {
             if (defMap[a.day_type_id]) dtMap[a.day_of_week] = defMap[a.day_type_id]
           }
           setDayTypes(dtMap)
@@ -289,6 +298,7 @@ export default function ThisWeek({ appUser }) {
         }
       } else {
         setDayTypes({})
+        setDayNotes({})
       }
     } catch (err) {
       console.error('[Menu] Load error:', err)
@@ -337,7 +347,52 @@ export default function ThisWeek({ appUser }) {
     return data.id
   }
 
+  // ── Day notes ─────────────────────────────────────────────────
+  const isWeekLocked = planStatus === 'completed' || planStatus === 'archived'
 
+  function startEditNote(dowKey) {
+    if (isWeekLocked) return
+    setEditingNoteDow(dowKey)
+    setNoteDraft(dayNotes[dowKey] || '')
+  }
+
+  async function saveDayNote(dowKey, value) {
+    if (isWeekLocked) { setEditingNoteDow(null); return }
+    const trimmed = (value || '').trim()
+    const previous = dayNotes[dowKey] || ''
+    setEditingNoteDow(null)
+    if (trimmed === previous) return
+    const pid = await ensurePlan()
+    if (!pid) return
+    const { data: existing } = await supabase
+      .from('meal_plan_day_types')
+      .select('id, day_type_id')
+      .eq('meal_plan_id', pid).eq('day_of_week', dowKey).maybeSingle()
+    if (trimmed === '') {
+      if (existing) {
+        const op = existing.day_type_id
+          ? supabase.from('meal_plan_day_types').update({ notes: null }).eq('id', existing.id)
+          : supabase.from('meal_plan_day_types').delete().eq('id', existing.id)
+        const { error } = await op
+        if (error) { console.error('[DayNote] Clear failed:', error); return }
+      }
+      setDayNotes(prev => { const n = { ...prev }; delete n[dowKey]; return n })
+      logActivity({ user: appUser, actionType: 'day_note_cleared', targetType: 'meal_plan', targetId: pid, metadata: { day_of_week: dowKey } })
+      return
+    }
+    const { error } = existing
+      ? await supabase.from('meal_plan_day_types').update({ notes: trimmed }).eq('id', existing.id)
+      : await supabase.from('meal_plan_day_types').insert({ meal_plan_id: pid, day_of_week: dowKey, notes: trimmed })
+    if (error) { console.error('[DayNote] Save failed:', error); return }
+    setDayNotes(prev => ({ ...prev, [dowKey]: trimmed }))
+    logActivity({
+      user: appUser,
+      actionType: previous ? 'day_note_updated' : 'day_note_added',
+      targetType: 'meal_plan',
+      targetId: pid,
+      metadata: { day_of_week: dowKey, length: trimmed.length },
+    })
+  }
 
   // ── Prefill from Meals tab navigation ──────────────────────────
   const prefillHandled = useRef(false)
@@ -1390,6 +1445,73 @@ export default function ThisWeek({ appUser }) {
                     ))
                   })()}
                 </div>
+
+                {/* Day note — free text (e.g., who's buying lunch) */}
+                {(() => {
+                  const note = dayNotes[dowKey]
+                  const isEditing = editingNoteDow === dowKey
+                  if (isEditing) {
+                    return (
+                      <div style={{ padding: '4px 14px 8px' }}>
+                        <textarea
+                          autoFocus
+                          value={noteDraft}
+                          onChange={e => setNoteDraft(e.target.value)}
+                          onBlur={e => saveDayNote(dowKey, e.target.value)}
+                          placeholder="Note for the day…"
+                          rows={2}
+                          style={{
+                            width: '100%', boxSizing: 'border-box',
+                            padding: '8px 10px', borderRadius: '8px',
+                            border: `1px solid ${C.linen}`, outline: 'none',
+                            background: 'rgba(196,154,60,0.06)',
+                            fontFamily: "'Caveat', cursive", fontSize: '17px',
+                            color: C.ink, lineHeight: 1.3, resize: 'vertical',
+                          }}
+                        />
+                      </div>
+                    )
+                  }
+                  if (note) {
+                    return (
+                      <div
+                        onClick={() => startEditNote(dowKey)}
+                        style={{
+                          padding: '6px 14px 8px',
+                          cursor: isWeekLocked ? 'default' : 'pointer',
+                        }}
+                      >
+                        <div style={{
+                          display: 'flex', alignItems: 'flex-start', gap: '6px',
+                          padding: '6px 10px', borderRadius: '8px',
+                          background: 'rgba(196,154,60,0.08)',
+                          border: '0.5px solid rgba(196,154,60,0.25)',
+                        }}>
+                          <span style={{
+                            flex: 1, fontFamily: "'Caveat', cursive",
+                            fontSize: '17px', color: C.ink, lineHeight: 1.3, whiteSpace: 'pre-wrap',
+                          }}>{note}</span>
+                          {!isWeekLocked && (
+                            <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12, flexShrink: 0, marginTop: '4px', opacity: 0.6 }}>
+                              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  }
+                  if (isWeekLocked) return null
+                  return (
+                    <button onClick={() => startEditNote(dowKey)} style={{
+                      padding: '4px 14px 8px',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      fontSize: '12px', color: C.driftwood, fontWeight: 400,
+                      fontFamily: "'Jost', sans-serif", textAlign: 'left',
+                    }}>
+                      + Note for the day
+                    </button>
+                  )
+                })()}
 
                 {/* Add button */}
                 <button onClick={() => openAddSheet(date)} style={{
