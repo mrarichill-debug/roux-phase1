@@ -13,12 +13,7 @@ import useUnsavedChanges from '../hooks/useUnsavedChanges'
 import UnsavedChangesSheet from '../components/UnsavedChangesSheet'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
-
-const C = {
-  forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E',
-  linen: '#E8E0D0', sage: '#7A8C6E', honey: '#C49A3C', red: '#A03030',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 // METHOD_OPTIONS retired — methods now loaded from recipe_method_definitions
 const DIFFICULTY_OPTIONS = [
@@ -27,10 +22,10 @@ const DIFFICULTY_OPTIONS = [
   { key: 'advanced', label: 'Ambitious' },
 ]
 
-const label = { fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '6px' }
+const label = { fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: color.inkSoft, fontWeight: 500, marginBottom: '6px' }
 const inputStyle = {
   width: '100%', padding: '10px 12px', fontSize: '14px', fontFamily: "'Jost', sans-serif", fontWeight: 300,
-  border: `1.5px solid ${C.linen}`, borderRadius: '10px', outline: 'none', color: C.ink,
+  border: `1.5px solid ${color.rule}`, borderRadius: '10px', outline: 'none', color: color.ink,
   boxSizing: 'border-box', background: 'white',
 }
 
@@ -426,7 +421,7 @@ export default function EditRecipe({ appUser }) {
   }
 
   if (loading) return (
-    <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
+    <div style={{ background: color.paper, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
       <TopBar slim leftAction={{ onClick: () => navigate(`/recipe/${id}`), label: 'Back' }}
         centerContent={<span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>Edit Recipe</span>} />
       <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -436,7 +431,7 @@ export default function EditRecipe({ appUser }) {
   )
 
   return (
-    <div style={{ background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', paddingBottom: '140px' }}>
+    <div style={{ background: color.paper, fontFamily: "'Jost', sans-serif", fontWeight: 300, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', paddingBottom: '140px' }}>
       <TopBar slim
         leftAction={{ onClick: () => dirty.guardNavigation(() => navigate(`/recipe/${id}`)), icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg> }}
         centerContent={<span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>Edit Recipe</span>}
@@ -453,7 +448,7 @@ export default function EditRecipe({ appUser }) {
               <button onClick={() => fileRef.current?.click()} style={{
                 position: 'absolute', bottom: '10px', right: '10px',
                 padding: '6px 14px', borderRadius: '20px', border: 'none',
-                background: 'rgba(255,255,255,0.9)', color: C.ink,
+                background: 'rgba(255,255,255,0.9)', color: color.ink,
                 fontSize: '12px', fontWeight: 400, cursor: 'pointer',
                 fontFamily: "'Jost', sans-serif",
               }}>Change photo</button>
@@ -461,9 +456,9 @@ export default function EditRecipe({ appUser }) {
           ) : (
             <button onClick={() => fileRef.current?.click()} style={{
               width: '100%', height: '120px', borderRadius: '14px',
-              border: `1.5px dashed ${C.linen}`, background: 'white',
+              border: `1.5px dashed ${color.rule}`, background: 'white',
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              gap: '6px', cursor: 'pointer', color: C.driftwood,
+              gap: '6px', cursor: 'pointer', color: color.inkSoft,
               fontFamily: "'Jost', sans-serif", fontSize: '13px',
             }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
@@ -478,7 +473,7 @@ export default function EditRecipe({ appUser }) {
         {/* ── 2. Basic Info ─────────────────────────────────────────── */}
         <div>
           <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Recipe name"
-            style={{ ...inputStyle, fontSize: '20px', fontFamily: "'Playfair Display', serif", fontWeight: 500, padding: '12px 0', border: 'none', borderBottom: `1.5px solid ${C.linen}`, borderRadius: 0, background: 'transparent' }} />
+            style={{ ...inputStyle, fontSize: '20px', fontFamily: "'Playfair Display', serif", fontWeight: 500, padding: '12px 0', border: 'none', borderBottom: `1.5px solid ${color.rule}`, borderRadius: 0, background: 'transparent' }} />
         </div>
         <div>
           <div style={label}>Description</div>
@@ -505,9 +500,9 @@ export default function EditRecipe({ appUser }) {
               return (
                 <button key={tag.id} onClick={() => { setSelectedTagIds(prev => { const n = new Set(prev); n.has(tag.id) ? n.delete(tag.id) : n.add(tag.id); return n }); dirty.markDirty() }} style={{
                   padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
-                  border: active ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                  border: active ? `1.5px solid ${color.forest}` : `1px solid ${color.rule}`,
                   background: active ? 'rgba(61,107,79,0.08)' : 'white',
-                  color: active ? C.forest : C.ink, cursor: 'pointer',
+                  color: active ? color.forest : color.ink, cursor: 'pointer',
                   fontFamily: "'Jost', sans-serif", fontWeight: active ? 500 : 400,
                 }}>{tag.name}</button>
               )
@@ -515,16 +510,16 @@ export default function EditRecipe({ appUser }) {
           </div>
           {tagDefs.some(t => !t.is_default) && (
             <>
-              <div style={{ fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 300, margin: '10px 0 6px', fontFamily: "'Jost', sans-serif" }}>Your tags</div>
+              <div style={{ fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: color.inkSoft, fontWeight: 300, margin: '10px 0 6px', fontFamily: "'Jost', sans-serif" }}>Your tags</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
                 {tagDefs.filter(t => !t.is_default).map(tag => {
                   const active = selectedTagIds.has(tag.id)
                   return (
                     <button key={tag.id} onClick={() => { setSelectedTagIds(prev => { const n = new Set(prev); n.has(tag.id) ? n.delete(tag.id) : n.add(tag.id); return n }); dirty.markDirty() }} style={{
                       padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
-                      border: active ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                      border: active ? `1.5px solid ${color.forest}` : `1px solid ${color.rule}`,
                       background: active ? 'rgba(61,107,79,0.08)' : 'white',
-                      color: active ? C.forest : C.ink, cursor: 'pointer',
+                      color: active ? color.forest : color.ink, cursor: 'pointer',
                       fontFamily: "'Jost', sans-serif", fontWeight: active ? 500 : 400,
                     }}>{tag.name}</button>
                   )
@@ -540,15 +535,15 @@ export default function EditRecipe({ appUser }) {
                 onKeyDown={e => { if (e.key === 'Enter') handleCreateTag() }} />
               <button onClick={handleCreateTag} disabled={!newTagName.trim()} style={{
                 padding: '6px 12px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 500,
-                background: newTagName.trim() ? C.forest : C.linen,
-                color: newTagName.trim() ? 'white' : C.driftwood,
+                background: newTagName.trim() ? color.forest : color.rule,
+                color: newTagName.trim() ? 'white' : color.inkSoft,
                 cursor: newTagName.trim() ? 'pointer' : 'default', fontFamily: "'Jost', sans-serif",
               }}>Add</button>
             </div>
           ) : (
             <button onClick={() => setNewTagOpen(true)} style={{
               background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
-              fontSize: '12px', color: C.driftwood, fontWeight: 300, fontFamily: "'Jost', sans-serif",
+              fontSize: '12px', color: color.inkSoft, fontWeight: 300, fontFamily: "'Jost', sans-serif",
             }}>+ Add a tag</button>
           )}
         </div>
@@ -566,9 +561,9 @@ export default function EditRecipe({ appUser }) {
               return (
                 <button key={md.id} onClick={() => { setSelectedMethodIds(prev => { const n = new Set(prev); n.has(md.id) ? n.delete(md.id) : n.add(md.id); return n }); dirty.markDirty() }} style={{
                   padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
-                  border: active ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                  border: active ? `1.5px solid ${color.forest}` : `1px solid ${color.rule}`,
                   background: active ? 'rgba(61,107,79,0.08)' : 'white',
-                  color: active ? C.forest : C.ink, cursor: 'pointer',
+                  color: active ? color.forest : color.ink, cursor: 'pointer',
                   fontFamily: "'Jost', sans-serif", fontWeight: active ? 500 : 400,
                 }}>{md.name}</button>
               )
@@ -576,16 +571,16 @@ export default function EditRecipe({ appUser }) {
           </div>
           {methodDefs.some(m => !m.is_default) && (
             <>
-              <div style={{ fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 300, margin: '10px 0 6px', fontFamily: "'Jost', sans-serif" }}>Your methods</div>
+              <div style={{ fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: color.inkSoft, fontWeight: 300, margin: '10px 0 6px', fontFamily: "'Jost', sans-serif" }}>Your methods</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
                 {methodDefs.filter(m => !m.is_default).map(md => {
                   const active = selectedMethodIds.has(md.id)
                   return (
                     <button key={md.id} onClick={() => { setSelectedMethodIds(prev => { const n = new Set(prev); n.has(md.id) ? n.delete(md.id) : n.add(md.id); return n }); dirty.markDirty() }} style={{
                       padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
-                      border: active ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                      border: active ? `1.5px solid ${color.forest}` : `1px solid ${color.rule}`,
                       background: active ? 'rgba(61,107,79,0.08)' : 'white',
-                      color: active ? C.forest : C.ink, cursor: 'pointer',
+                      color: active ? color.forest : color.ink, cursor: 'pointer',
                       fontFamily: "'Jost', sans-serif", fontWeight: active ? 500 : 400,
                     }}>{md.name}</button>
                   )
@@ -601,15 +596,15 @@ export default function EditRecipe({ appUser }) {
                 onKeyDown={e => { if (e.key === 'Enter') handleCreateMethod() }} />
               <button onClick={handleCreateMethod} disabled={!newMethodName.trim()} style={{
                 padding: '6px 12px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 500,
-                background: newMethodName.trim() ? C.forest : C.linen,
-                color: newMethodName.trim() ? 'white' : C.driftwood,
+                background: newMethodName.trim() ? color.forest : color.rule,
+                color: newMethodName.trim() ? 'white' : color.inkSoft,
                 cursor: newMethodName.trim() ? 'pointer' : 'default', fontFamily: "'Jost', sans-serif",
               }}>Add</button>
             </div>
           ) : (
             <button onClick={() => setNewMethodOpen(true)} style={{
               background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
-              fontSize: '12px', color: C.driftwood, fontWeight: 300, fontFamily: "'Jost', sans-serif",
+              fontSize: '12px', color: color.inkSoft, fontWeight: 300, fontFamily: "'Jost', sans-serif",
             }}>+ Add a method</button>
           )}
         </div>
@@ -619,9 +614,9 @@ export default function EditRecipe({ appUser }) {
             {DIFFICULTY_OPTIONS.map(d => (
               <button key={d.key} onClick={() => setDifficulty(difficulty === d.key ? '' : d.key)} style={{
                 flex: 1, padding: '8px', borderRadius: '10px', fontSize: '13px',
-                border: difficulty === d.key ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                border: difficulty === d.key ? `1.5px solid ${color.forest}` : `1px solid ${color.rule}`,
                 background: difficulty === d.key ? 'rgba(61,107,79,0.08)' : 'white',
-                color: difficulty === d.key ? C.forest : C.ink, cursor: 'pointer',
+                color: difficulty === d.key ? color.forest : color.ink, cursor: 'pointer',
                 fontFamily: "'Jost', sans-serif", fontWeight: difficulty === d.key ? 500 : 400,
               }}>{d.label}</button>
             ))}
@@ -634,14 +629,14 @@ export default function EditRecipe({ appUser }) {
             <div style={label}>Prep time</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <input type="number" value={prepTime} onChange={e => setPrepTime(e.target.value)} placeholder="0" style={{ ...inputStyle, width: '70px', textAlign: 'center' }} />
-              <span style={{ fontSize: '12px', color: C.driftwood }}>min</span>
+              <span style={{ fontSize: '12px', color: color.inkSoft }}>min</span>
             </div>
           </div>
           <div style={{ flex: 1 }}>
             <div style={label}>Cook time</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <input type="number" value={cookTime} onChange={e => setCookTime(e.target.value)} placeholder="0" style={{ ...inputStyle, width: '70px', textAlign: 'center' }} />
-              <span style={{ fontSize: '12px', color: C.driftwood }}>min</span>
+              <span style={{ fontSize: '12px', color: color.inkSoft }}>min</span>
             </div>
           </div>
           <div style={{ flex: 1 }}>
@@ -666,9 +661,9 @@ export default function EditRecipe({ appUser }) {
                   <button onClick={() => { setUnitPickerKey(unitPickerKey === ing._key ? null : ing._key); setUnitSearch('') }}
                     style={{
                       ...inputStyle, width: '56px', padding: '8px 4px', fontSize: '11px', textAlign: 'center',
-                      cursor: 'pointer', color: ing.unit ? C.ink : C.driftwood,
+                      cursor: 'pointer', color: ing.unit ? color.ink : color.inkSoft,
                       background: unitPickerKey === ing._key ? 'rgba(61,107,79,0.06)' : 'white',
-                      border: unitPickerKey === ing._key ? `1.5px solid ${C.forest}` : `1.5px solid ${C.linen}`,
+                      border: unitPickerKey === ing._key ? `1.5px solid ${color.forest}` : `1.5px solid ${color.rule}`,
                     }}>
                     {ing.unit || 'unit'}
                   </button>
@@ -680,26 +675,26 @@ export default function EditRecipe({ appUser }) {
                     {pantryFocusKey === ing._key && pantrySuggestions.length > 0 && (
                       <div style={{
                         position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
-                        background: 'white', border: `1px solid ${C.linen}`, borderRadius: '0 0 8px 8px',
+                        background: 'white', border: `1px solid ${color.rule}`, borderRadius: '0 0 8px 8px',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.08)', maxHeight: '160px', overflowY: 'auto',
                       }}>
                         {pantrySuggestions.map(p => (
                           <button key={p.id} onMouseDown={() => selectPantryItem(ing._key, p)} style={{
                             display: 'block', width: '100%', padding: '8px 10px', background: 'none',
-                            border: 'none', borderTop: `1px solid ${C.linen}`, cursor: 'pointer',
-                            textAlign: 'left', fontSize: '13px', color: C.ink, fontFamily: "'Jost', sans-serif",
+                            border: 'none', borderTop: `1px solid ${color.rule}`, cursor: 'pointer',
+                            textAlign: 'left', fontSize: '13px', color: color.ink, fontFamily: "'Jost', sans-serif",
                           }}>
                             {p.name}
-                            {p.default_unit && <span style={{ fontSize: '10px', color: C.driftwood, marginLeft: '6px' }}>{p.default_unit}</span>}
+                            {p.default_unit && <span style={{ fontSize: '10px', color: color.inkSoft, marginLeft: '6px' }}>{p.default_unit}</span>}
                           </button>
                         ))}
                       </div>
                     )}
                   </div>
                   <button onClick={() => removeIngredient(ing._key)} style={{
-                    width: '26px', height: '26px', borderRadius: '50%', border: `1px solid ${C.linen}`,
+                    width: '26px', height: '26px', borderRadius: '50%', border: `1px solid ${color.rule}`,
                     background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: C.driftwood, flexShrink: 0,
+                    color: color.inkSoft, flexShrink: 0,
                   }}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}>
                       <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -708,16 +703,16 @@ export default function EditRecipe({ appUser }) {
                 </div>
                 {/* Unit picker dropdown */}
                 {unitPickerKey === ing._key && (
-                  <div style={{ marginTop: '4px', padding: '8px', background: 'white', border: `1px solid ${C.linen}`, borderRadius: '8px' }}>
+                  <div style={{ marginTop: '4px', padding: '8px', background: 'white', border: `1px solid ${color.rule}`, borderRadius: '8px' }}>
                     <input type="text" value={unitSearch} onChange={e => setUnitSearch(e.target.value)} placeholder="Search units..."
                       autoFocus style={{ ...inputStyle, fontSize: '12px', padding: '6px 10px', marginBottom: '6px' }} />
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxHeight: '120px', overflowY: 'auto' }}>
                       {filteredUnits.map(u => (
                         <button key={u} onClick={() => { updateIngredient(ing._key, 'unit', u); setUnitPickerKey(null) }} style={{
                           padding: '4px 10px', borderRadius: '12px', fontSize: '11px',
-                          border: ing.unit === u ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                          border: ing.unit === u ? `1.5px solid ${color.forest}` : `1px solid ${color.rule}`,
                           background: ing.unit === u ? 'rgba(61,107,79,0.08)' : 'white',
-                          color: ing.unit === u ? C.forest : C.ink, cursor: 'pointer',
+                          color: ing.unit === u ? color.forest : color.ink, cursor: 'pointer',
                           fontFamily: "'Jost', sans-serif",
                         }}>{u}</button>
                       ))}
@@ -726,15 +721,15 @@ export default function EditRecipe({ appUser }) {
                 )}
                 {/* Alternatives */}
                 {(ing.alternatives || []).map(alt => (
-                  <div key={alt._key} style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '4px', paddingLeft: '16px', borderLeft: `2px solid ${C.honey}` }}>
-                    <span style={{ fontSize: '11px', color: C.honey, fontWeight: 500, flexShrink: 0 }}>or</span>
-                    <span style={{ fontSize: '12px', color: C.driftwood, flex: 1 }}>
+                  <div key={alt._key} style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '4px', paddingLeft: '16px', borderLeft: `2px solid ${color.honey}` }}>
+                    <span style={{ fontSize: '11px', color: color.honey, fontWeight: 500, flexShrink: 0 }}>or</span>
+                    <span style={{ fontSize: '12px', color: color.inkSoft, flex: 1 }}>
                       {[alt.quantity, alt.unit, alt.name].filter(Boolean).join(' ')}
                     </span>
                     <button onClick={() => removeAlternative(ing._key, alt._key)} style={{
-                      width: '20px', height: '20px', borderRadius: '50%', border: `1px solid ${C.linen}`,
+                      width: '20px', height: '20px', borderRadius: '50%', border: `1px solid ${color.rule}`,
                       background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: C.driftwood, flexShrink: 0,
+                      color: color.inkSoft, flexShrink: 0,
                     }}>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 10, height: 10 }}>
                         <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -743,7 +738,7 @@ export default function EditRecipe({ appUser }) {
                   </div>
                 ))}
                 {altFormKey === ing._key ? (
-                  <div style={{ marginTop: '6px', paddingLeft: '16px', borderLeft: `2px solid ${C.honey}` }}>
+                  <div style={{ marginTop: '6px', paddingLeft: '16px', borderLeft: `2px solid ${color.honey}` }}>
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                       <input type="text" value={altQty} onChange={e => setAltQty(e.target.value)} placeholder="Qty"
                         style={{ ...inputStyle, width: '44px', textAlign: 'center', padding: '6px 4px', fontSize: '11px' }} />
@@ -753,7 +748,7 @@ export default function EditRecipe({ appUser }) {
                         autoFocus style={{ ...inputStyle, flex: 1, padding: '6px 8px', fontSize: '12px' }} />
                       <button onClick={() => addAlternative(ing._key)} disabled={!altName.trim()} style={{
                         padding: '6px 10px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 500,
-                        background: altName.trim() ? C.forest : C.linen, color: altName.trim() ? 'white' : C.driftwood,
+                        background: altName.trim() ? color.forest : color.rule, color: altName.trim() ? 'white' : color.inkSoft,
                         cursor: altName.trim() ? 'pointer' : 'default', fontFamily: "'Jost', sans-serif",
                       }}>Add</button>
                     </div>
@@ -761,7 +756,7 @@ export default function EditRecipe({ appUser }) {
                 ) : (
                   <button onClick={() => { setAltFormKey(ing._key); setAltQty(''); setAltUnit('piece'); setAltName('') }} style={{
                     background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0 0 16px',
-                    fontSize: '11px', color: C.driftwood, fontWeight: 300, fontFamily: "'Jost', sans-serif",
+                    fontSize: '11px', color: color.inkSoft, fontWeight: 300, fontFamily: "'Jost', sans-serif",
                   }}>
                     {(ing.alternatives || []).length > 0 ? '+ Add another alternative' : '+ Add alternative'}
                   </button>
@@ -771,7 +766,7 @@ export default function EditRecipe({ appUser }) {
           })}
           <button onClick={addIngredient} style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: '13px', color: C.forest, fontWeight: 400, padding: '6px 0',
+            fontSize: '13px', color: color.forest, fontWeight: 400, padding: '6px 0',
             fontFamily: "'Jost', sans-serif",
           }}>+ Add ingredient</button>
         </div>
@@ -781,16 +776,16 @@ export default function EditRecipe({ appUser }) {
           <div style={label}>Instructions</div>
           {instructions.map((step, i) => (
             <div key={step._key} style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'flex-start' }}>
-              <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', color: C.forest, minWidth: '24px', paddingTop: '8px' }}>
+              <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', color: color.forest, minWidth: '24px', paddingTop: '8px' }}>
                 {i + 1}
               </span>
               <textarea value={step.instruction || ''} onChange={e => updateInstruction(step._key, e.target.value)}
                 placeholder={`Step ${i + 1}...`} rows={2}
                 style={{ ...inputStyle, flex: 1, resize: 'none', fontSize: '13px' }} />
               <button onClick={() => removeInstruction(step._key)} style={{
-                width: '26px', height: '26px', borderRadius: '50%', border: `1px solid ${C.linen}`,
+                width: '26px', height: '26px', borderRadius: '50%', border: `1px solid ${color.rule}`,
                 background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: C.driftwood, flexShrink: 0, marginTop: '6px',
+                color: color.inkSoft, flexShrink: 0, marginTop: '6px',
               }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}>
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -800,7 +795,7 @@ export default function EditRecipe({ appUser }) {
           ))}
           <button onClick={addInstruction} style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: '13px', color: C.forest, fontWeight: 400, padding: '6px 0',
+            fontSize: '13px', color: color.forest, fontWeight: 400, padding: '6px 0',
             fontFamily: "'Jost', sans-serif",
           }}>+ Add step</button>
         </div>
@@ -822,19 +817,19 @@ export default function EditRecipe({ appUser }) {
 
       {/* ── Error ─────────────────────────────────────────────────── */}
       {error && (
-        <div style={{ padding: '0 22px 10px', fontSize: '13px', color: C.red, textAlign: 'center' }}>{error}</div>
+        <div style={{ padding: '0 22px 10px', fontSize: '13px', color: color.rust, textAlign: 'center' }}>{error}</div>
       )}
 
       {/* ── Pinned Save Button ────────────────────────────────────── */}
       <div style={{
         position: 'fixed', bottom: 'calc(48px + env(safe-area-inset-bottom, 8px))', left: '50%', transform: 'translateX(-50%)',
-        width: '100%', maxWidth: '430px', padding: '12px 22px', background: C.cream,
-        borderTop: `1px solid ${C.linen}`, zIndex: 50, boxSizing: 'border-box',
+        width: '100%', maxWidth: '430px', padding: '12px 22px', background: color.paper,
+        borderTop: `1px solid ${color.rule}`, zIndex: 50, boxSizing: 'border-box',
       }}>
         <button onClick={handleSave} disabled={!s(name) || saving} style={{
           width: '100%', padding: '16px', borderRadius: '14px',
-          background: s(name) && !saving ? C.forest : C.linen,
-          color: s(name) && !saving ? 'white' : C.driftwood,
+          background: s(name) && !saving ? color.forest : color.rule,
+          color: s(name) && !saving ? 'white' : color.inkSoft,
           border: 'none', cursor: s(name) && !saving ? 'pointer' : 'default',
           fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
           boxShadow: s(name) && !saving ? '0 4px 16px rgba(30,55,35,0.25)' : 'none',
@@ -847,7 +842,7 @@ export default function EditRecipe({ appUser }) {
       {toast && (
         <div style={{
           position: 'fixed', top: '80px', left: '50%',
-          background: C.forest, color: 'white', padding: '10px 22px', borderRadius: '10px',
+          background: color.forest, color: 'white', padding: '10px 22px', borderRadius: '10px',
           fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
           zIndex: 300, boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
           animation: 'toastIn 0.25s cubic-bezier(0.22,1,0.36,1) forwards',

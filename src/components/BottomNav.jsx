@@ -4,10 +4,7 @@
  */
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useArc } from '../context/ArcContext'
-
-const C = {
-  cream: '#FAF7F2', driftwood: '#8C7B6B', linen: '#E8E0D0',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 const NAV_TABS = [
   {
@@ -108,8 +105,8 @@ export default function BottomNav({ activeTab, onBeforeNavigate }) {
     <nav style={{
       position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
       width: '100%', maxWidth: '430px',
-      zIndex: 100, background: C.cream,
-      borderTop: `1px solid ${C.linen}`,
+      zIndex: 100, background: color.paper,
+      borderTop: `1px solid ${color.rule}`,
       paddingBottom: 'env(safe-area-inset-bottom, 8px)',
     }}>
       <div style={{
@@ -128,7 +125,7 @@ export default function BottomNav({ activeTab, onBeforeNavigate }) {
               justifyContent: 'center', gap: '3px',
               cursor: 'pointer', padding: 0,
               background: 'none', border: 'none',
-              color: active ? arcColor : C.driftwood,
+              color: active ? arcColor : color.inkSoft,
               transition: 'color 0.15s',
               height: '100%',
             }}

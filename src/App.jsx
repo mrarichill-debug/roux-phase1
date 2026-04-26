@@ -52,6 +52,7 @@ import BottomSheet from './components/BottomSheet'
 import TopBar from './components/TopBar'
 import ScrollToTop from './components/ScrollToTop'
 import BottomNav from './components/BottomNav'
+import { color } from './styles/tokens'
 // AppShell (Shell) removed — Phase 1 leftover, disconnected from routing
 
 function formatRelativeTime(dateStr) {
@@ -71,12 +72,12 @@ function formatRelativeTime(dateStr) {
 function TraditionsPlaceholder() {
   const navigate = useNavigate()
   return (
-    <div style={{ background: '#FAF7F2', minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
+    <div style={{ background: color.paper, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
       <TopBar
         leftAction={{ onClick: () => navigate(-1), label: 'Back' }}
         centerContent={<span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>Traditions</span>}
       />
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 22px', color: '#8C7B6B', fontStyle: 'italic' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 22px', color: color.inkSoft, fontStyle: 'italic' }}>
         Traditions — coming soon
       </div>
       <BottomNav activeTab="meals" />
@@ -277,12 +278,12 @@ export default function App() {
   // Auth still loading — branded splash, never show welcome or dashboard
   if (authLoading) return (
     <div style={{
-      minHeight: '100vh', background: '#FAF7F2',
+      minHeight: '100vh', background: color.paper,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <span style={{
         fontFamily: "'Slabo 27px', serif", fontSize: '27px', fontWeight: 400,
-        color: '#3D6B4F',
+        color: color.forest,
       }}>Roux.</span>
     </div>
   )
@@ -301,8 +302,8 @@ export default function App() {
         </Routes>
       ) : !appUser ? (
         // ── Session loaded, waiting on user record ────────────────────────
-        <div style={{ minHeight: '100vh', background: '#FAF7F2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontFamily: "'Slabo 27px', serif", fontSize: '27px', fontWeight: 400, color: '#3D6B4F' }}>Roux.</span>
+        <div style={{ minHeight: '100vh', background: color.paper, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontFamily: "'Slabo 27px', serif", fontSize: '27px', fontWeight: 400, color: color.forest }}>Roux.</span>
         </div>
       ) : appUser.membership_status === 'pending' ? (
         // ── Pending approval — warm holding screen ────────────────────────
@@ -472,7 +473,7 @@ function AuthenticatedApp({ appUser, setAppUser }) {
             <span style={{
               position: 'absolute', top: '4px', right: '4px',
               width: '8px', height: '8px', borderRadius: '50%',
-              background: '#C49A3C', border: '1.5px solid #3D6B4F',
+              background: color.honey, border: '1.5px solid #3D6B4F',
             }} />
           )}
         </button>
@@ -520,24 +521,24 @@ function AuthenticatedApp({ appUser, setAppUser }) {
                   borderBottom: '0.5px solid #E4DDD2',
                   display: 'flex', gap: 10, alignItems: 'flex-start',
                 }}>
-                  <span style={{ color: '#3D6B4F', fontSize: 12, marginTop: 2 }}>✦</span>
+                  <span style={{ color: color.forest, fontSize: 12, marginTop: 2 }}>✦</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '13px', color: '#2C2417', lineHeight: 1.55, fontFamily: "'Jost', sans-serif", fontWeight: 300 }}>
+                    <div style={{ fontSize: '13px', color: color.ink, lineHeight: 1.55, fontFamily: "'Jost', sans-serif", fontWeight: 300 }}>
                       {item.message}
                     </div>
-                    <div style={{ fontSize: '10px', color: '#8C7B6B', marginTop: 3 }}>
+                    <div style={{ fontSize: '10px', color: color.inkSoft, marginTop: 3 }}>
                       {formatRelativeTime(item.created_at)}
                     </div>
                   </div>
                 </div>
               ))}
               {notifications.length > 0 && (
-                <div style={{ height: '0.5px', background: '#E4DDD2', margin: '4px 0' }} />
+                <div style={{ height: '0.5px', background: color.rule, margin: '4px 0' }} />
               )}
             </>
           )}
           {notifications.length === 0 && sageActivity?.length === 0 ? (
-            <div style={{ fontSize: '13px', fontStyle: 'italic', color: '#8C7B6B', padding: '20px 0' }}>
+            <div style={{ fontSize: '13px', fontStyle: 'italic', color: color.inkSoft, padding: '20px 0' }}>
               All caught up — nothing needs your attention.
             </div>
           ) : (
@@ -546,13 +547,13 @@ function AuthenticatedApp({ appUser, setAppUser }) {
                 <div key={n.id} style={{
                   padding: '14px', borderRadius: '12px',
                   border: '1px solid rgba(200,185,160,0.55)',
-                  background: '#FAF7F2',
+                  background: color.paper,
                 }}>
-                  <div style={{ fontSize: '14px', fontWeight: 500, color: '#2C2417', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 500, color: color.ink, marginBottom: '4px' }}>
                     {n.title}
                   </div>
                   {n.body && (
-                    <div style={{ fontSize: '13px', color: '#8C7B6B', fontWeight: 300, lineHeight: 1.5, marginBottom: '10px' }}>
+                    <div style={{ fontSize: '13px', color: color.inkSoft, fontWeight: 300, lineHeight: 1.5, marginBottom: '10px' }}>
                       {n.body}
                     </div>
                   )}
@@ -569,9 +570,9 @@ function AuthenticatedApp({ appUser, setAppUser }) {
                             <button key={r.key} onClick={() => setApprovalRoles(prev => ({ ...prev, [n.id]: r.key }))} style={{
                               flex: 1, padding: '6px 4px', fontSize: '10px', fontWeight: sel ? 500 : 400,
                               fontFamily: "'Jost', sans-serif", borderRadius: '8px', cursor: 'pointer',
-                              border: `1px solid ${sel ? '#3D6B4F' : '#E8E0D0'}`,
-                              background: sel ? '#3D6B4F' : 'transparent',
-                              color: sel ? 'white' : '#2C2417', transition: 'all 0.15s',
+                              border: `1px solid ${sel ? color.forest : color.rule}`,
+                              background: sel ? color.forest : 'transparent',
+                              color: sel ? 'white' : color.ink, transition: 'all 0.15s',
                               textAlign: 'center',
                             }}>{r.label}</button>
                           )
@@ -580,12 +581,12 @@ function AuthenticatedApp({ appUser, setAppUser }) {
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button onClick={() => handleNotifAction(n.id, 'approve_member', n.target_id, approvalRoles[n.id] || 'member_admin')} style={{
                           flex: 1, padding: '10px', borderRadius: '10px',
-                          background: '#3D6B4F', color: 'white', border: 'none',
+                          background: color.forest, color: 'white', border: 'none',
                           fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500, cursor: 'pointer',
                         }}>Approve</button>
                         <button onClick={() => handleNotifAction(n.id, 'decline_member', n.target_id)} style={{
                           flex: 1, padding: '10px', borderRadius: '10px',
-                          background: 'none', color: '#8C7B6B', border: '1px solid #E8E0D0',
+                          background: 'none', color: color.inkSoft, border: '1px solid #E8E0D0',
                           fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500, cursor: 'pointer',
                         }}>Decline</button>
                       </div>
@@ -596,7 +597,7 @@ function AuthenticatedApp({ appUser, setAppUser }) {
             </div>
           )}
           <button onClick={() => setNotifOpen(false)} style={{
-            width: '100%', background: 'none', border: 'none', color: '#8C7B6B',
+            width: '100%', background: 'none', border: 'none', color: color.inkSoft,
             fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 300,
             padding: '10px', cursor: 'pointer',
           }}>Close</button>
@@ -651,14 +652,14 @@ function PendingApprovalScreen({ appUser, onApproved }) {
   if (isApproved) {
     return (
       <div style={{
-        background: '#FAF7F2', minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
+        background: color.paper, minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         padding: '40px 32px', fontFamily: "'Jost', sans-serif", textAlign: 'center',
         opacity: 0, animation: 'fadeIn 0.5s ease forwards',
       }}>
         <div style={{
           fontFamily: "'Slabo 27px', Georgia, serif", fontSize: '36px', fontWeight: 400,
-          color: '#3D6B4F', letterSpacing: '-0.5px', marginBottom: '24px',
+          color: color.forest, letterSpacing: '-0.5px', marginBottom: '24px',
         }}>
           Roux.
         </div>
@@ -667,13 +668,13 @@ function PendingApprovalScreen({ appUser, onApproved }) {
           background: 'rgba(61,107,79,0.10)', display: 'flex',
           alignItems: 'center', justifyContent: 'center', marginBottom: '20px',
         }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="#7A8C6E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 26, height: 26 }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke={color.sage} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 26, height: 26 }}>
             <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
           </svg>
         </div>
         <div style={{
           fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 500,
-          color: '#2C2417', fontStyle: 'italic',
+          color: color.ink, fontStyle: 'italic',
         }}>
           Welcome to the kitchen, {firstName}.
         </div>
@@ -687,13 +688,13 @@ function PendingApprovalScreen({ appUser, onApproved }) {
 
   return (
     <div style={{
-      background: '#FAF7F2', minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
+      background: color.paper, minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: '40px 32px', fontFamily: "'Jost', sans-serif", textAlign: 'center',
     }}>
       <div style={{
         fontFamily: "'Slabo 27px', Georgia, serif", fontSize: '36px', fontWeight: 400,
-        color: '#2C2417', letterSpacing: '-0.5px', marginBottom: '24px',
+        color: color.ink, letterSpacing: '-0.5px', marginBottom: '24px',
       }}>
         Roux.
       </div>
@@ -702,18 +703,18 @@ function PendingApprovalScreen({ appUser, onApproved }) {
         background: 'rgba(61,107,79,0.10)', display: 'flex',
         alignItems: 'center', justifyContent: 'center', marginBottom: '20px',
       }}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="#7A8C6E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
+        <svg viewBox="0 0 24 24" fill="none" stroke={color.sage} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
           <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
         </svg>
       </div>
       <div style={{
         fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 500,
-        color: '#2C2417', marginBottom: '10px',
+        color: color.ink, marginBottom: '10px',
       }}>
         Request sent, {firstName}.
       </div>
       <div style={{
-        fontSize: '15px', color: '#8C7B6B', fontWeight: 300, lineHeight: 1.6, maxWidth: '280px',
+        fontSize: '15px', color: color.inkSoft, fontWeight: 300, lineHeight: 1.6, maxWidth: '280px',
       }}>
         {statusMsg}
       </div>
@@ -725,23 +726,23 @@ function PendingApprovalScreen({ appUser, onApproved }) {
 function DeclinedScreen() {
   return (
     <div style={{
-      background: '#FAF7F2', minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
+      background: color.paper, minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: '40px 32px', fontFamily: "'Jost', sans-serif", textAlign: 'center',
     }}>
       <div style={{
         fontFamily: "'Slabo 27px', Georgia, serif", fontSize: '36px', fontWeight: 400,
-        color: '#3D6B4F', marginBottom: '24px',
+        color: color.forest, marginBottom: '24px',
       }}>
         Roux.
       </div>
       <div style={{
         fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500,
-        color: '#2C2417', marginBottom: '10px',
+        color: color.ink, marginBottom: '10px',
       }}>
         Your request was not approved.
       </div>
-      <div style={{ fontSize: '14px', color: '#8C7B6B', fontWeight: 300, lineHeight: 1.6 }}>
+      <div style={{ fontSize: '14px', color: color.inkSoft, fontWeight: 300, lineHeight: 1.6 }}>
         Contact the kitchen admin if you think this was a mistake.
       </div>
     </div>

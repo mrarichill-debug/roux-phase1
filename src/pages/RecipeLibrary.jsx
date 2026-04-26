@@ -14,20 +14,9 @@ import BottomNav from '../components/BottomNav'
 import AddToPlanSheet from '../components/AddToPlanSheet'
 import BottomSheet from '../components/BottomSheet'
 import { useArc } from '../context/ArcContext'
+import { color, alpha, elevation } from '../styles/tokens'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-const C = {
-  forest:    '#3D6B4F',
-  forestDk:  '#2E5038',
-  sage:      '#7A8C6E',
-  honey:     '#C49A3C',
-  cream:     '#FAF7F2',
-  ink:       '#2C2417',
-  driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E',
-  linen:     '#E8E0D0',
-  walnut:    '#8B6F52',
-}
-
 // ── Category pill → DB category mapping ───────────────────────────────────────
 // CAT_PILLS and CAT_MAP are now dynamic — derived from fetched recipes
 const SYSTEM_PILLS = ['★ Favorites', 'Quick ≤30m']
@@ -301,7 +290,7 @@ export default function RecipeLibrary({ appUser }) {
 
   return (
     <div style={{
-      background:    C.cream,
+      background:    color.paper,
       fontFamily:    "'Jost', sans-serif",
       fontWeight:    300,
       minHeight:     '100vh',
@@ -325,7 +314,7 @@ export default function RecipeLibrary({ appUser }) {
               padding: '14px', textAlign: 'center',
               fontFamily: "'Jost', sans-serif", fontSize: '12px',
               fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase',
-              color: active ? arcColor : C.driftwood,
+              color: active ? arcColor : color.inkSoft,
               cursor: active ? 'default' : 'pointer', border: 'none', background: 'none',
               borderBottom: active ? `2px solid ${arcColor}` : '2px solid transparent',
               transition: 'color 0.2s cubic-bezier(0.22,1,0.36,1), border-color 0.2s cubic-bezier(0.22,1,0.36,1)',
@@ -339,7 +328,7 @@ export default function RecipeLibrary({ appUser }) {
         <div style={{ flex: 1, position: 'relative' }}>
           <span style={{
             position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)',
-            color: C.driftwood, display: 'flex', alignItems: 'center',
+            color: color.inkSoft, display: 'flex', alignItems: 'center',
           }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ width: 15, height: 15 }}>
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
@@ -359,7 +348,7 @@ export default function RecipeLibrary({ appUser }) {
               padding: '10px 14px 10px 36px',
               fontFamily: "'Jost', sans-serif",
               fontSize: '14px', fontWeight: 300,
-              color: C.ink, outline: 'none',
+              color: color.ink, outline: 'none',
               transition: 'background 0.15s, border-color 0.15s',
               boxSizing: 'border-box',
             }}
@@ -374,7 +363,7 @@ export default function RecipeLibrary({ appUser }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
             <line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/>
             <line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/>
             <line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/>
@@ -384,7 +373,7 @@ export default function RecipeLibrary({ appUser }) {
             <span style={{
               position: 'absolute', top: '4px', right: '4px',
               width: '6px', height: '6px', borderRadius: '50%',
-              background: C.honey,
+              background: color.honey,
             }} />
           )}
         </button>
@@ -398,7 +387,7 @@ export default function RecipeLibrary({ appUser }) {
             display: 'block', width: '100%', textAlign: 'left',
             padding: '8px 22px 0', background: 'none', border: 'none',
             cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-            fontSize: '12px', fontWeight: 300, color: C.driftwood,
+            fontSize: '12px', fontWeight: 300, color: color.inkSoft,
             position: 'relative', zIndex: 1,
           }}
         >
@@ -419,10 +408,10 @@ export default function RecipeLibrary({ appUser }) {
           position: 'relative', zIndex: 1,
         }}>
           <div>
-            <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.forest, marginBottom: '2px' }}>
+            <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: color.forest, marginBottom: '2px' }}>
               Selecting recipe for
             </div>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', color: C.ink, fontWeight: 500 }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', color: color.ink, fontWeight: 500 }}>
               {dayLabel} {targetSlot === 'other' ? 'Everything else' : targetSlot.charAt(0).toUpperCase() + targetSlot.slice(1)}
             </div>
           </div>
@@ -430,7 +419,7 @@ export default function RecipeLibrary({ appUser }) {
             onClick={() => navigate('/plan')}
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              color: C.driftwood, padding: '4px', display: 'flex',
+              color: color.inkSoft, padding: '4px', display: 'flex',
             }}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
@@ -444,7 +433,7 @@ export default function RecipeLibrary({ appUser }) {
       <div style={{
         padding: '12px 22px', position: 'relative', zIndex: 1,
         fontFamily: "'Playfair Display', serif", fontSize: '14px',
-        fontStyle: 'italic', color: C.driftwood,
+        fontStyle: 'italic', color: color.inkSoft,
       }}>
         {loading ? '…' : hasActiveFilters || search.trim()
           ? `${filteredRecipes.length} recipe${filteredRecipes.length !== 1 ? 's' : ''} match`
@@ -475,7 +464,7 @@ export default function RecipeLibrary({ appUser }) {
         {!loading && filteredRecipes.length === 0 && (
           <div style={{
             gridColumn: '1 / -1', textAlign: 'center',
-            padding: '48px 0', color: C.driftwood, fontSize: '13px', fontStyle: 'italic',
+            padding: '48px 0', color: color.inkSoft, fontSize: '13px', fontStyle: 'italic',
           }}>
             No recipes match your search.
           </div>
@@ -520,7 +509,7 @@ export default function RecipeLibrary({ appUser }) {
 
               {/* Browse by tag — unified section */}
               <div>
-                <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '10px' }}>
+                <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: color.inkSoft, fontWeight: 500, marginBottom: '10px' }}>
                   Browse by tag
                 </div>
                 {/* Default tags */}
@@ -530,9 +519,9 @@ export default function RecipeLibrary({ appUser }) {
                     return (
                       <button key={tag.id} onClick={() => setActiveTags(prev => { const n = new Set(prev); n.has(tag.name) ? n.delete(tag.name) : n.add(tag.name); return n })} style={{
                         padding: '6px 14px', borderRadius: '20px',
-                        border: isActive ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
+                        border: isActive ? `1.5px solid ${arcColor}` : `1px solid ${color.rule}`,
                         background: isActive ? 'rgba(61,107,79,0.08)' : 'white',
-                        color: isActive ? arcColor : C.ink,
+                        color: isActive ? arcColor : color.ink,
                         fontFamily: "'Jost', sans-serif", fontSize: '13px',
                         fontWeight: isActive ? 500 : 400, cursor: 'pointer',
                       }}>{tag.name}</button>
@@ -542,16 +531,16 @@ export default function RecipeLibrary({ appUser }) {
                 {/* Custom household tags */}
                 {tagDefs.some(t => !t.is_default) && (
                   <>
-                    <div style={{ fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 300, margin: '12px 0 8px', fontFamily: "'Jost', sans-serif" }}>Your tags</div>
+                    <div style={{ fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: color.inkSoft, fontWeight: 300, margin: '12px 0 8px', fontFamily: "'Jost', sans-serif" }}>Your tags</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                       {tagDefs.filter(t => !t.is_default).map(tag => {
                         const isActive = activeTags.has(tag.name)
                         return (
                           <button key={tag.id} onClick={() => setActiveTags(prev => { const n = new Set(prev); n.has(tag.name) ? n.delete(tag.name) : n.add(tag.name); return n })} style={{
                             padding: '6px 14px', borderRadius: '20px',
-                            border: isActive ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
+                            border: isActive ? `1.5px solid ${arcColor}` : `1px solid ${color.rule}`,
                             background: isActive ? 'rgba(61,107,79,0.08)' : 'white',
-                            color: isActive ? arcColor : C.ink,
+                            color: isActive ? arcColor : color.ink,
                             fontFamily: "'Jost', sans-serif", fontSize: '13px',
                             fontWeight: isActive ? 500 : 400, cursor: 'pointer',
                           }}>{tag.name}</button>
@@ -567,9 +556,9 @@ export default function RecipeLibrary({ appUser }) {
                     return (
                       <button key={pill} onClick={() => toggleFilter(pill)} style={{
                         padding: '6px 14px', borderRadius: '20px',
-                        border: isActive ? `1.5px solid ${arcColor}` : `1px solid ${C.honey}`,
+                        border: isActive ? `1.5px solid ${arcColor}` : `1px solid ${color.honey}`,
                         background: isActive ? 'rgba(61,107,79,0.08)' : 'white',
-                        color: isActive ? arcColor : C.ink,
+                        color: isActive ? arcColor : color.ink,
                         fontFamily: "'Jost', sans-serif", fontSize: '13px',
                         fontWeight: isActive ? 500 : 400, cursor: 'pointer',
                       }}>{pill}</button>
@@ -592,7 +581,7 @@ export default function RecipeLibrary({ appUser }) {
                   <button onClick={() => { setActiveTags(new Set()); setActiveFilters(new Set(['All'])) }} style={{
                     background: 'none', border: 'none', cursor: 'pointer',
                     fontFamily: "'Jost', sans-serif", fontSize: '12px',
-                    color: C.driftwood, fontWeight: 300, padding: '4px',
+                    color: color.inkSoft, fontWeight: 300, padding: '4px',
                   }}>
                     Clear all
                   </button>
@@ -653,7 +642,7 @@ function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWe
               border: '0.5px solid #C4B8A8',
               borderRadius: '4px', padding: '2px 7px',
               fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase',
-              color: C.driftwood,
+              color: color.inkSoft,
             }}>
               {catLabel}
             </div>
@@ -666,7 +655,7 @@ function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWe
             }}
             aria-label={recipe.is_family_favorite ? 'Remove from favorites' : 'Add to favorites'}
           >
-            <svg viewBox="0 0 24 24" fill={recipe.is_family_favorite ? arcColor : 'none'} stroke={recipe.is_family_favorite ? arcColor : C.driftwood} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+            <svg viewBox="0 0 24 24" fill={recipe.is_family_favorite ? arcColor : 'none'} stroke={recipe.is_family_favorite ? arcColor : color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
             </svg>
           </button>
@@ -675,7 +664,7 @@ function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWe
         {/* Recipe name */}
         <div style={{
           fontFamily: "'Playfair Display', serif",
-          fontSize: '17px', fontWeight: 500, color: C.ink,
+          fontSize: '17px', fontWeight: 500, color: color.ink,
           lineHeight: 1.3, marginBottom: '4px',
         }}>
           {recipe.name}
@@ -683,7 +672,7 @@ function RecipeGridCard({ recipe, index, selectMode, isPlanned, onTap, onAddToWe
 
         {/* Meta: time + servings */}
         {(timeStr || recipe.servings) && (
-          <div style={{ fontSize: '11px', color: C.driftwoodSm, display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ fontSize: '11px', color: color.inkSoft, display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {timeStr && <span>{timeStr}</span>}
             {recipe.servings && <span>{recipe.servings} srv</span>}
           </div>
@@ -769,14 +758,14 @@ function WeekPickerSheetContent({ recipe, appUser, onClose }) {
       {/* Header */}
       <div style={{
         padding: '16px 22px 14px',
-        borderBottom: `1px solid ${C.linen}`,
+        borderBottom: `1px solid ${color.rule}`,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <div>
-          <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '2px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: color.inkSoft, marginBottom: '2px' }}>
             Add to this week
           </div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.ink, fontWeight: 500, lineHeight: 1.2 }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: color.ink, fontWeight: 500, lineHeight: 1.2 }}>
             {recipe?.name}
           </div>
         </div>
@@ -784,9 +773,9 @@ function WeekPickerSheetContent({ recipe, appUser, onClose }) {
           onClick={onClose}
           style={{
             width: '32px', height: '32px', borderRadius: '50%',
-            border: '1px solid rgba(200,185,160,0.6)', background: C.cream,
+            border: '1px solid rgba(200,185,160,0.6)', background: color.paper,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', color: C.driftwood, flexShrink: 0,
+            cursor: 'pointer', color: color.inkSoft, flexShrink: 0,
           }}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
@@ -799,23 +788,23 @@ function WeekPickerSheetContent({ recipe, appUser, onClose }) {
       <div style={{ padding: '14px 22px' }}>
         {added === 'no-plan' ? (
           <div style={{ textAlign: 'center', padding: '24px 0' }}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', color: C.ink, marginBottom: '8px' }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', color: color.ink, marginBottom: '8px' }}>
               No plan for this week yet.
             </div>
-            <div style={{ fontSize: '13px', color: C.driftwood }}>
+            <div style={{ fontSize: '13px', color: color.inkSoft }}>
               Visit Our Plan to start planning.
             </div>
           </div>
         ) : added === 'error' ? (
-          <div style={{ textAlign: 'center', padding: '24px 0', fontSize: '13px', color: '#A03030' }}>
+          <div style={{ textAlign: 'center', padding: '24px 0', fontSize: '13px', color: color.rust }}>
             Something went wrong. Try again.
           </div>
         ) : added ? (
           <div style={{ textAlign: 'center', padding: '24px 0' }}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.forest, marginBottom: '4px' }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: color.forest, marginBottom: '4px' }}>
               Added to {added} ✓
             </div>
-            <div style={{ fontSize: '12px', color: C.driftwoodSm }}>Dinner slot updated in Our Plan.</div>
+            <div style={{ fontSize: '12px', color: color.inkSoft }}>Dinner slot updated in Our Plan.</div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -828,19 +817,19 @@ function WeekPickerSheetContent({ recipe, appUser, onClose }) {
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '12px 16px', borderRadius: '10px',
                   border: '1px solid rgba(200,185,160,0.55)',
-                  background: adding === day ? 'rgba(61,107,79,0.06)' : C.cream,
+                  background: adding === day ? 'rgba(61,107,79,0.06)' : color.paper,
                   cursor: adding ? 'default' : 'pointer',
                   fontFamily: "'Jost', sans-serif",
-                  fontSize: '14px', color: C.ink, fontWeight: 400,
+                  fontSize: '14px', color: color.ink, fontWeight: 400,
                   opacity: adding && adding !== day ? 0.5 : 1,
                   transition: 'opacity 0.15s',
                 }}
               >
                 <span>{day}</span>
                 {adding === day ? (
-                  <div style={{ width: '14px', height: '14px', border: '2px solid rgba(61,107,79,0.3)', borderTopColor: C.forest, borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                  <div style={{ width: '14px', height: '14px', border: '2px solid rgba(61,107,79,0.3)', borderTopColor: color.forest, borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
                 ) : (
-                  <span style={{ fontSize: '11px', color: C.sage, fontWeight: 500 }}>Dinner →</span>
+                  <span style={{ fontSize: '11px', color: color.sage, fontWeight: 500 }}>Dinner →</span>
                 )}
               </button>
             ))}

@@ -12,13 +12,7 @@ import BottomNav from '../components/BottomNav'
 import AddToPlanSheet from '../components/AddToPlanSheet'
 import BottomSheet from '../components/BottomSheet'
 import { useArc } from '../context/ArcContext'
-
-const C = {
-  forest: '#3D6B4F', sage: '#7A8C6E', honey: '#C49A3C',
-  cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E',
-  linen: '#E8E0D0', walnut: '#8B6F52',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 const DIET_LABELS = {
   gluten_free: 'Gluten Free', dairy_free: 'Dairy Free',
@@ -56,10 +50,10 @@ function formatTime(m) { if (!m) return null; if (m < 60) return `${m}m`; const 
 function displayCategory(cat) { return cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : null }
 
 // ── SVG Icons ───────────────────────────────────────────────────────────────
-const ClockIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-const FlameIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
-const PeopleIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-const SignalIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><rect x="4" y="14" width="4" height="6" rx="1"/><rect x="10" y="10" width="4" height="10" rx="1"/><rect x="16" y="6" width="4" height="14" rx="1"/></svg>
+const ClockIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+const FlameIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+const PeopleIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+const SignalIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><rect x="4" y="14" width="4" height="6" rx="1"/><rect x="10" y="10" width="4" height="10" rx="1"/><rect x="16" y="6" width="4" height="14" rx="1"/></svg>
 
 // Session-scoped set to debounce recipe_viewed logging (one per recipe per session)
 const viewedThisSession = new Set()
@@ -194,7 +188,7 @@ export default function RecipeCard({ appUser }) {
   const heroUrl = primaryPhoto?.url || recipe?.photo_url || null
 
   if (loading) return (
-    <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
+    <div style={{ background: color.paper, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
       <TopBar slim leftAction={{ onClick: () => navigate(backTo), label: 'Back' }} />
       <div style={{ padding: '20px 22px' }}>
         <div className="shimmer-block" style={{ height: '220px', borderRadius: '16px', marginBottom: '12px' }} />
@@ -205,21 +199,21 @@ export default function RecipeCard({ appUser }) {
   )
 
   if (!recipe) return (
-    <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif", display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', color: C.ink, marginBottom: '8px' }}>Recipe not found</div>
-      <button onClick={() => navigate(backTo)} style={{ fontSize: '13px', color: C.sage, background: 'none', border: 'none', cursor: 'pointer' }}>← Back</button>
+    <div style={{ background: color.paper, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif", display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', color: color.ink, marginBottom: '8px' }}>Recipe not found</div>
+      <button onClick={() => navigate(backTo)} style={{ fontSize: '13px', color: color.sage, background: 'none', border: 'none', cursor: 'pointer' }}>← Back</button>
     </div>
   )
 
   return (
-    <div style={{ background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 8px))' }}>
+    <div style={{ background: color.paper, fontFamily: "'Jost', sans-serif", fontWeight: 300, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 8px))' }}>
 
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <TopBar slim
         leftAction={{ onClick: () => navigate(backTo), label: 'Back' }}
         rightActions={[
           { label: 'Add to Plan', onClick: () => { setPlanSheetOpen(true); logActivity({ user: appUser, actionType: 'recipe_plan_tapped', targetType: 'recipe', targetId: id, targetName: recipe?.name }) }, icon: <svg viewBox="0 0 24 24" fill="none" stroke="rgba(210,230,200,0.7)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg> },
-          { label: favActive ? 'Unfavorite' : 'Favorite', onClick: toggleFav, icon: <span style={{ fontSize: '18px', color: favActive ? C.honey : 'rgba(210,230,200,0.55)' }}>{favActive ? '★' : '☆'}</span> },
+          { label: favActive ? 'Unfavorite' : 'Favorite', onClick: toggleFav, icon: <span style={{ fontSize: '18px', color: favActive ? color.honey : 'rgba(210,230,200,0.55)' }}>{favActive ? '★' : '☆'}</span> },
         ]}
       />
 
@@ -240,7 +234,7 @@ export default function RecipeCard({ appUser }) {
                   background: 'rgba(255,255,255,0.85)', border: 'none',
                   borderRadius: '4px', padding: '3px 8px',
                   fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px',
-                  textTransform: 'uppercase', color: C.driftwoodSm,
+                  textTransform: 'uppercase', color: color.inkSoft,
                 }}>{tag}</div>
               ))}
               {recipeMethods.map(m => (
@@ -248,7 +242,7 @@ export default function RecipeCard({ appUser }) {
                   background: 'rgba(255,255,255,0.85)', border: 'none',
                   borderRadius: '4px', padding: '3px 8px',
                   fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px',
-                  textTransform: 'uppercase', color: C.driftwoodSm,
+                  textTransform: 'uppercase', color: color.inkSoft,
                 }}>{m}</div>
               ))}
             </div>
@@ -265,7 +259,7 @@ export default function RecipeCard({ appUser }) {
                 background: 'transparent', border: '0.5px solid #C4B8A8',
                 borderRadius: '4px', padding: '3px 8px',
                 fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px',
-                textTransform: 'uppercase', color: C.driftwood,
+                textTransform: 'uppercase', color: color.inkSoft,
               }}>{tag}</div>
             ))}
             {recipeMethods.map(m => (
@@ -273,7 +267,7 @@ export default function RecipeCard({ appUser }) {
                 background: 'transparent', border: '0.5px solid #C4B8A8',
                 borderRadius: '4px', padding: '3px 8px',
                 fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px',
-                textTransform: 'uppercase', color: C.driftwood,
+                textTransform: 'uppercase', color: color.inkSoft,
               }}>{m}</div>
             ))}
           </div>
@@ -289,7 +283,7 @@ export default function RecipeCard({ appUser }) {
           {recipePhotos.filter(p => !p.is_primary).map(photo => (
             <button key={photo.id} onClick={() => setLightboxPhoto(photo.url)} style={{
               flexShrink: 0, width: '64px', height: '64px', borderRadius: '8px',
-              overflow: 'hidden', border: `1px solid ${C.linen}`,
+              overflow: 'hidden', border: `1px solid ${color.rule}`,
               padding: 0, cursor: 'pointer', background: 'none',
             }}>
               <img src={photo.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -300,16 +294,16 @@ export default function RecipeCard({ appUser }) {
 
       {/* ── Header Card ───────────────────────────────────────────────── */}
       <div style={{ padding: '20px 22px 0', animation: 'fadeUp 0.4s ease 0.10s both' }}>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 500, color: C.ink, lineHeight: 1.25, marginBottom: '4px' }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 500, color: color.ink, lineHeight: 1.25, marginBottom: '4px' }}>
           {recipe.name}
         </div>
         {attribution && (
-          <div style={{ fontSize: '12px', color: C.driftwood, fontWeight: 300, marginBottom: '4px' }}>
+          <div style={{ fontSize: '12px', color: color.inkSoft, fontWeight: 300, marginBottom: '4px' }}>
             By {attribution}
           </div>
         )}
         {recipe.description && (
-          <div style={{ fontSize: '13px', color: C.driftwood, fontWeight: 300, lineHeight: 1.5, marginBottom: '4px' }}>
+          <div style={{ fontSize: '13px', color: color.inkSoft, fontWeight: 300, lineHeight: 1.5, marginBottom: '4px' }}>
             {descExpanded || recipe.description.length <= 100 ? recipe.description : (
               <>
                 {recipe.description.slice(0, 100)}…{' '}
@@ -323,7 +317,7 @@ export default function RecipeCard({ appUser }) {
         {(recipe.diet?.length > 0) && (
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
             {recipe.diet.map(d => (
-              <span key={d} style={{ background: 'transparent', border: '0.5px solid #C4B8A8', color: C.driftwood, padding: '2px 8px', borderRadius: '10px', fontSize: '10px' }}>
+              <span key={d} style={{ background: 'transparent', border: '0.5px solid #C4B8A8', color: color.inkSoft, padding: '2px 8px', borderRadius: '10px', fontSize: '10px' }}>
                 {DIET_LABELS[d] || d}
               </span>
             ))}
@@ -336,7 +330,7 @@ export default function RecipeCard({ appUser }) {
             display: 'block', marginTop: '10px', padding: 0,
             background: 'none', border: 'none', cursor: 'pointer',
             fontFamily: "'Jost', sans-serif", fontSize: '12px',
-            fontWeight: 300, color: C.honey, textAlign: 'left',
+            fontWeight: 300, color: color.honey, textAlign: 'left',
           }}>
             Sage has a suggestion or two about your ingredients →
           </button>
@@ -361,8 +355,8 @@ export default function RecipeCard({ appUser }) {
             borderRight: i < 3 ? '1px solid rgba(200,185,160,0.35)' : 'none',
           }}>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>{stat.icon}</div>
-            <div style={{ fontFamily: "'Jost', sans-serif", fontSize: '15px', color: C.ink, fontWeight: 400 }}>{stat.val}</div>
-            <div style={{ fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 300 }}>{stat.label}</div>
+            <div style={{ fontFamily: "'Jost', sans-serif", fontSize: '15px', color: color.ink, fontWeight: 400 }}>{stat.val}</div>
+            <div style={{ fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: color.inkSoft, fontWeight: 300 }}>{stat.label}</div>
           </div>
         ))}
       </div>
@@ -370,7 +364,7 @@ export default function RecipeCard({ appUser }) {
       {/* ── Action Row ────────────────────────────────────────────────── */}
       <div style={{ padding: '14px 22px 0' }}>
         <button onClick={() => {}} style={{
-          width: '100%', background: 'none', color: C.ink,
+          width: '100%', background: 'none', color: color.ink,
           border: '1px solid rgba(200,185,160,0.6)', borderRadius: '10px',
           padding: '12px', fontFamily: "'Jost', sans-serif", fontSize: '12px',
           cursor: 'pointer', letterSpacing: '0.3px',
@@ -383,14 +377,14 @@ export default function RecipeCard({ appUser }) {
       <div style={{
         display: 'grid', gridTemplateColumns: '1fr 1fr',
         margin: '16px 22px 0', position: 'sticky', top: '58px', zIndex: 50,
-        background: C.cream,
+        background: color.paper,
       }}>
         {['ingredients', 'directions'].map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)} style={{
             padding: '14px', textAlign: 'center',
             fontFamily: "'Jost', sans-serif", fontSize: '12px',
             fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase',
-            color: activeTab === tab ? arcColor : C.driftwood,
+            color: activeTab === tab ? arcColor : color.inkSoft,
             cursor: 'pointer', border: 'none', background: 'none',
             borderBottom: activeTab === tab ? `2px solid ${arcColor}` : '2px solid transparent',
             transition: 'color 0.2s cubic-bezier(0.22,1,0.36,1), border-color 0.2s cubic-bezier(0.22,1,0.36,1)',
@@ -411,20 +405,20 @@ export default function RecipeCard({ appUser }) {
               background: 'white', border: '1px solid rgba(200,185,160,0.55)',
               borderRadius: '10px', padding: '12px 16px', marginBottom: '4px',
             }}>
-              <span style={{ fontSize: '13px', color: C.driftwood }}>Serves</span>
+              <span style={{ fontSize: '13px', color: color.inkSoft }}>Serves</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                 <button onClick={() => adjustServes(-1)} style={servesBtn}>−</button>
-                <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', color: C.ink, minWidth: '24px', textAlign: 'center' }}>{serves}</span>
+                <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', color: color.ink, minWidth: '24px', textAlign: 'center' }}>{serves}</span>
                 <button onClick={() => adjustServes(1)} style={servesBtn}>+</button>
               </div>
             </div>
-            <div style={{ fontSize: '11px', fontStyle: 'italic', color: C.driftwood, fontWeight: 300, marginBottom: '18px', paddingLeft: '2px' }}>
+            <div style={{ fontSize: '11px', fontStyle: 'italic', color: color.inkSoft, fontWeight: 300, marginBottom: '18px', paddingLeft: '2px' }}>
               Adjust to scale ingredients
             </div>
 
             {groupedIngredients.map(({ section, items }) => (
               <div key={section || '__default'} style={{ marginBottom: '20px' }}>
-                {section && <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.sage, marginBottom: '8px' }}>{section}</div>}
+                {section && <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: color.sage, marginBottom: '8px' }}>{section}</div>}
                 {items.map((ing, idx) => {
                   const isChecked = checked.has(ing.id)
                   const scaledQty = scaleQty(ing.quantity, scale)
@@ -444,20 +438,20 @@ export default function RecipeCard({ appUser }) {
                           width: '22px', height: '22px', borderRadius: '6px',
                           border: isChecked ? 'none' : '1.5px solid rgba(200,185,160,0.7)',
                           flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          background: isChecked ? C.sage : 'white', fontSize: '12px', color: 'white',
+                          background: isChecked ? color.sage : 'white', fontSize: '12px', color: 'white',
                           animation: isChecked ? 'checkPulse 0.2s ease' : 'none',
                           transition: 'background 0.15s, transform 0.1s',
                         }}>
                           {isChecked ? '✓' : ''}
                         </div>
-                        {amountStr && <div style={{ fontSize: '13px', fontWeight: 500, color: C.forest, minWidth: '58px', flexShrink: 0 }}>{amountStr}</div>}
-                        <div style={{ fontSize: '14px', color: isChecked ? C.linen : C.ink, lineHeight: 1.4, textDecoration: isChecked ? 'line-through' : 'none', transition: 'color 0.15s', flex: 1 }}>
+                        {amountStr && <div style={{ fontSize: '13px', fontWeight: 500, color: color.forest, minWidth: '58px', flexShrink: 0 }}>{amountStr}</div>}
+                        <div style={{ fontSize: '14px', color: isChecked ? color.rule : color.ink, lineHeight: 1.4, textDecoration: isChecked ? 'line-through' : 'none', transition: 'color 0.15s', flex: 1 }}>
                           {nameStr}
-                          {ing.is_optional && <span style={{ fontSize: '11px', color: C.driftwoodSm, marginLeft: '6px' }}>(optional)</span>}
+                          {ing.is_optional && <span style={{ fontSize: '11px', color: color.inkSoft, marginLeft: '6px' }}>(optional)</span>}
                         </div>
                         {hasAlts && (
                           <span style={{
-                            fontSize: '10px', fontWeight: 500, color: C.honey,
+                            fontSize: '10px', fontWeight: 500, color: color.honey,
                             background: 'rgba(196,154,60,0.1)', padding: '2px 6px', borderRadius: '4px',
                             flexShrink: 0,
                           }}>
@@ -468,8 +462,8 @@ export default function RecipeCard({ appUser }) {
                       {hasAlts && isExpanded && (
                         <div style={{ paddingLeft: '34px', paddingBottom: '8px' }}>
                           {alts.map(alt => (
-                            <div key={alt.id} style={{ fontSize: '13px', color: C.driftwood, lineHeight: 1.6, padding: '2px 0' }}>
-                              <span style={{ color: C.honey, fontWeight: 500, marginRight: '4px' }}>or</span>
+                            <div key={alt.id} style={{ fontSize: '13px', color: color.inkSoft, lineHeight: 1.6, padding: '2px 0' }}>
+                              <span style={{ color: color.honey, fontWeight: 500, marginRight: '4px' }}>or</span>
                               {[alt.quantity, alt.unit, alt.name].filter(Boolean).join(' ')}
                             </div>
                           ))}
@@ -480,7 +474,7 @@ export default function RecipeCard({ appUser }) {
                 })}
               </div>
             ))}
-            {ingredients.length === 0 && <div style={{ textAlign: 'center', padding: '32px 0', color: C.driftwood, fontSize: '13px', fontStyle: 'italic' }}>No ingredients listed yet.</div>}
+            {ingredients.length === 0 && <div style={{ textAlign: 'center', padding: '32px 0', color: color.inkSoft, fontSize: '13px', fontStyle: 'italic' }}>No ingredients listed yet.</div>}
           </div>
         )}
 
@@ -495,13 +489,13 @@ export default function RecipeCard({ appUser }) {
                   cursor: 'pointer', opacity: state === 'completing' ? 0.15 : state === 'done' ? 0.48 : 1,
                   transition: 'opacity 0.18s ease',
                 }}>
-                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 400, color: C.forest, flexShrink: 0, minWidth: '28px' }}>
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 400, color: color.forest, flexShrink: 0, minWidth: '28px' }}>
                     {step.step_number}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '14px', color: C.ink, lineHeight: 1.7, fontWeight: 300 }}>{step.instruction}</div>
+                    <div style={{ fontSize: '14px', color: color.ink, lineHeight: 1.7, fontWeight: 300 }}>{step.instruction}</div>
                     {step.tip && (
-                      <div style={{ marginTop: '8px', fontSize: '13px', color: C.walnut, fontStyle: 'italic', fontFamily: "'Playfair Display', serif", padding: '8px 12px', background: 'rgba(139,111,82,0.06)', borderRadius: '8px', borderLeft: `2px solid rgba(139,111,82,0.3)`, lineHeight: 1.5 }}>
+                      <div style={{ marginTop: '8px', fontSize: '13px', color: color.amberDark, fontStyle: 'italic', fontFamily: "'Playfair Display', serif", padding: '8px 12px', background: 'rgba(139,111,82,0.06)', borderRadius: '8px', borderLeft: `2px solid rgba(139,111,82,0.3)`, lineHeight: 1.5 }}>
                         {step.tip}
                       </div>
                     )}
@@ -509,7 +503,7 @@ export default function RecipeCard({ appUser }) {
                 </div>
               )
             })}
-            {instructions.length === 0 && <div style={{ textAlign: 'center', padding: '32px 0', color: C.driftwood, fontSize: '13px', fontStyle: 'italic' }}>No directions listed yet.</div>}
+            {instructions.length === 0 && <div style={{ textAlign: 'center', padding: '32px 0', color: color.inkSoft, fontSize: '13px', fontStyle: 'italic' }}>No directions listed yet.</div>}
           </div>
         )}
       </div>
@@ -519,22 +513,22 @@ export default function RecipeCard({ appUser }) {
         {/* Personal notes */}
         {recipe.personal_notes && (
           <div style={{ marginTop: '16px' }}>
-            <div style={{ fontFamily: "'Caveat', cursive", fontSize: '18px', color: C.walnut, marginBottom: '6px' }}>My notes</div>
-            <div style={{ fontSize: '13px', color: C.driftwood, lineHeight: 1.6 }}>{recipe.personal_notes}</div>
+            <div style={{ fontFamily: "'Caveat', cursive", fontSize: '18px', color: color.amberDark, marginBottom: '6px' }}>My notes</div>
+            <div style={{ fontSize: '13px', color: color.inkSoft, lineHeight: 1.6 }}>{recipe.personal_notes}</div>
           </div>
         )}
 
         {/* Variations */}
         {recipe.variations && (
           <div style={{ marginTop: '16px' }}>
-            <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>Variations</div>
-            <div style={{ fontSize: '13px', color: C.driftwood, lineHeight: 1.6 }}>{recipe.variations}</div>
+            <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: color.inkSoft, marginBottom: '6px' }}>Variations</div>
+            <div style={{ fontSize: '13px', color: color.inkSoft, lineHeight: 1.6 }}>{recipe.variations}</div>
           </div>
         )}
 
         {/* Recipe history */}
         {hasHistory && (
-          <div style={{ marginTop: '16px', fontSize: '11px', color: C.driftwood, fontWeight: 300 }}>
+          <div style={{ marginTop: '16px', fontSize: '11px', color: color.inkSoft, fontWeight: 300 }}>
             {[
               recipe.times_planned > 0 && `Planned ${recipe.times_planned} time${recipe.times_planned !== 1 ? 's' : ''}`,
               recipe.times_cooked > 0 && `Cooked ${recipe.times_cooked} time${recipe.times_cooked !== 1 ? 's' : ''}`,
@@ -607,7 +601,7 @@ export default function RecipeCard({ appUser }) {
             onClick={() => setDeleteConfirm(true)}
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: '12px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300,
+              fontSize: '12px', color: color.inkSoft, fontFamily: "'Jost', sans-serif", fontWeight: 300,
             }}
           >
             Delete recipe
@@ -618,10 +612,10 @@ export default function RecipeCard({ appUser }) {
       {/* Delete confirmation sheet */}
       <BottomSheet isOpen={deleteConfirm} onClose={() => setDeleteConfirm(false)}>
         <div style={{ padding: '16px 22px 24px' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '8px' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: color.ink, marginBottom: '8px' }}>
             Delete this recipe?
           </div>
-          <div style={{ fontSize: '13px', color: C.driftwood, lineHeight: 1.6, marginBottom: '20px' }}>
+          <div style={{ fontSize: '13px', color: color.inkSoft, lineHeight: 1.6, marginBottom: '20px' }}>
             This will permanently remove {recipe?.name || 'this recipe'} from your library. Meals linked to this recipe won't be affected.
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -632,7 +626,7 @@ export default function RecipeCard({ appUser }) {
               }}
               style={{
                 flex: 1, padding: '12px', borderRadius: '12px',
-                background: 'none', color: '#A03030', border: '1px solid #E4DDD2',
+                background: 'none', color: color.rust, border: '1px solid #E4DDD2',
                 fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500, cursor: 'pointer',
               }}
             >
@@ -642,7 +636,7 @@ export default function RecipeCard({ appUser }) {
               onClick={() => setDeleteConfirm(false)}
               style={{
                 flex: 1, padding: '12px', borderRadius: '12px',
-                background: 'none', color: C.driftwood, border: '1px solid #E4DDD2',
+                background: 'none', color: color.inkSoft, border: '1px solid #E4DDD2',
                 fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 400, cursor: 'pointer',
               }}
             >
@@ -660,8 +654,8 @@ export default function RecipeCard({ appUser }) {
 const servesBtn = {
   width: '30px', height: '30px', borderRadius: '50%',
   border: '1px solid rgba(200,185,160,0.6)',
-  background: '#FAF7F2', cursor: 'pointer',
-  fontSize: '16px', color: '#2C2417',
+  background: color.paper, cursor: 'pointer',
+  fontSize: '16px', color: color.ink,
   display: 'flex', alignItems: 'center', justifyContent: 'center',
 }
 
@@ -712,7 +706,7 @@ function SageReviewSheet({ open, onClose, recipe, recipeId, appUser, onResolved 
     <BottomSheet isOpen={true} onClose={onClose} maxHeight="75vh">
       <div style={{ padding: '16px 22px 40px' }}>
           <div style={{
-            fontSize: '13px', color: C.driftwood, fontWeight: 300, fontStyle: 'italic',
+            fontSize: '13px', color: color.inkSoft, fontWeight: 300, fontStyle: 'italic',
             lineHeight: 1.5, marginBottom: '16px',
           }}>
             Hey {firstName} — I noticed a few things while reviewing your ingredients. Mind if I clarify? It'll help your shopping list.
@@ -722,13 +716,13 @@ function SageReviewSheet({ open, onClose, recipe, recipeId, appUser, onResolved 
             const done = resolved.has(i)
             return (
               <div key={i} style={{
-                padding: '14px 0', borderBottom: i < suggestions.length - 1 ? `1px solid ${C.linen}` : 'none',
+                padding: '14px 0', borderBottom: i < suggestions.length - 1 ? `1px solid ${color.rule}` : 'none',
                 opacity: done ? 0.4 : 1, transition: 'opacity 0.2s',
               }}>
-                <div style={{ fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500, color: C.ink, marginBottom: '4px' }}>
+                <div style={{ fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500, color: color.ink, marginBottom: '4px' }}>
                   {s.ingredient_name}
                 </div>
-                <div style={{ fontSize: '13px', color: C.driftwood, fontWeight: 300, marginBottom: '6px', lineHeight: 1.4 }}>
+                <div style={{ fontSize: '13px', color: color.inkSoft, fontWeight: 300, marginBottom: '6px', lineHeight: 1.4 }}>
                   {s.issue}
                 </div>
                 <div style={{ fontSize: '13px', color: arcColor, fontWeight: 400, marginBottom: '8px' }}>
@@ -743,7 +737,7 @@ function SageReviewSheet({ open, onClose, recipe, recipeId, appUser, onResolved 
                     }}>Accept</button>
                     <button onClick={() => dismiss(i)} style={{
                       padding: '6px 14px', borderRadius: '8px', border: 'none',
-                      background: 'none', color: C.driftwood, fontSize: '12px', fontWeight: 300,
+                      background: 'none', color: color.inkSoft, fontSize: '12px', fontWeight: 300,
                       fontFamily: "'Jost', sans-serif", cursor: 'pointer',
                     }}>Keep mine</button>
                   </div>

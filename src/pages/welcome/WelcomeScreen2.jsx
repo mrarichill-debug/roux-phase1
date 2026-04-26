@@ -1,19 +1,18 @@
 import { useNavigate } from 'react-router-dom'
-import { C, BgTexture, NavRow, screenWrap } from './welcomeUtils'
+import { BgTexture, NavRow, screenWrap } from './welcomeUtils'
+import { color, alpha, elevation } from '../../styles/tokens'
 
 function StepDots({ active }) {
   return (
     <div style={{
       display: 'flex', gap: '6px', marginTop: '40px',
-      opacity: 0, animation: 'fadeIn 0.4s ease 0.6s forwards',
-    }}>
+      opacity: 0, animation: 'fadeIn 0.4s ease 0.6s forwards' }}>
       {[0, 1, 2].map(i => (
         <div key={i} style={{
           height: '6px', borderRadius: '3px',
           width: i === active ? '18px' : '6px',
-          background: i === active ? C.forest : C.linen,
-          transition: 'all 0.2s',
-        }} />
+          background: i === active ? color.forest : color.rule,
+          transition: 'all 0.2s' }} />
       ))}
     </div>
   )
@@ -30,8 +29,7 @@ function ChoiceCard({ icon, title, desc, color, delay, onClick }) {
         cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '18px',
         boxShadow: '0 2px 8px rgba(80,60,30,0.06), 0 1px 2px rgba(80,60,30,0.04)',
         transition: 'all 0.18s', textAlign: 'left',
-        opacity: 0, animation: `fadeUp 0.5s ease ${delay} forwards`,
-      }}
+        opacity: 0, animation: `fadeUp 0.5s ease ${delay} forwards` }}
       onMouseDown={e => {
         e.currentTarget.style.transform = 'scale(0.985)'
         e.currentTarget.style.borderColor = 'rgba(61,107,79,0.4)'
@@ -55,9 +53,8 @@ function ChoiceCard({ icon, title, desc, color, delay, onClick }) {
       <div style={{
         width: '52px', height: '52px', borderRadius: '14px',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0, background: color.bg,
-      }}>
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={color.icon} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        flexShrink: 0, background: color.paper }}>
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           {icon}
         </svg>
       </div>
@@ -65,10 +62,9 @@ function ChoiceCard({ icon, title, desc, color, delay, onClick }) {
       {/* Text */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontSize: '16px', fontWeight: 500, color: C.ink, marginBottom: '4px',
-          fontFamily: "'Playfair Display', serif",
-        }}>{title}</div>
-        <div style={{ fontSize: '12.5px', color: C.driftwood, fontWeight: 300, lineHeight: 1.5 }}>
+          fontSize: '16px', fontWeight: 500, color: color.ink, marginBottom: '4px',
+          fontFamily: "'Playfair Display', serif" }}>{title}</div>
+        <div style={{ fontSize: '12.5px', color: color.inkSoft, fontWeight: 300, lineHeight: 1.5 }}>
           {desc}
         </div>
       </div>
@@ -76,11 +72,10 @@ function ChoiceCard({ icon, title, desc, color, delay, onClick }) {
       {/* Arrow */}
       <div style={{
         width: '28px', height: '28px', borderRadius: '50%',
-        background: C.linen,
+        background: color.rule,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0, color: C.driftwood,
-        transition: 'all 0.18s',
-      }}>
+        flexShrink: 0, color: color.inkSoft,
+        transition: 'all 0.18s' }}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
           <path d="M9 18l6-6-6-6"/>
         </svg>
@@ -103,15 +98,13 @@ export default function WelcomeScreen2() {
         {/* Heading */}
         <div style={{
           textAlign: 'center', marginBottom: '44px', width: '100%',
-          opacity: 0, animation: 'fadeUp 0.5s ease 0.15s forwards',
-        }}>
+          opacity: 0, animation: 'fadeUp 0.5s ease 0.15s forwards' }}>
           <div style={{
             fontFamily: "'Playfair Display', serif",
-            fontSize: '28px', fontWeight: 500, color: C.ink, lineHeight: 1.25, marginBottom: '10px',
-          }}>
+            fontSize: '28px', fontWeight: 500, color: color.ink, lineHeight: 1.25, marginBottom: '10px' }}>
             Let's get you set up.
           </div>
-          <div style={{ fontSize: '14px', color: C.driftwood, fontWeight: 300, lineHeight: 1.6 }}>
+          <div style={{ fontSize: '14px', color: color.inkSoft, fontWeight: 300, lineHeight: 1.6 }}>
             Are you starting a new home,<br />or joining one that already exists?
           </div>
         </div>
@@ -121,7 +114,7 @@ export default function WelcomeScreen2() {
           <ChoiceCard
             delay="0.28s"
             onClick={() => navigate('/create-home')}
-            color={{ bg: 'rgba(61,107,79,0.08)', icon: C.forest }}
+            color={{ bg: 'rgba(61,107,79,0.08)', icon: color.forest }}
             title="Start from scratch"
             desc="Create a new home for your family. You'll be the admin."
             icon={
@@ -135,7 +128,7 @@ export default function WelcomeScreen2() {
           <ChoiceCard
             delay="0.38s"
             onClick={() => navigate('/join')}
-            color={{ bg: 'rgba(196,154,60,0.08)', icon: C.honey }}
+            color={{ bg: 'rgba(196,154,60,0.08)', icon: color.honey }}
             title="Join a home"
             desc="Someone invited you. You'll join their kitchen as a member."
             icon={

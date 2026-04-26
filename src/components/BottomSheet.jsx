@@ -12,13 +12,7 @@
  */
 import { useEffect, useRef } from 'react'
 import useKeyboardAware from '../hooks/useKeyboardAware'
-
-const C = {
-  cream: '#FAF7F2',
-  ink: '#2C2417',
-  linen: '#E4DDD2',
-  backdrop: 'rgba(44, 36, 23, 0.5)',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 export default function BottomSheet({ isOpen, onClose, title, children, zIndex = 200, maxHeight = '85vh' }) {
   const { keyboardHeight, isKeyboardOpen } = useKeyboardAware()
@@ -95,7 +89,7 @@ export default function BottomSheet({ isOpen, onClose, title, children, zIndex =
         style={{
           position: 'fixed',
           inset: 0,
-          background: C.backdrop,
+          background: 'rgba(44,36,23,0.5)',
           zIndex,
           WebkitTapHighlightColor: 'transparent',
         }}
@@ -112,7 +106,7 @@ export default function BottomSheet({ isOpen, onClose, title, children, zIndex =
           transform: 'translateX(-50%)',
           width: '100%',
           maxWidth: '430px',
-          background: C.cream,
+          background: color.paper,
           borderRadius: '20px 20px 0 0',
           zIndex: zIndex + 1,
           boxShadow: '0 -4px 32px rgba(44,36,23,0.18)',
@@ -131,7 +125,7 @@ export default function BottomSheet({ isOpen, onClose, title, children, zIndex =
           width: '40px',
           height: '4px',
           borderRadius: '2px',
-          background: C.linen,
+          background: color.rule,
           margin: '12px auto 0',
           flexShrink: 0,
         }} />
@@ -143,7 +137,7 @@ export default function BottomSheet({ isOpen, onClose, title, children, zIndex =
             fontFamily: "'Playfair Display', serif",
             fontSize: '20px',
             fontWeight: 500,
-            color: C.ink,
+            color: color.ink,
             flexShrink: 0,
           }}>
             {title}

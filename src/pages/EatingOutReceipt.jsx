@@ -8,11 +8,7 @@ import { supabase } from '../lib/supabase'
 import { logActivity } from '../lib/activityLog'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
-
-const C = {
-  forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', linen: '#E8E0D0', sage: '#7A8C6E',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 export default function EatingOutReceipt({ appUser }) {
   const { mealId } = useParams()
@@ -109,7 +105,7 @@ export default function EatingOutReceipt({ appUser }) {
 
   return (
     <div style={{
-      background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
+      background: color.paper, minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
       fontFamily: "'Jost', sans-serif", fontWeight: 300,
     }}>
       <TopBar
@@ -124,15 +120,15 @@ export default function EatingOutReceipt({ appUser }) {
         {!preview && !processing && (
           <button onClick={() => fileRef.current?.click()} style={{
             width: '100%', padding: '48px 24px', borderRadius: '16px',
-            border: `2px dashed ${C.linen}`, background: 'white',
+            border: `2px dashed ${color.rule}`, background: 'white',
             cursor: 'pointer', textAlign: 'center',
           }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 32, height: 32, marginBottom: '12px' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 32, height: 32, marginBottom: '12px' }}>
               <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/>
               <path d="M8 7h8M8 11h8M8 15h4"/>
             </svg>
-            <div style={{ fontSize: '15px', color: C.ink, fontWeight: 400 }}>Tap to photograph your receipt</div>
-            <div style={{ fontSize: '13px', color: C.driftwood, marginTop: '4px' }}>Sage will read the total for you</div>
+            <div style={{ fontSize: '15px', color: color.ink, fontWeight: 400 }}>Tap to photograph your receipt</div>
+            <div style={{ fontSize: '13px', color: color.inkSoft, marginTop: '4px' }}>Sage will read the total for you</div>
           </button>
         )}
 
@@ -142,8 +138,8 @@ export default function EatingOutReceipt({ appUser }) {
         {/* Processing */}
         {processing && (
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
-            <div style={{ display: 'inline-block', width: '32px', height: '32px', border: `3px solid ${C.linen}`, borderTop: `3px solid ${C.forest}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-            <div style={{ marginTop: '12px', fontSize: '14px', color: C.driftwood, fontStyle: 'italic' }}>Sage is reading your receipt...</div>
+            <div style={{ display: 'inline-block', width: '32px', height: '32px', border: `3px solid ${color.rule}`, borderTop: `3px solid ${color.forest}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            <div style={{ marginTop: '12px', fontSize: '14px', color: color.inkSoft, fontStyle: 'italic' }}>Sage is reading your receipt...</div>
           </div>
         )}
 
@@ -154,26 +150,26 @@ export default function EatingOutReceipt({ appUser }) {
 
         {/* Error */}
         {error && (
-          <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', textAlign: 'center' }}>{error}</div>
+          <div style={{ fontSize: '13px', color: color.inkSoft, fontStyle: 'italic', textAlign: 'center' }}>{error}</div>
         )}
 
         {/* Parsed total — confirm */}
         {parsedTotal && !editing && !processing && (
           <div style={{ textAlign: 'center', width: '100%' }}>
-            <div style={{ fontSize: '14px', color: C.driftwood, marginBottom: '8px' }}>Total:</div>
-            <div style={{ fontSize: '28px', fontWeight: 500, color: C.ink, fontFamily: "'Playfair Display', serif", marginBottom: '16px' }}>
+            <div style={{ fontSize: '14px', color: color.inkSoft, marginBottom: '8px' }}>Total:</div>
+            <div style={{ fontSize: '28px', fontWeight: 500, color: color.ink, fontFamily: "'Playfair Display', serif", marginBottom: '16px' }}>
               ${Number(parsedTotal).toFixed(2)}
             </div>
-            <div style={{ fontSize: '13px', color: C.driftwood, marginBottom: '20px' }}>Does that look right?</div>
+            <div style={{ fontSize: '13px', color: color.inkSoft, marginBottom: '20px' }}>Does that look right?</div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button onClick={confirmTotal} disabled={saving} style={{
                 flex: 1, padding: '14px', borderRadius: '14px', border: 'none',
-                background: C.forest, color: 'white', cursor: 'pointer',
+                background: color.forest, color: 'white', cursor: 'pointer',
                 fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
               }}>{saving ? 'Saving...' : 'Confirm'}</button>
               <button onClick={() => setEditing(true)} style={{
                 flex: 1, padding: '14px', borderRadius: '14px',
-                border: `1.5px solid ${C.linen}`, background: 'white', color: C.ink, cursor: 'pointer',
+                border: `1.5px solid ${color.rule}`, background: 'white', color: color.ink, cursor: 'pointer',
                 fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 400,
               }}>Edit</button>
             </div>
@@ -183,19 +179,19 @@ export default function EatingOutReceipt({ appUser }) {
         {/* Edit mode */}
         {editing && !processing && (
           <div style={{ width: '100%' }}>
-            <div style={{ fontSize: '14px', color: C.driftwood, marginBottom: '8px' }}>Enter the total:</div>
+            <div style={{ fontSize: '14px', color: color.inkSoft, marginBottom: '8px' }}>Enter the total:</div>
             <div style={{ position: 'relative', marginBottom: '16px' }}>
-              <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '18px', color: C.driftwood }}>$</span>
+              <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '18px', color: color.inkSoft }}>$</span>
               <input type="text" inputMode="decimal" value={editTotal} onChange={e => setEditTotal(e.target.value)}
                 autoFocus placeholder="0.00" style={{
                   width: '100%', padding: '14px 14px 14px 32px', fontSize: '18px',
-                  fontFamily: "'Jost', sans-serif", border: `1.5px solid ${C.linen}`,
-                  borderRadius: '12px', outline: 'none', color: C.ink, boxSizing: 'border-box',
+                  fontFamily: "'Jost', sans-serif", border: `1.5px solid ${color.rule}`,
+                  borderRadius: '12px', outline: 'none', color: color.ink, boxSizing: 'border-box',
                 }} />
             </div>
             <button onClick={confirmTotal} disabled={saving || !editTotal.trim()} style={{
               width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
-              background: editTotal.trim() ? C.forest : C.linen, color: editTotal.trim() ? 'white' : C.driftwood,
+              background: editTotal.trim() ? color.forest : color.rule, color: editTotal.trim() ? 'white' : color.inkSoft,
               cursor: editTotal.trim() ? 'pointer' : 'default',
               fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
             }}>{saving ? 'Saving...' : 'Save'}</button>

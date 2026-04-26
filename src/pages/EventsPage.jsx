@@ -3,13 +3,12 @@
  */
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
-
-const C = { cream: '#FAF7F2', ink: '#2C2417', driftwood: '#8C7B6B' }
+import { color, alpha, elevation } from '../styles/tokens'
 
 export default function EventsPage() {
   return (
     <div style={{
-      background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
+      background: color.paper, minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
       fontFamily: "'Jost', sans-serif", fontWeight: 300,
       paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 8px))',
     }}>
@@ -18,7 +17,7 @@ export default function EventsPage() {
       <div style={{ padding: '60px 30px', textAlign: 'center' }}>
         <div style={{
           fontFamily: "'Playfair Display', serif", fontSize: '16px', fontStyle: 'italic',
-          color: C.driftwood, lineHeight: 1.7,
+          color: color.inkSoft, lineHeight: 1.7,
         }}>
           Traditions, seasonal events, and family occasions — coming soon.
         </div>

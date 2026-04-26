@@ -6,8 +6,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-
-const C = { forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417', driftwood: '#8C7B6B', honey: '#C49A3C', red: '#A03030', linen: '#E8E0D0' }
+import { color, alpha, elevation } from '../styles/tokens'
 
 const HILL_HOUSEHOLD = '53f6a197-544a-48e6-9a46-23d7252399c2'
 
@@ -72,7 +71,7 @@ export default function DevReset({ appUser }) {
 
   return (
     <div style={{
-      background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
+      background: color.paper, minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
       fontFamily: "'Jost', sans-serif", fontWeight: 300,
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: '40px 30px',
@@ -80,47 +79,47 @@ export default function DevReset({ appUser }) {
       {/* DEV badge */}
       <div style={{
         position: 'fixed', top: '12px', right: '12px',
-        background: C.honey, color: 'white', fontSize: '9px', fontWeight: 600,
+        background: color.honey, color: 'white', fontSize: '9px', fontWeight: 600,
         padding: '3px 8px', borderRadius: '4px', letterSpacing: '1px',
       }}>DEV ONLY</div>
 
-      <div style={{ fontFamily: "'Slabo 27px', serif", fontSize: '27px', color: C.forest, marginBottom: '24px' }}>
+      <div style={{ fontFamily: "'Slabo 27px', serif", fontSize: '27px', color: color.forest, marginBottom: '24px' }}>
         Roux.
       </div>
 
-      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', color: C.ink, marginBottom: '8px', textAlign: 'center' }}>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', color: color.ink, marginBottom: '8px', textAlign: 'center' }}>
         Test Reset
       </div>
-      <div style={{ fontSize: '13px', color: C.driftwood, textAlign: 'center', lineHeight: 1.6, marginBottom: '32px', maxWidth: '280px' }}>
+      <div style={{ fontSize: '13px', color: color.inkSoft, textAlign: 'center', lineHeight: 1.6, marginBottom: '32px', maxWidth: '280px' }}>
         Reset {appUser?.name?.split(' ')[0] || 'user'}'s account to a fresh state for testing onboarding. Recipes and settings are kept.
       </div>
 
       {done ? (
-        <div style={{ fontSize: '15px', color: C.forest, fontWeight: 500 }}>
+        <div style={{ fontSize: '15px', color: color.forest, fontWeight: 500 }}>
           Reset complete. Redirecting...
         </div>
       ) : confirming ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '260px' }}>
-          <div style={{ fontSize: '12px', color: C.red, textAlign: 'center', marginBottom: '4px' }}>
+          <div style={{ fontSize: '12px', color: color.rust, textAlign: 'center', marginBottom: '4px' }}>
             This will delete all planned meals, meal plans, shopping items, activity log, and home notices.
           </div>
           <button onClick={handleReset} disabled={resetting} style={{
             width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
-            background: C.red, color: 'white', cursor: 'pointer',
+            background: color.rust, color: 'white', cursor: 'pointer',
             fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
           }}>
             {resetting ? 'Resetting...' : 'Yes, reset everything'}
           </button>
           <button onClick={() => setConfirming(false)} style={{
             width: '100%', padding: '12px', borderRadius: '12px', border: 'none',
-            background: 'none', color: C.driftwood, cursor: 'pointer',
+            background: 'none', color: color.inkSoft, cursor: 'pointer',
             fontFamily: "'Jost', sans-serif", fontSize: '13px',
           }}>Cancel</button>
         </div>
       ) : (
         <button onClick={() => setConfirming(true)} style={{
           padding: '14px 32px', borderRadius: '14px', border: 'none',
-          background: C.forest, color: 'white', cursor: 'pointer',
+          background: color.forest, color: 'white', cursor: 'pointer',
           fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
           boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
         }}>
@@ -129,8 +128,8 @@ export default function DevReset({ appUser }) {
       )}
 
       {/* Calendar provider quick switch */}
-      <div style={{ marginTop: '32px', padding: '16px', background: 'white', borderRadius: '12px', border: `1px solid ${C.linen}`, width: '100%', maxWidth: '260px' }}>
-        <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '8px' }}>Calendar Provider</div>
+      <div style={{ marginTop: '32px', padding: '16px', background: 'white', borderRadius: '12px', border: `1px solid ${color.rule}`, width: '100%', maxWidth: '260px' }}>
+        <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: color.inkSoft, marginBottom: '8px' }}>Calendar Provider</div>
         <div style={{ display: 'flex', gap: '6px' }}>
           {['apple', 'google', null].map(p => (
             <button key={String(p)} onClick={async () => {
@@ -140,29 +139,29 @@ export default function DevReset({ appUser }) {
               }).eq('id', appUser.id)
             }} style={{
               flex: 1, padding: '8px', borderRadius: '8px', fontSize: '11px',
-              border: `1px solid ${C.linen}`, background: 'white', cursor: 'pointer',
-              fontFamily: "'Jost', sans-serif", color: C.ink,
+              border: `1px solid ${color.rule}`, background: 'white', cursor: 'pointer',
+              fontFamily: "'Jost', sans-serif", color: color.ink,
             }}>{p === 'apple' ? 'Apple' : p === 'google' ? 'Google' : 'None'}</button>
           ))}
         </div>
       </div>
 
       {/* Fix session — link dev auth user to Hill household */}
-      <div style={{ marginTop: '24px', padding: '16px', background: 'white', borderRadius: '12px', border: `1px solid ${C.linen}`, width: '100%', maxWidth: '260px' }}>
-        <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '8px' }}>Session Fix</div>
-        <div style={{ fontSize: '11px', color: C.driftwood, lineHeight: 1.5, marginBottom: '10px' }}>
+      <div style={{ marginTop: '24px', padding: '16px', background: 'white', borderRadius: '12px', border: `1px solid ${color.rule}`, width: '100%', maxWidth: '260px' }}>
+        <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: color.inkSoft, marginBottom: '8px' }}>Session Fix</div>
+        <div style={{ fontSize: '11px', color: color.inkSoft, lineHeight: 1.5, marginBottom: '10px' }}>
           Link current auth user to Hill household. Fixes blank screens caused by missing users row.
         </div>
         <button onClick={fixSession} disabled={fixing} style={{
           width: '100%', padding: '10px', borderRadius: '8px', border: 'none',
-          background: C.honey, color: 'white', cursor: 'pointer',
+          background: color.honey, color: 'white', cursor: 'pointer',
           fontFamily: "'Jost', sans-serif", fontSize: '12px', fontWeight: 500,
         }}>{fixing ? 'Fixing...' : 'Fix session — link to Hill household'}</button>
       </div>
 
       <button onClick={() => navigate('/')} style={{
         marginTop: '24px', background: 'none', border: 'none', cursor: 'pointer',
-        fontSize: '12px', color: C.driftwood, fontFamily: "'Jost', sans-serif",
+        fontSize: '12px', color: color.inkSoft, fontFamily: "'Jost', sans-serif",
       }}>← Back to app</button>
     </div>
   )

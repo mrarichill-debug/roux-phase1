@@ -8,11 +8,7 @@ import { supabase } from '../lib/supabase'
 import { logActivity } from '../lib/activityLog'
 import { useArc } from '../context/ArcContext'
 import TopBar from '../components/TopBar'
-
-const C = {
-  forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', linen: '#E4DDD2',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 const DOW_KEYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']
 const DOW_NAMES = { monday: 'Monday', tuesday: 'Tuesday', wednesday: 'Wednesday', thursday: 'Thursday', friday: 'Friday', saturday: 'Saturday', sunday: 'Sunday' }
@@ -98,9 +94,9 @@ export default function WeekReview({ appUser }) {
   // ── Loading ──────────────────────────────────────────────
   if (loading) {
     return (
-      <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
+      <div style={{ background: color.paper, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
         <TopBar centerContent={<span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>Week Review</span>} />
-        <div style={{ padding: '40px 22px', color: C.driftwood, fontStyle: 'italic' }}>Loading...</div>
+        <div style={{ padding: '40px 22px', color: color.inkSoft, fontStyle: 'italic' }}>Loading...</div>
       </div>
     )
   }
@@ -108,14 +104,14 @@ export default function WeekReview({ appUser }) {
   // ── No meals to review ───────────────────────────────────
   if (meals.length === 0 && !done) {
     return (
-      <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
+      <div style={{ background: color.paper, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
         <TopBar leftAction={{ onClick: () => navigate(-1), label: 'Back' }}
           centerContent={<span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>Week Review</span>} />
         <div style={{ padding: '60px 22px', textAlign: 'center' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', color: C.ink, marginBottom: '8px' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', color: color.ink, marginBottom: '8px' }}>
             Nothing to review.
           </div>
-          <div style={{ fontSize: '13px', color: C.driftwood, marginBottom: '24px' }}>
+          <div style={{ fontSize: '13px', color: color.inkSoft, marginBottom: '24px' }}>
             No meals were planned this week.
           </div>
           <button onClick={async () => { await closeOutWeek(); navigate('/') }} style={{
@@ -132,19 +128,19 @@ export default function WeekReview({ appUser }) {
   if (done) {
     return (
       <div style={{
-        background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
+        background: color.paper, minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
         fontFamily: "'Jost', sans-serif", display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center', padding: '40px 30px',
       }}>
         <div style={{ fontSize: '28px', color: arcColor, marginBottom: '20px' }}>✦</div>
         <div style={{
           fontFamily: "'Playfair Display', serif", fontSize: '24px', fontWeight: 500,
-          color: C.ink, marginBottom: '12px',
+          color: color.ink, marginBottom: '12px',
         }}>
           Thanks, {firstName}.
         </div>
         <div style={{
-          fontSize: '14px', color: C.driftwood, lineHeight: 1.7,
+          fontSize: '14px', color: color.inkSoft, lineHeight: 1.7,
           textAlign: 'center', maxWidth: '280px', marginBottom: '32px',
         }}>
           Every week you review helps Roux understand your family better. What worked gets remembered.
@@ -176,7 +172,7 @@ export default function WeekReview({ appUser }) {
 
   return (
     <div style={{
-      background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
+      background: color.paper, minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
       fontFamily: "'Jost', sans-serif", fontWeight: 300,
       display: 'flex', flexDirection: 'column',
     }}>
@@ -188,29 +184,29 @@ export default function WeekReview({ appUser }) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 22px' }}>
 
         {/* Progress */}
-        <div style={{ fontSize: '11px', color: C.driftwood, letterSpacing: '1px', marginBottom: '24px' }}>
+        <div style={{ fontSize: '11px', color: color.inkSoft, letterSpacing: '1px', marginBottom: '24px' }}>
           {currentIdx + 1} of {meals.length}
         </div>
 
         {/* Day card */}
         <div style={{
-          background: 'white', borderRadius: '16px', border: `0.5px solid ${C.linen}`,
+          background: 'white', borderRadius: '16px', border: `0.5px solid ${color.rule}`,
           padding: '28px 24px', width: '100%', maxWidth: '340px', textAlign: 'center',
           marginBottom: '28px',
         }}>
-          <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '6px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: color.inkSoft, marginBottom: '6px' }}>
             {dayName} {dateStr}
           </div>
           <div style={{
             fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500,
-            color: C.ink, lineHeight: 1.3, marginBottom: '10px',
+            color: color.ink, lineHeight: 1.3, marginBottom: '10px',
           }}>
             {mealName}
           </div>
           <span style={{
             display: 'inline-block', fontSize: '10px', fontWeight: 500, letterSpacing: '1px',
             textTransform: 'uppercase', padding: '3px 10px', borderRadius: '10px',
-            background: '#EFF4EC', color: C.forest,
+            background: '#EFF4EC', color: color.forest,
           }}>
             {typeLabel}
           </span>
@@ -235,7 +231,7 @@ export default function WeekReview({ appUser }) {
           </button>
           <button onClick={() => markMeal(meal.id, 'skipped')} style={{
             width: '100%', padding: '14px', borderRadius: '14px',
-            border: `1px solid ${C.linen}`, background: 'transparent', color: C.driftwood,
+            border: `1px solid ${color.rule}`, background: 'transparent', color: color.inkSoft,
             fontSize: '15px', fontWeight: 400, fontFamily: "'Jost', sans-serif", cursor: 'pointer',
           }}>
             Skipped

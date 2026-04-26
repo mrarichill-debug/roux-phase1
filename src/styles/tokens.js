@@ -3,39 +3,71 @@
 //
 // Usage:
 //   import { color, alpha, elevation } from '../styles/tokens'
-//   <div style={{ background: color.cream, boxShadow: elevation.card }}>
+//   <div style={{ background: color.paper, boxShadow: elevation.card }}>
 //
-// Inline `const C = {...}` palette objects in pages/components are being
+// Inline `const C = {...}` palette objects in pages/components have been
 // migrated out in favor of importing from here. New code MUST NOT introduce
 // hex literals or hand-written rgba/boxShadow strings — see DESIGN-SYSTEM.md.
+//
+// Naming:
+//   - paper / surface — background layers (paper = canvas, surface = elevated card bg)
+//   - ink / inkSoft   — primary and secondary text, also used as a darker accent
+//   - rule            — borders, dividers, inactive surfaces
+//   - forest / sage / honey / amber / rust — brand color families, each with a
+//     {family}Light / {family} / {family}Dark triplet.
+//
+// STEP 1 of the new-palette migration uses the previous hex values under the
+// new names — no visual change. STEP 2 swaps the values to the new 19-token
+// palette in one commit.
 
 // ── Base palette ─────────────────────────────────────────────────────────────
 export const color = {
-  forest:      '#3D6B4F',
-  forestDk:    '#2E5038',
-  sage:        '#7A8C6E',
-  honey:       '#C49A3C',
-  honeyDk:     '#7A5C14',
-  cream:       '#FAF7F2',
-  ink:         '#2C2417',
-  driftwood:   '#8C7B6B',
-  driftwoodSm: '#6B5B4E',
-  linen:       '#E8E0D0',
-  linenDk:     '#C8B9A0',
-  walnut:      '#8B6F52',
-  red:         '#A03030',
+  // Surfaces
+  paper:        '#FAF7F2',  // STEP 2 → #F4EFE6
+  surface:      '#FAF7F2',  // STEP 2 → #FBF7EE
+  ink:          '#2C2417',  // STEP 2 → #1A1612
+  inkSoft:      '#8C7B6B',  // was driftwood; STEP 2 → #6B5E51
+  rule:         '#E8E0D0',  // was linen; STEP 2 → #E2DACB
 
-  daySchool:   '#5B8DD9',
-  dayWeekend:  '#7A8C6E',
-  dayNoSchool: '#D4874A',
-  daySummer:   '#C49A3C',
+  // Forest family
+  forestLight:  '#3D6B4F',  // STEP 2 → #E5EDD8
+  forest:       '#3D6B4F',
+  forestDark:   '#2E5038',  // STEP 2 → #243F30
+
+  // Sage family
+  sageLight:    '#7A8C6E',  // STEP 2 → #E4E7DA
+  sage:         '#7A8C6E',
+  sageDark:     '#7A8C6E',  // STEP 2 → #4D5B43
+
+  // Honey family
+  honeyLight:   '#C49A3C',  // STEP 2 → #F2E4C7
+  honey:        '#C49A3C',  // STEP 2 → #C99A4B
+  honeyDark:    '#7A5C14',  // was honeyDk; STEP 2 → #8A6628
+
+  // Amber family
+  amberLight:   '#A07830',  // STEP 2 → #ECD9B0
+  amber:        '#A07830',
+  amberDark:    '#8B6F52',  // was walnut; STEP 2 → #6E4F18
+
+  // Rust family
+  rustLight:    '#A03030',  // STEP 2 → #F1D9CB
+  rust:         '#A03030',  // was red; STEP 2 → #C26240
+  rustDark:     '#A03030',  // STEP 2 → #8A3F22
+
+  // Day-type accents (orthogonal to the palette; intentionally untouched —
+  // the new palette has no blue counterpart for daySchool)
+  daySchool:    '#5B8DD9',
+  dayWeekend:   '#7A8C6E',
+  dayNoSchool:  '#D4874A',
+  daySummer:    '#C49A3C',
 }
 
 // ── Canonical alpha steps ────────────────────────────────────────────────────
-// Values come from a sweep of every rgba(...) literal in src/. Steps here are
-// the ones that appear 3+ times. Use the nearest existing step rather than
-// inventing new ones; if your design genuinely needs a new step, add it here
-// (review-gated) instead of inlining a one-off rgba.
+// Steps are the rgba values that recur 3+ times in the codebase. Use the
+// nearest existing step rather than inventing new ones.
+//
+// Renames in this migration: alpha.paper → alpha.paper, alpha.rule → alpha.rule.
+// Step values still use OLD rgb bases; STEP 2 swaps to new palette rgb.
 export const alpha = {
   forest: {
     6:  'rgba(61,107,79,0.06)',
@@ -57,21 +89,21 @@ export const alpha = {
     10: 'rgba(122,140,110,0.10)',
     12: 'rgba(122,140,110,0.12)',
   },
-  cream: {
+  paper: {
     15: 'rgba(250,247,242,0.15)',
     50: 'rgba(250,247,242,0.50)',
     70: 'rgba(250,247,242,0.70)',
     90: 'rgba(250,247,242,0.90)',
     95: 'rgba(250,247,242,0.95)',
   },
-  linenDk: {
+  rule: {
     15: 'rgba(200,185,160,0.15)',
     20: 'rgba(200,185,160,0.20)',
     25: 'rgba(200,185,160,0.25)',
     45: 'rgba(200,185,160,0.45)',
     55: 'rgba(200,185,160,0.55)',
   },
-  red: {
+  rust: {
     7:  'rgba(160,48,48,0.07)',
     20: 'rgba(160,48,48,0.20)',
   },

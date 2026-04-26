@@ -8,15 +8,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import BottomSheet from './BottomSheet'
-
-const C = {
-  forest:    '#3D6B4F',
-  forestDk:  '#2E5038',
-  ink:       '#2C2417',
-  driftwood: '#8C7B6B',
-  linen:     '#E8E0D0',
-  cream:     '#FAF7F2',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 export default function ProfileSheet({ appUser, open, onClose }) {
   const navigate = useNavigate()
@@ -37,7 +29,7 @@ export default function ProfileSheet({ appUser, open, onClose }) {
           style={{
             position: 'absolute', top: '16px', right: '18px',
             background: 'none', border: 'none', cursor: 'pointer',
-            color: C.driftwood, padding: '4px',
+            color: color.inkSoft, padding: '4px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             zIndex: 1,
           }}
@@ -51,11 +43,11 @@ export default function ProfileSheet({ appUser, open, onClose }) {
         {/* User info */}
         <div style={{
           padding: '8px 24px 18px',
-          borderBottom: `1px solid ${C.linen}`,
+          borderBottom: `1px solid ${color.rule}`,
         }}>
           <div style={{
             width: '46px', height: '46px', borderRadius: '50%',
-            background: C.forest,
+            background: color.forest,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: 'white',
             fontFamily: "'Playfair Display', serif",
@@ -67,13 +59,13 @@ export default function ProfileSheet({ appUser, open, onClose }) {
           <div style={{
             fontFamily: "'Playfair Display', serif",
             fontSize: '18px', fontWeight: 600,
-            color: C.ink, lineHeight: 1.2,
+            color: color.ink, lineHeight: 1.2,
           }}>
             {appUser?.name ?? ''}
           </div>
           <div style={{
             fontFamily: "'Jost', sans-serif",
-            fontSize: '13px', color: C.driftwood,
+            fontSize: '13px', color: color.inkSoft,
             marginTop: '3px',
           }}>
             {appUser?.email ?? ''}
@@ -99,14 +91,14 @@ export default function ProfileSheet({ appUser, open, onClose }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}>
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={C.forest} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={color.forest} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="3"/>
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
               </svg>
             </span>
             <div style={{
               fontFamily: "'Jost', sans-serif",
-              fontSize: '15px', fontWeight: 500, color: C.forest,
+              fontSize: '15px', fontWeight: 500, color: color.forest,
             }}>
               Settings
             </div>
@@ -132,7 +124,7 @@ export default function ProfileSheet({ appUser, open, onClose }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}>
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={C.forest} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={color.forest} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                 <polyline points="16 17 21 12 16 7"/>
                 <line x1="21" y1="12" x2="9" y2="12"/>
@@ -140,7 +132,7 @@ export default function ProfileSheet({ appUser, open, onClose }) {
             </span>
             <div style={{
               fontFamily: "'Jost', sans-serif",
-              fontSize: '15px', fontWeight: 500, color: C.forest,
+              fontSize: '15px', fontWeight: 500, color: color.forest,
             }}>
               {signingOut ? 'Signing out…' : 'Sign Out'}
             </div>

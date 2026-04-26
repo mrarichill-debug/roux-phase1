@@ -2,10 +2,11 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import {
-  C, BgTexture, NavRow, ProgressBar, screenWrap,
+  BgTexture, NavRow, ProgressBar, screenWrap,
   StepHead, FormField, inputStyle, PrimaryButton,
   PasswordStrength, getPasswordStrength, ArrowIcon, TosLine, EyeIcon,
 } from './welcomeUtils'
+import { color, alpha, elevation } from '../../styles/tokens'
 
 // ── Role data ─────────────────────────────────────────────────────────────────
 const ROLES = [
@@ -14,31 +15,28 @@ const ROLES = [
     title: 'Co-admin',
     desc: 'Full access — meal planning, shopping list, budget. Same as the admin.',
     badge: 'Admin',
-    badgeBg: 'rgba(61,107,79,0.1)', badgeColor: C.forest,
-    pillBg: 'rgba(61,107,79,0.1)', pillColor: C.forest,
+    badgeBg: 'rgba(61,107,79,0.1)', badgeColor: color.forest,
+    pillBg: 'rgba(61,107,79,0.1)', pillColor: color.forest,
     sub: 'You can see the full meal plan, shopping list, and budget.',
-    dbRole: 'co_admin',
-  },
+    dbRole: 'co_admin' },
   {
     key: 'member',
     title: 'Family member',
     desc: 'See the meal plan, mark favorites, request meals. No budget access.',
     badge: 'Member',
-    badgeBg: 'rgba(196,154,60,0.1)', badgeColor: C.honey,
-    pillBg: 'rgba(196,154,60,0.1)', pillColor: C.honey,
+    badgeBg: 'rgba(196,154,60,0.1)', badgeColor: color.honey,
+    pillBg: 'rgba(196,154,60,0.1)', pillColor: color.honey,
     sub: 'You can see the meal plan, mark favorites, and request meals. Budget info stays with the admin.',
-    dbRole: 'member_admin',
-  },
+    dbRole: 'member_admin' },
   {
     key: 'child',
     title: 'Just browsing',
     desc: 'See what\'s for dinner. Perfect for kids or light viewers.',
     badge: 'View only',
-    badgeBg: 'rgba(122,140,110,0.1)', badgeColor: C.sage,
-    pillBg: 'rgba(122,140,110,0.1)', pillColor: C.sage,
+    badgeBg: 'rgba(122,140,110,0.1)', badgeColor: color.sage,
+    pillBg: 'rgba(122,140,110,0.1)', pillColor: color.sage,
     sub: 'You can see what\'s for dinner and mark your favorites. Simple and easy.',
-    dbRole: 'member_viewer',
-  },
+    dbRole: 'member_viewer' },
 ]
 
 // ── Role card ────────────────────────────────────────────────────────────────
@@ -48,13 +46,12 @@ function RoleCard({ role, selected, onClick, delay }) {
       onClick={onClick}
       style={{
         width: '100%', background: selected ? 'rgba(61,107,79,0.02)' : 'white',
-        border: `1.5px solid ${selected ? C.forest : 'rgba(200,185,160,0.5)'}`,
+        border: `1.5px solid ${selected ? color.forest : 'rgba(200,185,160,0.5)'}`,
         borderRadius: '14px', padding: '16px 18px',
         cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '14px',
         textAlign: 'left', transition: 'all 0.18s',
         boxShadow: selected ? `0 0 0 3px rgba(61,107,79,0.1)` : 'none',
-        opacity: 0, animation: `fadeUp 0.45s ease ${delay} forwards`,
-      }}
+        opacity: 0, animation: `fadeUp 0.45s ease ${delay} forwards` }}
       onMouseDown={e => e.currentTarget.style.transform = 'scale(0.985)'}
       onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
       onTouchStart={e => e.currentTarget.style.transform = 'scale(0.985)'}
@@ -63,26 +60,24 @@ function RoleCard({ role, selected, onClick, delay }) {
       {/* Radio */}
       <div style={{
         width: '20px', height: '20px', borderRadius: '50%', flexShrink: 0,
-        border: `2px solid ${selected ? C.forest : C.linen}`,
-        background: selected ? C.forest : 'transparent',
+        border: `2px solid ${selected ? color.forest : color.rule}`,
+        background: selected ? color.forest : 'transparent',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        transition: 'all 0.15s',
-      }}>
+        transition: 'all 0.15s' }}>
         {selected && <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'white' }} />}
       </div>
 
       {/* Text */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: '14px', fontWeight: 500, color: C.ink, marginBottom: '3px' }}>{role.title}</div>
-        <div style={{ fontSize: '12px', color: C.driftwoodSm, fontWeight: 300, lineHeight: 1.4 }}>{role.desc}</div>
+        <div style={{ fontSize: '14px', fontWeight: 500, color: color.ink, marginBottom: '3px' }}>{role.title}</div>
+        <div style={{ fontSize: '12px', color: color.inkSoft, fontWeight: 300, lineHeight: 1.4 }}>{role.desc}</div>
       </div>
 
       {/* Badge */}
       <div style={{
         fontSize: '9px', fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase',
         padding: '3px 8px', borderRadius: '10px', flexShrink: 0,
-        background: role.badgeBg, color: role.badgeColor,
-      }}>
+        background: role.badgeBg, color: role.badgeColor }}>
         {role.badge}
       </div>
     </button>
@@ -147,8 +142,7 @@ export default function WelcomeScreen3b() {
       const response = await fetch('/api/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: normalizedCode }),
-      })
+        body: JSON.stringify({ code: normalizedCode }) })
       const result = await response.json()
       console.log('[Roux] Code lookup:', Math.round(performance.now() - t0), 'ms', result)
 
@@ -179,8 +173,7 @@ export default function WelcomeScreen3b() {
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: { data: { name: joinName.trim() } },
-      })
+        options: { data: { name: joinName.trim() } } })
       if (error) throw error
       console.log('[Roux] Join flow: signUp done in', Math.round(performance.now() - t0), 'ms')
 
@@ -208,8 +201,7 @@ export default function WelcomeScreen3b() {
           // Run membership update and notification in parallel — they're independent
           const updatePromise = supabase.from('users').update({
             household_id: householdId,
-            membership_status: 'pending',
-          }).eq('id', userData.id).then(({ error: e }) => {
+            membership_status: 'pending' }).eq('id', userData.id).then(({ error: e }) => {
             console.log('[Roux] Join flow: membership_status update', e ? 'FAILED: ' + e.message : 'OK', 'in', Math.round(performance.now() - t2), 'ms')
           })
 
@@ -217,8 +209,7 @@ export default function WelcomeScreen3b() {
           fetch('/api/join-notification', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ householdId, userName: joinName.trim(), newUserId: userData.id }),
-          }).then(r => r.json()).then(result => {
+            body: JSON.stringify({ householdId, userName: joinName.trim(), newUserId: userData.id }) }).then(r => r.json()).then(result => {
             console.log('[Roux] Join flow: notification', result.ok ? 'OK' : 'FAILED', 'in', Math.round(performance.now() - t2), 'ms', result)
           }).catch(err => {
             console.error('[Roux] Join flow: notification error:', err)
@@ -256,7 +247,7 @@ export default function WelcomeScreen3b() {
 
             {/* Code entry */}
             <div style={{ opacity: 0, animation: 'fadeUp 0.45s ease 0.22s forwards', marginBottom: '20px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: color.inkSoft, marginBottom: '8px' }}>
                 Invite code
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
@@ -270,35 +261,33 @@ export default function WelcomeScreen3b() {
                   style={{
                     flex: 1, padding: '16px 14px', textAlign: 'center',
                     borderRadius: '12px',
-                    border: `1.5px solid ${codeStatus === 'valid' ? C.forest : codeStatus === 'error' ? C.red : C.linen}`,
+                    border: `1.5px solid ${codeStatus === 'valid' ? color.forest : codeStatus === 'error' ? color.rust : color.rule}`,
                     background: 'white',
-                    fontFamily: "'Jost', sans-serif", fontSize: '22px', fontWeight: 500, color: C.ink,
+                    fontFamily: "'Jost', sans-serif", fontSize: '22px', fontWeight: 500, color: color.ink,
                     letterSpacing: '6px', outline: 'none',
                     boxShadow: codeStatus === 'valid' ? `0 0 0 3px rgba(61,107,79,0.1)` : codeStatus === 'error' ? `0 0 0 3px rgba(160,48,48,0.08)` : 'none',
-                    transition: 'border-color 0.18s, box-shadow 0.18s',
-                  }}
+                    transition: 'border-color 0.18s, box-shadow 0.18s' }}
                 />
                 <button
                   onClick={verifyCode}
                   disabled={code.length < 4 || loading}
                   style={{
                     padding: '14px 18px', borderRadius: '12px',
-                    background: code.length >= 4 ? C.forest : C.linen,
-                    color: code.length >= 4 ? 'white' : C.driftwood,
+                    background: code.length >= 4 ? color.forest : color.rule,
+                    color: code.length >= 4 ? 'white' : color.inkSoft,
                     fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
                     border: 'none', cursor: code.length >= 4 ? 'pointer' : 'default',
                     whiteSpace: 'nowrap', flexShrink: 0,
-                    transition: 'background 0.15s',
-                  }}
+                    transition: 'background 0.15s' }}
                 >
                   {loading ? '…' : 'Look up'}
                 </button>
               </div>
-              <div style={{ fontSize: '11.5px', color: C.driftwoodSm, fontWeight: 300, marginTop: '8px', lineHeight: 1.5 }}>
+              <div style={{ fontSize: '11.5px', color: color.inkSoft, fontWeight: 300, marginTop: '8px', lineHeight: 1.5 }}>
                 Your code looks like HILL-4K9X. Not case sensitive.
               </div>
               {codeStatus === 'error' && (
-                <div style={{ fontSize: '11.5px', color: C.red, fontWeight: 300, marginTop: '6px' }}>
+                <div style={{ fontSize: '11.5px', color: color.rust, fontWeight: 300, marginTop: '6px' }}>
                   That code didn't match any home. Double-check with your admin.
                 </div>
               )}
@@ -311,22 +300,21 @@ export default function WelcomeScreen3b() {
                 borderRadius: '18px', padding: '24px 22px', marginBottom: '24px',
                 textAlign: 'center', boxShadow: '0 2px 12px rgba(80,60,30,0.07)',
                 position: 'relative', overflow: 'hidden',
-                opacity: 0, animation: 'fadeUp 0.5s ease 0.05s forwards',
-              }}>
+                opacity: 0, animation: 'fadeUp 0.5s ease 0.05s forwards' }}>
                 {/* Top accent */}
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: `linear-gradient(90deg, ${C.sage}, ${C.forest})` }} />
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: `linear-gradient(90deg, ${color.sage}, ${color.forest})` }} />
                 {invitedBy && (
-                  <div style={{ fontSize: '11px', fontWeight: 400, color: C.driftwoodSm, letterSpacing: '0.3px', marginBottom: '10px' }}>
-                    <strong style={{ color: C.ink, fontWeight: 500 }}>{invitedBy}</strong> invited you to join
+                  <div style={{ fontSize: '11px', fontWeight: 400, color: color.inkSoft, letterSpacing: '0.3px', marginBottom: '10px' }}>
+                    <strong style={{ color: color.ink, fontWeight: 500 }}>{invitedBy}</strong> invited you to join
                   </div>
                 )}
-                <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.sage, marginBottom: '6px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: color.sage, marginBottom: '6px' }}>
                   Your new home
                 </div>
-                <div style={{ fontFamily: "'Caveat', cursive", fontSize: '28px', color: C.forest, lineHeight: 1.2, marginBottom: '12px' }}>
+                <div style={{ fontFamily: "'Caveat', cursive", fontSize: '28px', color: color.forest, lineHeight: 1.2, marginBottom: '12px' }}>
                   {homeName}
                 </div>
-                <div style={{ fontSize: '13px', color: C.driftwood, fontWeight: 300, fontStyle: 'italic', lineHeight: 1.5 }}>
+                <div style={{ fontSize: '13px', color: color.inkSoft, fontWeight: 300, fontStyle: 'italic', lineHeight: 1.5 }}>
                   Plan meals together, shop smarter.
                 </div>
               </div>
@@ -384,7 +372,7 @@ export default function WelcomeScreen3b() {
                   <button
                     type="button"
                     onClick={() => setPwVisible(v => !v)}
-                    style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: C.driftwood, padding: '4px', display: 'flex', alignItems: 'center' }}
+                    style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: color.inkSoft, padding: '4px', display: 'flex', alignItems: 'center' }}
                   >
                     <EyeIcon visible={pwVisible} />
                   </button>
@@ -402,7 +390,7 @@ export default function WelcomeScreen3b() {
                   onBlur={() => setFocusedField(null)}
                 />
                 {confirmPw.length > 0 && !pwMatch && (
-                  <div style={{ fontSize: '12px', color: C.honey, marginTop: '4px' }}>
+                  <div style={{ fontSize: '12px', color: color.honey, marginTop: '4px' }}>
                     Passwords don't match
                   </div>
                 )}
@@ -410,7 +398,7 @@ export default function WelcomeScreen3b() {
             </div>
 
             {authError && (
-              <div style={{ background: 'rgba(160,48,48,0.07)', border: `1px solid rgba(160,48,48,0.2)`, borderRadius: '10px', padding: '11px 14px', fontSize: '13px', color: C.red, fontWeight: 300, marginBottom: '16px' }}>
+              <div style={{ background: 'rgba(160,48,48,0.07)', border: `1px solid rgba(160,48,48,0.2)`, borderRadius: '10px', padding: '11px 14px', fontSize: '13px', color: color.rust, fontWeight: 300, marginBottom: '16px' }}>
                 {authError}
               </div>
             )}
@@ -435,7 +423,7 @@ export default function WelcomeScreen3b() {
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '20px 0 40px', opacity: 0, animation: 'fadeUp 0.6s ease 0.1s forwards' }}>
             {/* People icon */}
             <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'rgba(61,107,79,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', animation: 'iconPop 0.5s cubic-bezier(0.22,1,0.36,1) 0.3s both' }}>
-              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke={C.forest} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke={color.forest} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
                 <circle cx="9" cy="7" r="4"/>
                 <path d="M23 21v-2a4 4 0 00-3-3.87"/>
@@ -443,13 +431,13 @@ export default function WelcomeScreen3b() {
               </svg>
             </div>
 
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '26px', fontWeight: 500, color: C.ink, marginBottom: '6px', lineHeight: 1.2 }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '26px', fontWeight: 500, color: color.ink, marginBottom: '6px', lineHeight: 1.2 }}>
               Request sent.
             </div>
-            <div style={{ fontFamily: "'Caveat', cursive", fontSize: '22px', color: C.forest, marginBottom: '20px' }}>
+            <div style={{ fontFamily: "'Caveat', cursive", fontSize: '22px', color: color.forest, marginBottom: '20px' }}>
               {homeName}
             </div>
-            <div style={{ fontSize: '14px', color: C.driftwood, fontWeight: 300, lineHeight: 1.7, marginBottom: '32px', maxWidth: '260px' }}>
+            <div style={{ fontSize: '14px', color: color.inkSoft, fontWeight: 300, lineHeight: 1.7, marginBottom: '32px', maxWidth: '260px' }}>
               The kitchen admin will review your request. You'll get access as soon as they approve.
             </div>
           </div>

@@ -9,11 +9,7 @@ import { useArc } from '../context/ArcContext'
 import { SCHEME_NAMES } from '../lib/colorSchemes'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
-
-const C = {
-  forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', linen: '#E8E0D0',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 const CHEVRON = (
   <svg viewBox="0 0 24 24" fill="none" stroke="#C8BFB4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, flexShrink: 0 }}>
@@ -24,42 +20,42 @@ const CHEVRON = (
 // ── Inline SVG icons — 16×16, stroke #8C7B6B, strokeWidth 1.5 ──────────────
 const ICONS = {
   household: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#8C7B6B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
+    <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
       <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
     </svg>
   ),
   calendar: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#8C7B6B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
+    <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
       <rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
     </svg>
   ),
   appearance: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#8C7B6B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
+    <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
       <circle cx="12" cy="12" r="5"/><line x1="12" x2="12" y1="1" y2="3"/><line x1="12" x2="12" y1="21" y2="23"/><line x1="4.22" x2="5.64" y1="4.22" y2="5.64"/><line x1="18.36" x2="19.78" y1="18.36" y2="19.78"/><line x1="1" x2="3" y1="12" y2="12"/><line x1="21" x2="23" y1="12" y2="12"/><line x1="4.22" x2="5.64" y1="19.78" y2="18.36"/><line x1="18.36" x2="19.78" y1="5.64" y2="4.22"/>
     </svg>
   ),
   defaults: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#8C7B6B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
+    <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
       <line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="1" x2="7" y1="14" y2="14"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="17" x2="23" y1="16" y2="16"/>
     </svg>
   ),
   profile: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#8C7B6B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
+    <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
     </svg>
   ),
   subscription: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#8C7B6B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
+    <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
     </svg>
   ),
   about: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#8C7B6B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
+    <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
       <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/>
     </svg>
   ),
   admin: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#8C7B6B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
+    <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0 }}>
       <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/>
     </svg>
   ),
@@ -118,7 +114,7 @@ export default function SettingsHub({ appUser }) {
 
   return (
     <div className="page-scroll-container" style={{
-      background: C.cream,
+      background: color.paper,
       fontFamily: "'Jost', sans-serif",
       fontWeight: 300,
       minHeight: '100vh',
@@ -135,7 +131,7 @@ export default function SettingsHub({ appUser }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '28px' }}>
           <div style={{
             width: '48px', height: '48px', borderRadius: '50%',
-            background: C.forest, color: 'white',
+            background: color.forest, color: 'white',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: "'Playfair Display', serif",
             fontSize: '17px', fontWeight: 600, flexShrink: 0,
@@ -145,11 +141,11 @@ export default function SettingsHub({ appUser }) {
           <div style={{ flex: 1 }}>
             <div style={{
               fontFamily: "'Playfair Display', serif",
-              fontSize: '18px', fontWeight: 500, color: C.ink, lineHeight: 1.3,
+              fontSize: '18px', fontWeight: 500, color: color.ink, lineHeight: 1.3,
             }}>
               {appUser?.name || 'You'}
             </div>
-            <div style={{ fontSize: '11px', color: C.driftwood, marginTop: '2px' }}>
+            <div style={{ fontSize: '11px', color: color.inkSoft, marginTop: '2px' }}>
               {roleLabel} · {tierLabel}
             </div>
           </div>
@@ -194,7 +190,7 @@ function SectionLabel({ text }) {
   return (
     <div style={{
       fontSize: '10px', fontWeight: 500, letterSpacing: '2px',
-      textTransform: 'uppercase', color: '#8C7B6B',
+      textTransform: 'uppercase', color: color.inkSoft,
       marginBottom: '8px',
     }}>
       {text}
@@ -227,12 +223,12 @@ function SettingsCard({ rows, navigate }) {
         >
           {row.icon}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: '12px', fontWeight: 400, color: '#2C2417' }}>
+            <div style={{ fontSize: '12px', fontWeight: 400, color: color.ink }}>
               {row.title}
             </div>
-            <div style={{ fontSize: '10px', color: '#8C7B6B', marginTop: '1px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div style={{ fontSize: '10px', color: color.inkSoft, marginTop: '1px', display: 'flex', alignItems: 'center', gap: '5px' }}>
               {row.dot && (
-                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#3D6B4F', flexShrink: 0 }} />
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: color.forest, flexShrink: 0 }} />
               )}
               {row.sub}
             </div>

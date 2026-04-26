@@ -2,6 +2,7 @@ import { StrictMode, Component } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles/global.css'
 import App from './App.jsx'
+import { color } from './styles/tokens'
 
 class ErrorBoundary extends Component {
   constructor(props) { super(props); this.state = { error: null } }
@@ -9,7 +10,7 @@ class ErrorBoundary extends Component {
   componentDidCatch(error, info) { console.error('[Roux] Root error:', error, info) }
   render() {
     if (this.state.error) return (
-      <div style={{ padding: '40px', fontFamily: 'monospace', color: '#A03030' }}>
+      <div style={{ padding: '40px', fontFamily: 'monospace', color: color.rust }}>
         <h2>App crashed</h2>
         <pre style={{ whiteSpace: 'pre-wrap', fontSize: '12px' }}>{this.state.error.message}</pre>
         <pre style={{ whiteSpace: 'pre-wrap', fontSize: '10px', color: '#888', marginTop: '12px' }}>{this.state.error.stack}</pre>

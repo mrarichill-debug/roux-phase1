@@ -10,12 +10,7 @@ import BottomNav from '../components/BottomNav'
 import AddDayTypeSheet from '../components/AddDayTypeSheet'
 import BottomSheet from '../components/BottomSheet'
 import { useArc } from '../context/ArcContext'
-
-const C = {
-  forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E', linen: '#E8E0D0',
-  honey: '#C49A3C', red: '#A03030',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
 const DOW_KEYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']
@@ -23,8 +18,8 @@ const DOW_KEYS = ['monday','tuesday','wednesday','thursday','friday','saturday',
 const DAY_TYPE_OPTIONS = [
   { key: 'no_school', label: 'No School', color: '#D4874A' },
   { key: 'school', label: 'School', color: '#5B8DD9' },
-  { key: 'summer', label: 'Summer', color: '#C49A3C' },
-  { key: 'weekend', label: 'Weekend', color: '#7A8C6E' },
+  { key: 'summer', label: 'Summer', color: color.honey },
+  { key: 'weekend', label: 'Weekend', color: color.sage },
 ]
 
 const DEFAULT_DAY_TYPES = {
@@ -34,7 +29,7 @@ const DEFAULT_DAY_TYPES = {
 
 const sectionHeader = {
   fontSize: '10px', fontWeight: 500, letterSpacing: '2px',
-  textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '12px',
+  textTransform: 'uppercase', color: color.inkSoft, marginBottom: '12px',
 }
 
 const cardStyle = {
@@ -151,7 +146,7 @@ export default function HouseholdDefaults({ appUser }) {
   }
 
   return (
-    <div style={{ background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', paddingBottom: '100px' }}>
+    <div style={{ background: color.paper, fontFamily: "'Jost', sans-serif", fontWeight: 300, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', paddingBottom: '100px' }}>
       <TopBar leftAction={{ onClick: () => navigate('/profile'), icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><path d="m15 18-6-6 6-6"/></svg>
       )}} centerContent={
@@ -159,10 +154,10 @@ export default function HouseholdDefaults({ appUser }) {
       } />
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px 0', color: C.driftwood }}>Loading...</div>
+        <div style={{ textAlign: 'center', padding: '40px 0', color: color.inkSoft }}>Loading...</div>
       ) : (
         <div style={{ padding: '18px 0' }}>
-          <div style={{ fontSize: '12px', fontStyle: 'italic', color: C.driftwood, fontWeight: 300, padding: '0 22px 14px' }}>
+          <div style={{ fontSize: '12px', fontStyle: 'italic', color: color.inkSoft, fontWeight: 300, padding: '0 22px 14px' }}>
             These settings apply to all future weeks.
           </div>
 
@@ -174,11 +169,11 @@ export default function HouseholdDefaults({ appUser }) {
               const activeOpt = DAY_TYPE_OPTIONS.find(o => o.key === defaultPattern[dowKey])
               return (
                 <div key={dowKey} style={{ ...rowStyle, borderBottom: i < 6 ? rowStyle.borderBottom : 'none' }}>
-                  <span style={{ fontSize: '14px', color: C.ink }}>{day}</span>
+                  <span style={{ fontSize: '14px', color: color.ink }}>{day}</span>
                   <button onClick={() => setDtPickerDow(dtPickerDow === dowKey ? null : dowKey)} style={{
                     padding: '3px 10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-                    background: activeOpt ? `${activeOpt.color}18` : C.linen,
-                    color: activeOpt?.color || C.ink,
+                    background: activeOpt ? `${activeOpt.color}18` : color.rule,
+                    color: activeOpt?.color || color.ink,
                     fontSize: '11px', fontWeight: 500, fontFamily: "'Jost', sans-serif",
                   }}>
                     {activeOpt?.label || 'Set'}
@@ -196,9 +191,9 @@ export default function HouseholdDefaults({ appUser }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{
                     width: '8px', height: '8px', borderRadius: '50%',
-                    background: dt.color || C.driftwood, flexShrink: 0,
+                    background: dt.color || color.inkSoft, flexShrink: 0,
                   }} />
-                  <span style={{ fontSize: '14px', color: C.ink }}>{dt.name}</span>
+                  <span style={{ fontSize: '14px', color: color.ink }}>{dt.name}</span>
                 </div>
               </div>
             ))}
@@ -216,14 +211,14 @@ export default function HouseholdDefaults({ appUser }) {
           <div style={{ ...cardStyle, animation: 'fadeUp 0.35s ease 0.08s both' }}>
             <div style={sectionHeader}>Templates</div>
             {savedTemplates.length === 0 ? (
-              <div style={{ fontSize: '13px', fontStyle: 'italic', color: C.driftwood }}>No templates saved yet.</div>
+              <div style={{ fontSize: '13px', fontStyle: 'italic', color: color.inkSoft }}>No templates saved yet.</div>
             ) : savedTemplates.map(t => (
               <div key={t.id} style={rowStyle}>
-                <span style={{ fontSize: '14px', color: C.ink }}>{t.name}</span>
+                <span style={{ fontSize: '14px', color: color.ink }}>{t.name}</span>
                 {deleteConfirmId === t.id ? (
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                    <button onClick={() => deleteTemplate(t.id)} style={{ fontSize: '11px', color: 'white', background: C.red, border: 'none', borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontWeight: 500 }}>Remove</button>
-                    <button onClick={() => setDeleteConfirmId(null)} style={{ fontSize: '11px', color: C.driftwoodSm, background: 'none', border: `1px solid ${C.linen}`, borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Cancel</button>
+                    <button onClick={() => deleteTemplate(t.id)} style={{ fontSize: '11px', color: 'white', background: color.rust, border: 'none', borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontWeight: 500 }}>Remove</button>
+                    <button onClick={() => setDeleteConfirmId(null)} style={{ fontSize: '11px', color: color.inkSoft, background: 'none', border: `1px solid ${color.rule}`, borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Cancel</button>
                   </div>
                 ) : (
                   <button onClick={() => setDeleteConfirmId(t.id)} style={{
@@ -246,12 +241,12 @@ export default function HouseholdDefaults({ appUser }) {
             {tagDefs.filter(t => t.is_default).map(tag => (
               <div key={tag.id} style={rowStyle}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13, flexShrink: 0, opacity: 0.5 }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13, flexShrink: 0, opacity: 0.5 }}>
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                   </svg>
-                  <span style={{ fontSize: '14px', color: C.ink }}>{tag.name}</span>
+                  <span style={{ fontSize: '14px', color: color.ink }}>{tag.name}</span>
                 </div>
-                <span style={{ fontSize: '10px', color: C.driftwood, fontWeight: 300 }}>Default</span>
+                <span style={{ fontSize: '10px', color: color.inkSoft, fontWeight: 300 }}>Default</span>
               </div>
             ))}
 
@@ -264,29 +259,29 @@ export default function HouseholdDefaults({ appUser }) {
                       autoFocus onKeyDown={e => { if (e.key === 'Enter') renameTag(tag.id); if (e.key === 'Escape') { setEditingTagId(null); setEditingTagName('') } }}
                       style={{
                         flex: 1, padding: '6px 10px', fontSize: '14px', fontFamily: "'Jost', sans-serif",
-                        border: `1px solid ${arcColor}`, borderRadius: '8px', outline: 'none', color: C.ink, background: C.cream,
+                        border: `1px solid ${arcColor}`, borderRadius: '8px', outline: 'none', color: color.ink, background: color.paper,
                       }} />
                     <button onClick={() => renameTag(tag.id)} style={{ fontSize: '12px', color: arcColor, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Save</button>
-                    <button onClick={() => { setEditingTagId(null); setEditingTagName('') }} style={{ fontSize: '12px', color: C.driftwoodSm, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Cancel</button>
+                    <button onClick={() => { setEditingTagId(null); setEditingTagName('') }} style={{ fontSize: '12px', color: color.inkSoft, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Cancel</button>
                   </div>
                 ) : deleteTagConfirm === tag.id ? (
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '12px', color: C.ink, marginBottom: '6px' }}>
+                    <div style={{ fontSize: '12px', color: color.ink, marginBottom: '6px' }}>
                       Remove '{tag.name}'? It will be removed from all recipes and meals.
                     </div>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <button onClick={() => deleteTag(tag.id)} style={{ fontSize: '11px', color: 'white', background: C.red, border: 'none', borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontWeight: 500 }}>Remove</button>
-                      <button onClick={() => setDeleteTagConfirm(null)} style={{ fontSize: '11px', color: C.driftwoodSm, background: 'none', border: `1px solid ${C.linen}`, borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Cancel</button>
+                      <button onClick={() => deleteTag(tag.id)} style={{ fontSize: '11px', color: 'white', background: color.rust, border: 'none', borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontWeight: 500 }}>Remove</button>
+                      <button onClick={() => setDeleteTagConfirm(null)} style={{ fontSize: '11px', color: color.inkSoft, background: 'none', border: `1px solid ${color.rule}`, borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', fontFamily: "'Jost', sans-serif" }}>Cancel</button>
                     </div>
                   </div>
                 ) : (
                   <>
-                    <span style={{ fontSize: '14px', color: C.ink }}>{tag.name}</span>
+                    <span style={{ fontSize: '14px', color: color.ink }}>{tag.name}</span>
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                      <button onClick={() => { setEditingTagId(tag.id); setEditingTagName(tag.name) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.driftwood, padding: '4px' }}>
+                      <button onClick={() => { setEditingTagId(tag.id); setEditingTagName(tag.name) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: color.inkSoft, padding: '4px' }}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                       </button>
-                      <button onClick={() => setDeleteTagConfirm(tag.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.driftwood, padding: '4px' }}>
+                      <button onClick={() => setDeleteTagConfirm(tag.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: color.inkSoft, padding: '4px' }}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                       </button>
                     </div>
@@ -297,7 +292,7 @@ export default function HouseholdDefaults({ appUser }) {
 
             {/* Empty state for custom tags */}
             {tagDefs.filter(t => !t.is_default).length === 0 && (
-              <div style={{ fontSize: '13px', fontStyle: 'italic', color: C.driftwood, padding: '8px 0' }}>
+              <div style={{ fontSize: '13px', fontStyle: 'italic', color: color.inkSoft, padding: '8px 0' }}>
                 Tags you create in recipes and meals will appear here.
               </div>
             )}
@@ -308,7 +303,7 @@ export default function HouseholdDefaults({ appUser }) {
       {/* ── Day Type Picker Sheet ─────────────────────────────────────── */}
       <BottomSheet isOpen={!!dtPickerDow} onClose={() => setDtPickerDow(null)}>
         <div style={{ padding: '20px 22px 40px' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: color.ink, marginBottom: '14px' }}>
             {dtPickerDow ? dtPickerDow.charAt(0).toUpperCase() + dtPickerDow.slice(1) : ''}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

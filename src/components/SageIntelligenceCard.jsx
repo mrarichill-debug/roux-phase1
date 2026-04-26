@@ -2,14 +2,10 @@
  * SageIntelligenceCard.jsx — Shows Sage's growth stage with herb visual.
  * Renders on the Home screen. Herb grows from seed to flourishing plant.
  */
+import { color, alpha, elevation } from '../styles/tokens'
 
-const C = {
-  forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', sage: '#7A8C6E', linen: '#E8E0D0',
-}
-
-const SOIL = '#8B6F52'
-const LEAF = '#7A8C6E'
+const SOIL = color.amberDark
+const LEAF = color.sage
 const STEM = '#6B8C5E'
 
 function HerbSeed() {
@@ -107,21 +103,21 @@ export default function SageIntelligenceCard({ intelligence }) {
     <div style={{
       margin: '0 22px 14px', padding: '16px',
       background: 'white', borderRadius: '14px',
-      border: `1px solid ${C.linen}`,
+      border: `1px solid ${color.rule}`,
       display: 'flex', alignItems: 'center', gap: '16px',
     }}>
       <div style={{ flexShrink: 0 }}>
         <Herb />
       </div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: '14px', fontWeight: 500, color: C.ink, fontFamily: "'Jost', sans-serif", marginBottom: '4px' }}>
+        <div style={{ fontSize: '14px', fontWeight: 500, color: color.ink, fontFamily: "'Jost', sans-serif", marginBottom: '4px' }}>
           {label}
         </div>
-        <div style={{ fontSize: '13px', color: C.driftwood, lineHeight: 1.5, fontFamily: "'Jost', sans-serif", fontWeight: 300 }}>
+        <div style={{ fontSize: '13px', color: color.inkSoft, lineHeight: 1.5, fontFamily: "'Jost', sans-serif", fontWeight: 300 }}>
           {description}
         </div>
         {nextUnlock && (
-          <div style={{ fontSize: '12px', color: C.sage, fontStyle: 'italic', marginTop: '6px', fontFamily: "'Jost', sans-serif" }}>
+          <div style={{ fontSize: '12px', color: color.sage, fontStyle: 'italic', marginTop: '6px', fontFamily: "'Jost', sans-serif" }}>
             ↑ {nextUnlock}
           </div>
         )}

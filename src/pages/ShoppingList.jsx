@@ -14,20 +14,9 @@ import BottomSheet from '../components/BottomSheet'
 import WatermarkLayer from '../components/WatermarkLayer'
 import { getWeekStartTZ } from '../lib/dateUtils'
 import { useArc } from '../context/ArcContext'
+import { color, alpha, elevation } from '../styles/tokens'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-const C = {
-  forest:    '#3D6B4F',
-  forestDk:  '#2E5038',
-  sage:      '#7A8C6E',
-  honey:     '#C49A3C',
-  cream:     '#FAF7F2',
-  ink:       '#2C2417',
-  driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E',
-  linen:     '#E8E0D0',
-  walnut:    '#8B6F52',
-}
-
 // ── Aisle sections in canonical order — keys match grocery_category values ────
 const AISLE_SECTIONS = [
   { key: 'produce',    label: 'Produce' },
@@ -226,7 +215,7 @@ export default function ShoppingList({ appUser }) {
   const inCartTotal  = gotItItems.reduce((sum, i) => sum + (parseFloat(i.estimated_price) || 0), 0)
   const remaining    = estimatedTotal - inCartTotal
   const remainingPct = estimatedTotal > 0 ? remaining / estimatedTotal : 1
-  const remainingColor = remainingPct < 0.2 ? C.honey : C.forest
+  const remainingColor = remainingPct < 0.2 ? color.honey : color.forest
 
   // ── In Cart pulse ────────────────────────────────────────────────────────────
   function triggerInCartPulse() {
@@ -337,7 +326,7 @@ export default function ShoppingList({ appUser }) {
   // ── Loading ──────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
+      <div style={{ background: color.paper, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
         <TopBar />
         <div style={{ padding: '20px 24px' }}>
           <div className="shimmer-block" style={{ height: '72px', borderRadius: '12px', marginBottom: '12px' }} />
@@ -354,18 +343,18 @@ export default function ShoppingList({ appUser }) {
   // ── No list state ────────────────────────────────────────────────────────────
   if (noList) {
     return (
-      <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif", paddingBottom: '64px' }}>
+      <div style={{ background: color.paper, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif", paddingBottom: '64px' }}>
         <WatermarkLayer />
         <TopBar />
         <div style={{ padding: '48px 32px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{ fontSize: '48px', marginBottom: '20px' }}>🛒</div>
           <div style={{
             fontFamily: "'Playfair Display', serif", fontSize: '26px',
-            fontWeight: 500, color: C.ink, marginBottom: '12px',
+            fontWeight: 500, color: color.ink, marginBottom: '12px',
           }}>
             No list yet
           </div>
-          <div style={{ fontSize: '14px', color: C.driftwood, lineHeight: 1.65, marginBottom: '32px', fontWeight: 300 }}>
+          <div style={{ fontSize: '14px', color: color.inkSoft, lineHeight: 1.65, marginBottom: '32px', fontWeight: 300 }}>
             Your shopping list will appear here once you've published this week's plan.
           </div>
           <button
@@ -391,7 +380,7 @@ export default function ShoppingList({ appUser }) {
 
   return (
     <div style={{
-      background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300,
+      background: color.paper, fontFamily: "'Jost', sans-serif", fontWeight: 300,
       minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
       paddingBottom: '64px', position: 'relative', overflowX: 'hidden',
     }}>
@@ -416,8 +405,8 @@ export default function ShoppingList({ appUser }) {
                     fontSize: '11px', fontWeight: 500, padding: '6px 14px',
                     borderRadius: '20px', whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0,
                     background: isActive ? 'rgba(122,140,110,0.10)' : 'white',
-                    border: isActive ? `1px solid ${C.sage}` : '1px solid rgba(200,185,160,0.55)',
-                    color: isActive ? arcColor : C.driftwood,
+                    border: isActive ? `1px solid ${color.sage}` : '1px solid rgba(200,185,160,0.55)',
+                    color: isActive ? arcColor : color.inkSoft,
                     fontFamily: "'Jost', sans-serif", transition: 'all 0.15s',
                     boxShadow: '0 1px 3px rgba(80,60,30,0.06)',
                   }}
@@ -437,8 +426,8 @@ export default function ShoppingList({ appUser }) {
                   onKeyDown={e => { if (e.key === 'Enter') saveNewStore() }}
                   style={{
                     padding: '5px 10px', fontSize: '11px', width: '110px',
-                    border: `1px solid ${C.sage}`, borderRadius: '20px',
-                    fontFamily: "'Jost', sans-serif", color: C.ink,
+                    border: `1px solid ${color.sage}`, borderRadius: '20px',
+                    fontFamily: "'Jost', sans-serif", color: color.ink,
                     outline: 'none', background: 'white',
                   }}
                 />
@@ -462,7 +451,7 @@ export default function ShoppingList({ appUser }) {
                   fontSize: '11px', fontWeight: 400, padding: '6px 14px',
                   borderRadius: '20px', whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0,
                   border: '1px dashed rgba(200,185,160,0.6)',
-                  background: 'transparent', color: C.driftwood,
+                  background: 'transparent', color: color.inkSoft,
                   fontFamily: "'Jost', sans-serif",
                 }}
               >
@@ -484,13 +473,13 @@ export default function ShoppingList({ appUser }) {
           animation: 'fadeUp 0.35s ease both',
         }}>
           <div style={{ fontSize: '40px', marginBottom: '12px' }}>🛒</div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 500, color: C.ink, marginBottom: '8px' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 500, color: color.ink, marginBottom: '8px' }}>
             All done{appUser?.name ? `, ${appUser.name.split(' ')[0]}` : ''}.
           </div>
-          <div style={{ fontSize: '14px', color: C.driftwood, fontWeight: 300, lineHeight: 1.6, marginBottom: '20px' }}>
+          <div style={{ fontSize: '14px', color: color.inkSoft, fontWeight: 300, lineHeight: 1.6, marginBottom: '20px' }}>
             {formatPrice(inCartTotal)} spent this week
             {variance !== 0 && (
-              <> — <strong style={{ color: underBudget ? C.forest : C.honey }}>
+              <> — <strong style={{ color: underBudget ? color.forest : color.honey }}>
                 {underBudget
                   ? `${formatPrice(Math.abs(variance))} under estimate. Nice work.`
                   : `${formatPrice(Math.abs(variance))} over estimate.`
@@ -499,10 +488,10 @@ export default function ShoppingList({ appUser }) {
             )}
           </div>
 
-          <div style={{ paddingTop: '18px', borderTop: `1px solid ${C.linen}` }}>
+          <div style={{ paddingTop: '18px', borderTop: `1px solid ${color.rule}` }}>
             <div style={{
               fontSize: '10px', fontWeight: 500, letterSpacing: '2px',
-              textTransform: 'uppercase', color: C.driftwood, marginBottom: '12px',
+              textTransform: 'uppercase', color: color.inkSoft, marginBottom: '12px',
             }}>
               Lock in the numbers
             </div>
@@ -524,14 +513,14 @@ export default function ShoppingList({ appUser }) {
               onClick={() => {}}
               style={{
                 width: '100%', padding: '11px', borderRadius: '12px',
-                background: 'none', color: C.driftwood,
+                background: 'none', color: color.inkSoft,
                 fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 400,
-                border: `1px solid ${C.linen}`, cursor: 'pointer',
+                border: `1px solid ${color.rule}`, cursor: 'pointer',
               }}
             >
               I'll do this later
             </button>
-            <div style={{ fontSize: '11px', color: C.driftwoodSm, marginTop: '10px', lineHeight: 1.5, opacity: 0.75 }}>
+            <div style={{ fontSize: '11px', color: color.inkSoft, marginTop: '10px', lineHeight: 1.5, opacity: 0.75 }}>
               Sage reads your receipt and matches each item automatically. Takes about 10 seconds.
             </div>
           </div>
@@ -549,14 +538,14 @@ export default function ShoppingList({ appUser }) {
           animation: 'fadeUp 0.35s ease 0.05s both',
         }}>
           <BudgetCol label="Estimated" value={estimatedTotal ? formatPrice(estimatedTotal) : '—'} muted />
-          <div style={{ width: '1px', background: C.linen, alignSelf: 'stretch' }} />
+          <div style={{ width: '1px', background: color.rule, alignSelf: 'stretch' }} />
           <BudgetCol
             label="In Cart"
             value={formatPrice(inCartTotal) || '$0.00'}
-            color={C.forest}
+            color={color.forest}
             pulsing={inCartPulsing}
           />
-          <div style={{ width: '1px', background: C.linen, alignSelf: 'stretch' }} />
+          <div style={{ width: '1px', background: color.rule, alignSelf: 'stretch' }} />
           <BudgetCol
             label="Remaining"
             value={estimatedTotal ? formatPrice(remaining) : '—'}
@@ -569,7 +558,7 @@ export default function ShoppingList({ appUser }) {
       {!isComplete && sageVisible && gotItItems.length === 0 && (
         <div style={{
           margin: '0 24px 14px',
-          borderLeft: `3px solid ${C.sage}`,
+          borderLeft: `3px solid ${color.sage}`,
           background: 'white',
           borderRadius: '0 10px 10px 0',
           padding: '11px 14px',
@@ -582,16 +571,16 @@ export default function ShoppingList({ appUser }) {
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
             <div className="sage-pulse-dot" style={{
               width: '7px', height: '7px', borderRadius: '50%',
-              background: C.sage, flexShrink: 0, marginTop: '5px',
+              background: color.sage, flexShrink: 0, marginTop: '5px',
             }} />
-            <div style={{ flex: 1, fontSize: '12.5px', color: C.ink, lineHeight: 1.5 }}>
+            <div style={{ flex: 1, fontSize: '12.5px', color: color.ink, lineHeight: 1.5 }}>
               {SAGE_NUDGES[sageNudgeIdx]}
             </div>
             <button
               onClick={() => setSageVisible(false)}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: C.driftwood, fontSize: '14px', lineHeight: 1,
+                color: color.inkSoft, fontSize: '14px', lineHeight: 1,
                 padding: '0 0 0 8px', flexShrink: 0,
               }}
               aria-label="Dismiss Sage nudge"
@@ -623,18 +612,18 @@ export default function ShoppingList({ appUser }) {
             >
               <div style={{
                 fontSize: '10px', fontWeight: 500, letterSpacing: '2px',
-                textTransform: 'uppercase', color: C.driftwoodSm,
+                textTransform: 'uppercase', color: color.inkSoft,
                 display: 'flex', alignItems: 'center', gap: '7px',
               }}>
                 <span>{emoji}</span>
                 {label}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '10px', color: C.driftwoodSm, fontWeight: 300, opacity: 0.7 }}>
+                <span style={{ fontSize: '10px', color: color.inkSoft, fontWeight: 300, opacity: 0.7 }}>
                   {sectionItems.length} item{sectionItems.length !== 1 ? 's' : ''}
                 </span>
                 <svg
-                  viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="2"
+                  viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="2"
                   strokeLinecap="round" strokeLinejoin="round"
                   style={{
                     width: '12px', height: '12px', flexShrink: 0,
@@ -682,11 +671,11 @@ export default function ShoppingList({ appUser }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{
                 fontSize: '10px', fontWeight: 500, letterSpacing: '2px',
-                textTransform: 'uppercase', color: C.sage,
+                textTransform: 'uppercase', color: color.sage,
               }}>
                 Got It
               </span>
-              <span style={{ fontSize: '10px', color: C.driftwoodSm, fontWeight: 300 }}>
+              <span style={{ fontSize: '10px', color: color.inkSoft, fontWeight: 300 }}>
                 {gotItItems.length} item{gotItItems.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -718,7 +707,7 @@ export default function ShoppingList({ appUser }) {
                 margin: '4px 24px 8px', padding: '9px 14px',
                 background: 'rgba(122,140,110,0.07)',
                 border: '1px solid rgba(122,140,110,0.2)',
-                borderRadius: '8px', fontSize: '12px', color: C.sage,
+                borderRadius: '8px', fontSize: '12px', color: color.sage,
                 textAlign: 'center', cursor: 'pointer',
                 transition: 'background 0.15s',
                 position: 'relative', zIndex: 1,
@@ -734,7 +723,7 @@ export default function ShoppingList({ appUser }) {
                 margin: '4px 24px 8px', padding: '9px 14px',
                 background: 'rgba(122,140,110,0.07)',
                 border: '1px solid rgba(122,140,110,0.2)',
-                borderRadius: '8px', fontSize: '12px', color: C.sage,
+                borderRadius: '8px', fontSize: '12px', color: color.sage,
                 textAlign: 'center', cursor: 'pointer',
                 transition: 'background 0.15s',
                 position: 'relative', zIndex: 1,
@@ -749,10 +738,10 @@ export default function ShoppingList({ appUser }) {
       {/* ── Empty list state (all items checked) ────────────────────────────── */}
       {activeItems.length === 0 && !loading && !noList && !isComplete && (
         <div style={{ textAlign: 'center', padding: '32px 24px', position: 'relative', zIndex: 1 }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.ink, marginBottom: '6px' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: color.ink, marginBottom: '6px' }}>
             All items accounted for.
           </div>
-          <div style={{ fontSize: '13px', color: C.driftwood }}>
+          <div style={{ fontSize: '13px', color: color.inkSoft }}>
             Tap the checkmark when you're ready to wrap up.
           </div>
         </div>
@@ -791,16 +780,16 @@ export default function ShoppingList({ appUser }) {
       {/* ── Receipt capture overlay ──────────────────────────────────────────── */}
       <BottomSheet isOpen={receiptSheetOpen} onClose={() => setReceiptSheetOpen(false)} title="Add your receipt">
         <div style={{ padding: '20px 24px 40px' }}>
-          <div style={{ textAlign: 'center', padding: '24px 0', color: C.driftwood, fontSize: '14px' }}>
+          <div style={{ textAlign: 'center', padding: '24px 0', color: color.inkSoft, fontSize: '14px' }}>
             Receipt capture coming soon.
           </div>
           <button
             onClick={closeReceiptSheet}
             style={{
               width: '100%', padding: '12px', borderRadius: '10px',
-              background: 'none', color: C.driftwood,
+              background: 'none', color: color.inkSoft,
               fontFamily: "'Jost', sans-serif", fontSize: '13px',
-              border: `1px solid ${C.linen}`, cursor: 'pointer',
+              border: `1px solid ${color.rule}`, cursor: 'pointer',
             }}
           >
             Close
@@ -816,13 +805,13 @@ export default function ShoppingList({ appUser }) {
 function BudgetCol({ label, value, muted, color, pulsing }) {
   return (
     <div style={{ flex: 1, textAlign: 'center' }}>
-      <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '1.8px', textTransform: 'uppercase', color: '#6B5B4E', marginBottom: '3px' }}>
+      <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '1.8px', textTransform: 'uppercase', color: color.inkSoft, marginBottom: '3px' }}>
         {label}
       </div>
       <div style={{
         fontFamily: "'Playfair Display', serif",
         fontSize: muted ? '15px' : '18px',
-        color: muted ? '#8C7B6B' : (color || '#2C2417'),
+        color: muted ? color.inkSoft : (color || color.ink),
         display: 'inline-block',
         transition: 'color 0.3s',
         animation: pulsing ? 'inCartPulse 0.18s ease' : 'none',
@@ -871,20 +860,20 @@ function ListItem({ item, isLast, isExpanded, onTap, onGotIt, onAlreadyHave }) {
         {/* Item body */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', lineHeight: 1.3, marginBottom: '2px' }}>
-            <span style={{ fontSize: '14px', fontWeight: 400, color: '#2C2417' }}>
+            <span style={{ fontSize: '14px', fontWeight: 400, color: color.ink }}>
               {item.name}
             </span>
             {qtyStr && (
-              <span style={{ fontSize: '12px', color: '#8C7B6B' }}>
+              <span style={{ fontSize: '12px', color: color.inkSoft }}>
                 ({qtyStr})
               </span>
             )}
             {item.is_recurring && (
-              <span style={{ fontSize: '11px', color: '#7A8C6E', opacity: 0.7 }}>↻</span>
+              <span style={{ fontSize: '11px', color: color.sage, opacity: 0.7 }}>↻</span>
             )}
           </div>
           {item.source_meal_name && (
-            <div style={{ fontSize: '11px', color: '#8C7B6B' }}>
+            <div style={{ fontSize: '11px', color: color.inkSoft }}>
               {item.source_meal_name}
             </div>
           )}
@@ -892,7 +881,7 @@ function ListItem({ item, isLast, isExpanded, onTap, onGotIt, onAlreadyHave }) {
 
         {/* Right: price */}
         {item.estimated_price && (
-          <div style={{ fontSize: '11px', color: '#6B5B4E', fontWeight: 300, flexShrink: 0 }}>
+          <div style={{ fontSize: '11px', color: color.inkSoft, fontWeight: 300, flexShrink: 0 }}>
             ~{formatPrice(item.estimated_price)}
           </div>
         )}
@@ -924,7 +913,7 @@ function ListItem({ item, isLast, isExpanded, onTap, onGotIt, onAlreadyHave }) {
               flex: 1, padding: '8px 0', borderRadius: '9px',
               fontSize: '12px', fontWeight: 500, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
-              background: 'rgba(196,154,60,0.08)', color: '#C49A3C',
+              background: 'rgba(196,154,60,0.08)', color: color.honey,
               border: '1px solid rgba(196,154,60,0.2)',
               transition: 'all 0.15s',
               fontFamily: "'Jost', sans-serif",
@@ -965,13 +954,13 @@ function GotItItem({ item, isLast, onUndo }) {
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: '14px', fontWeight: 400, color: '#8C7B6B', textDecoration: 'line-through' }}>
+        <div style={{ fontSize: '14px', fontWeight: 400, color: color.inkSoft, textDecoration: 'line-through' }}>
           {item.name}
         </div>
       </div>
 
       {(qtyStr || item.estimated_price) && (
-        <div style={{ fontSize: '11px', color: '#6B5B4E', fontWeight: 300, textAlign: 'right' }}>
+        <div style={{ fontSize: '11px', color: color.inkSoft, fontWeight: 300, textAlign: 'right' }}>
           {qtyStr && <div>{qtyStr}</div>}
           {item.estimated_price && <div>{formatPrice(item.estimated_price)}</div>}
         </div>

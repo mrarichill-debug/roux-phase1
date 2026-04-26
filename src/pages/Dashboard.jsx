@@ -17,21 +17,9 @@ import { getSageIntelligence } from '../lib/getSageIntelligence'
 import { getIntelligenceMessage } from '../lib/getIntelligenceMessage'
 import { useArc } from '../context/ArcContext'
 import { JOKES } from '../lib/jokes'
+import { color, alpha, elevation } from '../styles/tokens'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-const C = {
-  forest:    '#3D6B4F',
-  forestDk:  '#2E5038',
-  sage:      '#7A8C6E',
-  honey:     '#C49A3C',
-  cream:     '#FAF7F2',
-  ink:       '#2C2417',
-  driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E',
-  linen:     '#E8E0D0',
-  walnut:    '#8B6F52',
-  red:       '#A03030',
-}
-
 // ── Date/time helpers ──────────────────────────────────────────────────────────
 const DOW_KEYS  = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday']
 const MON_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] // Mon-based
@@ -340,7 +328,7 @@ export default function Dashboard({ appUser }) {
 
   return (
     <div className="page-scroll-container" style={{
-      background: C.cream,
+      background: color.paper,
       fontFamily: "'Jost', sans-serif",
       fontWeight: 300,
       minHeight: '100vh',
@@ -366,14 +354,14 @@ export default function Dashboard({ appUser }) {
         }}>
           <div style={{
             fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase',
-            color: C.driftwood, fontWeight: 500, marginBottom: '6px',
+            color: color.inkSoft, fontWeight: 500, marginBottom: '6px',
           }}>
             {formatGreetingDate(today)}
           </div>
 
           <h1 style={{
             fontFamily: "'Playfair Display', serif",
-            fontSize: '20px', fontWeight: 500, color: C.ink, lineHeight: 1.3,
+            fontSize: '20px', fontWeight: 500, color: color.ink, lineHeight: 1.3,
             margin: 0,
           }}>
             {timeGreetingTZ(tz)}, {loading ? '…' : `${firstName}.`}
@@ -381,7 +369,7 @@ export default function Dashboard({ appUser }) {
 
           {!loading && (
             <div style={{
-              marginTop: '4px', fontSize: '11px', color: C.driftwood, fontWeight: 300,
+              marginTop: '4px', fontSize: '11px', color: color.inkSoft, fontWeight: 300,
             }}>
               {plannedCount} of 7 nights planned
             </div>
@@ -402,7 +390,7 @@ export default function Dashboard({ appUser }) {
         )}
 
         {/* ── Divider ──────────────────────────────────────────────────── */}
-        {!loading && <div style={{ height: '0.5px', background: '#E4DDD2', margin: '16px 18px' }} />}
+        {!loading && <div style={{ height: '0.5px', background: color.rule, margin: '16px 18px' }} />}
 
         {/* ── Tonight Card ──────────────────────────────────────────────── */}
         {loading ? (
@@ -414,17 +402,17 @@ export default function Dashboard({ appUser }) {
         )}
 
         {/* ── Divider ──────────────────────────────────────────────────── */}
-        {!loading && <div style={{ height: '0.5px', background: '#E4DDD2', margin: '16px 18px' }} />}
+        {!loading && <div style={{ height: '0.5px', background: color.rule, margin: '16px 18px' }} />}
 
         {/* ── Week closeout prompt ───────────────────────────────────── */}
         {!loading && unreviewedPlanId && (
           <div style={{
-            borderLeft: `2px solid ${C.linen}`, paddingLeft: '14px',
+            borderLeft: `2px solid ${color.rule}`, paddingLeft: '14px',
             margin: '14px 18px 0',
           }}>
             <div style={{
               fontFamily: "'Playfair Display', serif", fontSize: '14px', fontStyle: 'italic',
-              color: C.ink, lineHeight: 1.7, marginBottom: '8px',
+              color: color.ink, lineHeight: 1.7, marginBottom: '8px',
             }}>
               Last week is ready to close out — takes about a minute.
             </div>
@@ -482,7 +470,7 @@ function IntelligenceCard({ intel, navigate, arcColor, arcStage }) {
         fontFamily: "'Playfair Display', serif",
         fontSize: '14px',
         fontStyle: 'italic',
-        color: C.ink,
+        color: color.ink,
         lineHeight: 1.7,
         marginBottom: '12px',
       }}>
@@ -494,7 +482,7 @@ function IntelligenceCard({ intel, navigate, arcColor, arcStage }) {
         fontSize: '10px',
         textTransform: 'uppercase',
         letterSpacing: '0.08em',
-        color: C.driftwood,
+        color: color.inkSoft,
         marginBottom: '4px',
       }}>
         What can Roux do for you?
@@ -517,8 +505,8 @@ function IntelligenceCard({ intel, navigate, arcColor, arcStage }) {
           <div key={s} style={{
             width: 7, height: 7, borderRadius: '50%',
             background: s <= arcStage
-              ? (s <= 2 ? '#3D6B4F' : s <= 4 ? '#7A8C6E' : s <= 6 ? '#C49A3C' : '#A07830')
-              : '#E4DDD2',
+              ? (s <= 2 ? color.forest : s <= 4 ? color.sage : s <= 6 ? color.honey : '#A07830')
+              : color.rule,
           }} />
         ))}
       </div>
@@ -535,7 +523,7 @@ function IntelligenceCard({ intel, navigate, arcColor, arcStage }) {
                 borderRadius: '20px',
                 border: 'none',
                 background: arcColor,
-                color: '#FAF7F2',
+                color: color.paper,
                 fontSize: '11px',
                 fontWeight: 500,
                 fontFamily: "'Jost', sans-serif",
@@ -578,7 +566,7 @@ function HumorCard({ joke, arcColor }) {
       textAlign: 'center',
       animation: 'fadeUp 0.4s ease 0.06s both',
     }}>
-      <div style={{ height: '0.5px', background: '#E4DDD2', marginBottom: '16px' }} />
+      <div style={{ height: '0.5px', background: color.rule, marginBottom: '16px' }} />
       <div style={{ fontSize: '14px', color: arcColor, marginBottom: '8px' }}>
         ✦
       </div>
@@ -586,7 +574,7 @@ function HumorCard({ joke, arcColor }) {
         fontFamily: "'Playfair Display', serif",
         fontSize: '12px',
         fontStyle: 'italic',
-        color: C.driftwood,
+        color: color.inkSoft,
         lineHeight: 1.7,
       }}>
         {joke}
@@ -620,13 +608,13 @@ function TonightCard({ meal, onView, arcColor }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
         <span style={{
           fontSize: '9px', fontWeight: 500, letterSpacing: '0.1em',
-          textTransform: 'uppercase', color: C.driftwood,
+          textTransform: 'uppercase', color: color.inkSoft,
         }}>
           Tonight
         </span>
         <span style={{
           fontSize: '9px', fontWeight: 500, padding: '2px 8px', borderRadius: '10px',
-          background: '#EFF4EC', color: C.forest,
+          background: '#EFF4EC', color: color.forest,
           border: '0.5px solid #C8D9C0',
         }}>
           {typeLabel}
@@ -645,7 +633,7 @@ function TonightCard({ meal, onView, arcColor }) {
       <div style={{
         fontFamily: "'Playfair Display', serif",
         fontSize: '17px', fontWeight: 500,
-        color: C.ink, lineHeight: 1.3,
+        color: color.ink, lineHeight: 1.3,
       }}>
         {mealName ?? 'Dinner'}
       </div>
@@ -656,7 +644,7 @@ function TonightCard({ meal, onView, arcColor }) {
           onClick={e => { e.stopPropagation(); onView() }}
           style={{
             background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-            fontSize: '9px', fontWeight: 400, color: C.driftwood,
+            fontSize: '9px', fontWeight: 400, color: color.inkSoft,
             fontFamily: "'Jost', sans-serif", marginTop: '6px',
           }}
         >
@@ -682,7 +670,7 @@ function TonightEmpty({ onPlan }) {
     >
       <span style={{
         fontSize: '9px', fontWeight: 500, letterSpacing: '0.1em',
-        textTransform: 'uppercase', color: C.driftwood,
+        textTransform: 'uppercase', color: color.inkSoft,
         marginBottom: '6px', display: 'block',
       }}>
         Tonight
@@ -698,7 +686,7 @@ function TonightEmpty({ onPlan }) {
         onClick={e => { e.stopPropagation(); onPlan() }}
         style={{
           display: 'inline-flex', alignItems: 'center', gap: '5px',
-          background: 'rgba(140,123,107,0.08)', color: C.driftwood,
+          background: 'rgba(140,123,107,0.08)', color: color.inkSoft,
           border: '1px solid #E4DDD2', borderRadius: '8px',
           padding: '5px 12px', cursor: 'pointer', marginTop: '8px',
           fontFamily: "'Jost', sans-serif", fontSize: '11px', fontWeight: 500,
@@ -726,7 +714,7 @@ function WeekStrip({ weekDates, weekMeals, todayMbIdx, onSeeAll, arcColor }) {
     }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-        <span style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.driftwoodSm }}>
+        <span style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: color.inkSoft }}>
           This week
         </span>
         <button
@@ -755,24 +743,24 @@ function WeekStrip({ weekDates, weekMeals, todayMbIdx, onSeeAll, arcColor }) {
               style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
                 padding: '7px 2px 6px', borderRadius: '10px',
-                background: hasPlanned ? C.forest : 'transparent',
+                background: hasPlanned ? color.forest : 'transparent',
                 outline: isToday && !hasPlanned ? `1.5px solid ${arcColor}` : 'none',
                 outlineOffset: isToday && !hasPlanned ? '1px' : undefined,
-                border: hasPlanned ? 'none' : !isToday ? `1px solid ${C.linen}` : 'none',
+                border: hasPlanned ? 'none' : !isToday ? `1px solid ${color.rule}` : 'none',
                 cursor: 'pointer',
               }}
             >
               <span style={{
                 fontSize: '8px', fontWeight: 500, letterSpacing: '0.8px',
                 textTransform: 'uppercase',
-                color: hasPlanned ? 'rgba(255,255,255,0.6)' : isToday ? arcColor : C.driftwood,
+                color: hasPlanned ? 'rgba(255,255,255,0.6)' : isToday ? arcColor : color.inkSoft,
               }}>
                 {MON_SHORT[i]}
               </span>
               <span style={{
                 fontFamily: "'Playfair Display', serif",
                 fontSize: '15px', fontWeight: 400, lineHeight: 1,
-                color: hasPlanned ? 'white' : isToday ? C.ink : 'rgba(140,123,107,0.5)',
+                color: hasPlanned ? 'white' : isToday ? color.ink : 'rgba(140,123,107,0.5)',
               }}>
                 {d.getDate()}
               </span>

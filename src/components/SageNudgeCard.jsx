@@ -6,51 +6,46 @@
  * Default tier is "notice" for backward compatibility.
  */
 import { useArc } from '../context/ArcContext'
-
-const C = {
-  sage: '#7A8C6E', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', forest: '#3D6B4F', linen: '#E8E0D0',
-  honey: '#C49A3C',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 const TIER_STYLES = {
   teaching: {
-    bg: C.cream,
-    border: `3px solid ${C.sage}`,
+    bg: color.paper,
+    border: `3px solid ${color.sage}`,
     outerBorder: '1px solid rgba(200,185,160,0.55)',
     iconBg: 'rgba(122,140,110,0.10)',
-    iconStroke: C.sage,
+    iconStroke: color.sage,
     iconChar: null, // use sparkle SVG
-    textColor: C.ink,
-    actionColor: C.forest,
-    secondaryColor: C.driftwood,
-    dismissColor: C.driftwood,
-    counterColor: C.driftwood,
-    counterBorder: C.linen,
+    textColor: color.ink,
+    actionColor: color.forest,
+    secondaryColor: color.inkSoft,
+    dismissColor: color.inkSoft,
+    counterColor: color.inkSoft,
+    counterBorder: color.rule,
   },
   notice: {
     bg: '#FDF8F0',
-    border: `3px solid ${C.honey}`,
+    border: `3px solid ${color.honey}`,
     outerBorder: '1px solid rgba(200,185,160,0.45)',
     iconBg: 'rgba(196,154,60,0.10)',
-    iconStroke: C.honey,
+    iconStroke: color.honey,
     iconChar: '⚠',
-    textColor: C.ink,
-    actionColor: C.forest,
-    secondaryColor: C.driftwood,
-    dismissColor: C.driftwood,
-    counterColor: C.driftwood,
-    counterBorder: C.linen,
+    textColor: color.ink,
+    actionColor: color.forest,
+    secondaryColor: color.inkSoft,
+    dismissColor: color.inkSoft,
+    counterColor: color.inkSoft,
+    counterBorder: color.rule,
   },
   insight: {
-    bg: C.forest,
+    bg: color.forest,
     border: 'none',
     outerBorder: 'none',
     iconBg: 'rgba(250,247,242,0.15)',
-    iconStroke: C.cream,
+    iconStroke: color.paper,
     iconChar: null, // use sparkle SVG
-    textColor: C.cream,
-    actionColor: C.cream,
+    textColor: color.paper,
+    actionColor: color.paper,
     secondaryColor: 'rgba(250,247,242,0.7)',
     dismissColor: 'rgba(250,247,242,0.5)',
     counterColor: 'rgba(250,247,242,0.5)',

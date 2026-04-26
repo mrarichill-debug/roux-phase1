@@ -16,11 +16,7 @@ import useUnsavedChanges from '../hooks/useUnsavedChanges'
 import UnsavedChangesSheet from '../components/UnsavedChangesSheet'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
-
-const C = {
-  forest: '#3D6B4F', forestDark: '#2E5038', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', linen: '#E8E0D0', sage: '#7A8C6E', honey: '#C49A3C', red: '#A03030',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 // METHOD_OPTIONS retired — methods now loaded from recipe_method_definitions
 const DIFFICULTY_OPTIONS = [
@@ -36,10 +32,10 @@ const UNIT_OPTIONS = [
 ]
 const ALL_UNITS = UNIT_OPTIONS.flatMap(g => g.units)
 
-const labelStyle = { fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '6px' }
+const labelStyle = { fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: color.inkSoft, fontWeight: 500, marginBottom: '6px' }
 const inputStyle = {
   width: '100%', padding: '10px 12px', fontSize: '14px', fontFamily: "'Jost', sans-serif", fontWeight: 300,
-  border: `1.5px solid ${C.linen}`, borderRadius: '10px', outline: 'none', color: C.ink,
+  border: `1.5px solid ${color.rule}`, borderRadius: '10px', outline: 'none', color: color.ink,
   boxSizing: 'border-box', background: 'white',
 }
 
@@ -652,7 +648,7 @@ export default function SaveRecipe({ appUser }) {
   // RENDER
   // ════════════════════════════════════════════════════════════
   return (
-    <div style={{ background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', paddingBottom: step === 'form' ? '140px' : '100px' }}>
+    <div style={{ background: color.paper, fontFamily: "'Jost', sans-serif", fontWeight: 300, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', paddingBottom: step === 'form' ? '140px' : '100px' }}>
       <TopBar slim
         leftAction={{ onClick: handleBack, icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg> }}
         centerContent={<span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: 'rgba(250,247,242,0.95)' }}>{topBarTitle}</span>}
@@ -664,9 +660,9 @@ export default function SaveRecipe({ appUser }) {
           {/* Sage greeting */}
           <div style={{
             padding: '14px 16px', background: 'white', borderRadius: '12px',
-            borderLeft: `3px solid ${C.sage}`,
+            borderLeft: `3px solid ${color.sage}`,
           }}>
-            <p style={{ margin: 0, fontSize: '14px', color: C.ink, lineHeight: 1.6, fontStyle: 'italic' }}>
+            <p style={{ margin: 0, fontSize: '14px', color: color.ink, lineHeight: 1.6, fontStyle: 'italic' }}>
               Share a recipe with me — snap a photo, paste a link, or type it in. I'll take care of the rest.
             </p>
           </div>
@@ -674,7 +670,7 @@ export default function SaveRecipe({ appUser }) {
           {/* Photo card */}
           <button onClick={() => { setSourceType('photo'); setStep('photo') }} style={{
             padding: '20px', borderRadius: '14px', border: 'none', cursor: 'pointer',
-            background: C.forest, color: 'white', textAlign: 'left',
+            background: color.forest, color: 'white', textAlign: 'left',
             boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -698,13 +694,13 @@ export default function SaveRecipe({ appUser }) {
           {/* URL card */}
           <button onClick={() => { setSourceType('url'); setStep('url') }} style={{
             padding: '20px', borderRadius: '14px', cursor: 'pointer',
-            background: 'white', color: C.ink, textAlign: 'left',
+            background: 'white', color: color.ink, textAlign: 'left',
             boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            border: `1.5px solid ${C.linen}`,
+            border: `1.5px solid ${color.rule}`,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(61,107,79,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke={C.forest} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke={color.forest} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
                   <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
                   <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
                 </svg>
@@ -713,7 +709,7 @@ export default function SaveRecipe({ appUser }) {
                 <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, marginBottom: '4px' }}>
                   Paste a URL
                 </div>
-                <div style={{ fontSize: '13px', color: C.driftwood, fontWeight: 300 }}>
+                <div style={{ fontSize: '13px', color: color.inkSoft, fontWeight: 300 }}>
                   Share a link and Roux reads it for you
                 </div>
               </div>
@@ -722,9 +718,9 @@ export default function SaveRecipe({ appUser }) {
 
           {/* Manual entry — subtle */}
           <button onClick={startManual} style={{
-            padding: '14px 20px', borderRadius: '14px', border: `1px dashed ${C.linen}`,
+            padding: '14px 20px', borderRadius: '14px', border: `1px dashed ${color.rule}`,
             background: 'transparent', cursor: 'pointer', textAlign: 'center',
-            color: C.driftwood, fontSize: '14px', fontFamily: "'Jost', sans-serif", fontWeight: 400,
+            color: color.inkSoft, fontSize: '14px', fontFamily: "'Jost', sans-serif", fontWeight: 400,
           }}>
             Or type it in manually
           </button>
@@ -745,41 +741,41 @@ export default function SaveRecipe({ appUser }) {
             onKeyDown={e => { if (e.key === 'Enter') handleUrlExtract() }}
           />
           {!urlError && !extracting && (
-            <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, fontStyle: 'italic', marginTop: '-10px' }}>
+            <div style={{ fontSize: '11px', color: color.inkSoft, fontWeight: 300, fontStyle: 'italic', marginTop: '-10px' }}>
               Works best with food blogs and smaller recipe sites. Major sites like AllRecipes block direct import.
             </div>
           )}
 
           {extractError && (
-            <div style={{ fontSize: '13px', color: C.red, lineHeight: 1.5 }}>{extractError}</div>
+            <div style={{ fontSize: '13px', color: color.rust, lineHeight: 1.5 }}>{extractError}</div>
           )}
 
           {/* Typed error messages with quick actions */}
           {urlError && (
             <div style={{
               padding: '16px', background: 'white', borderRadius: '12px',
-              borderLeft: `3px solid ${C.honey}`,
+              borderLeft: `3px solid ${color.honey}`,
             }}>
               {urlError.type === 'timeout' ? (
                 <>
                   <div style={{ textAlign: 'center', marginBottom: '14px' }}>
-                    <span style={{ fontSize: '24px', color: C.driftwood }}>✦</span>
-                    <div style={{ fontSize: '14px', color: C.ink, lineHeight: 1.6, marginTop: '8px' }}>
+                    <span style={{ fontSize: '24px', color: color.inkSoft }}>✦</span>
+                    <div style={{ fontSize: '14px', color: color.ink, lineHeight: 1.6, marginTop: '8px' }}>
                       Had trouble reading that page — the site may be blocking access or took too long to respond.
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <button onClick={() => { setUrlError(null); handleUrlExtract() }} style={{
                       padding: '12px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-                      background: C.forest, color: 'white',
+                      background: color.forest, color: 'white',
                       fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
                     }}>
                       Try again
                     </button>
                     <button onClick={() => { setUrlError(null); startManual() }} style={{
                       padding: '12px', borderRadius: '10px', cursor: 'pointer',
-                      background: 'transparent', color: C.forest,
-                      border: `1.5px solid ${C.forest}`,
+                      background: 'transparent', color: color.forest,
+                      border: `1.5px solid ${color.forest}`,
                       fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
                     }}>
                       Add manually instead
@@ -788,7 +784,7 @@ export default function SaveRecipe({ appUser }) {
                 </>
               ) : (
                 <>
-                  <div style={{ fontSize: '14px', color: C.ink, lineHeight: 1.6, marginBottom: '14px' }}>
+                  <div style={{ fontSize: '14px', color: color.ink, lineHeight: 1.6, marginBottom: '14px' }}>
                     {urlError.type === 'fetch_failed' && (
                       <>Couldn't reach that page — the link may be broken or the site may be temporarily down. Double-check the URL and try again, or use one of these instead:</>
                     )}
@@ -799,15 +795,15 @@ export default function SaveRecipe({ appUser }) {
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <button onClick={() => { setSourceType('photo'); setUrlError(null); setStep('photo') }} style={{
                       flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-                      background: C.forest, color: 'white',
+                      background: color.forest, color: 'white',
                       fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
                     }}>
                       Take a photo →
                     </button>
                     <button onClick={() => { setUrlError(null); startManual() }} style={{
                       flex: 1, padding: '10px', borderRadius: '10px', cursor: 'pointer',
-                      background: 'transparent', color: C.forest,
-                      border: `1.5px solid ${C.forest}`,
+                      background: 'transparent', color: color.forest,
+                      border: `1.5px solid ${color.forest}`,
                       fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
                     }}>
                       Enter it manually →
@@ -820,16 +816,16 @@ export default function SaveRecipe({ appUser }) {
 
           {extracting ? (
             <div style={{ textAlign: 'center', padding: '32px 0' }}>
-              <div style={{ display: 'inline-block', width: '32px', height: '32px', border: `3px solid ${C.linen}`, borderTop: `3px solid ${C.forest}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-              <div style={{ marginTop: '12px', fontSize: '14px', color: C.driftwood, fontStyle: 'italic' }}>
+              <div style={{ display: 'inline-block', width: '32px', height: '32px', border: `3px solid ${color.rule}`, borderTop: `3px solid ${color.forest}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+              <div style={{ marginTop: '12px', fontSize: '14px', color: color.inkSoft, fontStyle: 'italic' }}>
                 {extractMessage}
               </div>
             </div>
           ) : !urlError && (
             <button onClick={handleUrlExtract} disabled={!urlInput.trim()} style={{
               padding: '16px', borderRadius: '14px', border: 'none', cursor: urlInput.trim() ? 'pointer' : 'default',
-              background: urlInput.trim() ? C.forest : C.linen,
-              color: urlInput.trim() ? 'white' : C.driftwood,
+              background: urlInput.trim() ? color.forest : color.rule,
+              color: urlInput.trim() ? 'white' : color.inkSoft,
               fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
               boxShadow: urlInput.trim() ? '0 4px 16px rgba(30,55,35,0.25)' : 'none',
             }}>
@@ -839,7 +835,7 @@ export default function SaveRecipe({ appUser }) {
 
           <button onClick={startManual} style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: '13px', color: C.driftwood, fontWeight: 300,
+            fontSize: '13px', color: color.inkSoft, fontWeight: 300,
             fontFamily: "'Jost', sans-serif", padding: '8px 0',
           }}>
             Or just type it in manually
@@ -869,7 +865,7 @@ export default function SaveRecipe({ appUser }) {
                   <div key={photo.id} style={{
                     position: 'relative', flexShrink: 0,
                     width: '100px', height: '100px', borderRadius: '10px',
-                    overflow: 'hidden', border: `1.5px solid ${C.linen}`,
+                    overflow: 'hidden', border: `1.5px solid ${color.rule}`,
                   }}>
                     <img src={photo.preview} alt={`Photo ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     <button onClick={() => removePhoto(photo.id)} style={{
@@ -886,7 +882,7 @@ export default function SaveRecipe({ appUser }) {
                     {i === 0 && (
                       <div style={{
                         position: 'absolute', bottom: '4px', left: '4px',
-                        background: C.forest, color: 'white', fontSize: '8px',
+                        background: color.forest, color: 'white', fontSize: '8px',
                         padding: '2px 5px', borderRadius: '4px', fontWeight: 500,
                         letterSpacing: '0.5px', textTransform: 'uppercase',
                       }}>Primary</div>
@@ -900,39 +896,39 @@ export default function SaveRecipe({ appUser }) {
                 <button onClick={() => photoInputRef.current?.click()} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                   padding: '10px', borderRadius: '10px',
-                  border: `1.5px dashed ${C.sage}`, background: 'rgba(122,140,110,0.04)',
-                  cursor: 'pointer', color: C.forest,
+                  border: `1.5px dashed ${color.sage}`, background: 'rgba(122,140,110,0.04)',
+                  cursor: 'pointer', color: color.forest,
                   fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 400,
                 }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
                     <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                   </svg>
                   Add another photo
-                  <span style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300 }}>({capturedPhotos.length}/{MAX_PHOTOS})</span>
+                  <span style={{ fontSize: '11px', color: color.inkSoft, fontWeight: 300 }}>({capturedPhotos.length}/{MAX_PHOTOS})</span>
                 </button>
               )}
 
-              <div style={{ fontSize: '12px', color: C.driftwood, fontWeight: 300, textAlign: 'center', fontStyle: 'italic' }}>
+              <div style={{ fontSize: '12px', color: color.inkSoft, fontWeight: 300, textAlign: 'center', fontStyle: 'italic' }}>
                 {capturedPhotos.length === 1
                   ? 'Got both sides? Add another photo.'
                   : `${capturedPhotos.length} photos — Roux will combine them into one recipe.`}
               </div>
 
               {extractError && (
-                <div style={{ fontSize: '13px', color: C.red, lineHeight: 1.5 }}>{extractError}</div>
+                <div style={{ fontSize: '13px', color: color.rust, lineHeight: 1.5 }}>{extractError}</div>
               )}
 
               {extracting ? (
                 <div style={{ textAlign: 'center', padding: '24px 0' }}>
-                  <div style={{ display: 'inline-block', width: '32px', height: '32px', border: `3px solid ${C.linen}`, borderTop: `3px solid ${C.forest}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                  <div style={{ marginTop: '12px', fontSize: '14px', color: C.driftwood, fontStyle: 'italic' }}>
+                  <div style={{ display: 'inline-block', width: '32px', height: '32px', border: `3px solid ${color.rule}`, borderTop: `3px solid ${color.forest}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                  <div style={{ marginTop: '12px', fontSize: '14px', color: color.inkSoft, fontStyle: 'italic' }}>
                     Reading {capturedPhotos.length > 1 ? `all ${capturedPhotos.length} photos` : 'the recipe'}...
                   </div>
                 </div>
               ) : (
                 <button onClick={handlePhotoExtract} style={{
                   padding: '16px', borderRadius: '14px', border: 'none', cursor: 'pointer',
-                  background: C.forest, color: 'white',
+                  background: color.forest, color: 'white',
                   fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
                   boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
                 }}>
@@ -943,9 +939,9 @@ export default function SaveRecipe({ appUser }) {
           ) : (
             <button onClick={() => photoInputRef.current?.click()} style={{
               width: '100%', height: '200px', borderRadius: '14px',
-              border: `2px dashed ${C.sage}`, background: 'rgba(122,140,110,0.04)',
+              border: `2px dashed ${color.sage}`, background: 'rgba(122,140,110,0.04)',
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              gap: '12px', cursor: 'pointer', color: C.forest,
+              gap: '12px', cursor: 'pointer', color: color.forest,
               fontFamily: "'Jost', sans-serif",
             }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 36, height: 36, opacity: 0.7 }}>
@@ -953,13 +949,13 @@ export default function SaveRecipe({ appUser }) {
                 <circle cx="12" cy="13" r="4"/>
               </svg>
               <div style={{ fontSize: '15px', fontWeight: 400 }}>Tap to take or upload a photo</div>
-              <div style={{ fontSize: '12px', color: C.driftwood, fontWeight: 300 }}>Recipe card, cookbook page, screenshot, or handwritten note</div>
+              <div style={{ fontSize: '12px', color: color.inkSoft, fontWeight: 300 }}>Recipe card, cookbook page, screenshot, or handwritten note</div>
             </button>
           )}
 
           <button onClick={startManual} style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: '13px', color: C.driftwood, fontWeight: 300,
+            fontSize: '13px', color: color.inkSoft, fontWeight: 300,
             fontFamily: "'Jost', sans-serif", padding: '8px 0',
           }}>
             Or just type it in manually
@@ -975,7 +971,7 @@ export default function SaveRecipe({ appUser }) {
           {sourceType !== 'manual' && (
             <div style={{
               padding: '12px 14px', background: 'white', borderRadius: '10px',
-              borderLeft: `3px solid ${C.sage}`, fontSize: '13px', color: C.driftwood, lineHeight: 1.5,
+              borderLeft: `3px solid ${color.sage}`, fontSize: '13px', color: color.inkSoft, lineHeight: 1.5,
             }}>
               Here's what was found. Review and adjust anything before saving.
             </div>
@@ -990,7 +986,7 @@ export default function SaveRecipe({ appUser }) {
                 <button onClick={() => fileRef.current?.click()} style={{
                   position: 'absolute', bottom: '10px', right: '10px',
                   padding: '6px 14px', borderRadius: '20px', border: 'none',
-                  background: 'rgba(255,255,255,0.9)', color: C.ink,
+                  background: 'rgba(255,255,255,0.9)', color: color.ink,
                   fontSize: '12px', fontWeight: 400, cursor: 'pointer',
                   fontFamily: "'Jost', sans-serif",
                 }}>Change photo</button>
@@ -1002,22 +998,22 @@ export default function SaveRecipe({ appUser }) {
                   {capturedPhotos.map((photo, i) => (
                     <div key={photo.id} style={{
                       flexShrink: 0, width: '80px', height: '80px', borderRadius: '10px',
-                      overflow: 'hidden', border: i === 0 ? `2px solid ${C.forest}` : `1px solid ${C.linen}`,
+                      overflow: 'hidden', border: i === 0 ? `2px solid ${color.forest}` : `1px solid ${color.rule}`,
                     }}>
                       <img src={photo.preview} alt={`Photo ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                   ))}
                 </div>
-                <div style={{ fontSize: '11px', color: C.driftwood, marginTop: '4px', fontWeight: 300 }}>
+                <div style={{ fontSize: '11px', color: color.inkSoft, marginTop: '4px', fontWeight: 300 }}>
                   {capturedPhotos.length} photo{capturedPhotos.length > 1 ? 's' : ''} will be saved with this recipe
                 </div>
               </div>
             ) : (
               <button onClick={() => fileRef.current?.click()} style={{
                 width: '100%', height: '100px', borderRadius: '14px',
-                border: `1.5px dashed ${C.linen}`, background: 'white',
+                border: `1.5px dashed ${color.rule}`, background: 'white',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                gap: '6px', cursor: 'pointer', color: C.driftwood,
+                gap: '6px', cursor: 'pointer', color: color.inkSoft,
                 fontFamily: "'Jost', sans-serif", fontSize: '13px',
               }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
@@ -1032,7 +1028,7 @@ export default function SaveRecipe({ appUser }) {
           {/* ── Basic Info ─────────────────────────────────────── */}
           <div>
             <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Recipe name"
-              style={{ ...inputStyle, fontSize: '20px', fontFamily: "'Playfair Display', serif", fontWeight: 500, padding: '12px 0', border: 'none', borderBottom: `1.5px solid ${C.linen}`, borderRadius: 0, background: 'transparent' }} />
+              style={{ ...inputStyle, fontSize: '20px', fontFamily: "'Playfair Display', serif", fontWeight: 500, padding: '12px 0', border: 'none', borderBottom: `1.5px solid ${color.rule}`, borderRadius: 0, background: 'transparent' }} />
           </div>
           <div>
             <div style={labelStyle}>Description</div>
@@ -1059,9 +1055,9 @@ export default function SaveRecipe({ appUser }) {
                 return (
                   <button key={tag.id} onClick={() => setSelectedTagIds(prev => { const n = new Set(prev); n.has(tag.id) ? n.delete(tag.id) : n.add(tag.id); return n })} style={{
                     padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
-                    border: active ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                    border: active ? `1.5px solid ${color.forest}` : `1px solid ${color.rule}`,
                     background: active ? 'rgba(61,107,79,0.08)' : 'white',
-                    color: active ? C.forest : C.ink, cursor: 'pointer',
+                    color: active ? color.forest : color.ink, cursor: 'pointer',
                     fontFamily: "'Jost', sans-serif", fontWeight: active ? 500 : 400,
                   }}>{tag.name}</button>
                 )
@@ -1069,16 +1065,16 @@ export default function SaveRecipe({ appUser }) {
             </div>
             {tagDefs.some(t => !t.is_default) && (
               <>
-                <div style={{ fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 300, margin: '10px 0 6px', fontFamily: "'Jost', sans-serif" }}>Your tags</div>
+                <div style={{ fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: color.inkSoft, fontWeight: 300, margin: '10px 0 6px', fontFamily: "'Jost', sans-serif" }}>Your tags</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
                   {tagDefs.filter(t => !t.is_default).map(tag => {
                     const active = selectedTagIds.has(tag.id)
                     return (
                       <button key={tag.id} onClick={() => setSelectedTagIds(prev => { const n = new Set(prev); n.has(tag.id) ? n.delete(tag.id) : n.add(tag.id); return n })} style={{
                         padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
-                        border: active ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                        border: active ? `1.5px solid ${color.forest}` : `1px solid ${color.rule}`,
                         background: active ? 'rgba(61,107,79,0.08)' : 'white',
-                        color: active ? C.forest : C.ink, cursor: 'pointer',
+                        color: active ? color.forest : color.ink, cursor: 'pointer',
                         fontFamily: "'Jost', sans-serif", fontWeight: active ? 500 : 400,
                       }}>{tag.name}</button>
                     )
@@ -1094,15 +1090,15 @@ export default function SaveRecipe({ appUser }) {
                   onKeyDown={e => { if (e.key === 'Enter') handleCreateTag() }} />
                 <button onClick={handleCreateTag} disabled={!newTagName.trim()} style={{
                   padding: '6px 12px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 500,
-                  background: newTagName.trim() ? C.forest : C.linen,
-                  color: newTagName.trim() ? 'white' : C.driftwood,
+                  background: newTagName.trim() ? color.forest : color.rule,
+                  color: newTagName.trim() ? 'white' : color.inkSoft,
                   cursor: newTagName.trim() ? 'pointer' : 'default', fontFamily: "'Jost', sans-serif",
                 }}>Add</button>
               </div>
             ) : (
               <button onClick={() => setNewTagOpen(true)} style={{
                 background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
-                fontSize: '12px', color: C.driftwood, fontWeight: 300, fontFamily: "'Jost', sans-serif",
+                fontSize: '12px', color: color.inkSoft, fontWeight: 300, fontFamily: "'Jost', sans-serif",
               }}>+ Add a tag</button>
             )}
           </div>
@@ -1118,9 +1114,9 @@ export default function SaveRecipe({ appUser }) {
                 return (
                   <button key={md.id} onClick={() => setSelectedMethodIds(prev => { const n = new Set(prev); n.has(md.id) ? n.delete(md.id) : n.add(md.id); return n })} style={{
                     padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
-                    border: active ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                    border: active ? `1.5px solid ${color.forest}` : `1px solid ${color.rule}`,
                     background: active ? 'rgba(61,107,79,0.08)' : 'white',
-                    color: active ? C.forest : C.ink, cursor: 'pointer',
+                    color: active ? color.forest : color.ink, cursor: 'pointer',
                     fontFamily: "'Jost', sans-serif", fontWeight: active ? 500 : 400,
                   }}>{md.name}</button>
                 )
@@ -1128,16 +1124,16 @@ export default function SaveRecipe({ appUser }) {
             </div>
             {methodDefs.some(m => !m.is_default) && (
               <>
-                <div style={{ fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 300, margin: '10px 0 6px', fontFamily: "'Jost', sans-serif" }}>Your methods</div>
+                <div style={{ fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: color.inkSoft, fontWeight: 300, margin: '10px 0 6px', fontFamily: "'Jost', sans-serif" }}>Your methods</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
                   {methodDefs.filter(m => !m.is_default).map(md => {
                     const active = selectedMethodIds.has(md.id)
                     return (
                       <button key={md.id} onClick={() => setSelectedMethodIds(prev => { const n = new Set(prev); n.has(md.id) ? n.delete(md.id) : n.add(md.id); return n })} style={{
                         padding: '5px 12px', borderRadius: '16px', fontSize: '12px',
-                        border: active ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                        border: active ? `1.5px solid ${color.forest}` : `1px solid ${color.rule}`,
                         background: active ? 'rgba(61,107,79,0.08)' : 'white',
-                        color: active ? C.forest : C.ink, cursor: 'pointer',
+                        color: active ? color.forest : color.ink, cursor: 'pointer',
                         fontFamily: "'Jost', sans-serif", fontWeight: active ? 500 : 400,
                       }}>{md.name}</button>
                     )
@@ -1153,15 +1149,15 @@ export default function SaveRecipe({ appUser }) {
                   onKeyDown={e => { if (e.key === 'Enter') handleCreateMethod() }} />
                 <button onClick={handleCreateMethod} disabled={!newMethodName.trim()} style={{
                   padding: '6px 12px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 500,
-                  background: newMethodName.trim() ? C.forest : C.linen,
-                  color: newMethodName.trim() ? 'white' : C.driftwood,
+                  background: newMethodName.trim() ? color.forest : color.rule,
+                  color: newMethodName.trim() ? 'white' : color.inkSoft,
                   cursor: newMethodName.trim() ? 'pointer' : 'default', fontFamily: "'Jost', sans-serif",
                 }}>Add</button>
               </div>
             ) : (
               <button onClick={() => setNewMethodOpen(true)} style={{
                 background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
-                fontSize: '12px', color: C.driftwood, fontWeight: 300, fontFamily: "'Jost', sans-serif",
+                fontSize: '12px', color: color.inkSoft, fontWeight: 300, fontFamily: "'Jost', sans-serif",
               }}>+ Add a method</button>
             )}
           </div>
@@ -1171,9 +1167,9 @@ export default function SaveRecipe({ appUser }) {
               {DIFFICULTY_OPTIONS.map(d => (
                 <button key={d.key} onClick={() => setDifficulty(difficulty === d.key ? '' : d.key)} style={{
                   flex: 1, padding: '8px', borderRadius: '10px', fontSize: '13px',
-                  border: difficulty === d.key ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                  border: difficulty === d.key ? `1.5px solid ${color.forest}` : `1px solid ${color.rule}`,
                   background: difficulty === d.key ? 'rgba(61,107,79,0.08)' : 'white',
-                  color: difficulty === d.key ? C.forest : C.ink, cursor: 'pointer',
+                  color: difficulty === d.key ? color.forest : color.ink, cursor: 'pointer',
                   fontFamily: "'Jost', sans-serif", fontWeight: difficulty === d.key ? 500 : 400,
                 }}>{d.label}</button>
               ))}
@@ -1186,14 +1182,14 @@ export default function SaveRecipe({ appUser }) {
               <div style={labelStyle}>Prep time</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <input type="number" value={prepTime} onChange={e => setPrepTime(e.target.value)} placeholder="0" style={{ ...inputStyle, width: '70px', textAlign: 'center' }} />
-                <span style={{ fontSize: '12px', color: C.driftwood }}>min</span>
+                <span style={{ fontSize: '12px', color: color.inkSoft }}>min</span>
               </div>
             </div>
             <div style={{ flex: 1 }}>
               <div style={labelStyle}>Cook time</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <input type="number" value={cookTime} onChange={e => setCookTime(e.target.value)} placeholder="0" style={{ ...inputStyle, width: '70px', textAlign: 'center' }} />
-                <span style={{ fontSize: '12px', color: C.driftwood }}>min</span>
+                <span style={{ fontSize: '12px', color: color.inkSoft }}>min</span>
               </div>
             </div>
             <div style={{ flex: 1 }}>
@@ -1217,9 +1213,9 @@ export default function SaveRecipe({ appUser }) {
                     <button onClick={() => { setUnitPickerKey(unitPickerKey === ing._key ? null : ing._key); setUnitSearch('') }}
                       style={{
                         ...inputStyle, width: '56px', padding: '8px 4px', fontSize: '11px', textAlign: 'center',
-                        cursor: 'pointer', color: ing.unit ? C.ink : C.driftwood,
+                        cursor: 'pointer', color: ing.unit ? color.ink : color.inkSoft,
                         background: unitPickerKey === ing._key ? 'rgba(61,107,79,0.06)' : 'white',
-                        border: unitPickerKey === ing._key ? `1.5px solid ${C.forest}` : `1.5px solid ${C.linen}`,
+                        border: unitPickerKey === ing._key ? `1.5px solid ${color.forest}` : `1.5px solid ${color.rule}`,
                       }}>
                       {ing.unit || 'unit'}
                     </button>
@@ -1230,26 +1226,26 @@ export default function SaveRecipe({ appUser }) {
                       {pantryFocusKey === ing._key && pantrySuggestions.length > 0 && (
                         <div style={{
                           position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
-                          background: 'white', border: `1px solid ${C.linen}`, borderRadius: '0 0 8px 8px',
+                          background: 'white', border: `1px solid ${color.rule}`, borderRadius: '0 0 8px 8px',
                           boxShadow: '0 4px 12px rgba(0,0,0,0.08)', maxHeight: '160px', overflowY: 'auto',
                         }}>
                           {pantrySuggestions.map(p => (
                             <button key={p.id} onMouseDown={() => selectPantryItem(ing._key, p)} style={{
                               display: 'block', width: '100%', padding: '8px 10px', background: 'none',
-                              border: 'none', borderTop: `1px solid ${C.linen}`, cursor: 'pointer',
-                              textAlign: 'left', fontSize: '13px', color: C.ink, fontFamily: "'Jost', sans-serif",
+                              border: 'none', borderTop: `1px solid ${color.rule}`, cursor: 'pointer',
+                              textAlign: 'left', fontSize: '13px', color: color.ink, fontFamily: "'Jost', sans-serif",
                             }}>
                               {p.name}
-                              {p.default_unit && <span style={{ fontSize: '10px', color: C.driftwood, marginLeft: '6px' }}>{p.default_unit}</span>}
+                              {p.default_unit && <span style={{ fontSize: '10px', color: color.inkSoft, marginLeft: '6px' }}>{p.default_unit}</span>}
                             </button>
                           ))}
                         </div>
                       )}
                     </div>
                     <button onClick={() => removeIngredient(ing._key)} style={{
-                      width: '26px', height: '26px', borderRadius: '50%', border: `1px solid ${C.linen}`,
+                      width: '26px', height: '26px', borderRadius: '50%', border: `1px solid ${color.rule}`,
                       background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: C.driftwood, flexShrink: 0,
+                      color: color.inkSoft, flexShrink: 0,
                     }}>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}>
                         <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -1257,16 +1253,16 @@ export default function SaveRecipe({ appUser }) {
                     </button>
                   </div>
                   {unitPickerKey === ing._key && (
-                    <div style={{ marginTop: '4px', padding: '8px', background: 'white', border: `1px solid ${C.linen}`, borderRadius: '8px' }}>
+                    <div style={{ marginTop: '4px', padding: '8px', background: 'white', border: `1px solid ${color.rule}`, borderRadius: '8px' }}>
                       <input type="text" value={unitSearch} onChange={e => setUnitSearch(e.target.value)} placeholder="Search units..."
                         autoFocus style={{ ...inputStyle, fontSize: '12px', padding: '6px 10px', marginBottom: '6px' }} />
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxHeight: '120px', overflowY: 'auto' }}>
                         {filteredUnits.map(u => (
                           <button key={u} onClick={() => { updateIngredient(ing._key, 'unit', u); setUnitPickerKey(null) }} style={{
                             padding: '4px 10px', borderRadius: '12px', fontSize: '11px',
-                            border: ing.unit === u ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                            border: ing.unit === u ? `1.5px solid ${color.forest}` : `1px solid ${color.rule}`,
                             background: ing.unit === u ? 'rgba(61,107,79,0.08)' : 'white',
-                            color: ing.unit === u ? C.forest : C.ink, cursor: 'pointer',
+                            color: ing.unit === u ? color.forest : color.ink, cursor: 'pointer',
                             fontFamily: "'Jost', sans-serif",
                           }}>{u}</button>
                         ))}
@@ -1278,7 +1274,7 @@ export default function SaveRecipe({ appUser }) {
             })}
             <button onClick={addIngredient} style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: '13px', color: C.forest, fontWeight: 400, padding: '6px 0',
+              fontSize: '13px', color: color.forest, fontWeight: 400, padding: '6px 0',
               fontFamily: "'Jost', sans-serif",
             }}>+ Add ingredient</button>
           </div>
@@ -1288,16 +1284,16 @@ export default function SaveRecipe({ appUser }) {
             <div style={labelStyle}>Instructions</div>
             {instructions.map((s, i) => (
               <div key={s._key} style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'flex-start' }}>
-                <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', color: C.forest, minWidth: '24px', paddingTop: '8px' }}>
+                <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', color: color.forest, minWidth: '24px', paddingTop: '8px' }}>
                   {i + 1}
                 </span>
                 <textarea value={s.instruction || ''} onChange={e => updateInstruction(s._key, e.target.value)}
                   placeholder={`Step ${i + 1}...`} rows={2}
                   style={{ ...inputStyle, flex: 1, resize: 'none', fontSize: '13px' }} />
                 <button onClick={() => removeInstruction(s._key)} style={{
-                  width: '26px', height: '26px', borderRadius: '50%', border: `1px solid ${C.linen}`,
+                  width: '26px', height: '26px', borderRadius: '50%', border: `1px solid ${color.rule}`,
                   background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: C.driftwood, flexShrink: 0, marginTop: '6px',
+                  color: color.inkSoft, flexShrink: 0, marginTop: '6px',
                 }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}>
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -1307,7 +1303,7 @@ export default function SaveRecipe({ appUser }) {
             ))}
             <button onClick={addInstruction} style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: '13px', color: C.forest, fontWeight: 400, padding: '6px 0',
+              fontSize: '13px', color: color.forest, fontWeight: 400, padding: '6px 0',
               fontFamily: "'Jost', sans-serif",
             }}>+ Add step</button>
           </div>
@@ -1330,20 +1326,20 @@ export default function SaveRecipe({ appUser }) {
 
       {/* ── Error ──────────────────────────────────────────────── */}
       {error && (
-        <div style={{ padding: '0 22px 10px', fontSize: '13px', color: C.red, textAlign: 'center' }}>{error}</div>
+        <div style={{ padding: '0 22px 10px', fontSize: '13px', color: color.rust, textAlign: 'center' }}>{error}</div>
       )}
 
       {/* ── Pinned Save Button (form step only) ────────────────── */}
       {step === 'form' && (
         <div style={{
           position: 'fixed', bottom: 'calc(48px + env(safe-area-inset-bottom, 8px))', left: '50%', transform: 'translateX(-50%)',
-          width: '100%', maxWidth: '430px', padding: '12px 22px', background: C.cream,
-          borderTop: `1px solid ${C.linen}`, zIndex: 50, boxSizing: 'border-box',
+          width: '100%', maxWidth: '430px', padding: '12px 22px', background: color.paper,
+          borderTop: `1px solid ${color.rule}`, zIndex: 50, boxSizing: 'border-box',
         }}>
           <button onClick={handleSave} disabled={!s(name) || saving} style={{
             width: '100%', padding: '16px', borderRadius: '14px',
-            background: s(name) && !saving ? C.forest : C.linen,
-            color: s(name) && !saving ? 'white' : C.driftwood,
+            background: s(name) && !saving ? color.forest : color.rule,
+            color: s(name) && !saving ? 'white' : color.inkSoft,
             border: 'none', cursor: s(name) && !saving ? 'pointer' : 'default',
             fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
             boxShadow: s(name) && !saving ? '0 4px 16px rgba(30,55,35,0.25)' : 'none',
@@ -1357,7 +1353,7 @@ export default function SaveRecipe({ appUser }) {
       {toast && (
         <div style={{
           position: 'fixed', top: '80px', left: '50%', transform: 'translateX(-50%)',
-          background: C.forest, color: 'white', padding: '10px 22px', borderRadius: '10px',
+          background: color.forest, color: 'white', padding: '10px 22px', borderRadius: '10px',
           fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
           zIndex: 300, boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
           animation: 'toastIn 0.25s cubic-bezier(0.22,1,0.36,1) forwards',

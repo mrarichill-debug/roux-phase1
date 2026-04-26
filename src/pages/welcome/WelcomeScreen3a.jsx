@@ -2,27 +2,27 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import {
-  C, BgTexture, NavRow, ProgressBar, screenWrap,
+  BgTexture, NavRow, ProgressBar, screenWrap,
   StepHead, FormField, inputStyle, PrimaryButton,
   PasswordStrength, getPasswordStrength, ArrowIcon, TosLine, EyeIcon,
 } from './welcomeUtils'
+import { color, alpha, elevation } from '../../styles/tokens'
 
 // ── Sage welcome card ─────────────────────────────────────────────────────────
 function SageCard({ lastName, animDelay = '0.7s' }) {
   return (
     <div style={{
       width: '100%', background: 'white',
-      borderLeft: `3px solid ${C.sage}`,
+      borderLeft: `3px solid ${color.sage}`,
       borderRadius: '0 12px 12px 0',
       padding: '14px 16px', textAlign: 'left',
       marginBottom: '28px',
       boxShadow: '0 1px 4px rgba(80,60,30,0.06)',
-      opacity: 0, animation: `fadeUp 0.5s ease ${animDelay} forwards`,
-    }}>
-      <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: C.sage, marginBottom: '5px' }}>
+      opacity: 0, animation: `fadeUp 0.5s ease ${animDelay} forwards` }}>
+      <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', color: color.sage, marginBottom: '5px' }}>
         Sage
       </div>
-      <div style={{ fontSize: '13px', color: C.ink, lineHeight: 1.6, fontWeight: 300 }}>
+      <div style={{ fontSize: '13px', color: color.ink, lineHeight: 1.6, fontWeight: 300 }}>
         "Welcome to your kitchen{lastName ? `, ${lastName} family` : ''}. I'm Sage — I'll help you plan your week, shop smarter, and make the most of what's in your fridge. Let's start by setting up your first week."
       </div>
     </div>
@@ -37,9 +37,8 @@ function CompleteIcon() {
       background: 'rgba(61,107,79,0.1)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       marginBottom: '24px',
-      animation: 'iconPop 0.5s cubic-bezier(0.22,1,0.36,1) 0.3s both',
-    }}>
-      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke={C.forest} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      animation: 'iconPop 0.5s cubic-bezier(0.22,1,0.36,1) 0.3s both' }}>
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke={color.forest} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
         <polyline points="9 22 9 12 15 12 15 22"/>
       </svg>
@@ -108,10 +107,7 @@ export default function WelcomeScreen3a() {
             name: `${firstName.trim()} ${lastName.trim()}`,
             first_name: firstName.trim(),
             last_name: lastName.trim(),
-            home_name: homeName.trim(),
-          },
-        },
-      })
+            home_name: homeName.trim() } } })
       if (error) throw error
       // The handle_new_user trigger creates the household + user row.
       // Move to welcome moment — auth state change in App.jsx will
@@ -131,8 +127,7 @@ export default function WelcomeScreen3a() {
     return inputStyle({
       focused: focusedField === name,
       hasValue: value.length > 0,
-      hasError: opts.hasError || false,
-    })
+      hasError: opts.hasError || false })
   }
 
   const progressStep = step <= 3 ? step : 3
@@ -216,8 +211,7 @@ export default function WelcomeScreen3a() {
                     style={{
                       position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
                       background: 'none', border: 'none', cursor: 'pointer',
-                      color: C.driftwood, padding: '4px', display: 'flex', alignItems: 'center',
-                    }}
+                      color: color.inkSoft, padding: '4px', display: 'flex', alignItems: 'center' }}
                   >
                     <EyeIcon visible={pwVisible} />
                   </button>
@@ -251,18 +245,17 @@ export default function WelcomeScreen3a() {
 
                 {/* Suggestion chip */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '11px', color: C.driftwoodSm, fontWeight: 300 }}>Suggestion:</span>
+                  <span style={{ fontSize: '11px', color: color.inkSoft, fontWeight: 300 }}>Suggestion:</span>
                   <button
                     type="button"
                     onClick={() => setHomeName(suggestion)}
                     style={{
                       fontFamily: "'Jost', sans-serif",
-                      fontSize: '13px', color: C.forest, fontWeight: 400,
+                      fontSize: '13px', color: color.forest, fontWeight: 400,
                       padding: '4px 10px', borderRadius: '20px',
                       background: 'rgba(61,107,79,0.08)',
                       border: `1px solid rgba(61,107,79,0.2)`,
-                      cursor: 'pointer', transition: 'background 0.15s',
-                    }}
+                      cursor: 'pointer', transition: 'background 0.15s' }}
                     onMouseDown={e => e.currentTarget.style.background = 'rgba(61,107,79,0.15)'}
                     onMouseUp={e => e.currentTarget.style.background = 'rgba(61,107,79,0.08)'}
                     onTouchStart={e => e.currentTarget.style.background = 'rgba(61,107,79,0.15)'}
@@ -278,9 +271,8 @@ export default function WelcomeScreen3a() {
               <div style={{
                 background: 'rgba(160,48,48,0.07)', border: `1px solid rgba(160,48,48,0.2)`,
                 borderRadius: '10px', padding: '11px 14px',
-                fontSize: '13px', color: C.red, fontWeight: 300,
-                marginBottom: '16px',
-              }}>
+                fontSize: '13px', color: color.rust, fontWeight: 300,
+                marginBottom: '16px' }}>
                 {authError}
               </div>
             )}
@@ -302,18 +294,17 @@ export default function WelcomeScreen3a() {
             flex: 1, display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
             textAlign: 'center', padding: '20px 0 40px',
-            opacity: 0, animation: 'fadeUp 0.6s ease 0.1s forwards',
-          }}>
+            opacity: 0, animation: 'fadeUp 0.6s ease 0.1s forwards' }}>
             <CompleteIcon />
 
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '28px', fontWeight: 500, color: C.ink, marginBottom: '10px', lineHeight: 1.2 }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '28px', fontWeight: 500, color: color.ink, marginBottom: '10px', lineHeight: 1.2 }}>
               Welcome home,
             </div>
-            <div style={{ fontFamily: "'Caveat', cursive", fontSize: '26px', color: C.forest, marginBottom: '16px' }}>
+            <div style={{ fontFamily: "'Caveat', cursive", fontSize: '26px', color: color.forest, marginBottom: '16px' }}>
               {homeName || suggestion}
             </div>
-            <div style={{ fontSize: '14px', color: C.driftwood, fontWeight: 300, lineHeight: 1.7, marginBottom: '36px' }}>
-              Your home is ready. <strong style={{ color: C.ink, fontWeight: 400 }}>{firstName}</strong>, you're the admin —<br />
+            <div style={{ fontSize: '14px', color: color.inkSoft, fontWeight: 300, lineHeight: 1.7, marginBottom: '36px' }}>
+              Your home is ready. <strong style={{ color: color.ink, fontWeight: 400 }}>{firstName}</strong>, you're the admin —<br />
               invite your family whenever you're ready.
             </div>
 

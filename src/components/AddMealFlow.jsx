@@ -6,12 +6,7 @@ import { sageMealMatch } from '../lib/sageMealMatch'
 import { injectSingleMeal } from '../lib/injectSingleMeal'
 import { toLocalDateStr } from '../lib/dateUtils'
 import TopBar from './TopBar'
-
-const C = {
-  forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', linen: '#E8E0D0',
-  sage: '#7A8C6E', honey: '#C49A3C', honeyDark: '#7A5C14',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 const DOW_KEYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']
 const DAY_ABBR = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
@@ -270,7 +265,7 @@ export default function AddMealFlow({
   const canSave = addMealCategory === 'leftovers' ? !!(selectedSourceMeal || leftoversFreeText.trim()) : !!addInput.trim()
 
   const shell = (children) => (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: C.cream, overflowY: 'auto', maxWidth: '430px', margin: '0 auto' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: color.paper, overflowY: 'auto', maxWidth: '430px', margin: '0 auto' }}>
       <TopBar leftAction={{ onClick: step === 'type' ? onClose : stepBack, label: 'Back' }} />
       <div key={step} style={{ padding: '16px 22px 40px', animation: 'fadeUp 0.2s ease both' }}>
         {children}
@@ -280,25 +275,25 @@ export default function AddMealFlow({
 
   const typeBtn = (label, sub, onClick) => (
     <button onClick={onClick} style={{
-      padding: '18px 16px', borderRadius: '14px', border: `1px solid ${C.linen}`,
+      padding: '18px 16px', borderRadius: '14px', border: `1px solid ${color.rule}`,
       background: 'white', cursor: 'pointer', textAlign: 'left', fontFamily: "'Jost', sans-serif", width: '100%',
     }}>
-      <div style={{ fontSize: '15px', fontWeight: 500, color: C.ink }}>{label}</div>
-      {sub && <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, marginTop: '2px' }}>{sub}</div>}
+      <div style={{ fontSize: '15px', fontWeight: 500, color: color.ink }}>{label}</div>
+      {sub && <div style={{ fontSize: '11px', color: color.inkSoft, fontWeight: 300, marginTop: '2px' }}>{sub}</div>}
     </button>
   )
 
   const ctaBtn = (label, enabled, onClick) => (
     <button onClick={onClick} disabled={!enabled || adding} style={{
       width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
-      background: enabled ? arcColor : C.linen, color: enabled ? 'white' : C.driftwood,
+      background: enabled ? arcColor : color.rule, color: enabled ? 'white' : color.inkSoft,
       cursor: enabled ? 'pointer' : 'default', fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
       boxShadow: enabled ? '0 4px 16px rgba(30,55,35,0.25)' : 'none',
     }}>{adding ? 'Adding...' : label}</button>
   )
 
   const sectionLabel = (text) => (
-    <div style={{ fontSize: '11px', color: C.driftwood, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>{text}</div>
+    <div style={{ fontSize: '11px', color: color.inkSoft, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>{text}</div>
   )
 
   // ── Repeat days picker (shared by details steps) ──────────
@@ -315,9 +310,9 @@ export default function AddMealFlow({
               setRepeatDays(prev => { const next = new Set(prev); if (next.has(i)) next.delete(i); else next.add(i); return next })
             }} style={{
               flex: 1, padding: '8px 0', borderRadius: '8px',
-              border: `0.5px solid ${isSelected ? arcColor : C.linen}`,
-              background: isCurrentDay ? C.linen : isSelected ? arcColor : 'white',
-              color: isCurrentDay ? C.driftwood : isSelected ? 'white' : C.driftwood,
+              border: `0.5px solid ${isSelected ? arcColor : color.rule}`,
+              background: isCurrentDay ? color.rule : isSelected ? arcColor : 'white',
+              color: isCurrentDay ? color.inkSoft : isSelected ? 'white' : color.inkSoft,
               fontSize: '11px', fontFamily: "'Jost', sans-serif",
               cursor: isCurrentDay ? 'default' : 'pointer', opacity: isCurrentDay ? 0.5 : 1,
             }}>{DAY_ABBR[i].charAt(0)}</button>
@@ -340,9 +335,9 @@ export default function AddMealFlow({
               setSelectedMembers(prev => { const next = new Set(prev); if (next.has(member.name)) next.delete(member.name); else next.add(member.name); return next })
             }} style={{
               padding: '6px 12px', borderRadius: '20px',
-              border: `0.5px solid ${isSelected ? arcColor : C.linen}`,
+              border: `0.5px solid ${isSelected ? arcColor : color.rule}`,
               background: isSelected ? `${arcColor}15` : 'white',
-              color: isSelected ? arcColor : C.driftwood,
+              color: isSelected ? arcColor : color.inkSoft,
               fontSize: '12px', fontFamily: "'Jost', sans-serif", cursor: 'pointer',
             }}>{firstName}</button>
           )
@@ -356,8 +351,8 @@ export default function AddMealFlow({
   // ── Step 1: Select Type ──
   if (step === 'type') return shell(
     <>
-      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '6px' }}>{dateLabel}</div>
-      <div style={{ fontSize: '13px', color: C.driftwood, marginBottom: '20px' }}>What kind of meal?</div>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: color.ink, marginBottom: '6px' }}>{dateLabel}</div>
+      <div style={{ fontSize: '13px', color: color.inkSoft, marginBottom: '20px' }}>What kind of meal?</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
         {typeBtn('Breakfast', null, () => { setAddMealType('breakfast'); setAddMealCategory(null); setStep('name') })}
         {typeBtn('Lunch', null, () => { setAddMealType('lunch'); setAddMealCategory(null); setStep('name') })}
@@ -375,8 +370,8 @@ export default function AddMealFlow({
   // ── Step 2: Meal Name ──
   if (step === 'name') return shell(
     <>
-      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '4px' }}>{dateLabel}</div>
-      <div style={{ fontSize: '12px', color: C.driftwood, marginBottom: '16px' }}>{MEAL_TYPE_LABELS[addMealType] || 'Meal'}</div>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: color.ink, marginBottom: '4px' }}>{dateLabel}</div>
+      <div style={{ fontSize: '12px', color: color.inkSoft, marginBottom: '16px' }}>{MEAL_TYPE_LABELS[addMealType] || 'Meal'}</div>
       <div style={{ position: 'relative', marginBottom: '16px' }}>
         <input type="text" value={addInput}
           onChange={e => handleAddInputChange(e.target.value)}
@@ -385,21 +380,21 @@ export default function AddMealFlow({
           style={{
             width: '100%', padding: '14px 16px', fontSize: '16px',
             fontFamily: "'Jost', sans-serif", fontWeight: 300,
-            border: `1.5px solid ${C.linen}`, borderRadius: recipeSuggestions.length > 0 ? '0 0 12px 12px' : '12px',
-            outline: 'none', color: C.ink, boxSizing: 'border-box',
+            border: `1.5px solid ${color.rule}`, borderRadius: recipeSuggestions.length > 0 ? '0 0 12px 12px' : '12px',
+            outline: 'none', color: color.ink, boxSizing: 'border-box',
           }}
         />
         {recipeSuggestions.length > 0 && (
           <div style={{
             position: 'absolute', bottom: '100%', left: 0, right: 0,
-            background: 'white', border: `0.5px solid ${C.linen}`, borderBottom: 'none',
+            background: 'white', border: `0.5px solid ${color.rule}`, borderBottom: 'none',
             borderRadius: '10px 10px 0 0', boxShadow: '0 -4px 12px rgba(44,36,23,0.08)',
             zIndex: 50, maxHeight: 200, overflowY: 'auto',
           }}>
             {recipeSuggestions.map((r, idx) => (
               <div key={r.id} onMouseDown={() => selectRecipeSuggestion(r)} style={{
-                padding: '12px 14px', fontSize: 14, color: C.ink,
-                borderBottom: idx < recipeSuggestions.length - 1 ? `0.5px solid ${C.linen}` : 'none',
+                padding: '12px 14px', fontSize: 14, color: color.ink,
+                borderBottom: idx < recipeSuggestions.length - 1 ? `0.5px solid ${color.rule}` : 'none',
                 cursor: 'pointer', fontFamily: "'Jost', sans-serif",
               }}>{r.name}</div>
             ))}
@@ -411,10 +406,10 @@ export default function AddMealFlow({
           {ctaBtn('Next', true, () => advanceFromName())}
           <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '4px' }}>
             <button onClick={() => { onClose(); navigate('/save-recipe', { state: { returnTo: 'week', mealName: addInput.trim() } }) }} style={{
-              background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: C.driftwood, fontFamily: "'Jost', sans-serif",
+              background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: color.inkSoft, fontFamily: "'Jost', sans-serif",
             }}>Save as Recipe →</button>
             <button onClick={() => { onClose(); navigate('/meals/staples') }} style={{
-              background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: C.driftwood, fontFamily: "'Jost', sans-serif",
+              background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: color.inkSoft, fontFamily: "'Jost', sans-serif",
             }}>Save as Staple →</button>
           </div>
         </div>
@@ -425,8 +420,8 @@ export default function AddMealFlow({
   // ── Step 3: Confirm Link + Batch ──
   if (step === 'confirm') return shell(
     <>
-      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '4px' }}>{addInput}</div>
-      <div style={{ fontSize: '12px', color: C.driftwood, marginBottom: '20px' }}>{MEAL_TYPE_LABELS[addMealType]} · {dateLabel}</div>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: color.ink, marginBottom: '4px' }}>{addInput}</div>
+      <div style={{ fontSize: '12px', color: color.inkSoft, marginBottom: '20px' }}>{MEAL_TYPE_LABELS[addMealType]} · {dateLabel}</div>
 
       {linkedRecipes.length > 0 ? (
         <div style={{ marginBottom: '20px' }}>
@@ -442,19 +437,19 @@ export default function AddMealFlow({
                 {lr.recipe_name}
                 <button onClick={() => { const next = linkedRecipes.filter(r => r.recipe_id !== lr.recipe_id); setLinkedRecipes(next); setAddSheetRecipes(next) }} style={{
                   background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                  fontSize: '14px', color: C.driftwood, lineHeight: 1, marginLeft: '2px',
+                  fontSize: '14px', color: color.inkSoft, lineHeight: 1, marginLeft: '2px',
                 }}>×</button>
               </span>
             ))}
           </div>
           <button onClick={() => { setAddSheetLinkOpen(true); openLinkSheet({ id: '__add_sheet__', custom_name: addInput.trim(), linkedRecipes }) }} style={{
             background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-            fontSize: '12px', color: C.driftwood, fontFamily: "'Jost', sans-serif",
+            fontSize: '12px', color: color.inkSoft, fontFamily: "'Jost', sans-serif",
           }}>Change link</button>
         </div>
       ) : (
         <div style={{ marginBottom: '20px' }}>
-          <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', marginBottom: '8px' }}>No recipe linked</div>
+          <div style={{ fontSize: '13px', color: color.inkSoft, fontStyle: 'italic', marginBottom: '8px' }}>No recipe linked</div>
           <button onClick={() => { setAddSheetLinkOpen(true); openLinkSheet({ id: '__add_sheet__', custom_name: addInput.trim(), linkedRecipes }) }} style={{
             background: 'none', border: 'none', cursor: 'pointer', padding: 0,
             fontSize: '12px', color: arcColor, fontFamily: "'Jost', sans-serif",
@@ -467,9 +462,9 @@ export default function AddMealFlow({
         {BATCH_OPTIONS.map(val => (
           <button key={val} onClick={() => setAddBatchMultiplier(val)} style={{
             flex: 1, padding: '8px', borderRadius: '10px', fontSize: '13px',
-            border: addBatchMultiplier === val ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
+            border: addBatchMultiplier === val ? `1.5px solid ${arcColor}` : `1px solid ${color.rule}`,
             background: addBatchMultiplier === val ? 'rgba(61,107,79,0.08)' : 'white',
-            color: addBatchMultiplier === val ? arcColor : C.ink,
+            color: addBatchMultiplier === val ? arcColor : color.ink,
             cursor: 'pointer', fontFamily: "'Jost', sans-serif",
             fontWeight: addBatchMultiplier === val ? 600 : 400,
           }}>{BATCH_LABELS[val]}</button>
@@ -483,10 +478,10 @@ export default function AddMealFlow({
   // ── Step 4: Optional Details ──
   if (step === 'details' || step === 'left-details' || step === 'eat-details') return shell(
     <>
-      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '4px' }}>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: color.ink, marginBottom: '4px' }}>
         {addMealCategory === 'leftovers' ? `Leftovers — ${selectedSourceMeal?.custom_name || leftoversFreeText}` : addInput}
       </div>
-      <div style={{ fontSize: '12px', color: C.driftwood, marginBottom: '20px' }}>Optional details</div>
+      <div style={{ fontSize: '12px', color: color.inkSoft, marginBottom: '20px' }}>Optional details</div>
 
       {renderRepeatDays()}
       {renderMemberTags()}
@@ -495,7 +490,7 @@ export default function AddMealFlow({
       <button onClick={addMeal} disabled={!canSave} style={{
         width: '100%', padding: '10px', marginTop: '8px', background: 'none', border: 'none',
         cursor: canSave ? 'pointer' : 'default', fontFamily: "'Jost', sans-serif",
-        fontSize: '13px', color: C.driftwood, fontWeight: 300,
+        fontSize: '13px', color: color.inkSoft, fontWeight: 300,
       }}>Skip details</button>
     </>
   )
@@ -503,33 +498,33 @@ export default function AddMealFlow({
   // ── Leftovers Branch: L1 ──
   if (step === 'left-source') return shell(
     <>
-      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '6px' }}>{dateLabel}</div>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: color.ink, marginBottom: '6px' }}>{dateLabel}</div>
       {sectionLabel('What are these leftovers from?')}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
         {recentMeals.map(meal => (
           <button key={meal.id} onClick={() => { setSelectedSourceMeal(meal); setLeftoversFreeText('') }} style={{
             padding: '12px 14px', borderRadius: '10px',
-            border: `0.5px solid ${selectedSourceMeal?.id === meal.id ? arcColor : C.linen}`,
+            border: `0.5px solid ${selectedSourceMeal?.id === meal.id ? arcColor : color.rule}`,
             background: selectedSourceMeal?.id === meal.id ? `${arcColor}15` : 'white',
             textAlign: 'left', cursor: 'pointer',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             fontFamily: "'Jost', sans-serif",
           }}>
-            <span style={{ fontSize: '14px', color: C.ink }}>{meal.custom_name}</span>
-            <span style={{ fontSize: '11px', color: C.driftwood }}>{formatMealDate(meal.planned_date)}</span>
+            <span style={{ fontSize: '14px', color: color.ink }}>{meal.custom_name}</span>
+            <span style={{ fontSize: '11px', color: color.inkSoft }}>{formatMealDate(meal.planned_date)}</span>
           </button>
         ))}
         {recentMeals.length === 0 && (
-          <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', padding: '8px 0' }}>No recent meals found</div>
+          <div style={{ fontSize: '13px', color: color.inkSoft, fontStyle: 'italic', padding: '8px 0' }}>No recent meals found</div>
         )}
       </div>
-      <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '6px' }}>Or type the meal name:</div>
+      <div style={{ fontSize: '11px', color: color.inkSoft, marginBottom: '6px' }}>Or type the meal name:</div>
       <input type="text" placeholder="e.g. Birthday dinner leftovers" value={leftoversFreeText}
         onChange={e => { setLeftoversFreeText(e.target.value); setSelectedSourceMeal(null) }}
         style={{
           width: '100%', padding: '10px 14px', borderRadius: '10px',
-          border: `0.5px solid ${C.linen}`, fontSize: '14px',
-          fontFamily: "'Jost', sans-serif", color: C.ink, background: 'white',
+          border: `0.5px solid ${color.rule}`, fontSize: '14px',
+          fontFamily: "'Jost', sans-serif", color: color.ink, background: 'white',
           outline: 'none', boxSizing: 'border-box', marginBottom: '20px',
         }} />
       {ctaBtn('Next', !!(selectedSourceMeal || leftoversFreeText.trim()), () => setStep('left-details'))}
@@ -539,8 +534,8 @@ export default function AddMealFlow({
   // ── Eating Out Branch: E1 ──
   if (step === 'eat-name') return shell(
     <>
-      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '4px' }}>{dateLabel}</div>
-      <div style={{ fontSize: '12px', color: C.driftwood, marginBottom: '16px' }}>Eating Out</div>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: color.ink, marginBottom: '4px' }}>{dateLabel}</div>
+      <div style={{ fontSize: '12px', color: color.inkSoft, marginBottom: '16px' }}>Eating Out</div>
       <div style={{ position: 'relative', marginBottom: '16px' }}>
         <input type="text" value={addInput}
           onChange={e => handleAddInputChange(e.target.value)}
@@ -549,21 +544,21 @@ export default function AddMealFlow({
           style={{
             width: '100%', padding: '14px 16px', fontSize: '16px',
             fontFamily: "'Jost', sans-serif", fontWeight: 300,
-            border: `1.5px solid ${C.linen}`, borderRadius: recipeSuggestions.length > 0 ? '0 0 12px 12px' : '12px',
-            outline: 'none', color: C.ink, boxSizing: 'border-box',
+            border: `1.5px solid ${color.rule}`, borderRadius: recipeSuggestions.length > 0 ? '0 0 12px 12px' : '12px',
+            outline: 'none', color: color.ink, boxSizing: 'border-box',
           }}
         />
         {recipeSuggestions.length > 0 && (
           <div style={{
             position: 'absolute', bottom: '100%', left: 0, right: 0,
-            background: 'white', border: `0.5px solid ${C.linen}`, borderBottom: 'none',
+            background: 'white', border: `0.5px solid ${color.rule}`, borderBottom: 'none',
             borderRadius: '10px 10px 0 0', boxShadow: '0 -4px 12px rgba(44,36,23,0.08)',
             zIndex: 50, maxHeight: 200, overflowY: 'auto',
           }}>
             {recipeSuggestions.map((r, idx) => (
               <div key={r.id} onMouseDown={() => { setAddInput(r.name); setRecipeSuggestions([]); setStep('eat-cost') }} style={{
-                padding: '12px 14px', fontSize: 14, color: C.ink,
-                borderBottom: idx < recipeSuggestions.length - 1 ? `0.5px solid ${C.linen}` : 'none',
+                padding: '12px 14px', fontSize: 14, color: color.ink,
+                borderBottom: idx < recipeSuggestions.length - 1 ? `0.5px solid ${color.rule}` : 'none',
                 cursor: 'pointer', fontFamily: "'Jost', sans-serif",
               }}>{r.name}</div>
             ))}
@@ -577,18 +572,18 @@ export default function AddMealFlow({
   // ── Eating Out Branch: E2 ──
   if (step === 'eat-cost') return shell(
     <>
-      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '4px' }}>{addInput}</div>
-      <div style={{ fontSize: '12px', color: C.driftwood, marginBottom: '16px' }}>Eating Out · {dateLabel}</div>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: color.ink, marginBottom: '4px' }}>{addInput}</div>
+      <div style={{ fontSize: '12px', color: color.inkSoft, marginBottom: '16px' }}>Eating Out · {dateLabel}</div>
       {sectionLabel('Estimated spend (optional)')}
       <div style={{ position: 'relative', marginBottom: '24px' }}>
-        <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px', color: C.driftwood }}>$</span>
+        <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px', color: color.inkSoft }}>$</span>
         <input type="text" inputMode="decimal" value={addEatingOutCost} onChange={e => setAddEatingOutCost(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') setStep('eat-details') }}
           placeholder="0.00" autoFocus style={{
             width: '100%', padding: '12px 14px 12px 28px', fontSize: '15px',
             fontFamily: "'Jost', sans-serif", fontWeight: 300,
-            border: `1.5px solid ${C.linen}`, borderRadius: '12px',
-            outline: 'none', color: C.ink, boxSizing: 'border-box',
+            border: `1.5px solid ${color.rule}`, borderRadius: '12px',
+            outline: 'none', color: color.ink, boxSizing: 'border-box',
           }} />
       </div>
       {ctaBtn('Next', true, () => setStep('eat-details'))}

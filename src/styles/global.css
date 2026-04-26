@@ -4,21 +4,42 @@
 
 /* ── Design System Tokens ─────────────────────────────────────────────────── */
 /* Source of truth: docs/DESIGN-SYSTEM.md. JS mirror: src/styles/tokens.js.    */
+/* STEP 1 of palette migration uses old hex values under new names — no       */
+/* visual change. STEP 2 swaps values to the new 19-token palette.            */
 :root {
-  --forest:        #3D6B4F;
-  --forest-dk:     #2E5038;
-  --sage:          #7A8C6E;
-  --honey:         #C49A3C;
-  --honey-dk:      #7A5C14;
-  --cream:         #FAF7F2;
-  --ink:           #2C2417;
-  --driftwood:     #8C7B6B;
-  --driftwood-sm:  #6B5B4E;
-  --linen:         #E8E0D0;
-  --linen-dk:      #C8B9A0;
-  --walnut:        #8B6F52;
-  --red:           #A03030;
-  --app-bg:        #FAF7F2;
+  /* Surfaces */
+  --paper:        #FAF7F2;
+  --surface:      #FAF7F2;
+  --ink:          #2C2417;
+  --ink-soft:     #8C7B6B;
+  --rule:         #E8E0D0;
+
+  /* Forest family */
+  --forest-light: #3D6B4F;
+  --forest:       #3D6B4F;
+  --forest-dark:  #2E5038;
+
+  /* Sage family */
+  --sage-light:   #7A8C6E;
+  --sage:         #7A8C6E;
+  --sage-dark:    #7A8C6E;
+
+  /* Honey family */
+  --honey-light:  #C49A3C;
+  --honey:        #C49A3C;
+  --honey-dark:   #7A5C14;
+
+  /* Amber family */
+  --amber-light:  #A07830;
+  --amber:        #A07830;
+  --amber-dark:   #8B6F52;
+
+  /* Rust family */
+  --rust-light:   #A03030;
+  --rust:         #A03030;
+  --rust-dark:    #A03030;
+
+  --app-bg:       #FAF7F2;
 
   /* Warm-brown shadow base — used only inside the --elev-* shadow tokens. */
   --shadow-warm-base: #503C1E;

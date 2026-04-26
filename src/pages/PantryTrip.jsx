@@ -8,11 +8,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { logActivity } from '../lib/activityLog'
 import BottomNav from '../components/BottomNav'
-
-const C = {
-  forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', linen: '#E8E0D0', sage: '#7A8C6E', honey: '#C49A3C',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 const CATEGORY_ORDER = ['produce','meat','seafood','dairy','bakery','pantry','frozen','beverages','household','personal_care','other']
 const CATEGORY_LABELS = {
@@ -113,7 +109,7 @@ export default function PantryTrip({ appUser }) {
   }
 
   if (loading) return (
-    <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
+    <div style={{ background: color.paper, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
       <div style={{ padding: '20px 22px' }}>
         {[60, 40, 40, 40, 40].map((h, i) => <div key={i} className="shimmer-block" style={{ height: `${h}px`, borderRadius: '12px', marginBottom: '10px' }} />)}
       </div>
@@ -122,13 +118,13 @@ export default function PantryTrip({ appUser }) {
 
   return (
     <div style={{
-      background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300,
+      background: color.paper, fontFamily: "'Jost', sans-serif", fontWeight: 300,
       minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
       paddingBottom: 'calc(100px + env(safe-area-inset-bottom, 8px))',
     }}>
       {/* ── Store header ─────────────────────────────────────────── */}
       <div style={{
-        background: C.forest, padding: '20px 22px 16px',
+        background: color.forest, padding: '20px 22px 16px',
         position: 'sticky', top: 0, zIndex: 100,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -158,13 +154,13 @@ export default function PantryTrip({ appUser }) {
       <div style={{ padding: '16px 22px' }}>
         {grouped.length === 0 && checked.length === 0 && (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.ink, marginBottom: '8px' }}>No items on this trip.</div>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: color.ink, marginBottom: '8px' }}>No items on this trip.</div>
           </div>
         )}
 
         {grouped.map(group => (
           <div key={group.cat} style={{ marginBottom: '20px' }}>
-            <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.sage, marginBottom: '8px' }}>
+            <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: color.sage, marginBottom: '8px' }}>
               {group.label}
             </div>
             {group.items.map(item => (
@@ -181,9 +177,9 @@ export default function PantryTrip({ appUser }) {
                   display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white',
                 }} />
                 <div>
-                  <div style={{ fontSize: '16px', color: C.ink, fontWeight: 300 }}>{item.name}</div>
+                  <div style={{ fontSize: '16px', color: color.ink, fontWeight: 300 }}>{item.name}</div>
                   {(item.quantity || item.unit) && (
-                    <div style={{ fontSize: '13px', color: C.driftwood }}>{[item.quantity, item.unit].filter(Boolean).join(' ')}</div>
+                    <div style={{ fontSize: '13px', color: color.inkSoft }}>{[item.quantity, item.unit].filter(Boolean).join(' ')}</div>
                   )}
                 </div>
               </button>
@@ -194,7 +190,7 @@ export default function PantryTrip({ appUser }) {
         {/* Checked items */}
         {checked.length > 0 && (
           <div style={{ marginTop: '16px' }}>
-            <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '8px' }}>
+            <div style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: color.inkSoft, marginBottom: '8px' }}>
               Got it ({checked.length})
             </div>
             {checked.map(item => (
@@ -206,11 +202,11 @@ export default function PantryTrip({ appUser }) {
                 opacity: 0.45,
               }}>
                 <div style={{
-                  width: '28px', height: '28px', borderRadius: '8px', background: C.sage, flexShrink: 0,
+                  width: '28px', height: '28px', borderRadius: '8px', background: color.sage, flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '14px', color: 'white',
                 }}>✓</div>
-                <div style={{ fontSize: '16px', color: C.ink, textDecoration: 'line-through', fontWeight: 300 }}>{item.name}</div>
+                <div style={{ fontSize: '16px', color: color.ink, textDecoration: 'line-through', fontWeight: 300 }}>{item.name}</div>
               </button>
             ))}
           </div>
@@ -222,11 +218,11 @@ export default function PantryTrip({ appUser }) {
         position: 'fixed', bottom: 'calc(48px + env(safe-area-inset-bottom, 8px))',
         left: '50%', transform: 'translateX(-50%)',
         width: '100%', maxWidth: '430px', padding: '10px 22px',
-        background: C.cream, borderTop: `1px solid ${C.linen}`, zIndex: 50, boxSizing: 'border-box',
+        background: color.paper, borderTop: `1px solid ${color.rule}`, zIndex: 50, boxSizing: 'border-box',
       }}>
         <button onClick={finishTrip} style={{
           width: '100%', padding: '16px', borderRadius: '14px', border: 'none',
-          background: C.forest, color: 'white', cursor: 'pointer',
+          background: color.forest, color: 'white', cursor: 'pointer',
           fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
           boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
         }}>

@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
-import { C, BgTexture, screenWrap } from './welcomeUtils'
+import { BgTexture, screenWrap } from './welcomeUtils'
+import { color, alpha, elevation } from '../../styles/tokens'
 
 // ── Ghost recipe box — bottom-right corner decoration ───────────────────────
 function RecipeBoxDecor() {
@@ -8,9 +9,8 @@ function RecipeBoxDecor() {
       position: 'fixed', bottom: '-10px', right: '-18px',
       width: '200px', height: '180px',
       pointerEvents: 'none', zIndex: 0,
-      opacity: 0, animation: 'decorFade 1.2s ease 1.0s forwards',
-    }}>
-      <svg viewBox="0 0 160 140" fill="none" stroke={C.ink} strokeLinecap="round" strokeLinejoin="round">
+      opacity: 0, animation: 'decorFade 1.2s ease 1.0s forwards' }}>
+      <svg viewBox="0 0 160 140" fill="none" stroke={color.ink} strokeLinecap="round" strokeLinejoin="round">
         <rect x="8" y="30" width="144" height="100" rx="6" strokeWidth="3"/>
         <path d="M8,52 L152,52" strokeWidth="3"/>
         <path d="M40,30 L40,14 Q80,6 120,14 L120,30" strokeWidth="3"/>
@@ -30,7 +30,7 @@ function KitchenIllustration() {
   return (
     <svg
       width="120" height="96" viewBox="0 0 120 96"
-      fill="none" stroke={C.ink} strokeLinecap="round" strokeLinejoin="round"
+      fill="none" stroke={color.ink} strokeLinecap="round" strokeLinejoin="round"
       style={{ marginBottom: '36px', opacity: 0, animation: 'illustIn 0.8s ease 1.05s forwards' }}
     >
       {/* Cutting board */}
@@ -64,8 +64,7 @@ export default function WelcomeScreen1() {
       <div style={{
         position: 'relative', zIndex: 1,
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        minHeight: '100vh', padding: '0 32px 48px',
-      }}>
+        minHeight: '100vh', padding: '0 32px 48px' }}>
 
         {/* Top spacer */}
         <div style={{ flex: 1.2, minHeight: '80px' }} />
@@ -74,34 +73,30 @@ export default function WelcomeScreen1() {
         <div style={{
           textAlign: 'center', marginBottom: '18px',
           opacity: 0, transform: 'scale(0.95)',
-          animation: 'logoIn 0.9s cubic-bezier(0.22,1,0.36,1) 0.2s forwards',
-        }}>
+          animation: 'logoIn 0.9s cubic-bezier(0.22,1,0.36,1) 0.2s forwards' }}>
           <div style={{
             fontFamily: "'Slabo 27px', Georgia, serif",
             fontSize: '58px',
-            color: '#3D6B4F',
+            color: color.forest,
             letterSpacing: '-0.5px',
-            marginBottom: '6px',
-          }}>
+            marginBottom: '6px' }}>
             Roux.
           </div>
           {/* Tagline — Screen 1 only */}
           <div style={{
             fontFamily: "'Jost', sans-serif",
             fontSize: '14px', fontWeight: 300, fontStyle: 'italic',
-            color: C.sage, letterSpacing: '0.3px', lineHeight: 1.5,
-            opacity: 0, animation: 'taglineIn 0.7s ease 0.85s forwards',
-          }}>
+            color: color.sage, letterSpacing: '0.3px', lineHeight: 1.5,
+            opacity: 0, animation: 'taglineIn 0.7s ease 0.85s forwards' }}>
             Roux and You — let's make something good.
           </div>
         </div>
 
         {/* Divider */}
         <div style={{
-          width: '40px', height: '1px', background: C.linen,
+          width: '40px', height: '1px', background: color.rule,
           margin: '32px auto',
-          opacity: 0, animation: 'fadeIn 0.5s ease 1.1s forwards',
-        }} />
+          opacity: 0, animation: 'fadeIn 0.5s ease 1.1s forwards' }} />
 
         {/* Kitchen illustration */}
         <KitchenIllustration />
@@ -115,17 +110,16 @@ export default function WelcomeScreen1() {
             onClick={() => navigate('/get-started')}
             style={{
               width: '100%', padding: '16px 20px', borderRadius: '14px',
-              background: C.forest, color: 'white',
+              background: color.forest, color: 'white',
               fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500, letterSpacing: '0.3px',
               border: 'none', cursor: 'pointer',
               boxShadow: `0 4px 16px rgba(30,55,35,0.28), 0 1px 3px rgba(30,55,35,0.15)`,
               transition: 'background 0.15s, transform 0.12s, box-shadow 0.15s',
-              opacity: 0, animation: 'btnIn 0.5s ease 1.15s forwards',
-            }}
-            onMouseDown={e => { e.currentTarget.style.background = C.forestDk; e.currentTarget.style.transform = 'scale(0.98)' }}
-            onMouseUp={e => { e.currentTarget.style.background = C.forest; e.currentTarget.style.transform = 'scale(1)' }}
-            onTouchStart={e => { e.currentTarget.style.background = C.forestDk; e.currentTarget.style.transform = 'scale(0.98)' }}
-            onTouchEnd={e => { e.currentTarget.style.background = C.forest; e.currentTarget.style.transform = 'scale(1)' }}
+              opacity: 0, animation: 'btnIn 0.5s ease 1.15s forwards' }}
+            onMouseDown={e => { e.currentTarget.style.background = color.forestDark; e.currentTarget.style.transform = 'scale(0.98)' }}
+            onMouseUp={e => { e.currentTarget.style.background = color.forest; e.currentTarget.style.transform = 'scale(1)' }}
+            onTouchStart={e => { e.currentTarget.style.background = color.forestDark; e.currentTarget.style.transform = 'scale(0.98)' }}
+            onTouchEnd={e => { e.currentTarget.style.background = color.forest; e.currentTarget.style.transform = 'scale(1)' }}
           >
             Get Started
           </button>
@@ -134,13 +128,12 @@ export default function WelcomeScreen1() {
             onClick={() => navigate('/sign-in')}
             style={{
               width: '100%', padding: '15px 20px', borderRadius: '14px',
-              background: 'transparent', color: C.forest,
+              background: 'transparent', color: color.forest,
               fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500, letterSpacing: '0.3px',
               border: `1.5px solid rgba(61,107,79,0.4)`,
               cursor: 'pointer',
               transition: 'background 0.15s, border-color 0.15s, transform 0.12s',
-              opacity: 0, animation: 'btnIn 0.5s ease 1.25s forwards',
-            }}
+              opacity: 0, animation: 'btnIn 0.5s ease 1.25s forwards' }}
             onMouseDown={e => { e.currentTarget.style.background = 'rgba(61,107,79,0.06)'; e.currentTarget.style.transform = 'scale(0.98)' }}
             onMouseUp={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'scale(1)' }}
             onTouchStart={e => { e.currentTarget.style.background = 'rgba(61,107,79,0.06)'; e.currentTarget.style.transform = 'scale(0.98)' }}
@@ -152,11 +145,10 @@ export default function WelcomeScreen1() {
 
         {/* Legal */}
         <div style={{
-          fontSize: '10px', color: C.driftwoodSm,
+          fontSize: '10px', color: color.inkSoft,
           textAlign: 'center', lineHeight: 1.7,
           marginTop: '28px', fontWeight: 300,
-          opacity: 0, animation: 'fadeIn 0.5s ease 1.5s forwards',
-        }}>
+          opacity: 0, animation: 'fadeIn 0.5s ease 1.5s forwards' }}>
           By continuing you agree to our{' '}
           <a href="#" style={{ color: 'inherit', textDecoration: 'underline' }}>Terms of Service</a>
           {' '}and{' '}

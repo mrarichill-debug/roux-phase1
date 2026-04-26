@@ -7,12 +7,7 @@ import { supabase } from '../lib/supabase'
 import { logActivity } from '../lib/activityLog'
 import { getWeekDatesTZ, getWeekStartTZ, toLocalDateStr } from '../lib/dateUtils'
 import BottomSheet from './BottomSheet'
-
-const C = {
-  forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', linen: '#E8E0D0', sage: '#7A8C6E',
-  honey: '#C49A3C', red: '#A03030',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
@@ -276,7 +271,7 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
 
           {/* Week selector */}
           <div>
-            <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '8px' }}>
+            <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: color.inkSoft, fontWeight: 500, marginBottom: '8px' }}>
               Week
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -291,16 +286,16 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
                     onClick={() => selectQuickWeek(w.offset)}
                     style={{
                       flex: 1, padding: '8px 10px', borderRadius: '10px',
-                      border: sel ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                      border: sel ? `1.5px solid ${color.forest}` : `1px solid ${color.rule}`,
                       background: sel ? 'rgba(61,107,79,0.08)' : 'white',
                       cursor: 'pointer', fontFamily: "'Jost', sans-serif",
                       textAlign: 'center',
                     }}
                   >
-                    <div style={{ fontSize: '13px', fontWeight: sel ? 500 : 400, color: sel ? C.forest : C.ink }}>
+                    <div style={{ fontSize: '13px', fontWeight: sel ? 500 : 400, color: sel ? color.forest : color.ink }}>
                       {w.label}
                     </div>
-                    <div style={{ fontSize: '10px', color: C.driftwood, fontWeight: 300, marginTop: '2px' }}>
+                    <div style={{ fontSize: '10px', color: color.inkSoft, fontWeight: 300, marginTop: '2px' }}>
                       {fmtMonday(w.offset)}
                     </div>
                   </button>
@@ -311,16 +306,16 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
                 onClick={() => setCalendarOpen(v => !v)}
                 style={{
                   flex: 1, padding: '8px 10px', borderRadius: '10px',
-                  border: calendarOpen ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                  border: calendarOpen ? `1.5px solid ${color.forest}` : `1px solid ${color.rule}`,
                   background: calendarOpen ? 'rgba(61,107,79,0.08)' : 'white',
                   cursor: 'pointer', fontFamily: "'Jost', sans-serif",
                   textAlign: 'center',
                 }}
               >
-                <div style={{ fontSize: '13px', fontWeight: calendarOpen ? 500 : 400, color: calendarOpen ? C.forest : C.ink }}>
+                <div style={{ fontSize: '13px', fontWeight: calendarOpen ? 500 : 400, color: calendarOpen ? color.forest : color.ink }}>
                   Further out
                 </div>
-                <div style={{ fontSize: '10px', color: C.driftwood, fontWeight: 300, marginTop: '2px' }}>
+                <div style={{ fontSize: '10px', color: color.inkSoft, fontWeight: 300, marginTop: '2px' }}>
                   Pick a week
                 </div>
               </button>
@@ -330,8 +325,8 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
           {/* ── Calendar ──────────────────────────────────────────────── */}
           {calendarOpen && (
             <div style={{
-              background: C.cream, borderRadius: '12px', padding: '14px 12px',
-              border: `1px solid ${C.linen}`,
+              background: color.paper, borderRadius: '12px', padding: '14px 12px',
+              border: `1px solid ${color.rule}`,
             }}>
               {/* Month header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
@@ -340,19 +335,19 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
                   disabled={!canGoBack()}
                   style={{
                     width: '28px', height: '28px', borderRadius: '50%',
-                    border: `1px solid ${C.linen}`, background: 'white',
+                    border: `1px solid ${color.rule}`, background: 'white',
                     cursor: canGoBack() ? 'pointer' : 'default',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     opacity: canGoBack() ? 1 : 0.3,
                   }}
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="2" strokeLinecap="round" style={{ width: 12, height: 12 }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="2" strokeLinecap="round" style={{ width: 12, height: 12 }}>
                     <path d="m15 18-6-6 6-6"/>
                   </svg>
                 </button>
                 <div style={{
                   fontFamily: "'Playfair Display', serif", fontSize: '15px',
-                  fontWeight: 500, color: C.ink,
+                  fontWeight: 500, color: color.ink,
                 }}>
                   {monthLabel}
                 </div>
@@ -361,13 +356,13 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
                   disabled={!canGoForward()}
                   style={{
                     width: '28px', height: '28px', borderRadius: '50%',
-                    border: `1px solid ${C.linen}`, background: 'white',
+                    border: `1px solid ${color.rule}`, background: 'white',
                     cursor: canGoForward() ? 'pointer' : 'default',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     opacity: canGoForward() ? 1 : 0.3,
                   }}
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="2" strokeLinecap="round" style={{ width: 12, height: 12 }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="2" strokeLinecap="round" style={{ width: 12, height: 12 }}>
                     <path d="m9 18 6-6-6-6"/>
                   </svg>
                 </button>
@@ -378,7 +373,7 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
                 {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
                   <div key={i} style={{
                     textAlign: 'center', fontSize: '9px', fontWeight: 500,
-                    letterSpacing: '0.5px', color: C.driftwood,
+                    letterSpacing: '0.5px', color: color.inkSoft,
                     padding: '4px 0',
                   }}>
                     {d}
@@ -403,7 +398,7 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
                         display: 'flex', flexDirection: 'column', alignItems: 'center',
                         justifyContent: 'center', gap: '2px',
                         padding: '6px 0', border: 'none', cursor: past ? 'default' : 'pointer',
-                        background: inWeek ? '#E4DDD2' : 'transparent',
+                        background: inWeek ? color.rule : 'transparent',
                         opacity: past ? 0.3 : 1,
                         fontFamily: "'Jost', sans-serif",
                         borderRadius: i % 7 === 0 && inWeek ? '6px 0 0 6px'
@@ -413,8 +408,8 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
                       <div style={{
                         width: '28px', height: '28px', borderRadius: '50%',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: sel ? C.forest : 'transparent',
-                        color: sel ? 'white' : C.ink,
+                        background: sel ? color.forest : 'transparent',
+                        color: sel ? 'white' : color.ink,
                         fontSize: '13px', fontWeight: sel ? 500 : 400,
                         transition: 'all 0.15s',
                       }}>
@@ -423,7 +418,7 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
                       {td && !sel && (
                         <div style={{
                           width: '3px', height: '3px', borderRadius: '50%',
-                          background: C.forest, marginTop: '-2px',
+                          background: color.forest, marginTop: '-2px',
                         }} />
                       )}
                     </button>
@@ -435,7 +430,7 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
               {calSelectedDate && (
                 <div style={{
                   marginTop: '10px', textAlign: 'center',
-                  fontSize: '12px', color: C.driftwood, fontWeight: 300,
+                  fontSize: '12px', color: color.inkSoft, fontWeight: 300,
                 }}>
                   {fmtWeekRange()}
                 </div>
@@ -445,7 +440,7 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
 
           {/* Day tiles */}
           <div>
-            <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '8px' }}>
+            <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: color.inkSoft, fontWeight: 500, marginBottom: '8px' }}>
               Day
             </div>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -461,16 +456,16 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
                       flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
                       gap: '2px', padding: '8px 0',
                       borderRadius: '10px', cursor: 'pointer',
-                      border: sel ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                      border: sel ? `1.5px solid ${color.forest}` : `1px solid ${color.rule}`,
                       background: sel ? 'rgba(61,107,79,0.08)' : 'white',
                       fontFamily: "'Jost', sans-serif",
                       transition: 'all 0.15s',
                     }}
                   >
-                    <span style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px', color: sel ? C.forest : C.driftwood, fontWeight: 500 }}>
+                    <span style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px', color: sel ? color.forest : color.inkSoft, fontWeight: 500 }}>
                       {label}
                     </span>
-                    <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '15px', color: sel ? C.forest : C.ink, fontWeight: 500 }}>
+                    <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '15px', color: sel ? color.forest : color.ink, fontWeight: 500 }}>
                       {dayNum}
                     </span>
                   </button>
@@ -481,7 +476,7 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
 
           {/* Meal slot */}
           <div>
-            <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '8px' }}>
+            <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: color.inkSoft, fontWeight: 500, marginBottom: '8px' }}>
               Meal
             </div>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -493,11 +488,11 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
                     onClick={() => { setMealSlot(s.key); setConflict(null) }}
                     style={{
                       flex: 1, padding: '8px 6px', borderRadius: '10px',
-                      border: sel ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                      border: sel ? `1.5px solid ${color.forest}` : `1px solid ${color.rule}`,
                       background: sel ? 'rgba(61,107,79,0.08)' : 'white',
                       cursor: 'pointer', fontFamily: "'Jost', sans-serif",
                       fontSize: '12px', fontWeight: sel ? 500 : 400,
-                      color: sel ? C.forest : C.ink,
+                      color: sel ? color.forest : color.ink,
                       transition: 'all 0.15s', textAlign: 'center',
                     }}
                   >
@@ -514,21 +509,21 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '0 2px',
             }}>
-              <span style={{ fontSize: '13px', color: C.driftwood }}>Feeds</span>
+              <span style={{ fontSize: '13px', color: color.inkSoft }}>Feeds</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <button onClick={() => setFeedsCount(p => Math.max(1, p - 1))} style={{
                   width: '28px', height: '28px', borderRadius: '50%',
-                  border: `1px solid ${C.linen}`, background: C.cream,
-                  cursor: 'pointer', fontSize: '15px', color: C.ink,
+                  border: `1px solid ${color.rule}`, background: color.paper,
+                  cursor: 'pointer', fontSize: '15px', color: color.ink,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>−</button>
-                <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.ink, minWidth: '20px', textAlign: 'center' }}>
+                <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: color.ink, minWidth: '20px', textAlign: 'center' }}>
                   {feedsCount}
                 </span>
                 <button onClick={() => setFeedsCount(p => Math.min(24, p + 1))} style={{
                   width: '28px', height: '28px', borderRadius: '50%',
-                  border: `1px solid ${C.linen}`, background: C.cream,
-                  cursor: 'pointer', fontSize: '15px', color: C.ink,
+                  border: `1px solid ${color.rule}`, background: color.paper,
+                  cursor: 'pointer', fontSize: '15px', color: color.ink,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>+</button>
               </div>
@@ -541,7 +536,7 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
               background: 'rgba(196,154,60,0.08)', borderRadius: '10px',
               padding: '12px 14px', border: `1px solid rgba(196,154,60,0.25)`,
             }}>
-              <div style={{ fontSize: '13px', color: C.ink, fontWeight: 400, marginBottom: '10px' }}>
+              <div style={{ fontSize: '13px', color: color.ink, fontWeight: 400, marginBottom: '10px' }}>
                 {conflict.dayLabel} {conflict.slotLabel.toLowerCase()} already has something planned.
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
@@ -549,7 +544,7 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
                   onClick={() => checkAndSave(true)}
                   style={{
                     flex: 1, padding: '10px', borderRadius: '10px',
-                    background: C.forest, color: 'white', border: 'none',
+                    background: color.forest, color: 'white', border: 'none',
                     fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
                     cursor: 'pointer',
                   }}
@@ -558,7 +553,7 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
                   onClick={() => { setConflict(null); setSelectedDay(null) }}
                   style={{
                     flex: 1, padding: '10px', borderRadius: '10px',
-                    background: 'none', color: C.driftwood, border: `1px solid ${C.linen}`,
+                    background: 'none', color: color.inkSoft, border: `1px solid ${color.rule}`,
                     fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 400,
                     cursor: 'pointer',
                   }}
@@ -571,7 +566,7 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
           {toast && (
             <div style={{
               textAlign: 'center', fontSize: '13px', fontWeight: 500,
-              color: toast.includes('wrong') ? C.red : C.forest,
+              color: toast.includes('wrong') ? color.rust : color.forest,
               padding: '4px 0',
             }}>
               {toast}
@@ -585,8 +580,8 @@ export default function AddToPlanSheet({ open, onClose, meal, appUser, onSuccess
               disabled={!canConfirm}
               style={{
                 width: '100%', padding: '16px', borderRadius: '14px',
-                background: canConfirm ? C.forest : C.linen,
-                color: canConfirm ? 'white' : C.driftwood,
+                background: canConfirm ? color.forest : color.rule,
+                color: canConfirm ? 'white' : color.inkSoft,
                 border: 'none', cursor: canConfirm ? 'pointer' : 'default',
                 fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
                 boxShadow: canConfirm ? '0 4px 16px rgba(30,55,35,0.25)' : 'none',

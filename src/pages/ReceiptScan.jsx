@@ -9,11 +9,8 @@ import { supabase } from '../lib/supabase'
 import { logActivity } from '../lib/activityLog'
 import SageNudgeCard from '../components/SageNudgeCard'
 import BottomNav from '../components/BottomNav'
+import { color, alpha, elevation } from '../styles/tokens'
 
-const C = {
-  forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', linen: '#E8E0D0', sage: '#7A8C6E', honey: '#C49A3C',
-}
 const sentenceCase = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1) : ''
 
 export default function ReceiptScan({ appUser }) {
@@ -141,7 +138,7 @@ export default function ReceiptScan({ appUser }) {
   const allConfirmed = confirmations.length === 0 || confirmations.every(c => c.status !== 'pending')
 
   if (loading) return (
-    <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
+    <div style={{ background: color.paper, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
       <div style={{ padding: '20px 22px' }}>
         {[60, 40, 40].map((h, i) => <div key={i} className="shimmer-block" style={{ height: `${h}px`, borderRadius: '12px', marginBottom: '10px' }} />)}
       </div>
@@ -153,12 +150,12 @@ export default function ReceiptScan({ appUser }) {
 
   return (
     <div style={{
-      background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300,
+      background: color.paper, fontFamily: "'Jost', sans-serif", fontWeight: 300,
       minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
       paddingBottom: 'calc(100px + env(safe-area-inset-bottom, 8px))',
     }}>
       {/* Header */}
-      <div style={{ background: C.forest, padding: '16px 22px 14px', position: 'sticky', top: 0, zIndex: 100 }}>
+      <div style={{ background: color.forest, padding: '16px 22px 14px', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button onClick={() => navigate('/shop')} style={{
             background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(250,247,242,0.7)', padding: '4px', display: 'flex', alignItems: 'center',
@@ -176,15 +173,15 @@ export default function ReceiptScan({ appUser }) {
             <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handleFileSelect} style={{ display: 'none' }} />
             <button onClick={() => fileRef.current?.click()} style={{
               width: '100%', padding: '48px 24px', borderRadius: '16px',
-              border: `2px dashed ${C.linen}`, background: 'white', cursor: 'pointer',
+              border: `2px dashed ${color.rule}`, background: 'white', cursor: 'pointer',
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
             }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 40, height: 40 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 40, height: 40 }}>
                 <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
                 <circle cx="12" cy="13" r="4" />
               </svg>
-              <div style={{ fontSize: '14px', color: C.ink, fontWeight: 400 }}>Tap to take a photo or choose from your library</div>
-              <div style={{ fontSize: '12px', color: C.driftwood }}>Sage will read the receipt and match your items</div>
+              <div style={{ fontSize: '14px', color: color.ink, fontWeight: 400 }}>Tap to take a photo or choose from your library</div>
+              <div style={{ fontSize: '12px', color: color.inkSoft }}>Sage will read the receipt and match your items</div>
             </button>
           </>
         )}
@@ -194,11 +191,11 @@ export default function ReceiptScan({ appUser }) {
           <div style={{ textAlign: 'center' }}>
             <img src={preview} alt="Receipt preview" style={{
               width: '100%', maxHeight: '300px', objectFit: 'contain', borderRadius: '12px',
-              marginBottom: '16px', border: `1px solid ${C.linen}`,
+              marginBottom: '16px', border: `1px solid ${color.rule}`,
             }} />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '8px' }}>
-              <span style={{ color: C.sage, fontSize: '16px' }}>✦</span>
-              <span style={{ fontSize: '14px', color: C.ink, fontStyle: 'italic' }}>
+              <span style={{ color: color.sage, fontSize: '16px' }}>✦</span>
+              <span style={{ fontSize: '14px', color: color.ink, fontStyle: 'italic' }}>
                 {uploading ? 'Uploading receipt...' : 'Sage is reading your receipt...'}
               </span>
             </div>
@@ -211,10 +208,10 @@ export default function ReceiptScan({ appUser }) {
         {/* Error state */}
         {scanError && (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <div style={{ fontSize: '14px', color: C.ink, marginBottom: '12px' }}>{scanError}</div>
+            <div style={{ fontSize: '14px', color: color.ink, marginBottom: '12px' }}>{scanError}</div>
             <button onClick={() => { setScanError(null); setPreview(null); fileRef.current?.click() }} style={{
               padding: '12px 24px', borderRadius: '12px', border: 'none',
-              background: C.forest, color: 'white', cursor: 'pointer',
+              background: color.forest, color: 'white', cursor: 'pointer',
               fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
             }}>Try again</button>
           </div>
@@ -226,12 +223,12 @@ export default function ReceiptScan({ appUser }) {
             {/* Store + total */}
             <div style={{ marginBottom: '20px' }}>
               {scanResult.store && (
-                <div style={{ fontSize: '13px', color: C.driftwood, marginBottom: '4px' }}>
+                <div style={{ fontSize: '13px', color: color.inkSoft, marginBottom: '4px' }}>
                   {scanResult.store}{scanResult.date ? ` · ${scanResult.date}` : ''}
                 </div>
               )}
               {scanResult.total != null && (
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '28px', fontWeight: 500, color: C.ink }}>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '28px', fontWeight: 500, color: color.ink }}>
                   ${Number(scanResult.total).toFixed(2)}
                 </div>
               )}
@@ -240,7 +237,7 @@ export default function ReceiptScan({ appUser }) {
             {/* Matched items */}
             {scanResult.matchedItems?.length > 0 && (
               <div style={{ marginBottom: '16px' }}>
-                <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.sage, marginBottom: '6px' }}>
+                <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: color.sage, marginBottom: '6px' }}>
                   Matched Items
                 </div>
                 {scanResult.matchedItems.map((item, i) => (
@@ -249,13 +246,13 @@ export default function ReceiptScan({ appUser }) {
                     padding: '8px 0', borderBottom: '1px solid rgba(200,185,160,0.2)',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke={C.sage} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, flexShrink: 0 }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke={color.sage} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, flexShrink: 0 }}>
                         <path d="M20 6L9 17l-5-5" />
                       </svg>
-                      <span style={{ fontSize: '13px', color: C.ink }}>{sentenceCase(item.name)}</span>
+                      <span style={{ fontSize: '13px', color: color.ink }}>{sentenceCase(item.name)}</span>
                     </div>
                     {item.price != null && (
-                      <span style={{ fontSize: '13px', color: C.driftwood }}>${Number(item.price).toFixed(2)}</span>
+                      <span style={{ fontSize: '13px', color: color.inkSoft }}>${Number(item.price).toFixed(2)}</span>
                     )}
                   </div>
                 ))}
@@ -265,7 +262,7 @@ export default function ReceiptScan({ appUser }) {
             {/* Needs confirmation — low-confidence matches */}
             {confirmations.filter(c => c.status === 'pending').length > 0 && (
               <div style={{ marginBottom: '16px' }}>
-                <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.honey, marginBottom: '6px' }}>
+                <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: color.honey, marginBottom: '6px' }}>
                   Sage wasn't sure about these — can you help?
                 </div>
                 {confirmations.map((item, i) => {
@@ -273,25 +270,25 @@ export default function ReceiptScan({ appUser }) {
                   return (
                     <div key={i} style={{
                       padding: '12px', marginBottom: '8px', background: 'white',
-                      borderRadius: '10px', border: `1px solid ${C.linen}`,
+                      borderRadius: '10px', border: `1px solid ${color.rule}`,
                     }}>
-                      <div style={{ fontSize: '12px', color: C.driftwood, marginBottom: '4px' }}>
+                      <div style={{ fontSize: '12px', color: color.inkSoft, marginBottom: '4px' }}>
                         {item.receiptItem} — ${Number(item.price).toFixed(2)}
                       </div>
                       {item.suggestedMatch && (
-                        <div style={{ fontSize: '13px', color: C.ink, marginBottom: '8px' }}>
+                        <div style={{ fontSize: '13px', color: color.ink, marginBottom: '8px' }}>
                           Is this → <strong>{sentenceCase(item.suggestedMatch)}</strong>?
                         </div>
                       )}
                       <div style={{ display: 'flex', gap: '6px' }}>
                         <button onClick={() => confirmMatch(i)} style={{
                           padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 500,
-                          background: C.forest, color: 'white', border: 'none', cursor: 'pointer',
+                          background: color.forest, color: 'white', border: 'none', cursor: 'pointer',
                           fontFamily: "'Jost', sans-serif",
                         }}>Yes</button>
                         <button onClick={() => skipMatch(i)} style={{
                           padding: '6px 14px', borderRadius: '8px', fontSize: '12px',
-                          background: 'none', color: C.driftwood, border: `1px solid ${C.linen}`,
+                          background: 'none', color: color.inkSoft, border: `1px solid ${color.rule}`,
                           cursor: 'pointer', fontFamily: "'Jost', sans-serif",
                         }}>No, skip</button>
                       </div>
@@ -310,12 +307,12 @@ export default function ReceiptScan({ appUser }) {
                     padding: '6px 0', borderBottom: '1px solid rgba(200,185,160,0.1)',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke={C.sage} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, flexShrink: 0 }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke={color.sage} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, flexShrink: 0 }}>
                         <path d="M20 6L9 17l-5-5" />
                       </svg>
-                      <span style={{ fontSize: '12px', color: C.driftwood }}>{sentenceCase(item.suggestedMatch || item.receiptItem)} — confirmed</span>
+                      <span style={{ fontSize: '12px', color: color.inkSoft }}>{sentenceCase(item.suggestedMatch || item.receiptItem)} — confirmed</span>
                     </div>
-                    <span style={{ fontSize: '12px', color: C.driftwood }}>${Number(item.price).toFixed(2)}</span>
+                    <span style={{ fontSize: '12px', color: color.inkSoft }}>${Number(item.price).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
@@ -324,7 +321,7 @@ export default function ReceiptScan({ appUser }) {
             {/* Unmatched items */}
             {scanResult.unmatchedItems?.length > 0 && (
               <div style={{ marginBottom: '16px' }}>
-                <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.honey, marginBottom: '6px' }}>
+                <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: color.honey, marginBottom: '6px' }}>
                   Unmatched Items
                 </div>
                 {scanResult.unmatchedItems.map((item, i) => (
@@ -332,9 +329,9 @@ export default function ReceiptScan({ appUser }) {
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '8px 0', borderBottom: '1px solid rgba(200,185,160,0.2)',
                   }}>
-                    <span style={{ fontSize: '13px', color: C.honey }}>{item.name}</span>
+                    <span style={{ fontSize: '13px', color: color.honey }}>{item.name}</span>
                     {item.price != null && (
-                      <span style={{ fontSize: '13px', color: C.driftwood }}>${Number(item.price).toFixed(2)}</span>
+                      <span style={{ fontSize: '13px', color: color.inkSoft }}>${Number(item.price).toFixed(2)}</span>
                     )}
                   </div>
                 ))}
@@ -352,7 +349,7 @@ export default function ReceiptScan({ appUser }) {
             {allConfirmed && (
               <button onClick={() => navigate('/shop')} style={{
                 width: '100%', padding: '16px', borderRadius: '14px', border: 'none',
-                background: C.forest, color: 'white', cursor: 'pointer', marginTop: '20px',
+                background: color.forest, color: 'white', cursor: 'pointer', marginTop: '20px',
                 fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
                 boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
               }}>Looks good →</button>

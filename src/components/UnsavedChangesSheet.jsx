@@ -11,11 +11,7 @@
  *   leaveLabel — e.g. "Leave anyway"
  */
 import BottomSheet from './BottomSheet'
-
-const C = {
-  forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', linen: '#E8E0D0',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 export default function UnsavedChangesSheet({
   open,
@@ -30,7 +26,7 @@ export default function UnsavedChangesSheet({
     <BottomSheet isOpen={open} onClose={onStay} title={title}>
       <div style={{ padding: '0 22px 24px' }}>
         <div style={{
-          fontSize: '14px', color: C.driftwood, fontWeight: 300,
+          fontSize: '14px', color: color.inkSoft, fontWeight: 300,
           lineHeight: 1.6, marginBottom: '24px',
           fontFamily: "'Jost', sans-serif",
         }}>
@@ -43,7 +39,7 @@ export default function UnsavedChangesSheet({
             onClick={onStay}
             style={{
               width: '100%', padding: '15px', borderRadius: '14px',
-              background: C.forest, color: 'white', border: 'none',
+              background: color.forest, color: 'white', border: 'none',
               cursor: 'pointer', fontFamily: "'Jost', sans-serif",
               fontSize: '15px', fontWeight: 500,
               boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
@@ -57,7 +53,7 @@ export default function UnsavedChangesSheet({
             onClick={onLeave}
             style={{
               width: '100%', padding: '15px', borderRadius: '14px',
-              background: 'transparent', color: C.driftwood, border: 'none',
+              background: 'transparent', color: color.inkSoft, border: 'none',
               cursor: 'pointer', fontFamily: "'Jost', sans-serif",
               fontSize: '14px', fontWeight: 300,
             }}

@@ -18,12 +18,7 @@ import BottomNav from '../components/BottomNav'
 import SageNudgeCard from '../components/SageNudgeCard'
 import ShoppingOnboarding from '../components/ShoppingOnboarding'
 import { useArc } from '../context/ArcContext'
-
-const C = {
-  forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E', linen: '#E8E0D0',
-  sage: '#7A8C6E', honey: '#C49A3C',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 const CATEGORY_ORDER = ['produce','meat','seafood','dairy','bakery','pantry','frozen','beverages','household','personal_care','other']
 const CATEGORY_LABELS = {
@@ -703,7 +698,7 @@ export default function PantryList({ appUser }) {
 
 
   if (loading) return (
-    <div style={{ background: C.cream, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
+    <div style={{ background: color.paper, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', fontFamily: "'Jost', sans-serif" }}>
       <TopBar />
       <div style={{ padding: '20px 22px' }}>
         {[60, 40, 40, 40].map((h, i) => <div key={i} className="shimmer-block" style={{ height: `${h}px`, borderRadius: '12px', marginBottom: '10px' }} />)}
@@ -718,7 +713,7 @@ export default function PantryList({ appUser }) {
       onTouchMove={handlePullMove}
       onTouchEnd={handlePullEnd}
       style={{
-        background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300,
+        background: color.paper, fontFamily: "'Jost', sans-serif", fontWeight: 300,
         minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
         paddingBottom: 'calc(110px + env(safe-area-inset-bottom, 8px))',
       }}>
@@ -733,7 +728,7 @@ export default function PantryList({ appUser }) {
               padding: '14px', textAlign: 'center',
               fontFamily: "'Jost', sans-serif", fontSize: '12px',
               fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase',
-              color: active ? arcColor : C.driftwood,
+              color: active ? arcColor : color.inkSoft,
               cursor: active ? 'default' : 'pointer', border: 'none', background: 'none',
               borderBottom: active ? `2px solid ${arcColor}` : '2px solid transparent',
               transition: 'color 0.2s cubic-bezier(0.22,1,0.36,1), border-color 0.2s cubic-bezier(0.22,1,0.36,1)',
@@ -774,7 +769,7 @@ export default function PantryList({ appUser }) {
       {/* No meal plan for this week */}
       {noMealPlan && (
         <div style={{ textAlign: 'center', padding: '48px 22px' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: C.ink, marginBottom: '8px' }}>No meals planned for this week</div>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: color.ink, marginBottom: '8px' }}>No meals planned for this week</div>
           <button onClick={() => navigate('/plan')} style={{
             background: 'none', border: 'none', cursor: 'pointer',
             fontSize: '14px', color: arcColor, fontWeight: 500, fontFamily: "'Jost', sans-serif",
@@ -794,18 +789,18 @@ export default function PantryList({ appUser }) {
         {pendingTrips.filter(t => !t.is_companion).map(trip => (
           <button key={trip.id} onClick={() => navigate(`/pantry/trip/${trip.id}`)} style={{
             padding: '10px 14px', borderRadius: '12px', cursor: 'pointer',
-            background: 'white', color: C.ink, textAlign: 'left',
-            border: `1px solid ${C.linen}`, fontFamily: "'Jost', sans-serif", flexShrink: 0,
+            background: 'white', color: color.ink, textAlign: 'left',
+            border: `1px solid ${color.rule}`, fontFamily: "'Jost', sans-serif", flexShrink: 0,
           }}>
             <div style={{ fontSize: '12px', fontWeight: 500 }}>{trip.store_name || trip.name}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
               <span style={{
                 fontSize: '9px', fontWeight: 500, padding: '1px 5px', borderRadius: '4px',
                 background: trip.status === 'active' ? 'rgba(122,140,110,0.12)' : 'rgba(200,185,160,0.15)',
-                color: trip.status === 'active' ? C.sage : C.driftwood,
+                color: trip.status === 'active' ? color.sage : color.inkSoft,
               }}>{trip.status === 'active' ? 'In Progress' : 'Pending'}</span>
               {trip.companion_trip_id && (
-                <span style={{ fontSize: '9px', color: C.driftwood }}>2 weeks</span>
+                <span style={{ fontSize: '9px', color: color.inkSoft }}>2 weeks</span>
               )}
             </div>
           </button>
@@ -844,15 +839,15 @@ export default function PantryList({ appUser }) {
         return (
           <div style={{
             margin: '0 22px 14px', background: 'white',
-            border: `0.5px solid ${C.linen}`, borderLeft: `3px solid ${C.honey}`,
+            border: `0.5px solid ${color.rule}`, borderLeft: `3px solid ${color.honey}`,
             borderRadius: '12px', padding: '14px 16px',
           }}>
             <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke={C.honey} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18, flexShrink: 0, marginTop: 1 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke={color.honey} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18, flexShrink: 0, marginTop: 1 }}>
                 <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>
               </svg>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '13px', color: C.ink, lineHeight: 1.55, marginBottom: '8px' }}>
+                <div style={{ fontSize: '13px', color: color.ink, lineHeight: 1.55, marginBottom: '8px' }}>
                   {label}
                 </div>
                 <div style={{ display: 'flex', gap: '16px' }}>
@@ -864,7 +859,7 @@ export default function PantryList({ appUser }) {
                   </button>
                   {ghosts.length === 1 && (
                     <button onClick={() => addToListManually(ghosts[0])} style={{
-                      fontSize: '12px', color: C.driftwood, background: 'none', border: 'none',
+                      fontSize: '12px', color: color.inkSoft, background: 'none', border: 'none',
                       padding: 0, cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontStyle: 'italic',
                     }}>
                       Add to list manually →
@@ -883,10 +878,10 @@ export default function PantryList({ appUser }) {
       <div style={{ padding: '12px 22px' }}>
         {grouped.length === 0 && purchasedItems.length === 0 && (
           <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic', fontSize: '16px', color: C.driftwood, marginBottom: '8px' }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic', fontSize: '16px', color: color.inkSoft, marginBottom: '8px' }}>
               Your list is empty.
             </div>
-            <div style={{ fontSize: '13px', color: C.driftwood }}>
+            <div style={{ fontSize: '13px', color: color.inkSoft }}>
               Tap day tiles on your plan to add meals to your list.
             </div>
           </div>
@@ -913,55 +908,55 @@ export default function PantryList({ appUser }) {
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', lineHeight: 1.3 }}>
-                        <span style={{ fontSize: '14px', color: C.ink }}>{sentenceCase(item.name)}</span>
+                        <span style={{ fontSize: '14px', color: color.ink }}>{sentenceCase(item.name)}</span>
                         {(item.quantity || item.unit) ? (() => {
                           const qtyStr = [item.quantity, item.unit].filter(Boolean).join(' ')
                           return (
-                            <span style={{ fontSize: '12px', color: C.driftwood }}>
+                            <span style={{ fontSize: '12px', color: color.inkSoft }}>
                               ({qtyStr})
                             </span>
                           )
                         })() : item.ids?.length > 1 ? (
-                          <span style={{ fontSize: '12px', color: C.driftwood }}>({item.ids.length} each)</span>
+                          <span style={{ fontSize: '12px', color: color.inkSoft }}>({item.ids.length} each)</span>
                         ) : null}
                       </div>
                       {isStaple && (
-                        <div style={{ fontSize: '11px', color: C.driftwood, fontStyle: 'italic' }}>Pantry staple</div>
+                        <div style={{ fontSize: '11px', color: color.inkSoft, fontStyle: 'italic' }}>Pantry staple</div>
                       )}
                       {item.sourceMeals?.length > 0 && (
-                        <div style={{ fontSize: '11px', color: C.driftwood, fontStyle: 'italic' }}>For {item.sourceMeals.join(', ')}</div>
+                        <div style={{ fontSize: '11px', color: color.inkSoft, fontStyle: 'italic' }}>For {item.sourceMeals.join(', ')}</div>
                       )}
                     </div>
                     <div style={{ display: 'flex', flexDirection: assignedTrip ? 'column' : 'row', alignItems: assignedTrip ? 'flex-end' : 'center', gap: assignedTrip ? '4px' : '8px', flexShrink: 0, marginTop: '2px' }}>
                       {assignedTrip && (
                         <button onClick={() => setReassignItem(item)} style={{
                           background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                          fontSize: '13px', color: C.driftwood, fontStyle: 'italic',
+                          fontSize: '13px', color: color.inkSoft, fontStyle: 'italic',
                           fontFamily: "'Jost', sans-serif",
                         }}>{assignedTrip.store_name}</button>
                       )}
                       {item.pantry_status === 'pending' ? (
-                        <span style={{ fontSize: '11px', color: C.driftwood, fontStyle: 'italic', fontFamily: "'Jost', sans-serif" }}>In cart</span>
+                        <span style={{ fontSize: '11px', color: color.inkSoft, fontStyle: 'italic', fontFamily: "'Jost', sans-serif" }}>In cart</span>
                       ) : isStaple ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <button onClick={() => markStapleHaveIt(item)} style={{
                             background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                            fontSize: '13px', color: C.sage, fontFamily: "'Jost', sans-serif", fontWeight: 400,
+                            fontSize: '13px', color: color.sage, fontFamily: "'Jost', sans-serif", fontWeight: 400,
                           }}>✓ Have it</button>
                           {isManual && <button onClick={() => removeItem(item)} style={{
                             background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                            fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                            fontSize: '13px', color: color.inkSoft, fontFamily: "'Jost', sans-serif", fontWeight: 300,
                           }}>Remove</button>}
                         </div>
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <button onClick={() => setHaveItExpansion(isExpanding ? null : (item.ids?.[0] || item.id))} style={{
                             background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                            fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                            fontSize: '13px', color: color.inkSoft, fontFamily: "'Jost', sans-serif", fontWeight: 300,
                           }}>Have it</button>
                           {isManual && <button onClick={() => removeItem(item)} style={{
                             background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                            fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                            fontSize: '13px', color: color.inkSoft, fontFamily: "'Jost', sans-serif", fontWeight: 300,
                           }}>Remove</button>}
                         </div>
                       )}
@@ -975,12 +970,12 @@ export default function PantryList({ appUser }) {
                     }}>
                       <button onClick={() => markHaveItThisWeek(item)} style={{
                         flex: 1, padding: '8px', borderRadius: '8px', fontSize: '12px',
-                        border: `1px solid ${C.linen}`, background: 'white', color: C.ink, cursor: 'pointer',
+                        border: `1px solid ${color.rule}`, background: 'white', color: color.ink, cursor: 'pointer',
                         fontFamily: "'Jost', sans-serif", fontWeight: 400,
                       }}>Just this week</button>
                       <button onClick={() => { setStapleSheetItem(item); setHaveItExpansion(null) }} style={{
                         flex: 1, padding: '8px', borderRadius: '8px', fontSize: '12px',
-                        border: `1px solid ${C.sage}`, background: 'rgba(122,140,110,0.06)', color: arcColor, cursor: 'pointer',
+                        border: `1px solid ${color.sage}`, background: 'rgba(122,140,110,0.06)', color: arcColor, cursor: 'pointer',
                         fontFamily: "'Jost', sans-serif", fontWeight: 500,
                       }}>It's a staple</button>
                     </div>
@@ -998,10 +993,10 @@ export default function PantryList({ appUser }) {
       {shopTab === 'on-hand' && <>
       {haveThisWeekItems.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic', fontSize: '16px', color: C.driftwood, lineHeight: 1.7 }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic', fontSize: '16px', color: color.inkSoft, lineHeight: 1.7 }}>
             Nothing on hand yet.
           </div>
-          <div style={{ fontSize: '13px', color: C.driftwood, marginTop: '4px' }}>
+          <div style={{ fontSize: '13px', color: color.inkSoft, marginTop: '4px' }}>
             Tap "Have it" on an item to move it here.
           </div>
         </div>
@@ -1012,10 +1007,10 @@ export default function PantryList({ appUser }) {
             background: 'none', border: 'none', cursor: 'pointer', padding: '8px 0',
             fontFamily: "'Jost', sans-serif",
           }}>
-            <span style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', color: C.driftwood }}>
+            <span style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', color: color.inkSoft }}>
               Already have it ({haveThisWeekItems.length})
             </span>
-            <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, transform: haveThisWeekExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, transform: haveThisWeekExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }}>
               <path d="m6 9 6 6 6-6" />
             </svg>
           </button>
@@ -1027,14 +1022,14 @@ export default function PantryList({ appUser }) {
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 }}>
                   <div>
-                    <div style={{ fontSize: '13px', color: C.driftwood, fontWeight: 300 }}>{sentenceCase(item.name)}</div>
+                    <div style={{ fontSize: '13px', color: color.inkSoft, fontWeight: 300 }}>{sentenceCase(item.name)}</div>
                     {(item.quantity || item.unit) && (
-                      <div style={{ fontSize: '13px', color: C.driftwood, opacity: 0.6 }}>{[item.quantity, item.unit].filter(Boolean).join(' ')}</div>
+                      <div style={{ fontSize: '13px', color: color.inkSoft, opacity: 0.6 }}>{[item.quantity, item.unit].filter(Boolean).join(' ')}</div>
                     )}
                   </div>
                   <button onClick={() => markActuallyNeedIt(item)} style={{
                     background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                    fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300, fontStyle: 'italic',
+                    fontSize: '13px', color: color.inkSoft, fontFamily: "'Jost', sans-serif", fontWeight: 300, fontStyle: 'italic',
                   }}>Actually need it</button>
                 </div>
               ))}
@@ -1051,7 +1046,7 @@ export default function PantryList({ appUser }) {
       {/* ── Completed trips this week ─────────────────────────────── */}
       {completedTrips.length > 0 && (
         <div style={{ padding: '0 22px 16px' }}>
-          <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '10px', marginTop: '8px' }}>
+          <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: color.inkSoft, marginBottom: '10px', marginTop: '8px' }}>
             This Week
           </div>
           {completedTrips.map(ct => {
@@ -1066,7 +1061,7 @@ export default function PantryList({ appUser }) {
 
             return (
               <div key={ct.id} style={{
-                background: 'white', borderRadius: '12px', border: `1px solid ${C.linen}`,
+                background: 'white', borderRadius: '12px', border: `1px solid ${color.rule}`,
                 marginBottom: '8px', overflow: 'hidden',
               }}>
                 <div onClick={() => toggleExpandTrip(ct.id)} style={{
@@ -1074,9 +1069,9 @@ export default function PantryList({ appUser }) {
                   padding: '12px 14px', cursor: 'pointer',
                 }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 400, color: C.ink }}>
+                    <div style={{ fontSize: '13px', fontWeight: 400, color: color.ink }}>
                       {ct.name || ct.store_name}
-                      <span style={{ color: C.driftwood, fontWeight: 300 }}> · {ct.item_count || ctItems.length} item{(ct.item_count || ctItems.length) !== 1 ? 's' : ''} · {tripDate}</span>
+                      <span style={{ color: color.inkSoft, fontWeight: 300 }}> · {ct.item_count || ctItems.length} item{(ct.item_count || ctItems.length) !== 1 ? 's' : ''} · {tripDate}</span>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
@@ -1084,21 +1079,21 @@ export default function PantryList({ appUser }) {
                       background: 'none', border: 'none', cursor: hasReceipt ? 'default' : 'pointer', padding: '2px',
                       display: 'flex', alignItems: 'center',
                     }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke={hasReceipt ? C.sage : C.linen} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke={hasReceipt ? color.sage : color.rule} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
                         <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
                         <path d="M8 7h8M8 11h8M8 15h4" />
                       </svg>
                     </button>
-                    <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }}>
                       <path d="m6 9 6 6 6-6" />
                     </svg>
                   </div>
                 </div>
 
                 {isExpanded && (
-                  <div style={{ padding: '0 14px 14px', borderTop: `1px solid ${C.linen}` }}>
+                  <div style={{ padding: '0 14px 14px', borderTop: `1px solid ${color.rule}` }}>
                     {ctItems.length === 0 && (
-                      <div style={{ fontSize: '12px', color: C.driftwood, fontStyle: 'italic', padding: '10px 0' }}>Loading items...</div>
+                      <div style={{ fontSize: '12px', color: color.inkSoft, fontStyle: 'italic', padding: '10px 0' }}>Loading items...</div>
                     )}
                     {ctGrouped.map(group => (
                       <div key={group.cat} style={{ marginTop: '10px' }}>
@@ -1109,9 +1104,9 @@ export default function PantryList({ appUser }) {
                           <div key={item.id} style={{
                             padding: '6px 0', borderBottom: '1px solid rgba(200,185,160,0.15)',
                           }}>
-                            <div style={{ fontSize: '13px', color: C.driftwood, fontWeight: 300 }}>{sentenceCase(item.name)}</div>
+                            <div style={{ fontSize: '13px', color: color.inkSoft, fontWeight: 300 }}>{sentenceCase(item.name)}</div>
                             {(item.quantity || item.unit) && (
-                              <div style={{ fontSize: '10px', color: C.driftwood, opacity: 0.7 }}>{[item.quantity, item.unit].filter(Boolean).join(' ')}</div>
+                              <div style={{ fontSize: '10px', color: color.inkSoft, opacity: 0.7 }}>{[item.quantity, item.unit].filter(Boolean).join(' ')}</div>
                             )}
                           </div>
                         ))}
@@ -1133,16 +1128,16 @@ export default function PantryList({ appUser }) {
         position: 'fixed', bottom: 'calc(48px + env(safe-area-inset-bottom, 8px))',
         left: '50%', transform: 'translateX(-50%)',
         width: '100%', maxWidth: '430px', padding: '10px 22px',
-        background: C.cream, borderTop: `1px solid ${C.linen}`, zIndex: 50, boxSizing: 'border-box',
+        background: color.paper, borderTop: `1px solid ${color.rule}`, zIndex: 50, boxSizing: 'border-box',
       }}>
         {showCatPicker && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
             {CATEGORY_ORDER.map(cat => (
               <button key={cat} onClick={() => { setAddCategory(cat); setManualCatPick(true); setShowCatPicker(false) }} style={{
                 padding: '3px 8px', borderRadius: '8px', fontSize: '10px',
-                border: addCategory === cat ? `1px solid ${arcColor}` : `1px solid ${C.linen}`,
+                border: addCategory === cat ? `1px solid ${arcColor}` : `1px solid ${color.rule}`,
                 background: addCategory === cat ? 'rgba(61,107,79,0.08)' : 'white',
-                color: addCategory === cat ? arcColor : C.ink, cursor: 'pointer',
+                color: addCategory === cat ? arcColor : color.ink, cursor: 'pointer',
                 fontFamily: "'Jost', sans-serif",
               }}>{CATEGORY_LABELS[cat]}</button>
             ))}
@@ -1150,19 +1145,19 @@ export default function PantryList({ appUser }) {
         )}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button onClick={() => setShowCatPicker(!showCatPicker)} style={{
-            padding: '6px 10px', borderRadius: '8px', border: `1px solid ${C.linen}`,
-            background: 'white', cursor: 'pointer', fontSize: '10px', color: C.driftwood,
+            padding: '6px 10px', borderRadius: '8px', border: `1px solid ${color.rule}`,
+            background: 'white', cursor: 'pointer', fontSize: '10px', color: color.inkSoft,
             fontFamily: "'Jost', sans-serif", flexShrink: 0, whiteSpace: 'nowrap',
           }}>{CATEGORY_LABELS[addCategory] || 'Other'}</button>
           <input type="text" value={addInput} onChange={e => handleAddInputChange(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') addItem() }}
             placeholder="Add to list..." style={{
               flex: 1, padding: '10px 14px', fontSize: '14px', fontFamily: "'Jost', sans-serif", fontWeight: 300,
-              border: `1.5px solid ${C.linen}`, borderRadius: '12px', outline: 'none', color: C.ink, background: 'white',
+              border: `1.5px solid ${color.rule}`, borderRadius: '12px', outline: 'none', color: color.ink, background: 'white',
             }} />
           <button onClick={addItem} disabled={!addInput.trim() || adding} style={{
             width: '44px', height: '44px', borderRadius: '12px', border: 'none',
-            background: addInput.trim() ? arcColor : C.linen, color: addInput.trim() ? 'white' : C.driftwood,
+            background: addInput.trim() ? arcColor : color.rule, color: addInput.trim() ? 'white' : color.inkSoft,
             cursor: addInput.trim() ? 'pointer' : 'default',
             display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 300,
           }}>+</button>
@@ -1195,14 +1190,14 @@ export default function PantryList({ appUser }) {
               {/* Step 1 — Store selection */}
               {tripSheetStep === 1 && (
                 <>
-                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '16px' }}>
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: color.ink, marginBottom: '16px' }}>
                     Which store are we going to?
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
                     {stores.map(s => (
                       <button key={s.id} onClick={() => selectStoreForTrip(s)} style={{
                         padding: '10px 18px', borderRadius: '12px', fontSize: '14px',
-                        border: `1.5px solid ${C.linen}`, background: 'white', color: C.ink,
+                        border: `1.5px solid ${color.rule}`, background: 'white', color: color.ink,
                         cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontWeight: 400,
                       }}>{s.name}</button>
                     ))}
@@ -1211,17 +1206,17 @@ export default function PantryList({ appUser }) {
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                       <input type="text" value={newStoreName} onChange={e => setNewStoreName(e.target.value)} placeholder="Store name..."
                         autoFocus style={{ flex: 1, padding: '8px 12px', fontSize: '13px', fontFamily: "'Jost', sans-serif",
-                          border: `1.5px solid ${C.linen}`, borderRadius: '10px', outline: 'none', color: C.ink }} />
+                          border: `1.5px solid ${color.rule}`, borderRadius: '10px', outline: 'none', color: color.ink }} />
                       <button onClick={addNewStore} disabled={!newStoreName.trim()} style={{
                         padding: '8px 14px', borderRadius: '10px', border: 'none', fontSize: '12px', fontWeight: 500,
-                        background: newStoreName.trim() ? arcColor : C.linen, color: newStoreName.trim() ? 'white' : C.driftwood,
+                        background: newStoreName.trim() ? arcColor : color.rule, color: newStoreName.trim() ? 'white' : color.inkSoft,
                         cursor: newStoreName.trim() ? 'pointer' : 'default', fontFamily: "'Jost', sans-serif",
                       }}>Add</button>
                     </div>
                   ) : (
                     <button onClick={() => setAddingStore(true)} style={{
                       background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
-                      fontSize: '12px', color: C.driftwood, fontWeight: 300, fontFamily: "'Jost', sans-serif",
+                      fontSize: '12px', color: color.inkSoft, fontWeight: 300, fontFamily: "'Jost', sans-serif",
                     }}>+ Add a store</button>
                   )}
                 </>
@@ -1232,34 +1227,34 @@ export default function PantryList({ appUser }) {
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                     <div>
-                      <button onClick={() => { setTripSheetStep(1); setSecondWeek(null) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.driftwood, fontSize: '12px', fontFamily: "'Jost', sans-serif", padding: 0 }}>← Back</button>
-                      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginTop: '4px' }}>
+                      <button onClick={() => { setTripSheetStep(1); setSecondWeek(null) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: color.inkSoft, fontSize: '12px', fontFamily: "'Jost', sans-serif", padding: 0 }}>← Back</button>
+                      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: color.ink, marginTop: '4px' }}>
                         {tripStoreName || 'Shopping'} Trip
                       </div>
                     </div>
                   </div>
 
                   {/* Multi-week toggle */}
-                  <div style={{ marginBottom: '12px', padding: '10px 12px', background: C.cream, borderRadius: '10px' }}>
-                    <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '6px' }}>Also shop for another week?</div>
+                  <div style={{ marginBottom: '12px', padding: '10px 12px', background: color.paper, borderRadius: '10px' }}>
+                    <div style={{ fontSize: '11px', color: color.inkSoft, marginBottom: '6px' }}>Also shop for another week?</div>
                     <div style={{ display: 'flex', gap: '6px' }}>
                       <button onClick={() => toggleSecondWeek(1)} disabled={secondWeekLoading} style={{
                         padding: '6px 12px', borderRadius: '8px', fontSize: '12px',
-                        border: secondWeek?.offset === 1 ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
+                        border: secondWeek?.offset === 1 ? `1.5px solid ${arcColor}` : `1px solid ${color.rule}`,
                         background: secondWeek?.offset === 1 ? 'rgba(61,107,79,0.08)' : 'white',
-                        color: secondWeek?.offset === 1 ? arcColor : C.ink,
+                        color: secondWeek?.offset === 1 ? arcColor : color.ink,
                         cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontWeight: secondWeek?.offset === 1 ? 500 : 400,
                       }}>{secondWeekLoading ? '...' : secondWeek?.offset === 1 ? `✓ Next week` : '+ Next week'}</button>
                       <button onClick={() => toggleSecondWeek(-1)} disabled={secondWeekLoading} style={{
                         padding: '6px 12px', borderRadius: '8px', fontSize: '12px',
-                        border: secondWeek?.offset === -1 ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
+                        border: secondWeek?.offset === -1 ? `1.5px solid ${arcColor}` : `1px solid ${color.rule}`,
                         background: secondWeek?.offset === -1 ? 'rgba(61,107,79,0.08)' : 'white',
-                        color: secondWeek?.offset === -1 ? arcColor : C.ink,
+                        color: secondWeek?.offset === -1 ? arcColor : color.ink,
                         cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontWeight: secondWeek?.offset === -1 ? 500 : 400,
                       }}>{secondWeek?.offset === -1 ? `✓ Last week` : '+ Last week'}</button>
                     </div>
                     {secondWeek && (
-                      <div style={{ fontSize: '10px', color: C.sage, marginTop: '4px' }}>Including {secondWeek.label} ({secondWeek.items.length} items)</div>
+                      <div style={{ fontSize: '10px', color: color.sage, marginTop: '4px' }}>Including {secondWeek.label} ({secondWeek.items.length} items)</div>
                     )}
                   </div>
 
@@ -1276,7 +1271,7 @@ export default function PantryList({ appUser }) {
                     if (catItems.length === 0) return null
                     return (
                       <div key={cat} style={{ marginBottom: '12px' }}>
-                        <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.sage, marginBottom: '4px' }}>
+                        <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: color.sage, marginBottom: '4px' }}>
                           {CATEGORY_LABELS[cat]}
                         </div>
                         {catItems.map(item => {
@@ -1298,16 +1293,16 @@ export default function PantryList({ appUser }) {
                                 fontSize: '11px', color: 'white',
                               }}>{isSelected ? '✓' : ''}</div>
                               <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '13px', color: C.ink }}>{sentenceCase(item.name)}</div>
+                                <div style={{ fontSize: '13px', color: color.ink }}>{sentenceCase(item.name)}</div>
                                 {(item.quantity || item.unit) && (
-                                  <div style={{ fontSize: '10px', color: C.driftwood }}>{[item.quantity, item.unit].filter(Boolean).join(' ')}</div>
+                                  <div style={{ fontSize: '10px', color: color.inkSoft }}>{[item.quantity, item.unit].filter(Boolean).join(' ')}</div>
                                 )}
                                 {secondWeek && (
-                                  <div style={{ fontSize: '9px', color: C.driftwood, fontStyle: 'italic' }}>{item._secondWeek ? (secondWeek.offset === 1 ? 'Next week' : 'Last week') : 'This week'}</div>
+                                  <div style={{ fontSize: '9px', color: color.inkSoft, fontStyle: 'italic' }}>{item._secondWeek ? (secondWeek.offset === 1 ? 'Next week' : 'Last week') : 'This week'}</div>
                                 )}
                               </div>
                               {assignedTo && (
-                                <span style={{ fontSize: '9px', color: C.driftwood, fontStyle: 'italic' }}>{assignedTo.store_name}</span>
+                                <span style={{ fontSize: '9px', color: color.inkSoft, fontStyle: 'italic' }}>{assignedTo.store_name}</span>
                               )}
                             </div>
                           )
@@ -1317,13 +1312,13 @@ export default function PantryList({ appUser }) {
                   })}
 
                   <div style={{ position: 'sticky', bottom: 0, background: 'white', padding: '12px 0 0' }}>
-                    <div style={{ fontSize: '12px', color: C.driftwood, marginBottom: '8px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '12px', color: color.inkSoft, marginBottom: '8px', textAlign: 'center' }}>
                       {selectedTripItems.size} item{selectedTripItems.size !== 1 ? 's' : ''} selected
                     </div>
                     <button onClick={saveTrip} disabled={creatingTrip || selectedTripItems.size === 0} style={{
                       width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
-                      background: selectedTripItems.size > 0 ? arcColor : C.linen,
-                      color: selectedTripItems.size > 0 ? 'white' : C.driftwood,
+                      background: selectedTripItems.size > 0 ? arcColor : color.rule,
+                      color: selectedTripItems.size > 0 ? 'white' : color.inkSoft,
                       cursor: selectedTripItems.size > 0 ? 'pointer' : 'default',
                       fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
                       boxShadow: selectedTripItems.size > 0 ? '0 4px 16px rgba(30,55,35,0.25)' : 'none',
@@ -1342,23 +1337,23 @@ export default function PantryList({ appUser }) {
         return (
           <BottomSheet isOpen={!!reassignItem} onClose={() => setReassignItem(null)}>
               <div style={{ padding: '16px 22px 20px' }}>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '6px' }}>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: color.ink, marginBottom: '6px' }}>
                   {sentenceCase(reassignItem.name)}
                 </div>
                 {currentTrip && (
-                  <div style={{ fontSize: '12px', color: C.driftwood, marginBottom: '16px' }}>
+                  <div style={{ fontSize: '12px', color: color.inkSoft, marginBottom: '16px' }}>
                     Currently on your {currentTrip.store_name} trip
                   </div>
                 )}
 
                 {otherTrips.length > 0 && (
                   <>
-                    <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '8px' }}>Move to another trip</div>
+                    <div style={{ fontSize: '11px', color: color.inkSoft, marginBottom: '8px' }}>Move to another trip</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
                       {otherTrips.map(t => (
                         <button key={t.id} onClick={() => reassignToTrip(reassignItem, t.id)} style={{
                           padding: '8px 16px', borderRadius: '10px', fontSize: '13px',
-                          border: `1.5px solid ${C.linen}`, background: 'white', color: C.ink,
+                          border: `1.5px solid ${color.rule}`, background: 'white', color: color.ink,
                           cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontWeight: 400,
                         }}>{t.store_name || t.name}</button>
                       ))}
@@ -1376,7 +1371,7 @@ export default function PantryList({ appUser }) {
                 <div style={{ textAlign: 'center' }}>
                   <button onClick={() => removeFromTrip(reassignItem)} style={{
                     background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                    fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                    fontSize: '13px', color: color.inkSoft, fontFamily: "'Jost', sans-serif", fontWeight: 300,
                   }}>Remove from trip</button>
                 </div>
               </div>
@@ -1387,7 +1382,7 @@ export default function PantryList({ appUser }) {
       {/* ── Staple type picker sheet ────────────────────────────── */}
       <BottomSheet isOpen={!!stapleSheetItem} onClose={() => setStapleSheetItem(null)} title="What kind of staple?">
             <div style={{ padding: '20px 22px 24px' }}>
-              <div style={{ fontSize: '12px', color: C.driftwood, marginBottom: '16px' }}>
+              <div style={{ fontSize: '12px', color: color.inkSoft, marginBottom: '16px' }}>
                 {sentenceCase(stapleSheetItem?.name)}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1398,13 +1393,13 @@ export default function PantryList({ appUser }) {
                 ].map(opt => (
                   <button key={opt.type} onClick={() => markAsStaple(stapleSheetItem, opt.type)} style={{
                     display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px',
-                    borderRadius: '12px', border: `1.5px solid ${C.linen}`, background: 'white',
+                    borderRadius: '12px', border: `1.5px solid ${color.rule}`, background: 'white',
                     cursor: 'pointer', textAlign: 'left', fontFamily: "'Jost', sans-serif",
                   }}>
                     <span style={{ fontSize: '20px' }}>{opt.emoji}</span>
                     <div>
-                      <div style={{ fontSize: '14px', fontWeight: 500, color: C.ink }}>{opt.label}</div>
-                      <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300 }}>{opt.desc}</div>
+                      <div style={{ fontSize: '14px', fontWeight: 500, color: color.ink }}>{opt.label}</div>
+                      <div style={{ fontSize: '11px', color: color.inkSoft, fontWeight: 300 }}>{opt.desc}</div>
                     </div>
                   </button>
                 ))}

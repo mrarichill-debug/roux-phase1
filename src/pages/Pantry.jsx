@@ -9,11 +9,7 @@ import { supabase } from '../lib/supabase'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import { useArc } from '../context/ArcContext'
-
-const C = {
-  forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', linen: '#E8E0D0', sage: '#7A8C6E',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 const SECTION_ORDER = [
   { key: 'cold', label: 'Cold Storage' },
@@ -61,7 +57,7 @@ export default function Pantry({ appUser }) {
 
   return (
     <div className="page-scroll-container" style={{
-      background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300,
+      background: color.paper, fontFamily: "'Jost', sans-serif", fontWeight: 300,
       minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
       paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 8px))',
     }}>
@@ -75,11 +71,11 @@ export default function Pantry({ appUser }) {
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
           <div style={{
             fontFamily: "'Playfair Display', serif", fontStyle: 'italic',
-            fontSize: '16px', color: C.driftwood, lineHeight: 1.7,
+            fontSize: '16px', color: color.inkSoft, lineHeight: 1.7,
           }}>
             Your pantry is empty.
           </div>
-          <div style={{ fontSize: '13px', color: C.driftwood, marginTop: '8px' }}>
+          <div style={{ fontSize: '13px', color: color.inkSoft, marginTop: '8px' }}>
             Items you check off while shopping will appear here.
           </div>
         </div>
@@ -101,19 +97,19 @@ export default function Pantry({ appUser }) {
                 {sectionItems.map(item => (
                   <div key={item.id} style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-                    padding: '10px 0', borderBottom: `0.5px solid ${C.linen}`,
+                    padding: '10px 0', borderBottom: `0.5px solid ${color.rule}`,
                   }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '14px', color: C.ink }}>{sentenceCase(item.name)}</div>
+                      <div style={{ fontSize: '14px', color: color.ink }}>{sentenceCase(item.name)}</div>
                       {(item.meal_plan_context || item.purchased_date) && (
-                      <div style={{ fontSize: '11px', color: C.driftwood, marginTop: '2px' }}>
+                      <div style={{ fontSize: '11px', color: color.inkSoft, marginTop: '2px' }}>
                         {item.meal_plan_context && `${item.meal_plan_context} · `}
                         {getDaysAgo(item.purchased_date)}
                       </div>
                       )}
                     </div>
                     {(item.quantity || item.unit) && (
-                      <div style={{ fontSize: '13px', color: C.driftwood, textAlign: 'right', flexShrink: 0, marginLeft: '12px' }}>
+                      <div style={{ fontSize: '13px', color: color.inkSoft, textAlign: 'right', flexShrink: 0, marginLeft: '12px' }}>
                         {[item.quantity, item.unit].filter(Boolean).join(' ')}
                       </div>
                     )}

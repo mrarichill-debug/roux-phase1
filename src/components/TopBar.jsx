@@ -5,11 +5,7 @@
  */
 
 import { useLocation } from 'react-router-dom'
-
-const C = {
-  forest: '#3D6B4F',
-  cream:  '#FAF7F2',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 const SHADOW = `
   0 2px  0px rgba(20,40,25,0.55),
@@ -78,7 +74,7 @@ export default function TopBar({
         position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)',
         width: '100%', maxWidth: '430px',
         zIndex: 100,
-        background: C.forest,
+        background: color.forest,
         boxShadow: noShadow && !children ? 'none' : SHADOW,
       }}>
         {/* Main bar */}

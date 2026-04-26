@@ -9,13 +9,8 @@ import { getWeekDatesTZ, getWeekStartTZ, toLocalDateStr } from '../lib/dateUtils
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import BottomSheet from '../components/BottomSheet'
+import { color, alpha, elevation } from '../styles/tokens'
 // AddDayTypeSheet removed — day type creation lives in Household Defaults only
-
-const C = {
-  forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E', linen: '#E8E0D0',
-  honey: '#C49A3C',
-}
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
 const DOW_KEYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']
@@ -23,8 +18,8 @@ const DOW_KEYS = ['monday','tuesday','wednesday','thursday','friday','saturday',
 const DAY_TYPE_OPTIONS = [
   { key: 'no_school', label: 'No School', color: '#D4874A' },
   { key: 'school', label: 'School', color: '#5B8DD9' },
-  { key: 'summer', label: 'Summer', color: '#C49A3C' },
-  { key: 'weekend', label: 'Weekend', color: '#7A8C6E' },
+  { key: 'summer', label: 'Summer', color: color.honey },
+  { key: 'weekend', label: 'Weekend', color: color.sage },
 ]
 
 const DEFAULT_DAY_TYPES = {
@@ -34,7 +29,7 @@ const DEFAULT_DAY_TYPES = {
 
 const zoneLabel = {
   fontSize: '11px', letterSpacing: '1.2px', textTransform: 'uppercase',
-  color: C.driftwood, fontWeight: 300, marginBottom: '10px',
+  color: color.inkSoft, fontWeight: 300, marginBottom: '10px',
 }
 
 export default function ThisWeekSettings({ appUser }) {
@@ -292,7 +287,7 @@ export default function ThisWeekSettings({ appUser }) {
   }
 
   return (
-    <div style={{ background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', paddingBottom: '100px' }}>
+    <div style={{ background: color.paper, fontFamily: "'Jost', sans-serif", fontWeight: 300, minHeight: '100vh', maxWidth: '430px', margin: '0 auto', paddingBottom: '100px' }}>
       <TopBar leftAction={{ onClick: () => navigate('/plan'), icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><path d="m15 18-6-6 6-6"/></svg>
       )}} centerContent={
@@ -300,7 +295,7 @@ export default function ThisWeekSettings({ appUser }) {
       } />
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px 0', color: C.driftwood }}>Loading...</div>
+        <div style={{ textAlign: 'center', padding: '40px 0', color: color.inkSoft }}>Loading...</div>
       ) : (
         <div style={{ padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
@@ -317,17 +312,17 @@ export default function ThisWeekSettings({ appUser }) {
                   padding: '10px 0', borderBottom: i < 6 ? `1px solid rgba(200,185,160,0.20)` : 'none',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: '120px', flexShrink: 0 }}>
-                    <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '15px', fontWeight: 500, color: C.ink, minWidth: '24px', textAlign: 'right', display: 'inline-block' }}>
+                    <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '15px', fontWeight: 500, color: color.ink, minWidth: '24px', textAlign: 'right', display: 'inline-block' }}>
                       {date.getDate()}
                     </span>
-                    <span style={{ fontSize: '13px', color: C.driftwoodSm }}>{day}</span>
+                    <span style={{ fontSize: '13px', color: color.inkSoft }}>{day}</span>
                   </div>
                   <button
                     onClick={() => setDtPickerDow(dtPickerDow === dowKey ? null : dowKey)}
                     style={{
                       padding: '3px 10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-                      background: activeOpt ? `${activeOpt.color}18` : C.linen,
-                      color: activeOpt?.color || C.ink,
+                      background: activeOpt ? `${activeOpt.color}18` : color.rule,
+                      color: activeOpt?.color || color.ink,
                       fontSize: '11px', fontWeight: 500, fontFamily: "'Jost', sans-serif",
                     }}
                   >
@@ -338,7 +333,7 @@ export default function ThisWeekSettings({ appUser }) {
             })}
             <button onClick={() => navigate('/week/defaults')} style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: '12px', color: C.driftwood, fontWeight: 300, padding: '10px 0',
+              fontSize: '12px', color: color.inkSoft, fontWeight: 300, padding: '10px 0',
               fontFamily: "'Jost', sans-serif", textAlign: 'left',
             }}>
               Manage day types →
@@ -349,20 +344,20 @@ export default function ThisWeekSettings({ appUser }) {
           <div>
             <div style={zoneLabel}>Traditions</div>
             {traditions.length === 0 ? (
-              <div style={{ fontSize: '13px', fontStyle: 'italic', color: C.driftwood }}>No traditions apply this week.</div>
+              <div style={{ fontSize: '13px', fontStyle: 'italic', color: color.inkSoft }}>No traditions apply this week.</div>
             ) : traditions.map(t => (
               <div key={t.id} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '10px 0', borderBottom: `1px solid rgba(200,185,160,0.15)`,
               }}>
                 <div>
-                  <span style={{ fontSize: '14px', color: C.ink }}>{t.name}</span>
-                  {t.day_of_week && <span style={{ fontSize: '11px', color: C.driftwoodSm, marginLeft: '8px' }}>{t.day_of_week.charAt(0).toUpperCase() + t.day_of_week.slice(1)}</span>}
+                  <span style={{ fontSize: '14px', color: color.ink }}>{t.name}</span>
+                  {t.day_of_week && <span style={{ fontSize: '11px', color: color.inkSoft, marginLeft: '8px' }}>{t.day_of_week.charAt(0).toUpperCase() + t.day_of_week.slice(1)}</span>}
                 </div>
                 <button onClick={() => toggleTradition(t.id)} style={{
                   width: '40px', height: '22px', borderRadius: '11px',
-                  border: traditionToggles[t.id] ? 'none' : `1.5px solid ${C.linen}`,
-                  background: traditionToggles[t.id] ? C.forest : C.cream,
+                  border: traditionToggles[t.id] ? 'none' : `1.5px solid ${color.rule}`,
+                  background: traditionToggles[t.id] ? color.forest : color.paper,
                   cursor: 'pointer', position: 'relative', padding: 0, flexShrink: 0,
                 }}>
                   <span style={{
@@ -386,14 +381,14 @@ export default function ThisWeekSettings({ appUser }) {
                   return (
                     <div key={t.id} onClick={() => !isPreviewing && handleTemplateTap(t)} style={{
                       padding: '12px 12px', borderRadius: '10px', minHeight: '44px',
-                      border: isPreviewing ? `1.5px solid ${C.forest}` : isApplied ? `1.5px solid ${C.forest}` : `1px solid ${C.linen}`,
+                      border: isPreviewing ? `1.5px solid ${color.forest}` : isApplied ? `1.5px solid ${color.forest}` : `1px solid ${color.rule}`,
                       background: isPreviewing ? 'rgba(61,107,79,0.04)' : isApplied ? 'rgba(61,107,79,0.06)' : 'white',
                       cursor: isPreviewing ? 'default' : 'pointer',
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <span style={{
                           fontFamily: "'Jost', sans-serif", fontSize: '13px', textAlign: 'left',
-                          color: isApplied || isPreviewing ? C.forest : C.ink,
+                          color: isApplied || isPreviewing ? color.forest : color.ink,
                           fontWeight: isApplied || isPreviewing ? 500 : 400,
                         }}>
                           {t.name} {isApplied && '✓'}
@@ -402,19 +397,19 @@ export default function ThisWeekSettings({ appUser }) {
                           <div style={{ display: 'flex', gap: '8px' }}>
                             <button onClick={confirmApply} style={{
                               padding: '4px 12px', borderRadius: '8px', border: 'none',
-                              background: C.forest, color: 'white', fontSize: '12px', fontWeight: 500,
+                              background: color.forest, color: 'white', fontSize: '12px', fontWeight: 500,
                               fontFamily: "'Jost', sans-serif", cursor: 'pointer',
                             }}>Apply</button>
                             <button onClick={undoPreview} style={{
                               padding: '4px 12px', borderRadius: '8px', border: 'none',
-                              background: 'none', color: C.driftwood, fontSize: '12px', fontWeight: 400,
+                              background: 'none', color: color.inkSoft, fontSize: '12px', fontWeight: 400,
                               fontFamily: "'Jost', sans-serif", cursor: 'pointer',
                             }}>Undo</button>
                           </div>
                         )}
                       </div>
                       {isPreviewing && (
-                        <div style={{ fontSize: '11px', fontStyle: 'italic', color: C.driftwood, fontWeight: 300, marginTop: '4px' }}>
+                        <div style={{ fontSize: '11px', fontStyle: 'italic', color: color.inkSoft, fontWeight: 300, marginTop: '4px' }}>
                           Previewing — not saved yet
                         </div>
                       )}
@@ -423,11 +418,11 @@ export default function ThisWeekSettings({ appUser }) {
                 })}
               </div>
             ) : (
-              <div style={{ fontSize: '13px', fontStyle: 'italic', color: C.driftwood, marginBottom: '4px' }}>No templates saved yet.</div>
+              <div style={{ fontSize: '13px', fontStyle: 'italic', color: color.inkSoft, marginBottom: '4px' }}>No templates saved yet.</div>
             )}
             <button onClick={() => { setTemplateName(''); setSaveSheetOpen(true) }} style={{
               display: 'block', background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: '13px', color: C.forest, fontWeight: 400, padding: '8px 0', marginTop: '4px',
+              fontSize: '13px', color: color.forest, fontWeight: 400, padding: '8px 0', marginTop: '4px',
               fontFamily: "'Jost', sans-serif", textAlign: 'left',
             }}>
               Save this week as a template &rarr;
@@ -438,13 +433,13 @@ export default function ThisWeekSettings({ appUser }) {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', paddingTop: '12px' }}>
             <button onClick={() => setConfirmReset(true)} style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: '12px', color: C.driftwood, fontWeight: 300, fontFamily: "'Jost', sans-serif",
+              fontSize: '12px', color: color.inkSoft, fontWeight: 300, fontFamily: "'Jost', sans-serif",
             }}>
               Reset to household defaults
             </button>
             <button onClick={() => navigate('/week/defaults')} style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: '12px', color: C.forest, fontWeight: 400, fontFamily: "'Jost', sans-serif",
+              fontSize: '12px', color: color.forest, fontWeight: 400, fontFamily: "'Jost', sans-serif",
             }}>
               Manage household defaults &rarr;
             </button>
@@ -455,7 +450,7 @@ export default function ThisWeekSettings({ appUser }) {
       {/* ── Day Type Picker Sheet ─────────────────────────────────────── */}
       <BottomSheet isOpen={!!dtPickerDow} onClose={() => setDtPickerDow(null)}>
         <div style={{ padding: '8px 22px 40px' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: color.ink, marginBottom: '14px' }}>
             {dtPickerDow && (dtPickerDow.charAt(0).toUpperCase() + dtPickerDow.slice(1))}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -476,8 +471,8 @@ export default function ThisWeekSettings({ appUser }) {
 
       {/* ── Save Template Sheet ───────────────────────────────────────── */}
       {saveSheetOpen && (
-      <div style={{ position: 'fixed', inset: 0, background: C.cream, zIndex: 200, display: 'flex', flexDirection: 'column', maxWidth: '430px', margin: '0 auto' }}>
-        <div style={{ background: C.forest, padding: '10px 16px 12px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+      <div style={{ position: 'fixed', inset: 0, background: color.paper, zIndex: 200, display: 'flex', flexDirection: 'column', maxWidth: '430px', margin: '0 auto' }}>
+        <div style={{ background: color.forest, padding: '10px 16px 12px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
           <button onClick={() => setSaveSheetOpen(false)} style={{ background: 'rgba(250,247,242,0.15)', border: 'none', borderRadius: '50%', width: 32, height: 32, color: 'white', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
           <span style={{ fontFamily: "'Slabo 27px', serif", fontSize: 18, color: 'rgba(250,247,242,0.95)' }}>Save as template</span>
         </div>
@@ -485,11 +480,11 @@ export default function ThisWeekSettings({ appUser }) {
           <input type="text" value={templateName} onChange={e => setTemplateName(e.target.value)} placeholder="Template name"
             autoFocus style={{
               width: '100%', padding: '12px 14px', fontSize: '14px', fontFamily: "'Jost', sans-serif",
-              border: `1.5px solid ${C.linen}`, borderRadius: '10px', outline: 'none', color: C.ink, boxSizing: 'border-box', marginBottom: '12px',
+              border: `1.5px solid ${color.rule}`, borderRadius: '10px', outline: 'none', color: color.ink, boxSizing: 'border-box', marginBottom: '12px',
             }} />
           <button onClick={saveAsTemplate} disabled={!templateName.trim() || savingTemplate} style={{
             width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
-            background: templateName.trim() ? C.forest : C.linen, color: templateName.trim() ? 'white' : C.driftwood,
+            background: templateName.trim() ? color.forest : color.rule, color: templateName.trim() ? 'white' : color.inkSoft,
             fontSize: '14px', fontWeight: 500, fontFamily: "'Jost', sans-serif", cursor: templateName.trim() ? 'pointer' : 'default',
           }}>
             {savingTemplate ? 'Saving...' : 'Save template'}
@@ -501,12 +496,12 @@ export default function ThisWeekSettings({ appUser }) {
       {/* ── Reset Confirmation ────────────────────────────────────────── */}
       <BottomSheet isOpen={confirmReset} onClose={() => setConfirmReset(false)}>
         <div style={{ padding: '8px 22px 40px' }}>
-          <div style={{ fontSize: '15px', color: C.ink, fontWeight: 400, marginBottom: '14px' }}>
+          <div style={{ fontSize: '15px', color: color.ink, fontWeight: 400, marginBottom: '14px' }}>
             Reset all day types to your household defaults and clear the template?
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={resetToDefaults} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: C.forest, color: 'white', border: 'none', fontSize: '13px', fontWeight: 500, fontFamily: "'Jost', sans-serif", cursor: 'pointer' }}>Reset</button>
-            <button onClick={() => setConfirmReset(false)} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'none', color: C.driftwood, border: `1px solid ${C.linen}`, fontSize: '13px', fontWeight: 400, fontFamily: "'Jost', sans-serif", cursor: 'pointer' }}>Cancel</button>
+            <button onClick={resetToDefaults} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: color.forest, color: 'white', border: 'none', fontSize: '13px', fontWeight: 500, fontFamily: "'Jost', sans-serif", cursor: 'pointer' }}>Reset</button>
+            <button onClick={() => setConfirmReset(false)} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'none', color: color.inkSoft, border: `1px solid ${color.rule}`, fontSize: '13px', fontWeight: 400, fontFamily: "'Jost', sans-serif", cursor: 'pointer' }}>Cancel</button>
           </div>
         </div>
       </BottomSheet>
@@ -514,12 +509,12 @@ export default function ThisWeekSettings({ appUser }) {
       {/* ── Remove Template Confirmation ─────────────────────────────── */}
       <BottomSheet isOpen={!!confirmRemoveTemplate} onClose={() => setConfirmRemoveTemplate(null)}>
         <div style={{ padding: '8px 22px 40px' }}>
-          <div style={{ fontSize: '15px', color: C.ink, fontWeight: 400, marginBottom: '14px' }}>
+          <div style={{ fontSize: '15px', color: color.ink, fontWeight: 400, marginBottom: '14px' }}>
             Remove {savedTemplates.find(t => t.id === activeTemplateId)?.name || 'template'} and reset to defaults?
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={removeAppliedTemplate} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: C.forest, color: 'white', border: 'none', fontSize: '13px', fontWeight: 500, fontFamily: "'Jost', sans-serif", cursor: 'pointer' }}>Yes</button>
-            <button onClick={() => setConfirmRemoveTemplate(null)} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'none', color: C.driftwood, border: `1px solid ${C.linen}`, fontSize: '13px', fontWeight: 400, fontFamily: "'Jost', sans-serif", cursor: 'pointer' }}>Cancel</button>
+            <button onClick={removeAppliedTemplate} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: color.forest, color: 'white', border: 'none', fontSize: '13px', fontWeight: 500, fontFamily: "'Jost', sans-serif", cursor: 'pointer' }}>Yes</button>
+            <button onClick={() => setConfirmRemoveTemplate(null)} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'none', color: color.inkSoft, border: `1px solid ${color.rule}`, fontSize: '13px', fontWeight: 400, fontFamily: "'Jost', sans-serif", cursor: 'pointer' }}>Cancel</button>
           </div>
         </div>
       </BottomSheet>
@@ -528,7 +523,7 @@ export default function ThisWeekSettings({ appUser }) {
       {toastMsg && (
         <div style={{
           position: 'fixed', top: '80px', left: '50%',
-          background: C.forest, color: 'white', padding: '10px 22px', borderRadius: '10px',
+          background: color.forest, color: 'white', padding: '10px 22px', borderRadius: '10px',
           fontSize: '14px', fontWeight: 500, zIndex: 300, boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
           animation: 'toastIn 0.25s cubic-bezier(0.22,1,0.36,1) forwards',
         }}>

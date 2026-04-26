@@ -7,14 +7,10 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { getArcStage } from '../lib/getArcStage'
 import { getArcColor } from '../lib/getArcColor'
+import { color, alpha, elevation } from '../styles/tokens'
 
 // ⚠️ PRE-LAUNCH: Replace with proper role-based auth before opening to other users
 const HILL_HOUSEHOLD = '53f6a197-544a-48e6-9a46-23d7252399c2'
-
-const C = {
-  forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', linen: '#E4DDD2',
-}
 
 export default function AdminDashboard({ appUser }) {
   const navigate = useNavigate()
@@ -137,7 +133,7 @@ export default function AdminDashboard({ appUser }) {
 
   return (
     <div style={{
-      background: C.cream, minHeight: '100vh',
+      background: color.paper, minHeight: '100vh',
       maxWidth: '900px', margin: '0 auto',
       fontFamily: "'Jost', sans-serif", fontWeight: 300,
       padding: '24px 20px 60px',
@@ -147,11 +143,11 @@ export default function AdminDashboard({ appUser }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '12px 20px', borderBottom: '0.5px solid #E4DDD2', marginBottom: '24px',
       }}>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', color: C.ink }}>
-          Roux. <span style={{ fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300 }}>Admin</span>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', color: color.ink }}>
+          Roux. <span style={{ fontSize: '13px', color: color.inkSoft, fontFamily: "'Jost', sans-serif", fontWeight: 300 }}>Admin</span>
         </div>
         <button onClick={() => navigate('/')} style={{
-          fontSize: '13px', color: C.forest, background: 'none', border: 'none',
+          fontSize: '13px', color: color.forest, background: 'none', border: 'none',
           cursor: 'pointer', fontFamily: "'Jost', sans-serif",
         }}>
           ← Back to app
@@ -159,7 +155,7 @@ export default function AdminDashboard({ appUser }) {
       </div>
 
       {loading ? (
-        <div style={{ color: C.driftwood, fontStyle: 'italic', padding: '40px 0' }}>Loading dashboard...</div>
+        <div style={{ color: color.inkSoft, fontStyle: 'italic', padding: '40px 0' }}>Loading dashboard...</div>
       ) : (
         <div style={{
           display: 'grid',
@@ -191,9 +187,9 @@ export default function AdminDashboard({ appUser }) {
             <Row label="No category" value={d.noCatCount} alert={d.noCatCount > 0} />
             <div style={{ marginTop: '8px' }}>
               {Object.entries(d.catCounts || {}).sort((a, b) => b[1] - a[1]).map(([cat, count]) => (
-                <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: C.driftwood, padding: '2px 0' }}>
+                <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: color.inkSoft, padding: '2px 0' }}>
                   <span>{cat}</span>
-                  <span style={{ color: C.ink, fontWeight: 400 }}>{count}</span>
+                  <span style={{ color: color.ink, fontWeight: 400 }}>{count}</span>
                 </div>
               ))}
             </div>
@@ -207,7 +203,7 @@ export default function AdminDashboard({ appUser }) {
               <Row key={type} label={type} value={count} small />
             ))}
             {d.latestSage && (
-              <div style={{ marginTop: '8px', padding: '8px 10px', background: C.cream, borderRadius: '8px', fontSize: '11px', color: C.driftwood, lineHeight: 1.5 }}>
+              <div style={{ marginTop: '8px', padding: '8px 10px', background: color.paper, borderRadius: '8px', fontSize: '11px', color: color.inkSoft, lineHeight: 1.5 }}>
                 <div style={{ fontWeight: 500, marginBottom: '2px' }}>Latest: {timeAgo(d.latestSage.created_at)}</div>
                 {d.latestSage.message}
               </div>
@@ -224,14 +220,14 @@ export default function AdminDashboard({ appUser }) {
 
           {/* ── Section 5: Production Errors ──────────────────────────── */}
           <Card title="Production Errors">
-            <div style={{ fontSize: '12px', color: C.driftwood, lineHeight: 1.6 }}>
+            <div style={{ fontSize: '12px', color: color.inkSoft, lineHeight: 1.6 }}>
               Check Vercel dashboard for runtime errors.
             </div>
             <a
               href="https://vercel.com/dashboard"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ fontSize: '12px', color: C.forest, fontWeight: 500, marginTop: '8px', display: 'inline-block' }}
+              style={{ fontSize: '12px', color: color.forest, fontWeight: 500, marginTop: '8px', display: 'inline-block' }}
             >
               Open Vercel logs →
             </a>
@@ -260,7 +256,7 @@ function Card({ title, children }) {
     }}>
       <div style={{
         fontFamily: "'Playfair Display', serif",
-        fontSize: '15px', fontWeight: 500, color: '#2C2417',
+        fontSize: '15px', fontWeight: 500, color: color.ink,
         marginBottom: '12px',
       }}>
         {title}
@@ -276,10 +272,10 @@ function Row({ label, value, small, alert }) {
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       padding: small ? '2px 0' : '4px 0',
     }}>
-      <span style={{ fontSize: small ? '11px' : '12px', color: '#8C7B6B' }}>{label}</span>
+      <span style={{ fontSize: small ? '11px' : '12px', color: color.inkSoft }}>{label}</span>
       <span style={{
         fontSize: small ? '12px' : '20px', fontWeight: small ? 400 : 500,
-        color: alert ? '#A03030' : '#2C2417',
+        color: alert ? color.rust : color.ink,
       }}>
         {value}
       </span>

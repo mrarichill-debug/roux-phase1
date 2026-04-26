@@ -12,15 +12,7 @@ import UnsavedChangesSheet from '../components/UnsavedChangesSheet'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import AddToPlanSheet from '../components/AddToPlanSheet'
-
-
-const C = {
-  forest: '#3D6B4F', forestDk: '#2E5038',
-  cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E',
-  linen: '#E8E0D0', sage: '#7A8C6E',
-  honey: '#C49A3C', red: '#A03030',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 
 // ── Recipe Picker Bottom Sheet ──────────────────────────────────────────────
@@ -114,10 +106,10 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: C.cream, zIndex: 200,
+      position: 'fixed', inset: 0, background: color.paper, zIndex: 200,
       display: 'flex', flexDirection: 'column', maxWidth: '430px', margin: '0 auto',
     }}>
-      <div style={{ background: C.forest, padding: '10px 16px 12px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+      <div style={{ background: color.forest, padding: '10px 16px 12px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         <button onClick={onClose} style={{ background: 'rgba(250,247,242,0.15)', border: 'none', borderRadius: '50%', width: 32, height: 32, color: 'white', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
         <span style={{ fontFamily: "'Slabo 27px', serif", fontSize: 18, color: 'rgba(250,247,242,0.95)' }}>Add a recipe</span>
       </div>
@@ -133,12 +125,12 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
                 style={{
                   width: '100%', padding: '10px 14px', fontSize: '14px',
                   fontFamily: "'Jost', sans-serif", fontWeight: 300,
-                  border: `1.5px solid ${C.linen}`, borderRadius: '12px',
+                  border: `1.5px solid ${color.rule}`, borderRadius: '12px',
                   background: 'white', outline: 'none', boxSizing: 'border-box',
-                  color: C.ink,
+                  color: color.ink,
                 }}
-                onFocus={e => e.target.style.borderColor = C.sage}
-                onBlur={e => e.target.style.borderColor = C.linen}
+                onFocus={e => e.target.style.borderColor = color.sage}
+                onBlur={e => e.target.style.borderColor = color.rule}
               />
             </div>
 
@@ -147,11 +139,11 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
               WebkitOverflowScrolling: 'touch',
             }}>
               {loading ? (
-                <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', padding: '20px 0' }}>
+                <div style={{ fontSize: '13px', color: color.inkSoft, fontStyle: 'italic', padding: '20px 0' }}>
                   Loading recipes...
                 </div>
               ) : filtered.length === 0 ? (
-                <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', padding: '20px 0' }}>
+                <div style={{ fontSize: '13px', color: color.inkSoft, fontStyle: 'italic', padding: '20px 0' }}>
                   {search ? 'No recipes match your search.' : 'No recipes yet.'}
                 </div>
               ) : (
@@ -165,7 +157,7 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
                       style={{
                         display: 'flex', alignItems: 'center', gap: '12px',
                         width: '100%', padding: '12px 0',
-                        background: 'none', border: 'none', borderBottom: `1px solid ${C.linen}`,
+                        background: 'none', border: 'none', borderBottom: `1px solid ${color.rule}`,
                         cursor: alreadyAdded ? 'default' : 'pointer',
                         opacity: alreadyAdded ? 0.5 : 1,
                         textAlign: 'left', fontFamily: "'Jost', sans-serif",
@@ -175,26 +167,26 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{
                             fontFamily: "'Playfair Display', serif", fontSize: '15px',
-                            fontWeight: 500, color: C.ink,
+                            fontWeight: 500, color: color.ink,
                           }}>
                             {r.name}
                           </span>
                           {r.recipe_type === 'quick' && (
                             <span style={{
-                              fontSize: '9px', fontWeight: 500, color: C.honey,
+                              fontSize: '9px', fontWeight: 500, color: color.honey,
                               background: 'rgba(196,154,60,0.12)', borderRadius: '4px',
                               padding: '1px 5px',
                             }}>Quick</span>
                           )}
                         </div>
                         {(r.author || r.credited_to_name) && (
-                          <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, marginTop: '2px' }}>
+                          <div style={{ fontSize: '11px', color: color.inkSoft, fontWeight: 300, marginTop: '2px' }}>
                             {r.author || r.credited_to_name}
                           </div>
                         )}
                       </div>
                       {alreadyAdded && (
-                        <svg viewBox="0 0 24 24" fill="none" stroke={C.forest} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18, flexShrink: 0 }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke={color.forest} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18, flexShrink: 0 }}>
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
                       )}
@@ -205,13 +197,13 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
             </div>
 
             {/* Quick add link */}
-            <div style={{ padding: '8px 22px 0', borderTop: `1px solid ${C.linen}` }}>
+            <div style={{ padding: '8px 22px 0', borderTop: `1px solid ${color.rule}` }}>
               <button
                 onClick={() => setView('quickadd')}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
                   fontFamily: "'Jost', sans-serif", fontSize: '13px',
-                  color: C.forest, fontWeight: 400, padding: '8px 0',
+                  color: color.forest, fontWeight: 400, padding: '8px 0',
                 }}
               >
                 Don't see it? Add a quick item &rarr;
@@ -227,7 +219,7 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 fontFamily: "'Jost', sans-serif", fontSize: '13px',
-                color: C.driftwood, fontWeight: 400, padding: 0,
+                color: color.inkSoft, fontWeight: 400, padding: 0,
                 textAlign: 'left',
               }}
             >
@@ -236,12 +228,12 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
 
             <div style={{
               fontFamily: "'Playfair Display', serif", fontSize: '20px',
-              fontWeight: 500, color: C.ink,
+              fontWeight: 500, color: color.ink,
             }}>
               Quick add
             </div>
 
-            <div style={{ fontSize: '12px', color: C.driftwood, fontWeight: 300, marginTop: '-10px' }}>
+            <div style={{ fontSize: '12px', color: color.inkSoft, fontWeight: 300, marginTop: '-10px' }}>
               Type anything — we'll remember it for next time
             </div>
 
@@ -255,11 +247,11 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
                 style={{
                   width: '100%', padding: '12px 0', fontSize: '20px',
                   fontFamily: "'Playfair Display', serif", fontWeight: 500,
-                  background: 'none', border: 'none', borderBottom: `1.5px solid ${C.linen}`,
-                  outline: 'none', color: C.ink, boxSizing: 'border-box',
+                  background: 'none', border: 'none', borderBottom: `1.5px solid ${color.rule}`,
+                  outline: 'none', color: color.ink, boxSizing: 'border-box',
                 }}
-                onFocus={e => e.target.style.borderBottomColor = C.sage}
-                onBlur={e => { e.target.style.borderBottomColor = C.linen }}
+                onFocus={e => e.target.style.borderBottomColor = color.sage}
+                onBlur={e => { e.target.style.borderBottomColor = color.rule }}
               />
 
               {/* Autofill suggestions */}
@@ -271,15 +263,15 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
                       onClick={() => handleSuggestionTap(s)}
                       style={{
                         padding: '6px 12px', borderRadius: '20px',
-                        border: `1px solid ${C.linen}`, background: 'white',
+                        border: `1px solid ${color.rule}`, background: 'white',
                         cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-                        fontSize: '13px', fontWeight: 400, color: C.ink,
+                        fontSize: '13px', fontWeight: 400, color: color.ink,
                         transition: 'all 0.15s',
                       }}
                     >
                       {s.name}
                       {s.recipe_type === 'quick' && (
-                        <span style={{ fontSize: '9px', color: C.honey, marginLeft: '4px' }}>Quick</span>
+                        <span style={{ fontSize: '9px', color: color.honey, marginLeft: '4px' }}>Quick</span>
                       )}
                     </button>
                   ))}
@@ -289,10 +281,10 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
 
             {/* Type toggle */}
             <div>
-              <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 400, marginBottom: '8px' }}>
+              <div style={{ fontSize: '11px', color: color.inkSoft, fontWeight: 400, marginBottom: '8px' }}>
                 This is a...
               </div>
-              <div style={{ display: 'flex', gap: '0', borderRadius: '10px', overflow: 'hidden', border: `1px solid ${C.linen}` }}>
+              <div style={{ display: 'flex', gap: '0', borderRadius: '10px', overflow: 'hidden', border: `1px solid ${color.rule}` }}>
                 {[
                   { key: 'quick', label: 'Quick item' },
                   { key: 'draft', label: "Recipe I'll finish later" },
@@ -304,8 +296,8 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
                       onClick={() => setQaType(opt.key)}
                       style={{
                         flex: 1, padding: '8px 10px',
-                        background: sel ? (opt.key === 'quick' ? C.forest : C.honey) : 'white',
-                        color: sel ? 'white' : C.ink,
+                        background: sel ? (opt.key === 'quick' ? color.forest : color.honey) : 'white',
+                        color: sel ? 'white' : color.ink,
                         border: 'none', cursor: 'pointer',
                         fontFamily: "'Jost', sans-serif", fontSize: '12px',
                         fontWeight: sel ? 500 : 300,
@@ -318,7 +310,7 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
                 })}
               </div>
               {qaType === 'draft' && (
-                <div style={{ fontSize: '10px', color: C.driftwood, fontWeight: 300, marginTop: '6px', fontStyle: 'italic' }}>
+                <div style={{ fontSize: '10px', color: color.inkSoft, fontWeight: 300, marginTop: '6px', fontStyle: 'italic' }}>
                   We'll remind you to add the details.
                 </div>
               )}
@@ -333,11 +325,11 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
               style={{
                 width: '100%', padding: '10px 0', fontSize: '14px',
                 fontFamily: "'Jost', sans-serif", fontWeight: 300,
-                background: 'none', border: 'none', borderBottom: `1.5px solid ${C.linen}`,
-                outline: 'none', color: C.ink, boxSizing: 'border-box',
+                background: 'none', border: 'none', borderBottom: `1.5px solid ${color.rule}`,
+                outline: 'none', color: color.ink, boxSizing: 'border-box',
               }}
-              onFocus={e => e.target.style.borderBottomColor = C.sage}
-              onBlur={e => e.target.style.borderBottomColor = C.linen}
+              onFocus={e => e.target.style.borderBottomColor = color.sage}
+              onBlur={e => e.target.style.borderBottomColor = color.rule}
             />
 
             {/* Save button */}
@@ -346,8 +338,8 @@ function RecipePickerSheet({ open, onClose, onSelect, addedIds, appUser }) {
               disabled={!qaName.trim() || qaSaving}
               style={{
                 width: '100%', padding: '14px', borderRadius: '14px',
-                background: qaName.trim() && !qaSaving ? C.forest : C.linen,
-                color: qaName.trim() && !qaSaving ? 'white' : C.driftwood,
+                background: qaName.trim() && !qaSaving ? color.forest : color.rule,
+                color: qaName.trim() && !qaSaving ? 'white' : color.inkSoft,
                 border: 'none', cursor: qaName.trim() && !qaSaving ? 'pointer' : 'default',
                 fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
                 boxShadow: qaName.trim() && !qaSaving ? '0 4px 16px rgba(30,55,35,0.25)' : 'none',
@@ -634,7 +626,7 @@ export default function PlanMeal({ appUser }) {
 
   return (
     <div style={{
-      background: C.cream, minHeight: '100vh', maxWidth: '430px',
+      background: color.paper, minHeight: '100vh', maxWidth: '430px',
       margin: '0 auto', fontFamily: "'Jost', sans-serif",
       paddingBottom: '140px',
     }}>
@@ -673,11 +665,11 @@ export default function PlanMeal({ appUser }) {
             style={{
               width: '100%', padding: '14px 0', fontSize: '26px',
               fontFamily: "'Playfair Display', serif", fontWeight: 500,
-              background: 'none', border: 'none', borderBottom: `1.5px solid ${C.linen}`,
-              outline: 'none', color: C.ink, boxSizing: 'border-box',
+              background: 'none', border: 'none', borderBottom: `1.5px solid ${color.rule}`,
+              outline: 'none', color: color.ink, boxSizing: 'border-box',
             }}
-            onFocus={e => e.target.style.borderBottomColor = C.sage}
-            onBlur={e => e.target.style.borderBottomColor = C.linen}
+            onFocus={e => e.target.style.borderBottomColor = color.sage}
+            onBlur={e => e.target.style.borderBottomColor = color.rule}
           />
         </div>
 
@@ -689,7 +681,7 @@ export default function PlanMeal({ appUser }) {
           }}>
             <div style={{
               fontSize: '10px', letterSpacing: '1.5px', textTransform: 'uppercase',
-              color: C.driftwood, fontWeight: 500,
+              color: color.inkSoft, fontWeight: 500,
             }}>
               Recipes
             </div>
@@ -699,7 +691,7 @@ export default function PlanMeal({ appUser }) {
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
                   fontFamily: "'Jost', sans-serif", fontSize: '11px',
-                  color: reordering ? C.forest : C.driftwood,
+                  color: reordering ? color.forest : color.inkSoft,
                   fontWeight: reordering ? 500 : 400, padding: 0,
                 }}
               >
@@ -732,8 +724,8 @@ export default function PlanMeal({ appUser }) {
                     style={{
                       background: 'white', borderRadius: '12px',
                       padding: '12px 14px',
-                      border: `1px solid ${isOver ? C.forest : C.linen}`,
-                      borderLeft: hasAlts ? `3px solid ${C.honey}` : `1px solid ${isOver ? C.forest : C.linen}`,
+                      border: `1px solid ${isOver ? color.forest : color.rule}`,
+                      borderLeft: hasAlts ? `3px solid ${color.honey}` : `1px solid ${isOver ? color.forest : color.rule}`,
                       opacity: isDragging ? 0.5 : 1,
                       transition: 'border-color 0.15s, opacity 0.15s',
                     }}
@@ -742,7 +734,7 @@ export default function PlanMeal({ appUser }) {
                       {/* Drag handle in reorder mode */}
                       {reordering && (
                         <span style={{
-                          fontSize: '16px', color: C.driftwood, cursor: 'grab',
+                          fontSize: '16px', color: color.inkSoft, cursor: 'grab',
                           userSelect: 'none', lineHeight: 1, flexShrink: 0,
                         }}>
                           &#9776;
@@ -751,17 +743,17 @@ export default function PlanMeal({ appUser }) {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           {hasAlts && (
-                            <span style={{ fontSize: '13px', color: C.honey, flexShrink: 0 }}>&#8597;</span>
+                            <span style={{ fontSize: '13px', color: color.honey, flexShrink: 0 }}>&#8597;</span>
                           )}
                           <span style={{
                             fontFamily: "'Playfair Display', serif", fontSize: '15px',
-                            fontWeight: 600, color: C.ink,
+                            fontWeight: 600, color: color.ink,
                           }}>
                             {r.name}
                           </span>
                           {r.isQuick && !r.isDraft && (
                             <span style={{
-                              fontSize: '9px', fontWeight: 500, color: C.honey,
+                              fontSize: '9px', fontWeight: 500, color: color.honey,
                               background: 'rgba(196,154,60,0.12)', borderRadius: '4px',
                               padding: '1px 5px',
                             }}>Quick item</span>
@@ -770,7 +762,7 @@ export default function PlanMeal({ appUser }) {
                             <button
                               onClick={(e) => { e.stopPropagation(); navigate('/save-recipe') }}
                               style={{
-                                fontSize: '9px', fontWeight: 500, color: C.honey,
+                                fontSize: '9px', fontWeight: 500, color: color.honey,
                                 background: 'rgba(196,154,60,0.12)', borderRadius: '4px',
                                 padding: '1px 5px', border: 'none', cursor: 'pointer',
                                 fontFamily: "'Jost', sans-serif",
@@ -779,7 +771,7 @@ export default function PlanMeal({ appUser }) {
                           )}
                         </div>
                         {r.credit && (
-                          <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, marginTop: '1px' }}>
+                          <div style={{ fontSize: '11px', color: color.inkSoft, fontWeight: 300, marginTop: '1px' }}>
                             {r.credit}
                           </div>
                         )}
@@ -790,10 +782,10 @@ export default function PlanMeal({ appUser }) {
                           onClick={() => handleRemoveRecipe(r.id)}
                           style={{
                             width: '30px', height: '30px', borderRadius: '50%',
-                            background: 'none', border: `1px solid ${C.linen}`,
+                            background: 'none', border: `1px solid ${color.rule}`,
                             cursor: 'pointer', display: 'flex',
                             alignItems: 'center', justifyContent: 'center',
-                            flexShrink: 0, color: C.driftwood,
+                            flexShrink: 0, color: color.inkSoft,
                           }}
                         >
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
@@ -813,27 +805,27 @@ export default function PlanMeal({ appUser }) {
                               display: 'flex', alignItems: 'center', gap: '10px',
                               margin: '6px 0',
                             }}>
-                              <div style={{ flex: 1, height: '1px', background: C.linen }} />
-                              <span style={{ fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500 }}>
+                              <div style={{ flex: 1, height: '1px', background: color.rule }} />
+                              <span style={{ fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: color.inkSoft, fontWeight: 500 }}>
                                 or
                               </span>
-                              <div style={{ flex: 1, height: '1px', background: C.linen }} />
+                              <div style={{ flex: 1, height: '1px', background: color.rule }} />
                             </div>
                             <div style={{
                               display: 'flex', alignItems: 'center', gap: '8px',
                               paddingLeft: '10px',
                             }}>
-                              <span style={{ fontSize: '14px', color: C.ink, fontWeight: 300, flex: 1 }}>
+                              <span style={{ fontSize: '14px', color: color.ink, fontWeight: 300, flex: 1 }}>
                                 {alt.name}
                                 {alt.isQuick && (
-                                  <span style={{ fontSize: '9px', color: C.honey, marginLeft: '4px' }}>Quick</span>
+                                  <span style={{ fontSize: '9px', color: color.honey, marginLeft: '4px' }}>Quick</span>
                                 )}
                               </span>
                               <button
                                 onClick={() => handleRemoveAlt(i, alt.id)}
                                 style={{
                                   background: 'none', border: 'none', cursor: 'pointer',
-                                  color: C.driftwood, padding: '2px', display: 'flex',
+                                  color: color.inkSoft, padding: '2px', display: 'flex',
                                 }}
                               >
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}>
@@ -853,7 +845,7 @@ export default function PlanMeal({ appUser }) {
                         style={{
                           background: 'none', border: 'none', cursor: 'pointer',
                           fontFamily: "'Jost', sans-serif", fontSize: '11px',
-                          color: C.sage, fontWeight: 400,
+                          color: color.sage, fontWeight: 400,
                           padding: hasAlts ? '6px 0 0 10px' : '6px 0 0',
                           textAlign: 'left',
                         }}
@@ -874,9 +866,9 @@ export default function PlanMeal({ appUser }) {
               style={{
                 display: 'flex', alignItems: 'center', gap: '8px',
                 padding: '12px 16px', borderRadius: '12px',
-                border: `1.5px dashed ${C.linen}`, background: 'none',
+                border: `1.5px dashed ${color.rule}`, background: 'none',
                 cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-                fontSize: '14px', color: C.forest, fontWeight: 400,
+                fontSize: '14px', color: color.forest, fontWeight: 400,
                 width: '100%',
               }}
             >
@@ -899,7 +891,7 @@ export default function PlanMeal({ appUser }) {
                 padding: '12px 16px', borderRadius: '12px',
                 border: `1.5px solid rgba(61,107,79,0.4)`, background: 'none',
                 cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-                fontSize: '14px', color: C.forest, fontWeight: 400,
+                fontSize: '14px', color: color.forest, fontWeight: 400,
                 width: '100%',
               }}
             >
@@ -923,7 +915,7 @@ export default function PlanMeal({ appUser }) {
               >
                 <div style={{
                   width: '40px', height: '22px', borderRadius: '11px',
-                  background: addToPlanAfterSave ? C.forest : C.linen,
+                  background: addToPlanAfterSave ? color.forest : color.rule,
                   position: 'relative', transition: 'background 0.2s',
                   flexShrink: 0,
                 }}>
@@ -936,12 +928,12 @@ export default function PlanMeal({ appUser }) {
                     boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
                   }} />
                 </div>
-                <span style={{ fontSize: '14px', color: C.ink, fontWeight: 400 }}>
+                <span style={{ fontSize: '14px', color: color.ink, fontWeight: 400 }}>
                   Add to plan after saving
                 </span>
               </button>
               {!addToPlanAfterSave && (
-                <div style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300, marginTop: '6px', paddingLeft: '50px' }}>
+                <div style={{ fontSize: '11px', color: color.inkSoft, fontWeight: 300, marginTop: '6px', paddingLeft: '50px' }}>
                   You can always add it to a week later
                 </div>
               )}
@@ -953,7 +945,7 @@ export default function PlanMeal({ appUser }) {
         <div style={{ opacity: 0, animation: 'fadeUp 0.4s ease 0.18s forwards' }}>
           <div style={{
             fontSize: '10px', letterSpacing: '1.5px', textTransform: 'uppercase',
-            color: C.driftwood, fontWeight: 500, marginBottom: '8px',
+            color: color.inkSoft, fontWeight: 500, marginBottom: '8px',
           }}>
             Notes
           </div>
@@ -965,12 +957,12 @@ export default function PlanMeal({ appUser }) {
             style={{
               width: '100%', padding: '12px 14px', fontSize: '16px',
               fontFamily: "'Caveat', cursive", fontWeight: 500,
-              border: `1.5px solid ${C.linen}`, borderRadius: '12px',
-              background: 'white', outline: 'none', color: C.ink,
+              border: `1.5px solid ${color.rule}`, borderRadius: '12px',
+              background: 'white', outline: 'none', color: color.ink,
               resize: 'none', boxSizing: 'border-box',
             }}
-            onFocus={e => e.target.style.borderColor = C.sage}
-            onBlur={e => e.target.style.borderColor = C.linen}
+            onFocus={e => e.target.style.borderColor = color.sage}
+            onBlur={e => e.target.style.borderColor = color.rule}
           />
         </div>
       </div>
@@ -980,8 +972,8 @@ export default function PlanMeal({ appUser }) {
       <div style={{
         position: 'fixed', bottom: '66px', left: '50%', transform: 'translateX(-50%)',
         width: '100%', maxWidth: '430px',
-        padding: '12px 18px 14px', background: C.cream,
-        borderTop: `1px solid ${C.linen}`,
+        padding: '12px 18px 14px', background: color.paper,
+        borderTop: `1px solid ${color.rule}`,
         zIndex: 50,
       }}>
         <button
@@ -989,8 +981,8 @@ export default function PlanMeal({ appUser }) {
           disabled={!canSave || saving}
           style={{
             width: '100%', padding: '16px', borderRadius: '14px',
-            background: canSave && !saving ? C.forest : C.linen,
-            color: canSave && !saving ? 'white' : C.driftwood,
+            background: canSave && !saving ? color.forest : color.rule,
+            color: canSave && !saving ? 'white' : color.inkSoft,
             border: 'none', cursor: canSave && !saving ? 'pointer' : 'default',
             fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
             boxShadow: canSave && !saving ? '0 4px 16px rgba(30,55,35,0.25)' : 'none',
@@ -1005,7 +997,7 @@ export default function PlanMeal({ appUser }) {
       {toast && (
         <div style={{
           position: 'fixed', top: '80px', left: '50%',
-          background: toast.includes('wrong') ? C.red : C.forest,
+          background: toast.includes('wrong') ? color.rust : color.forest,
           color: 'white', padding: '10px 22px', borderRadius: '10px',
           fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
           zIndex: 300, boxShadow: '0 4px 16px rgba(0,0,0,0.15)',

@@ -5,11 +5,7 @@ import { logActivity } from '../lib/activityLog'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import { useArc } from '../context/ArcContext'
-
-const C = {
-  forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', linen: '#E8E0D0', sage: '#7A8C6E',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 const CATEGORIES = [
   { key: 'dairy', label: 'Dairy' },
@@ -180,14 +176,14 @@ export default function Staples({ appUser }) {
 
   const inputStyle = {
     width: '100%', padding: '12px 14px', borderRadius: '10px',
-    border: `1px solid ${C.linen}`, fontFamily: "'Jost', sans-serif",
-    fontSize: '14px', fontWeight: 300, outline: 'none', color: C.ink,
+    border: `1px solid ${color.rule}`, fontFamily: "'Jost', sans-serif",
+    fontSize: '14px', fontWeight: 300, outline: 'none', color: color.ink,
     boxSizing: 'border-box',
   }
 
   return (
     <div style={{
-      background: C.cream, minHeight: '100vh', maxWidth: '430px',
+      background: color.paper, minHeight: '100vh', maxWidth: '430px',
       margin: '0 auto', fontFamily: "'Jost', sans-serif",
       paddingBottom: 'calc(88px + env(safe-area-inset-bottom, 8px))',
     }}>
@@ -202,7 +198,7 @@ export default function Staples({ appUser }) {
               padding: '14px', textAlign: 'center',
               fontFamily: "'Jost', sans-serif", fontSize: '12px',
               fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase',
-              color: active ? arcColor : C.driftwood,
+              color: active ? arcColor : color.inkSoft,
               cursor: active ? 'default' : 'pointer', border: 'none', background: 'none',
               borderBottom: active ? `2px solid ${arcColor}` : '2px solid transparent',
               transition: 'color 0.2s cubic-bezier(0.22,1,0.36,1), border-color 0.2s cubic-bezier(0.22,1,0.36,1)',
@@ -218,10 +214,10 @@ export default function Staples({ appUser }) {
           </div>
         ) : staples.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic', fontSize: '16px', color: C.driftwood, lineHeight: 1.7 }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic', fontSize: '16px', color: color.inkSoft, lineHeight: 1.7 }}>
               No staples yet.
             </div>
-            <div style={{ fontSize: '13px', color: C.driftwood, marginTop: '4px' }}>
+            <div style={{ fontSize: '13px', color: color.inkSoft, marginTop: '4px' }}>
               Staples are quick items like Yogurt or Toast that don't need a full recipe.
             </div>
           </div>
@@ -230,15 +226,15 @@ export default function Staples({ appUser }) {
             {staples.map((s, i) => (
               <div key={s.id} onClick={() => openEdit(s)} style={{
                 background: 'white', borderRadius: '14px', padding: '14px 16px',
-                border: `1px solid ${C.linen}`, cursor: 'pointer',
+                border: `1px solid ${color.rule}`, cursor: 'pointer',
                 opacity: 0, animation: `fadeUp 0.4s ease ${0.03 * i}s forwards`,
               }}>
                 <div style={{
                   fontFamily: "'Playfair Display', serif", fontSize: '15px',
-                  fontWeight: 500, color: C.ink,
+                  fontWeight: 500, color: color.ink,
                 }}>{s.name}</div>
                 {s.primaryIng && (
-                  <div style={{ fontSize: '12px', color: C.driftwood, fontWeight: 300, marginTop: '3px' }}>
+                  <div style={{ fontSize: '12px', color: color.inkSoft, fontWeight: 300, marginTop: '3px' }}>
                     {[s.primaryIng.quantity, s.primaryIng.unit, s.primaryIng.name].filter(Boolean).join(' ')}
                   </div>
                 )}
@@ -269,11 +265,11 @@ export default function Staples({ appUser }) {
       {/* ── Add Staple — full-page overlay (keyboard safe) ─────── */}
       {showAdd && (
         <div style={{
-          position: 'fixed', inset: 0, background: C.cream, zIndex: 300,
+          position: 'fixed', inset: 0, background: color.paper, zIndex: 300,
           display: 'flex', flexDirection: 'column', maxWidth: '430px', margin: '0 auto',
         }}>
           <div style={{
-            background: C.forest, padding: '10px 16px 12px',
+            background: color.forest, padding: '10px 16px 12px',
             display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
           }}>
             <button onClick={() => { setShowAdd(false); setEditStaple(null) }} style={{
@@ -287,13 +283,13 @@ export default function Staples({ appUser }) {
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '20px 22px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '8px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', color: color.inkSoft, marginBottom: '8px' }}>
               Name
             </div>
             <input type="text" value={addName} onChange={e => setAddName(e.target.value)}
               placeholder="e.g. Yogurt" autoFocus style={{ ...inputStyle, marginBottom: '20px' }} />
 
-            <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '8px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', color: color.inkSoft, marginBottom: '8px' }}>
               Ingredient (optional)
             </div>
             <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
@@ -305,16 +301,16 @@ export default function Staples({ appUser }) {
                 placeholder="Ingredient name" style={{ ...inputStyle, flex: 1 }} />
             </div>
 
-            <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', color: C.driftwood, marginBottom: '8px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', color: color.inkSoft, marginBottom: '8px' }}>
               Grocery Category
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '24px' }}>
               {CATEGORIES.map(c => (
                 <button key={c.key} onClick={() => setAddCategory(c.key)} style={{
                   padding: '5px 12px', borderRadius: '16px', fontSize: '11px',
-                  border: addCategory === c.key ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
+                  border: addCategory === c.key ? `1.5px solid ${arcColor}` : `1px solid ${color.rule}`,
                   background: addCategory === c.key ? `${arcColor}15` : 'white',
-                  color: addCategory === c.key ? arcColor : C.ink,
+                  color: addCategory === c.key ? arcColor : color.ink,
                   cursor: 'pointer', fontFamily: "'Jost', sans-serif",
                 }}>{c.label}</button>
               ))}
@@ -322,8 +318,8 @@ export default function Staples({ appUser }) {
 
             <button onClick={editStaple ? handleUpdate : handleSave} disabled={!addName.trim() || saving} style={{
               width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
-              background: addName.trim() ? arcColor : C.linen,
-              color: addName.trim() ? 'white' : C.driftwood,
+              background: addName.trim() ? arcColor : color.rule,
+              color: addName.trim() ? 'white' : color.inkSoft,
               cursor: addName.trim() ? 'pointer' : 'default',
               fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
               boxShadow: addName.trim() ? '0 4px 16px rgba(30,55,35,0.25)' : 'none',

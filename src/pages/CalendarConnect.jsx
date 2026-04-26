@@ -7,22 +7,17 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
-
-const C = {
-  forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E', linen: '#E8E0D0',
-  sage: '#7A8C6E', honey: '#C49A3C', red: '#A03030',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 const inputStyle = {
   width: '100%', padding: '10px 12px', fontSize: '14px', fontFamily: "'Jost', sans-serif", fontWeight: 300,
-  border: `1.5px solid ${C.linen}`, borderRadius: '10px', outline: 'none', color: C.ink,
+  border: `1.5px solid ${color.rule}`, borderRadius: '10px', outline: 'none', color: color.ink,
   boxSizing: 'border-box', background: 'white',
 }
 
 const sectionHeader = {
   fontSize: '10px', fontWeight: 500, letterSpacing: '2px',
-  textTransform: 'uppercase', color: C.driftwoodSm, marginBottom: '12px',
+  textTransform: 'uppercase', color: color.inkSoft, marginBottom: '12px',
 }
 
 const cardStyle = {
@@ -184,7 +179,7 @@ export default function CalendarConnect({ appUser }) {
 
   return (
     <div style={{
-      background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300,
+      background: color.paper, fontFamily: "'Jost', sans-serif", fontWeight: 300,
       minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
       paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 8px))',
     }}>
@@ -195,10 +190,10 @@ export default function CalendarConnect({ appUser }) {
 
       {connecting && (
         <div style={{ padding: '40px 22px', textAlign: 'center' }}>
-          <div style={{ display: 'inline-block', width: '32px', height: '32px', border: `3px solid ${C.linen}`, borderTop: `3px solid ${C.forest}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-          <div style={{ marginTop: '12px', fontSize: '14px', color: C.driftwood, fontStyle: 'italic' }}>Connecting to Google Calendar...</div>
+          <div style={{ display: 'inline-block', width: '32px', height: '32px', border: `3px solid ${color.rule}`, borderTop: `3px solid ${color.forest}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          <div style={{ marginTop: '12px', fontSize: '14px', color: color.inkSoft, fontStyle: 'italic' }}>Connecting to Google Calendar...</div>
           {debugError && (
-            <div style={{ marginTop: '12px', fontSize: '13px', color: C.red, lineHeight: 1.5 }}>{debugError}</div>
+            <div style={{ marginTop: '12px', fontSize: '13px', color: color.rust, lineHeight: 1.5 }}>{debugError}</div>
           )}
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
@@ -208,23 +203,23 @@ export default function CalendarConnect({ appUser }) {
         <div style={{ padding: '18px 0' }}>
           {/* Connected status */}
           {enabled && (
-            <div style={{ ...cardStyle, borderLeft: `3px solid ${C.sage}` }}>
+            <div style={{ ...cardStyle, borderLeft: `3px solid ${color.sage}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke={C.forest} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke={color.forest} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>
                 </svg>
-                <span style={{ fontSize: '14px', color: C.ink, fontWeight: 500 }}>
+                <span style={{ fontSize: '14px', color: color.ink, fontWeight: 500 }}>
                   Connected — {provider === 'apple' ? 'Apple Calendar' : 'Google Calendar'}
                 </span>
               </div>
               {connectedEmail && (
-                <div style={{ fontSize: '12px', color: C.driftwood, marginBottom: '8px' }}>{connectedEmail}</div>
+                <div style={{ fontSize: '12px', color: color.inkSoft, marginBottom: '8px' }}>{connectedEmail}</div>
               )}
-              <div style={{ fontSize: '12px', color: C.driftwood, marginBottom: '12px' }}>Events show on your weekly menu.</div>
+              <div style={{ fontSize: '12px', color: color.inkSoft, marginBottom: '12px' }}>Events show on your weekly menu.</div>
               <button onClick={disconnect} style={{
                 padding: '8px 16px', borderRadius: '10px',
-                border: `1px solid ${C.linen}`, background: 'none',
-                color: C.driftwood, fontSize: '12px', cursor: 'pointer',
+                border: `1px solid ${color.rule}`, background: 'none',
+                color: color.inkSoft, fontSize: '12px', cursor: 'pointer',
                 fontFamily: "'Jost', sans-serif",
               }}>Disconnect</button>
             </div>
@@ -235,9 +230,9 @@ export default function CalendarConnect({ appUser }) {
             <div style={cardStyle}>
               <div style={sectionHeader}>Calendars to Show</div>
               {loadingCalendars ? (
-                <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic' }}>Loading calendars...</div>
+                <div style={{ fontSize: '13px', color: color.inkSoft, fontStyle: 'italic' }}>Loading calendars...</div>
               ) : calendarList.length === 0 ? (
-                <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic' }}>No calendars found.</div>
+                <div style={{ fontSize: '13px', color: color.inkSoft, fontStyle: 'italic' }}>No calendars found.</div>
               ) : (
                 <>
                   {calendarList.map(cal => {
@@ -253,14 +248,14 @@ export default function CalendarConnect({ appUser }) {
                             background: cal.backgroundColor, flexShrink: 0,
                           }} />
                           <div>
-                            <div style={{ fontSize: '14px', color: C.ink }}>{cal.summary}</div>
-                            {cal.primary && <div style={{ fontSize: '10px', color: C.driftwood }}>Primary</div>}
+                            <div style={{ fontSize: '14px', color: color.ink }}>{cal.summary}</div>
+                            {cal.primary && <div style={{ fontSize: '10px', color: color.inkSoft }}>Primary</div>}
                           </div>
                         </div>
                         <button onClick={() => toggleCalendar(cal.id)} style={{
                           width: '44px', height: '24px', borderRadius: '12px', padding: 0,
-                          border: isOn ? 'none' : `1.5px solid ${C.linen}`,
-                          background: isOn ? C.forest : C.cream,
+                          border: isOn ? 'none' : `1.5px solid ${color.rule}`,
+                          background: isOn ? color.forest : color.paper,
                           cursor: 'pointer', position: 'relative', transition: 'background 0.25s',
                         }}>
                           <span style={{
@@ -274,7 +269,7 @@ export default function CalendarConnect({ appUser }) {
                   })}
                   <button onClick={saveCalendarSelection} disabled={savingSelection} style={{
                     width: '100%', padding: '12px', marginTop: '12px', borderRadius: '12px', border: 'none',
-                    background: C.forest, color: 'white', cursor: 'pointer',
+                    background: color.forest, color: 'white', cursor: 'pointer',
                     fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
                   }}>{savingSelection ? 'Saving...' : 'Save selection'}</button>
                 </>
@@ -286,12 +281,12 @@ export default function CalendarConnect({ appUser }) {
           {!enabled && (
             <div style={cardStyle}>
               <div style={sectionHeader}>Google Calendar</div>
-              <div style={{ fontSize: '13px', color: C.driftwood, marginBottom: '12px', lineHeight: 1.5 }}>
+              <div style={{ fontSize: '13px', color: color.inkSoft, marginBottom: '12px', lineHeight: 1.5 }}>
                 Connect your Google Calendar to see family events alongside your meal plan.
               </div>
               <button onClick={connectGoogle} style={{
                 width: '100%', padding: '12px', borderRadius: '12px', border: 'none',
-                background: C.forest, color: 'white', cursor: 'pointer',
+                background: color.forest, color: 'white', cursor: 'pointer',
                 fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
                 boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
               }}>Connect Google Calendar</button>
@@ -303,26 +298,26 @@ export default function CalendarConnect({ appUser }) {
             <div style={{ ...cardStyle, position: 'relative' }}>
               <span style={{
                 position: 'absolute', top: '10px', right: '14px',
-                background: C.honey, color: 'white', fontSize: '8px', fontWeight: 600,
+                background: color.honey, color: 'white', fontSize: '8px', fontWeight: 600,
                 padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.5px',
               }}>TEST ONLY</span>
               <div style={sectionHeader}>Apple Calendar</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div>
-                  <div style={{ fontSize: '10px', letterSpacing: '1px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '4px' }}>iCloud email</div>
+                  <div style={{ fontSize: '10px', letterSpacing: '1px', textTransform: 'uppercase', color: color.inkSoft, fontWeight: 500, marginBottom: '4px' }}>iCloud email</div>
                   <input type="email" value={appleEmail} onChange={e => setAppleEmail(e.target.value)} placeholder="you@icloud.com" style={inputStyle} />
                 </div>
                 <div>
-                  <div style={{ fontSize: '10px', letterSpacing: '1px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '4px' }}>App-specific password</div>
+                  <div style={{ fontSize: '10px', letterSpacing: '1px', textTransform: 'uppercase', color: color.inkSoft, fontWeight: 500, marginBottom: '4px' }}>App-specific password</div>
                   <input type="password" value={applePassword} onChange={e => setApplePassword(e.target.value)} placeholder="xxxx-xxxx-xxxx-xxxx" style={inputStyle} />
                 </div>
-                <a href="https://appleid.apple.com/account/manage" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: C.sage, textDecoration: 'none' }}>
+                <a href="https://appleid.apple.com/account/manage" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: color.sage, textDecoration: 'none' }}>
                   How to generate an app-specific password →
                 </a>
                 <button onClick={saveApple} disabled={!appleEmail.trim() || !applePassword.trim() || saving} style={{
                   padding: '12px', borderRadius: '12px', border: 'none',
-                  background: appleEmail.trim() && applePassword.trim() ? C.forest : C.linen,
-                  color: appleEmail.trim() && applePassword.trim() ? 'white' : C.driftwood,
+                  background: appleEmail.trim() && applePassword.trim() ? color.forest : color.rule,
+                  color: appleEmail.trim() && applePassword.trim() ? 'white' : color.inkSoft,
                   cursor: appleEmail.trim() && applePassword.trim() ? 'pointer' : 'default',
                   fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
                 }}>{saving ? 'Saving...' : 'Connect Apple Calendar'}</button>
@@ -334,8 +329,8 @@ export default function CalendarConnect({ appUser }) {
 
       {/* Error */}
       {debugError && !connecting && (
-        <div style={{ margin: '0 22px 14px', padding: '14px 16px', background: 'white', borderRadius: '12px', borderLeft: `3px solid ${C.red}` }}>
-          <div style={{ fontSize: '13px', color: C.ink, lineHeight: 1.5 }}>
+        <div style={{ margin: '0 22px 14px', padding: '14px 16px', background: 'white', borderRadius: '12px', borderLeft: `3px solid ${color.rust}` }}>
+          <div style={{ fontSize: '13px', color: color.ink, lineHeight: 1.5 }}>
             Something went wrong connecting your calendar. Try again or check your Google account permissions.
           </div>
         </div>
@@ -344,7 +339,7 @@ export default function CalendarConnect({ appUser }) {
       {toast && (
         <div style={{
           position: 'fixed', top: '80px', left: '50%', transform: 'translateX(-50%)',
-          background: C.forest, color: 'white', padding: '10px 22px', borderRadius: '10px',
+          background: color.forest, color: 'white', padding: '10px 22px', borderRadius: '10px',
           fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
           zIndex: 300, boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
         }}>{toast}</div>

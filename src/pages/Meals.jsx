@@ -11,11 +11,7 @@ import TopBar from '../components/TopBar'
 import BottomSheet from '../components/BottomSheet'
 import BottomNav from '../components/BottomNav'
 import { useArc } from '../context/ArcContext'
-
-const C = {
-  forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', linen: '#E8E0D0', honey: '#C49A3C',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 const MEAL_TYPE_LABELS = {
   breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner',
@@ -243,9 +239,9 @@ export default function Meals({ appUser }) {
   const filterPill = (label, active, onClick) => (
     <button onClick={onClick} style={{
       padding: '6px 14px', borderRadius: '20px',
-      border: active ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
+      border: active ? `1.5px solid ${arcColor}` : `1px solid ${color.rule}`,
       background: active ? 'rgba(61,107,79,0.08)' : 'white',
-      color: active ? arcColor : C.ink,
+      color: active ? arcColor : color.ink,
       fontFamily: "'Jost', sans-serif", fontSize: '13px',
       fontWeight: active ? 500 : 400, cursor: 'pointer',
     }}>{label}</button>
@@ -253,7 +249,7 @@ export default function Meals({ appUser }) {
 
   return (
     <div style={{
-      background: C.cream, minHeight: '100vh', maxWidth: '430px',
+      background: color.paper, minHeight: '100vh', maxWidth: '430px',
       margin: '0 auto', fontFamily: "'Jost', sans-serif",
       paddingBottom: 'calc(88px + env(safe-area-inset-bottom, 8px))',
     }}>
@@ -268,7 +264,7 @@ export default function Meals({ appUser }) {
               padding: '14px', textAlign: 'center',
               fontFamily: "'Jost', sans-serif", fontSize: '12px',
               fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase',
-              color: active ? arcColor : C.driftwood,
+              color: active ? arcColor : color.inkSoft,
               cursor: active ? 'default' : 'pointer', border: 'none', background: 'none',
               borderBottom: active ? `2px solid ${arcColor}` : '2px solid transparent',
               transition: 'color 0.2s cubic-bezier(0.22,1,0.36,1), border-color 0.2s cubic-bezier(0.22,1,0.36,1)',
@@ -280,7 +276,7 @@ export default function Meals({ appUser }) {
       {/* Search + filter icon */}
       <div style={{ padding: '8px 18px 10px', display: 'flex', gap: '8px', alignItems: 'center' }}>
         <div style={{ flex: 1, position: 'relative' }}>
-          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: C.driftwood, display: 'flex', alignItems: 'center' }}>
+          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: color.inkSoft, display: 'flex', alignItems: 'center' }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ width: 15, height: 15 }}>
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
             </svg>
@@ -291,7 +287,7 @@ export default function Meals({ appUser }) {
               border: '1px solid rgba(200,185,160,0.55)', borderRadius: '10px',
               padding: '10px 14px 10px 36px',
               fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 300,
-              color: C.ink, outline: 'none', boxSizing: 'border-box',
+              color: color.ink, outline: 'none', boxSizing: 'border-box',
             }} />
         </div>
         <button onClick={() => setFilterSheetOpen(true)} style={{
@@ -299,14 +295,14 @@ export default function Meals({ appUser }) {
           position: 'relative', padding: '6px', flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
             <line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/>
             <line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/>
             <line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/>
             <line x1="1" x2="7" y1="14" y2="14"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="17" x2="23" y1="16" y2="16"/>
           </svg>
           {hasActiveFilters && (
-            <span style={{ position: 'absolute', top: '4px', right: '4px', width: '6px', height: '6px', borderRadius: '50%', background: C.honey }} />
+            <span style={{ position: 'absolute', top: '4px', right: '4px', width: '6px', height: '6px', borderRadius: '50%', background: color.honey }} />
           )}
         </button>
       </div>
@@ -316,7 +312,7 @@ export default function Meals({ appUser }) {
           display: 'block', width: '100%', textAlign: 'left',
           padding: '0 22px 8px', background: 'none', border: 'none',
           cursor: 'pointer', fontFamily: "'Jost', sans-serif",
-          fontSize: '12px', fontWeight: 300, color: C.driftwood,
+          fontSize: '12px', fontWeight: 300, color: color.inkSoft,
         }}>{filterSummary}</button>
       )}
 
@@ -327,11 +323,11 @@ export default function Meals({ appUser }) {
           </div>
         ) : filteredMeals.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic', fontSize: '16px', color: C.driftwood, lineHeight: 1.7 }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic', fontSize: '16px', color: color.inkSoft, lineHeight: 1.7 }}>
               {hasActiveFilters ? 'No meals match your filters.' : 'No meals planned yet.'}
             </div>
             {!hasActiveFilters && (
-              <div style={{ fontSize: '13px', color: C.driftwood, marginTop: '4px' }}>
+              <div style={{ fontSize: '13px', color: color.inkSoft, marginTop: '4px' }}>
                 Meals you add to your weekly plan will show up here.
               </div>
             )}
@@ -343,14 +339,14 @@ export default function Meals({ appUser }) {
               return (
                 <button key={i} onClick={() => setSelectedMeal(m)} style={{
                   background: 'white', borderRadius: '14px', padding: '14px 16px',
-                  border: `1px solid ${C.linen}`, cursor: 'pointer',
+                  border: `1px solid ${color.rule}`, cursor: 'pointer',
                   textAlign: 'left', width: '100%',
                   opacity: 0, animation: `fadeUp 0.4s ease ${0.03 * Math.min(i, 10)}s forwards`,
                 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
                       fontFamily: "'Playfair Display', serif", fontSize: '16px',
-                      fontWeight: 500, color: C.ink, marginBottom: '6px',
+                      fontWeight: 500, color: color.ink, marginBottom: '6px',
                     }}>{m.name}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       {MEAL_TYPE_LABELS[m.meal_type] && (
@@ -361,19 +357,19 @@ export default function Meals({ appUser }) {
                           fontFamily: "'Jost', sans-serif",
                         }}>{MEAL_TYPE_LABELS[m.meal_type]}</span>
                       )}
-                      <span style={{ fontSize: '12px', color: C.driftwood, fontWeight: 300 }}>
+                      <span style={{ fontSize: '12px', color: color.inkSoft, fontWeight: 300 }}>
                         {m.weekCount} week{m.weekCount !== 1 ? 's' : ''}
                       </span>
                       {m.lastDate && (
-                        <span style={{ fontSize: '12px', color: C.driftwood, fontWeight: 300 }}>
+                        <span style={{ fontSize: '12px', color: color.inkSoft, fontWeight: 300 }}>
                           · {formatLastDate(m.lastDate)}
                         </span>
                       )}
                     </div>
                     {favMembers.length > 0 && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px' }}>
-                        <span style={{ fontSize: '11px', color: C.honey }}>★</span>
-                        <span style={{ fontSize: '11px', color: C.driftwood, fontWeight: 300 }}>
+                        <span style={{ fontSize: '11px', color: color.honey }}>★</span>
+                        <span style={{ fontSize: '11px', color: color.inkSoft, fontWeight: 300 }}>
                           {favMembers.map(fm => fm.name.split(' ')[0]).join(', ')}
                         </span>
                       </div>
@@ -389,7 +385,7 @@ export default function Meals({ appUser }) {
       {/* Tap-to-add bottom sheet */}
       <BottomSheet isOpen={!!selectedMeal && !favPickerOpen} onClose={() => setSelectedMeal(null)}>
         <div style={{ padding: '20px 22px 24px' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '16px' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: color.ink, marginBottom: '16px' }}>
             {selectedMeal?.name}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -401,13 +397,13 @@ export default function Meals({ appUser }) {
             }}>Add to this week</button>
             <button onClick={() => { setSelectedMeal(null); openFavPicker(selectedMeal) }} style={{
               width: '100%', padding: '12px', borderRadius: '14px',
-              border: `1px solid ${C.linen}`, background: 'white',
-              color: C.ink, cursor: 'pointer',
+              border: `1px solid ${color.rule}`, background: 'white',
+              color: color.ink, cursor: 'pointer',
               fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 400,
             }}>★ Mark as favorite</button>
             <button onClick={() => setSelectedMeal(null)} style={{
               width: '100%', padding: '12px', borderRadius: '14px', border: 'none',
-              background: 'none', color: C.driftwood, cursor: 'pointer',
+              background: 'none', color: color.inkSoft, cursor: 'pointer',
               fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 300,
             }}>Close</button>
           </div>
@@ -417,19 +413,19 @@ export default function Meals({ appUser }) {
       {/* Favorites member picker */}
       <BottomSheet isOpen={favPickerOpen} onClose={() => setFavPickerOpen(false)}>
         <div style={{ padding: '20px 22px 24px' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '4px' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: color.ink, marginBottom: '4px' }}>
             {favPickerMeal?.name}
           </div>
-          <div style={{ fontSize: '12px', color: C.driftwood, marginBottom: '16px' }}>Who loves this meal?</div>
+          <div style={{ fontSize: '12px', color: color.inkSoft, marginBottom: '16px' }}>Who loves this meal?</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
             {familyMembers.map(member => {
               const isSelected = favPickerSelected.has(member.id)
               return (
                 <button key={member.id} onClick={() => toggleFav(member.id)} style={{
                   padding: '8px 16px', borderRadius: '20px',
-                  border: `1px solid ${isSelected ? C.honey : C.linen}`,
+                  border: `1px solid ${isSelected ? color.honey : color.rule}`,
                   background: isSelected ? 'rgba(196,154,60,0.1)' : 'white',
-                  color: isSelected ? C.honey : C.driftwood,
+                  color: isSelected ? color.honey : color.inkSoft,
                   fontSize: '13px', fontFamily: "'Jost', sans-serif", cursor: 'pointer',
                   fontWeight: isSelected ? 500 : 400,
                 }}>{isSelected ? '★ ' : ''}{member.name.split(' ')[0]}</button>
@@ -448,7 +444,7 @@ export default function Meals({ appUser }) {
       <BottomSheet isOpen={filterSheetOpen} onClose={() => setFilterSheetOpen(false)} maxHeight="70vh">
         <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
           <div>
-            <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '10px' }}>
+            <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: color.inkSoft, fontWeight: 500, marginBottom: '10px' }}>
               Meal type
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -456,7 +452,7 @@ export default function Meals({ appUser }) {
             </div>
           </div>
           <div>
-            <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '10px' }}>
+            <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: color.inkSoft, fontWeight: 500, marginBottom: '10px' }}>
               {/* TODO: upgrade to ingredient-based matching */}
               Protein
             </div>
@@ -465,7 +461,7 @@ export default function Meals({ appUser }) {
             </div>
           </div>
           <div>
-            <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwood, fontWeight: 500, marginBottom: '10px' }}>
+            <div style={{ fontSize: '10px', letterSpacing: '1.2px', textTransform: 'uppercase', color: color.inkSoft, fontWeight: 500, marginBottom: '10px' }}>
               More
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -483,7 +479,7 @@ export default function Meals({ appUser }) {
               <button onClick={clearFilters} style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 fontFamily: "'Jost', sans-serif", fontSize: '12px',
-                color: C.driftwood, fontWeight: 300, padding: '4px',
+                color: color.inkSoft, fontWeight: 300, padding: '4px',
               }}>Clear all</button>
             )}
           </div>

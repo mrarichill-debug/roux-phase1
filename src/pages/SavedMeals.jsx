@@ -8,11 +8,7 @@ import { supabase } from '../lib/supabase'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import AddToPlanSheet from '../components/AddToPlanSheet'
-
-const C = {
-  forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', linen: '#E8E0D0',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 export default function SavedMeals({ appUser }) {
   const navigate = useNavigate()
@@ -35,7 +31,7 @@ export default function SavedMeals({ appUser }) {
 
   return (
     <div style={{
-      background: C.cream, minHeight: '100vh', maxWidth: '430px',
+      background: color.paper, minHeight: '100vh', maxWidth: '430px',
       margin: '0 auto', fontFamily: "'Jost', sans-serif",
       paddingBottom: 'calc(88px + env(safe-area-inset-bottom, 8px))',
     }}>
@@ -71,7 +67,7 @@ export default function SavedMeals({ appUser }) {
           }}>
             <div style={{
               fontFamily: "'Playfair Display', serif", fontSize: '17px',
-              fontStyle: 'italic', color: C.driftwood, marginBottom: '8px',
+              fontStyle: 'italic', color: color.inkSoft, marginBottom: '8px',
             }}>
               Nothing built yet.
             </div>
@@ -80,7 +76,7 @@ export default function SavedMeals({ appUser }) {
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 fontFamily: "'Jost', sans-serif", fontSize: '13px',
-                color: C.forest, fontWeight: 300,
+                color: color.forest, fontWeight: 300,
               }}
             >
               Plan a meal to get started
@@ -96,7 +92,7 @@ export default function SavedMeals({ appUser }) {
               {/* Search bar — only when 2+ meals */}
               {meals.length > 1 && (
                 <div style={{ position: 'relative', marginBottom: '14px' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{
+                  <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{
                     width: 14, height: 14, position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)',
                   }}>
                     <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
@@ -109,19 +105,19 @@ export default function SavedMeals({ appUser }) {
                     style={{
                       width: '100%', padding: '10px 12px 10px 34px', fontSize: '14px',
                       fontFamily: "'Jost', sans-serif", fontWeight: 300,
-                      background: C.cream, border: '1px solid #E4DDD2',
-                      borderRadius: '10px', outline: 'none', color: C.ink,
+                      background: color.paper, border: '1px solid #E4DDD2',
+                      borderRadius: '10px', outline: 'none', color: color.ink,
                       boxSizing: 'border-box',
                     }}
-                    onFocus={e => e.target.style.borderColor = '#7A8C6E'}
-                    onBlur={e => e.target.style.borderColor = '#E4DDD2'}
+                    onFocus={e => e.target.style.borderColor = color.sage}
+                    onBlur={e => e.target.style.borderColor = color.rule}
                   />
                 </div>
               )}
 
               {/* Filtered meal list */}
               {filtered.length === 0 ? (
-                <div style={{ fontSize: '13px', color: C.driftwood, fontWeight: 300, padding: '20px 0', textAlign: 'center' }}>
+                <div style={{ fontSize: '13px', color: color.inkSoft, fontWeight: 300, padding: '20px 0', textAlign: 'center' }}>
                   No meals match that search.
                 </div>
               ) : (
@@ -151,13 +147,13 @@ export default function SavedMeals({ appUser }) {
                         >
                           <div style={{
                             fontFamily: "'Playfair Display', serif", fontSize: '18px',
-                            fontWeight: 500, color: C.ink,
+                            fontWeight: 500, color: color.ink,
                           }}>
                             {meal.name}
                           </div>
                           {recipeNames.length > 0 && (
                             <div style={{
-                              fontSize: '12px', color: C.driftwood, fontWeight: 300,
+                              fontSize: '12px', color: color.inkSoft, fontWeight: 300,
                               marginTop: '4px', lineHeight: 1.4,
                             }}>
                               {recipeNames.join(' · ')}
@@ -170,7 +166,7 @@ export default function SavedMeals({ appUser }) {
                             display: 'flex', alignItems: 'center', gap: '5px',
                             background: 'none', border: 'none', cursor: 'pointer',
                             fontFamily: "'Jost', sans-serif", fontSize: '11px',
-                            color: C.forest, fontWeight: 400, padding: '8px 0 0',
+                            color: color.forest, fontWeight: 400, padding: '8px 0 0',
                           }}
                         >
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13 }}>
