@@ -311,6 +311,12 @@ body {
   to   { opacity: 1; transform: scale(1); }
 }
 
+/* Speed-dial pill entrance — slides in toward the left from the main FAB */
+@keyframes speedDialPillIn {
+  from { opacity: 0; transform: translateX(8px) scale(0.92); }
+  to   { opacity: 1; transform: translateX(0)   scale(1); }
+}
+
 /* Sheet backdrop */
 @keyframes backdropIn {
   from { opacity: 0; }

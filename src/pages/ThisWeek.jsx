@@ -54,6 +54,7 @@ export default function ThisWeek({ appUser }) {
   const [dayNotes, setDayNotes] = useState({}) // dowKey → notes string
   const [editingNoteDow, setEditingNoteDow] = useState(null) // dowKey currently being edited
   const [noteDraft, setNoteDraft] = useState('')
+  const [speedDialDow, setSpeedDialDow] = useState(null) // dowKey whose add-button speed-dial is open
 
   // Add sheet state
   const [addSheetOpen, setAddSheetOpen] = useState(false)
@@ -400,6 +401,20 @@ export default function ThisWeek({ appUser }) {
       navigate('/plan', { replace: true, state: {} })
     }
   }, [location.state?.prefillMeal, loading])
+
+  // Close the speed-dial when the user taps anywhere outside it.
+  useEffect(() => {
+    if (speedDialDow === null) return
+    function onDocMouseDown(e) {
+      if (!e.target.closest('[data-speed-dial]')) setSpeedDialDow(null)
+    }
+    document.addEventListener('mousedown', onDocMouseDown, true)
+    document.addEventListener('touchstart', onDocMouseDown, true)
+    return () => {
+      document.removeEventListener('mousedown', onDocMouseDown, true)
+      document.removeEventListener('touchstart', onDocMouseDown, true)
+    }
+  }, [speedDialDow])
 
   // ── Add meal ──────────────────────────────────────────────────
   function openAddSheet(date, prefill) {
@@ -1251,7 +1266,7 @@ export default function ThisWeek({ appUser }) {
                   gridTemplateRows: isCollapsed ? '0fr' : '1fr',
                   transition: 'grid-template-rows 200ms ease-out',
                 }}>
-                <div style={{ overflow: 'hidden' }}>
+                <div style={{ overflow: 'hidden', position: 'relative', paddingBottom: '52px' }}>
 
                 {/* Calendar events — vertical, sorted by start time */}
                 {(() => {
@@ -1495,44 +1510,69 @@ export default function ThisWeek({ appUser }) {
                       </div>
                     )
                   }
-                  if (isWeekLocked) return null
-                  return (
-                    <button onClick={() => startEditNote(dowKey)} style={{
-                      padding: '4px 14px 8px',
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      fontSize: '12px', color: color.driftwood, fontWeight: 400,
-                      fontFamily: "'Jost', sans-serif", textAlign: 'left',
-                    }}>
-                      + Note for the day
-                    </button>
-                  )
+                  // Empty-state "+ Note for the day" inline link removed —
+                  // the action is now in the speed-dial below. The saved-note
+                  // pill above still renders when a note exists.
+                  return null
                 })()}
 
-                {/* Add button — small green circle FAB, centered on the day card */}
-                <div style={{
-                  display: 'flex', justifyContent: 'center',
-                  padding: dayMeals.length > 0 ? '6px 0 8px' : '10px 0',
-                  borderTop: dayMeals.length > 0 ? 'none' : `1px dashed ${color.linen}`,
-                }}>
-                  <button
-                    onClick={() => openAddSheet(date)}
-                    aria-label={dayMeals.length > 0 ? 'Add another meal' : `Add a meal to ${isToday ? 'today' : DAY_NAMES[i]}`}
-                    style={{
-                      width: '44px', height: '44px', padding: 0,
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                {/* Speed-dial — small green "+" anchored bottom-right of the
+                    card. Tap to expand into "Meal" + "Note" pills that fly
+                    out to the left. Tap circle again or anywhere outside to
+                    collapse. TODO: lift to a shared <SpeedDial /> component
+                    if reused beyond this page. */}
+                {(() => {
+                  const isOpen = speedDialDow === dowKey
+                  const items = [
+                    { key: 'note', label: 'Note', onClick: () => { setSpeedDialDow(null); startEditNote(dowKey) } },
+                    { key: 'meal', label: 'Meal', onClick: () => { setSpeedDialDow(null); openAddSheet(date) } },
+                  ]
+                  return (
+                    <div data-speed-dial style={{
+                      position: 'absolute', bottom: 8, right: 8,
+                      display: 'flex', alignItems: 'center', gap: '8px',
+                      zIndex: 5,
                     }}>
-                    <span style={{
-                      width: '32px', height: '32px', borderRadius: '50%',
-                      background: arcColor, boxShadow: elevation.chip,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" style={{ width: 16, height: 16 }}>
-                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                      </svg>
-                    </span>
-                  </button>
-                </div>
+                      {isOpen && items.map((it, idx) => (
+                        <button
+                          key={it.key}
+                          onClick={it.onClick}
+                          style={{
+                            height: '32px', padding: '0 12px',
+                            background: 'white', border: `1px solid ${arcColor}`,
+                            borderRadius: '16px', cursor: 'pointer',
+                            color: arcColor, fontFamily: "'Jost', sans-serif",
+                            fontSize: '12px', fontWeight: 500,
+                            boxShadow: elevation.chip,
+                            animation: `speedDialPillIn 180ms cubic-bezier(0.22,1,0.36,1) ${idx * 40}ms both`,
+                          }}>
+                          {it.label}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => setSpeedDialDow(isOpen ? null : dowKey)}
+                        aria-label={isOpen ? 'Close add menu' : 'Add to this day'}
+                        aria-expanded={isOpen}
+                        style={{
+                          width: '44px', height: '44px', padding: 0,
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                        <span style={{
+                          width: '32px', height: '32px', borderRadius: '50%',
+                          background: arcColor, boxShadow: elevation.chip,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transform: isOpen ? 'rotate(45deg)' : 'rotate(0deg)',
+                          transition: 'transform 160ms cubic-bezier(0.22,1,0.36,1)',
+                        }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" style={{ width: 16, height: 16 }}>
+                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                          </svg>
+                        </span>
+                      </button>
+                    </div>
+                  )
+                })()}
 
                 </div>{/* end overflow hidden */}
                 </div>{/* end grid accordion */}
