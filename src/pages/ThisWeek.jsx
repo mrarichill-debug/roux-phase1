@@ -1546,32 +1546,36 @@ export default function ThisWeek({ appUser }) {
                   {getMealName(editMeal)}
                 </div>
 
-                {/* 2. Linked recipes */}
-                <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '8px' }}>Linked recipes</div>
-                <div style={{ marginBottom: '16px' }}>
-                  {(editMeal.linkedRecipes || []).length > 0 ? (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
-                      {editMeal.linkedRecipes.map(lr => (
-                        <span key={lr.recipe_id} style={{
-                          display: 'inline-flex', alignItems: 'center', gap: '4px',
-                          padding: '5px 10px', borderRadius: '8px', fontSize: '12px',
-                          background: 'rgba(61,107,79,0.08)', color: arcColor,
-                          fontFamily: "'Jost', sans-serif", fontWeight: 500,
-                        }}>
-                          {lr.recipe_name}
-                          <button onClick={() => unlinkRecipeFromMeal(editMeal.id, lr.recipe_id)} style={{
-                            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                            fontSize: '14px', color: C.driftwood, lineHeight: 1, marginLeft: '2px',
-                          }}>×</button>
-                        </span>
-                      ))}
+                {/* 2. Linked recipes — hidden for eating-out meals (no recipes apply) */}
+                {editMeal.entry_type !== 'eating_out' && editMeal.status !== 'eating_out' && (
+                  <>
+                    <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '8px' }}>Linked recipes</div>
+                    <div style={{ marginBottom: '16px' }}>
+                      {(editMeal.linkedRecipes || []).length > 0 ? (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                          {editMeal.linkedRecipes.map(lr => (
+                            <span key={lr.recipe_id} style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '4px',
+                              padding: '5px 10px', borderRadius: '8px', fontSize: '12px',
+                              background: 'rgba(61,107,79,0.08)', color: arcColor,
+                              fontFamily: "'Jost', sans-serif", fontWeight: 500,
+                            }}>
+                              {lr.recipe_name}
+                              <button onClick={() => unlinkRecipeFromMeal(editMeal.id, lr.recipe_id)} style={{
+                                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                                fontSize: '14px', color: C.driftwood, lineHeight: 1, marginLeft: '2px',
+                              }}>×</button>
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                      <button onClick={() => { setBatchEditMealId(null); openLinkSheet(editMeal) }} style={{
+                        background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                        fontSize: '12px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 400,
+                      }}>{(editMeal.linkedRecipes || []).length > 0 ? '+ Add another recipe' : '+ Link a recipe'}</button>
                     </div>
-                  ) : null}
-                  <button onClick={() => { setBatchEditMealId(null); openLinkSheet(editMeal) }} style={{
-                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                    fontSize: '12px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 400,
-                  }}>{(editMeal.linkedRecipes || []).length > 0 ? '+ Add another recipe' : '+ Link a recipe'}</button>
-                </div>
+                  </>
+                )}
 
                 {/* 3. Cooked / Ate out — for past non-eating-out meals that haven't been reviewed */}
                 {editMeal.planned_date && editMeal.planned_date < todayStr && editMeal.status !== 'cooked' && editMeal.status !== 'eating_out' && editMeal.entry_type !== 'eating_out' && !editMeal.removed_at && (
@@ -1614,7 +1618,7 @@ export default function ThisWeek({ appUser }) {
                     )}
                   </div>
                 )}
-                {editMeal.status === 'cooked' && editMeal.cooked_at && (
+                {editMeal.status === 'cooked' && editMeal.cooked_at && editMeal.entry_type !== 'eating_out' && (
                   <div style={{
                     width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '16px',
                     background: 'rgba(122,140,110,0.08)', textAlign: 'center',
