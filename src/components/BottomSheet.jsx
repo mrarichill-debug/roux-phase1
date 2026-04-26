@@ -89,7 +89,7 @@ export default function BottomSheet({ isOpen, onClose, title, children, zIndex =
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(44,36,23,0.5)',
+          background: 'rgba(26,22,18,0.5)',
           zIndex,
           WebkitTapHighlightColor: 'transparent',
         }}

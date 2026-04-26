@@ -5,19 +5,20 @@
 export const ARC_COLORS = {
   forest: '#3D6B4F',  // Stages 1-2: growth, beginnings, safety
   sage:   '#7A8C6E',  // Stages 3-4: wisdom, calm, something personal forming
-  honey:  '#C49A3C',  // Stages 5-6: warmth, richness, earned reward
+  honey:  '#C99A4B',  // Stages 5-6: warmth, richness, earned reward (v2.1)
   amber:  '#A07830',  // Stage 7: depth, permanence, a full year
 };
 
-// Colors that never change regardless of arc stage
+// Colors that never change regardless of arc stage. Mirrors src/styles/tokens.js
+// (paper / ink / inkSoft / rule). Keep these in sync with the v2.1 palette.
 export const ARC_CONSTANTS = {
   topbar:    '#3D6B4F',  // Always forest — Roux's permanent identity
   tonight:   '#3C2F1E',  // Always deep walnut — the evening anchor
   navBg:     '#FFFFFF',  // Always white
-  background:'#FAF7F2',  // Always cream
-  ink:       '#2C2417',  // Always ink
-  driftwood: '#8C7B6B',  // Always driftwood
-  linen:     '#E4DDD2',  // Always linen
+  background:'#F4EFE6',  // paper
+  ink:       '#1A1612',  // ink
+  driftwood: '#6B5E51',  // ink-soft
+  linen:     '#E2DACB',  // rule
 };
 
 // Primary function — returns the arc color hex for a given stage
@@ -48,5 +49,5 @@ export function getArcColorAlpha(stage, alpha = 0.15) {
 // Returns the correct text color to use ON the arc color background
 // (for buttons, filled pills, etc.)
 export function getArcColorText(stage) {
-  return '#FAF7F2'; // cream white works on all four arc colors
+  return '#F4EFE6'; // paper — works on all four arc colors
 }

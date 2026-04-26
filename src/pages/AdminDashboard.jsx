@@ -141,7 +141,7 @@ export default function AdminDashboard({ appUser }) {
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 20px', borderBottom: '0.5px solid #E4DDD2', marginBottom: '24px',
+        padding: '12px 20px', borderBottom: `0.5px solid ${color.rule}`, marginBottom: '24px',
       }}>
         <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', color: color.ink }}>
           Roux. <span style={{ fontSize: '13px', color: color.inkSoft, fontFamily: "'Jost', sans-serif", fontWeight: 300 }}>Admin</span>
@@ -251,7 +251,7 @@ function Card({ title, children }) {
   return (
     <div style={{
       background: 'white', borderRadius: '12px',
-      border: `0.5px solid #E4DDD2`,
+      border: `0.5px solid ${color.rule}`,
       padding: '16px 18px',
     }}>
       <div style={{

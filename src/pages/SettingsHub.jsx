@@ -203,7 +203,7 @@ function SettingsCard({ rows, navigate }) {
     <div style={{
       background: 'white',
       borderRadius: '12px',
-      border: '0.5px solid #E4DDD2',
+      border: `0.5px solid ${color.rule}`,
       marginBottom: '20px',
       overflow: 'hidden',
     }}>
@@ -217,7 +217,7 @@ function SettingsCard({ rows, navigate }) {
             padding: '13px 14px',
             background: 'none', border: 'none', cursor: 'pointer',
             textAlign: 'left',
-            borderTop: i > 0 ? '0.5px solid #E4DDD2' : 'none',
+            borderTop: i > 0 ? `0.5px solid ${color.rule}` : 'none',
             minHeight: '44px',
           }}
         >

@@ -252,7 +252,7 @@ export default function RecipeCard({ appUser }) {
         (recipeTags.length > 0 || recipeMethods.length > 0) && (
           <div style={{
             minHeight: '44px', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap',
-            padding: '8px 22px', borderBottom: '0.5px solid #E4DDD2',
+            padding: '8px 22px', borderBottom: `0.5px solid ${color.rule}`,
           }}>
             {recipeTags.map(tag => (
               <div key={`t-${tag}`} style={{
@@ -626,7 +626,7 @@ export default function RecipeCard({ appUser }) {
               }}
               style={{
                 flex: 1, padding: '12px', borderRadius: '12px',
-                background: 'none', color: color.rust, border: '1px solid #E4DDD2',
+                background: 'none', color: color.rust, border: `1px solid ${color.rule}`,
                 fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500, cursor: 'pointer',
               }}
             >
@@ -636,7 +636,7 @@ export default function RecipeCard({ appUser }) {
               onClick={() => setDeleteConfirm(false)}
               style={{
                 flex: 1, padding: '12px', borderRadius: '12px',
-                background: 'none', color: color.inkSoft, border: '1px solid #E4DDD2',
+                background: 'none', color: color.inkSoft, border: `1px solid ${color.rule}`,
                 fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 400, cursor: 'pointer',
               }}
             >

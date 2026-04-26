@@ -105,7 +105,7 @@ export default function SavedMeals({ appUser }) {
                     style={{
                       width: '100%', padding: '10px 12px 10px 34px', fontSize: '14px',
                       fontFamily: "'Jost', sans-serif", fontWeight: 300,
-                      background: color.paper, border: '1px solid #E4DDD2',
+                      background: color.paper, border: `1px solid ${color.rule}`,
                       borderRadius: '10px', outline: 'none', color: color.ink,
                       boxSizing: 'border-box',
                     }}
@@ -133,7 +133,7 @@ export default function SavedMeals({ appUser }) {
                         key={meal.id}
                         style={{
                           background: 'white', borderRadius: '14px', padding: '16px',
-                          border: '1px solid #E4DDD2',
+                          border: `1px solid ${color.rule}`,
                           opacity: 0, animation: `fadeUp 0.4s ease ${0.04 * i}s forwards`,
                         }}
                       >

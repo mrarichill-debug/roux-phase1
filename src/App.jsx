@@ -473,7 +473,7 @@ function AuthenticatedApp({ appUser, setAppUser }) {
             <span style={{
               position: 'absolute', top: '4px', right: '4px',
               width: '8px', height: '8px', borderRadius: '50%',
-              background: color.honey, border: '1.5px solid #3D6B4F',
+              background: color.honey, border: `1.5px solid ${color.forest}`,
             }} />
           )}
         </button>
@@ -518,7 +518,7 @@ function AuthenticatedApp({ appUser, setAppUser }) {
               {sageActivity.map(item => (
                 <div key={item.id} style={{
                   padding: '12px 0',
-                  borderBottom: '0.5px solid #E4DDD2',
+                  borderBottom: `0.5px solid ${color.rule}`,
                   display: 'flex', gap: 10, alignItems: 'flex-start',
                 }}>
                   <span style={{ color: color.forest, fontSize: 12, marginTop: 2 }}>✦</span>
@@ -586,7 +586,7 @@ function AuthenticatedApp({ appUser, setAppUser }) {
                         }}>Approve</button>
                         <button onClick={() => handleNotifAction(n.id, 'decline_member', n.target_id)} style={{
                           flex: 1, padding: '10px', borderRadius: '10px',
-                          background: 'none', color: color.inkSoft, border: '1px solid #E8E0D0',
+                          background: 'none', color: color.inkSoft, border: `1px solid ${color.rule}`,
                           fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500, cursor: 'pointer',
                         }}>Decline</button>
                       </div>

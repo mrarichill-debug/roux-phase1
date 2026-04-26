@@ -20,42 +20,42 @@
 // new names — no visual change. STEP 2 swaps the values to the new 19-token
 // palette in one commit.
 
-// ── Base palette ─────────────────────────────────────────────────────────────
+// ── Base palette (v2.1 — 19-token system) ────────────────────────────────────
 export const color = {
   // Surfaces
-  paper:        '#FAF7F2',  // STEP 2 → #F4EFE6
-  surface:      '#FAF7F2',  // STEP 2 → #FBF7EE
-  ink:          '#2C2417',  // STEP 2 → #1A1612
-  inkSoft:      '#8C7B6B',  // was driftwood; STEP 2 → #6B5E51
-  rule:         '#E8E0D0',  // was linen; STEP 2 → #E2DACB
+  paper:        '#F4EFE6',
+  surface:      '#FBF7EE',
+  ink:          '#1A1612',
+  inkSoft:      '#6B5E51',
+  rule:         '#E2DACB',
 
   // Forest family
-  forestLight:  '#3D6B4F',  // STEP 2 → #E5EDD8
+  forestLight:  '#E5EDD8',
   forest:       '#3D6B4F',
-  forestDark:   '#2E5038',  // STEP 2 → #243F30
+  forestDark:   '#243F30',
 
   // Sage family
-  sageLight:    '#7A8C6E',  // STEP 2 → #E4E7DA
+  sageLight:    '#E4E7DA',
   sage:         '#7A8C6E',
-  sageDark:     '#7A8C6E',  // STEP 2 → #4D5B43
+  sageDark:     '#4D5B43',
 
   // Honey family
-  honeyLight:   '#C49A3C',  // STEP 2 → #F2E4C7
-  honey:        '#C49A3C',  // STEP 2 → #C99A4B
-  honeyDark:    '#7A5C14',  // was honeyDk; STEP 2 → #8A6628
+  honeyLight:   '#F2E4C7',
+  honey:        '#C99A4B',
+  honeyDark:    '#8A6628',
 
   // Amber family
-  amberLight:   '#A07830',  // STEP 2 → #ECD9B0
+  amberLight:   '#ECD9B0',
   amber:        '#A07830',
-  amberDark:    '#8B6F52',  // was walnut; STEP 2 → #6E4F18
+  amberDark:    '#6E4F18',
 
   // Rust family
-  rustLight:    '#A03030',  // STEP 2 → #F1D9CB
-  rust:         '#A03030',  // was red; STEP 2 → #C26240
-  rustDark:     '#A03030',  // STEP 2 → #8A3F22
+  rustLight:    '#F1D9CB',
+  rust:         '#C26240',
+  rustDark:     '#8A3F22',
 
-  // Day-type accents (orthogonal to the palette; intentionally untouched —
-  // the new palette has no blue counterpart for daySchool)
+  // Day-type accents (orthogonal to the palette — left untouched for now;
+  // no blue counterpart in the v2.1 19-token system)
   daySchool:    '#5B8DD9',
   dayWeekend:   '#7A8C6E',
   dayNoSchool:  '#D4874A',
@@ -64,12 +64,10 @@ export const color = {
 
 // ── Canonical alpha steps ────────────────────────────────────────────────────
 // Steps are the rgba values that recur 3+ times in the codebase. Use the
-// nearest existing step rather than inventing new ones.
-//
-// Renames in this migration: alpha.paper → alpha.paper, alpha.rule → alpha.rule.
-// Step values still use OLD rgb bases; STEP 2 swaps to new palette rgb.
+// nearest existing step rather than inventing new ones. Each base's rgb
+// matches the v2.1 base color above.
 export const alpha = {
-  forest: {
+  forest: {  // base #3D6B4F
     6:  'rgba(61,107,79,0.06)',
     8:  'rgba(61,107,79,0.08)',
     10: 'rgba(61,107,79,0.10)',
@@ -77,35 +75,35 @@ export const alpha = {
     25: 'rgba(61,107,79,0.25)',
     40: 'rgba(61,107,79,0.40)',
   },
-  honey: {
-    8:  'rgba(196,154,60,0.08)',
-    10: 'rgba(196,154,60,0.10)',
-    12: 'rgba(196,154,60,0.12)',
-    30: 'rgba(196,154,60,0.30)',
+  honey: {  // base #C99A4B
+    8:  'rgba(201,154,75,0.08)',
+    10: 'rgba(201,154,75,0.10)',
+    12: 'rgba(201,154,75,0.12)',
+    30: 'rgba(201,154,75,0.30)',
   },
-  sage: {
+  sage: {  // base #7A8C6E
     6:  'rgba(122,140,110,0.06)',
     8:  'rgba(122,140,110,0.08)',
     10: 'rgba(122,140,110,0.10)',
     12: 'rgba(122,140,110,0.12)',
   },
-  paper: {
-    15: 'rgba(250,247,242,0.15)',
-    50: 'rgba(250,247,242,0.50)',
-    70: 'rgba(250,247,242,0.70)',
-    90: 'rgba(250,247,242,0.90)',
-    95: 'rgba(250,247,242,0.95)',
+  paper: {  // base #F4EFE6
+    15: 'rgba(244,239,230,0.15)',
+    50: 'rgba(244,239,230,0.50)',
+    70: 'rgba(244,239,230,0.70)',
+    90: 'rgba(244,239,230,0.90)',
+    95: 'rgba(244,239,230,0.95)',
   },
-  rule: {
-    15: 'rgba(200,185,160,0.15)',
-    20: 'rgba(200,185,160,0.20)',
-    25: 'rgba(200,185,160,0.25)',
-    45: 'rgba(200,185,160,0.45)',
-    55: 'rgba(200,185,160,0.55)',
+  rule: {  // base #E2DACB
+    15: 'rgba(226,218,203,0.15)',
+    20: 'rgba(226,218,203,0.20)',
+    25: 'rgba(226,218,203,0.25)',
+    45: 'rgba(226,218,203,0.45)',
+    55: 'rgba(226,218,203,0.55)',
   },
-  rust: {
-    7:  'rgba(160,48,48,0.07)',
-    20: 'rgba(160,48,48,0.20)',
+  rust: {  // base #C26240
+    7:  'rgba(194,98,64,0.07)',
+    20: 'rgba(194,98,64,0.20)',
   },
 }
 

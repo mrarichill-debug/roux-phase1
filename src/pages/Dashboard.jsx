@@ -460,7 +460,7 @@ function IntelligenceCard({ intel, navigate, arcColor, arcStage }) {
 
   return (
     <div style={{
-      borderLeft: '2.5px solid #E4DDD2',
+      borderLeft: `2.5px solid ${color.rule}`,
       paddingLeft: '14px',
       margin: '14px 18px 0',
       animation: 'fadeUp 0.4s ease 0.06s both',
@@ -661,7 +661,7 @@ function TonightEmpty({ onPlan }) {
     <div
       onClick={onPlan}
       style={{
-        borderLeft: '2px dashed #E4DDD2',
+        borderLeft: `2px dashed ${color.rule}`,
         paddingLeft: '14px',
         margin: '0 18px',
         cursor: 'pointer',
@@ -687,7 +687,7 @@ function TonightEmpty({ onPlan }) {
         style={{
           display: 'inline-flex', alignItems: 'center', gap: '5px',
           background: 'rgba(140,123,107,0.08)', color: color.inkSoft,
-          border: '1px solid #E4DDD2', borderRadius: '8px',
+          border: `1px solid ${color.rule}`, borderRadius: '8px',
           padding: '5px 12px', cursor: 'pointer', marginTop: '8px',
           fontFamily: "'Jost', sans-serif", fontSize: '11px', fontWeight: 500,
         }}

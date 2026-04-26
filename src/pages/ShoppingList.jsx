@@ -850,7 +850,7 @@ function ListItem({ item, isLast, isExpanded, onTap, onGotIt, onAlreadyHave }) {
         {/* Checkbox */}
         <div style={{
           width: cbSize, height: cbSize, borderRadius: cbRadius,
-          border: '2px solid #E8E0D0', flexShrink: 0,
+          border: `2px solid ${color.rule}`, flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: 'white', transition: 'all 0.18s',
         }}>
