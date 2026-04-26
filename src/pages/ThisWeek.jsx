@@ -1508,18 +1508,31 @@ export default function ThisWeek({ appUser }) {
                   )
                 })()}
 
-                {/* Add button */}
-                <button onClick={() => openAddSheet(date)} style={{
-                  width: '100%', padding: dayMeals.length > 0 ? '8px 14px 10px' : '14px',
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  fontSize: dayMeals.length > 0 ? '12px' : '13px',
-                  color: arcColor, fontWeight: 400,
-                  fontFamily: "'Jost', sans-serif",
-                  textAlign: 'left',
+                {/* Add button — small green circle FAB, centered on the day card */}
+                <div style={{
+                  display: 'flex', justifyContent: 'center',
+                  padding: dayMeals.length > 0 ? '6px 0 8px' : '10px 0',
                   borderTop: dayMeals.length > 0 ? 'none' : `1px dashed ${color.linen}`,
                 }}>
-                  {dayMeals.length > 0 ? '+ Add another' : `+ Add to ${isToday ? 'Today' : DAY_NAMES[i]}`}
-                </button>
+                  <button
+                    onClick={() => openAddSheet(date)}
+                    aria-label={dayMeals.length > 0 ? 'Add another meal' : `Add a meal to ${isToday ? 'today' : DAY_NAMES[i]}`}
+                    style={{
+                      width: '44px', height: '44px', padding: 0,
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                    <span style={{
+                      width: '32px', height: '32px', borderRadius: '50%',
+                      background: arcColor, boxShadow: elevation.chip,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" style={{ width: 16, height: 16 }}>
+                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                      </svg>
+                    </span>
+                  </button>
+                </div>
 
                 </div>{/* end overflow hidden */}
                 </div>{/* end grid accordion */}
