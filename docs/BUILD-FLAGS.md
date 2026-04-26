@@ -1,5 +1,5 @@
 # BUILD FLAGS & PROGRESS TRACKER
-*Roux Phase 2 — Last updated April 11, 2026*
+*Roux Phase 2 — Last updated April 25, 2026*
 
 ---
 
@@ -17,7 +17,7 @@
 - [x] Build Meals hub (two-zone layout — action tiles + archive counters + tagline strip)
 - [x] Build Plan a Meal (recipe picker, alternatives, quick add, autofill, edit mode)
 - [x] Build Saved Meals (list with search, tap to edit, Add to plan)
-- [x] Build This Week / week view (collapsible day cards, four slots, multi-item, autofill, nav boundary, fixed header, accordion past/future, honey calendar pills, meal move, persistent week navigation)
+- [x] Build This Week / week view (collapsible day cards, four slots, multi-item, autofill, nav boundary, fixed header, accordion past/future, honey calendar pills, meal move, persistent week navigation, per-day free-text notes)
 - [x] Build Week Settings — two-screen architecture (This Week Settings + Household Defaults)
 - [x] Build AddToPlanSheet (reusable week/day/slot picker with calendar)
 - [x] Build AddDayTypeSheet (reusable, used in both settings screens)

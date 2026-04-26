@@ -112,6 +112,14 @@ Active. All meaningful user actions write to `activity_log` via `src/lib/activit
 
 **Eating out icon removed** — 🍽️ emoji no longer renders next to eating out meal names on day cards.
 
+## Session Notes (Apr 25, 2026)
+
+**Eating-out edit fix** — `ThisWeek.jsx` edit sheet no longer renders contradictory "✓ Cooked Saturday" + "Eating out · Est. $X" simultaneously. Cooked banner now suppressed when `entry_type === 'eating_out'`. Linked Recipes section also hidden for eating-out meals (no recipes apply to a restaurant entry).
+
+**Per-day free-text notes on This Week** — Each day card now supports a free-text note (e.g., "Ben + Henry buying lunch"). Stored in new column `meal_plan_day_types.notes TEXT`. The `day_type_id` column was made nullable so a row can carry a note without an explicit day-type assignment; clearing a note deletes the row only when `day_type_id` is also null. UI: "+ Note for the day" link → inline Caveat-script textarea, save on blur (passes `e.target.value` to defeat stale-closure race). Filled state renders in soft honey card with edit pencil. Read-only when `meal_plans.status` is `completed` or `archived` — past days within an active week stay editable. Activity events: `day_note_added` / `_updated` / `_cleared` (targetType `meal_plan`, `day_of_week` in metadata). **Not surfaced on Home/Tonight card** — deliberate, Lauren wanted day-card only for now.
+
+**Open: photo upload not saving on Save a Recipe.** Aric flagged mid-session, did not investigate. Pick up here next session — repro on localhost, then check the photo-upload path (likely Supabase Storage write + recipe row update).
+
 ---
 
 ## Documentation Index
