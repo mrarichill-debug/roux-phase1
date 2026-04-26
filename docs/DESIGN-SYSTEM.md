@@ -1,6 +1,8 @@
 # DESIGN SYSTEM
 *Roux Phase 2 — March 2026 Design Sprint. Prototypes in `/prototypes/` are the visual source of truth. Do not deviate.*
 
+> **Token access:** import from `src/styles/tokens.js` in JS (`import { color, alpha, elevation } from '../styles/tokens'`), or use `var(--forest)` etc. in CSS — both reflect the same table. **Do not introduce hex literals or hand-written rgba/boxShadow strings in component files.** See `docs/DESIGN-SYSTEM-AUDIT.md` for the migration plan.
+
 ---
 
 ## Color Palette
@@ -8,13 +10,16 @@
 | Token | Hex | Usage |
 |---|---|---|
 | `--forest` | `#3D6B4F` | Primary brand — topbar, Tonight card, CTAs, active nav |
-| `--forest-dark` | `#2E5038` | Pressed/active states on forest elements |
+| `--forest-dk` | `#2E5038` | Pressed/active states on forest elements |
 | `--sage` | `#7A8C6E` | Secondary accent — Sage AI, borders, section labels |
 | `--honey` | `#C49A3C` | Highlight — traditions, alerts, notification dot |
+| `--honey-dk` | `#7A5C14` | Honey-on-honey text (event pill labels), pressed honey states |
 | `--cream` | `#FAF7F2` | App background, bottom nav, cards |
 | `--ink` | `#2C2417` | Primary text |
 | `--driftwood` | `#8C7B6B` | Secondary text, labels, meta info |
+| `--driftwood-sm` | `#6B5B4E` | Stronger meta text needing more contrast than `--driftwood` |
 | `--linen` | `#E8E0D0` | Dividers, borders, inactive states |
+| `--linen-dk` | `#C8B9A0` | Stronger borders / inactive surfaces — used at 15–55% alpha |
 | `--walnut` | `#8B6F52` | Tradition badges, warm brown accent |
 | `--red` | `#A03030` | Error states, over-budget indicator |
 
@@ -25,6 +30,42 @@
 --day-noschool: #D4874A;  /* orange */
 --day-summer:   #C49A3C;  /* honey */
 ```
+
+---
+
+## Alpha Steps
+
+Canonical alpha steps for layered/translucent surfaces. Use the nearest existing step rather than inventing new rgba literals. Adding a new step is review-gated.
+
+| Token | Steps available |
+|---|---|
+| `alpha.forest` | `/6 /8 /10 /15 /25 /40` |
+| `alpha.honey` | `/8 /10 /12 /30` |
+| `alpha.sage` | `/6 /8 /10 /12` |
+| `alpha.cream` | `/15 /50 /70 /90 /95` (`/95` is canonical text-on-forest) |
+| `alpha.linenDk` | `/15 /20 /25 /45 /55` |
+| `alpha.red` | `/7 /20` |
+
+JS: `style={{ background: alpha.honey[12] }}`. CSS callsites should inline the rgba (no CSS-var equivalent for alpha steps yet).
+
+---
+
+## Shadow Elevations
+
+Every `boxShadow` in components must reference one of these. New entries require a design review.
+
+| Token (JS / CSS) | Value | Use |
+|---|---|---|
+| `elevation.card` / `var(--elev-card)` | `0 1px 4px rgba(80,60,30,0.06)` | Standard cards |
+| `elevation.cardRaised` / `var(--elev-card-raised)` | `0 2px 6px rgba(80,60,30,0.06)` | Day cards, accordion headers |
+| `elevation.cardComposite` / `var(--elev-card-composite)` | `0 1px 4px rgba(80,60,30,0.07), 0 3px 12px rgba(80,60,30,0.05)` | Hero/Tonight card |
+| `elevation.chip` / `var(--elev-chip)` | `0 1px 3px rgba(0,0,0,0.15)` | Toggle dots, small interactive chips |
+| `elevation.modal` / `var(--elev-modal)` | `0 4px 16px rgba(30,55,35,0.25)` | Bottom sheets, Sage cards, primary CTAs |
+| `elevation.toast` / `var(--elev-toast)` | `0 4px 16px rgba(0,0,0,0.15)` | Toasts, popovers |
+| `elevation.drawer` / `var(--elev-drawer)` | `0 8px 32px rgba(44,36,23,0.18)` | Full bottom drawer |
+| `elevation.topbar` / `var(--elev-topbar)` | (4-layer composite) | Topbar only — see Topbar section below |
+
+Warm-shadow base color (`#503C1E`, exposed as `--shadow-warm-base`) is used only inside the `--elev-card*` tokens. Don't reference it directly in components.
 
 ---
 
@@ -44,14 +85,15 @@
 - Height: **68px** standard / **58px** on recipe card (slim variant).
 - Background: `--forest`. Position: sticky, z-index 100.
 - Logo: Playfair Display 26px / weight 600. Base color `rgba(250,247,242,0.95)`. Italic "oux" in `rgba(188,218,178,0.82)`.
-- **Shadow — exact 4-layer system. Must be preserved:**
+- **Shadow — exact 4-layer system. Use the `--elev-topbar` token (or `elevation.topbar` in JS):**
   ```css
-  box-shadow:
-    0 2px  0px rgba(20,40,25,0.55),
-    0 4px  8px rgba(20,40,25,0.40),
-    0 8px 24px rgba(30,55,35,0.28),
-    0 16px 40px rgba(30,55,35,0.14),
-    0 1px  0px rgba(255,255,255,0.06) inset;
+  box-shadow: var(--elev-topbar);
+  /* expands to:
+     0 2px  0px rgba(20,40,25,0.55),
+     0 4px  8px rgba(20,40,25,0.40),
+     0 8px 24px rgba(30,55,35,0.28),
+     0 16px 40px rgba(30,55,35,0.14),
+     0 1px  0px rgba(255,255,255,0.06) inset; */
   ```
 
 ---

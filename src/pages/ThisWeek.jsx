@@ -21,12 +21,7 @@ import BottomSheet from '../components/BottomSheet'
 import BottomNav from '../components/BottomNav'
 import AddMealFlow from '../components/AddMealFlow'
 import { useArc } from '../context/ArcContext'
-
-const C = {
-  forest: '#3D6B4F', cream: '#FAF7F2', ink: '#2C2417',
-  driftwood: '#8C7B6B', driftwoodSm: '#6B5B4E', linen: '#E8E0D0',
-  sage: '#7A8C6E', honey: '#C49A3C', honeyDark: '#7A5C14', red: '#A03030',
-}
+import { color, alpha, elevation } from '../styles/tokens'
 
 const DOW_KEYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']
 const DAY_ABBR = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
@@ -989,7 +984,7 @@ export default function ThisWeek({ appUser }) {
   // ── Render ────────────────────────────────────────────────────
   return (
     <div className="page-scroll-container" style={{
-      background: C.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300,
+      background: color.cream, fontFamily: "'Jost', sans-serif", fontWeight: 300,
       minHeight: '100vh', maxWidth: '430px', margin: '0 auto',
       paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 8px))',
     }}>
@@ -1012,34 +1007,34 @@ export default function ThisWeek({ appUser }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', marginBottom: '2px' }}>
           <button onClick={() => setWeekOffset(o => o - 1)} style={{
             position: 'absolute', left: 0, background: 'none', border: 'none', cursor: 'pointer',
-            color: C.driftwood, padding: '4px', display: 'flex',
+            color: color.driftwood, padding: '4px', display: 'flex',
           }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><path d="m15 18-6-6 6-6"/></svg>
           </button>
-          <span style={{ fontSize: '11px', fontWeight: 300, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.driftwood }}>
+          <span style={{ fontSize: '11px', fontWeight: 300, letterSpacing: '1.2px', textTransform: 'uppercase', color: color.driftwood }}>
             {weekLabel}
           </span>
           <button onClick={() => setWeekOffset(o => o + 1)} style={{
             position: 'absolute', right: 0, background: 'none', border: 'none', cursor: 'pointer',
-            color: C.driftwood, padding: '4px', display: 'flex',
+            color: color.driftwood, padding: '4px', display: 'flex',
           }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><path d="m9 18 6-6-6-6"/></svg>
           </button>
         </div>
 
         {/* Row 2: date range */}
-        <div style={{ textAlign: 'center', fontFamily: "'Playfair Display', serif", fontSize: '17px', color: C.ink, marginBottom: '6px' }}>
+        <div style={{ textAlign: 'center', fontFamily: "'Playfair Display', serif", fontSize: '17px', color: color.ink, marginBottom: '6px' }}>
           {dateRangeStr}
         </div>
 
         {/* Row 3: status + visibility toggle */}
-        <div style={{ textAlign: 'center', fontSize: '11px', color: C.driftwood, fontStyle: 'italic', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+        <div style={{ textAlign: 'center', fontSize: '11px', color: color.driftwood, fontStyle: 'italic', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
           <span>{plannedDays.size} of 7 nights planned</span>
           {householdMemberCount > 1 && planId && (
             <button onClick={toggleVisibility} style={{
               background: 'none', border: 'none', cursor: 'pointer', padding: 0,
               fontSize: '10px', fontFamily: "'Jost', sans-serif", fontWeight: 400,
-              color: planStatus === 'published' ? C.sage : C.driftwood,
+              color: planStatus === 'published' ? color.sage : color.driftwood,
             }}>
               · {planStatus === 'published' ? 'Visible to family ✓' : 'Private'}
             </button>
@@ -1077,8 +1072,8 @@ export default function ThisWeek({ appUser }) {
         display: 'flex', gap: '4px', padding: '8px 22px 12px',
         overflowX: 'auto', WebkitOverflowScrolling: 'touch',
         position: 'sticky', top: '66px', zIndex: 10,
-        background: C.cream,
-        boxShadow: '0 2px 6px rgba(80,60,30,0.06)',
+        background: color.cream,
+        boxShadow: elevation.cardRaised,
       }}>
         {weekDates.map((date, i) => {
           const dow = DOW_KEYS[i]
@@ -1090,10 +1085,10 @@ export default function ThisWeek({ appUser }) {
               if (hasPlanned) handleDayTileTap(dow)
             }} style={{
               flex: '1 0 auto', minWidth: '44px', padding: '6px 8px', borderRadius: '8px',
-              border: showFilled ? 'none' : `0.5px solid ${C.linen}`,
+              border: showFilled ? 'none' : `0.5px solid ${color.linen}`,
               cursor: 'pointer', textAlign: 'center',
               background: showFilled ? arcColor : 'white',
-              color: showFilled ? 'white' : hasPlanned ? C.ink : C.driftwood,
+              color: showFilled ? 'white' : hasPlanned ? color.ink : color.driftwood,
               fontFamily: "'Jost', sans-serif",
               transition: 'all 0.15s',
             }}>
@@ -1117,21 +1112,21 @@ export default function ThisWeek({ appUser }) {
         <div style={{
           margin: '0 22px 14px', padding: '16px 18px',
           background: 'white', borderRadius: '14px',
-          borderLeft: `3px solid ${C.sage}`,
+          borderLeft: `3px solid ${color.sage}`,
           boxShadow: '0 1px 6px rgba(80,60,30,0.08)',
           animation: 'fadeUp 0.35s ease both',
         }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-            <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(122,140,110,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke={C.sage} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+            <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: alpha.sage[12], display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke={color.sage} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
                 <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
               </svg>
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '15px', fontWeight: 500, color: C.ink, marginBottom: '6px' }}>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '15px', fontWeight: 500, color: color.ink, marginBottom: '6px' }}>
                 Think of this as your family's weekly menu.
               </div>
-              <div style={{ fontSize: '13px', color: C.driftwood, fontWeight: 300, lineHeight: 1.6 }}>
+              <div style={{ fontSize: '13px', color: color.driftwood, fontWeight: 300, lineHeight: 1.6 }}>
                 Tap any day and describe what you want to make — "Chicken tacos with rice" or "Pizza night." Roux will help you find a recipe or save a new one.
               </div>
               <div style={{ textAlign: 'right', marginTop: '10px' }}>
@@ -1196,7 +1191,7 @@ export default function ThisWeek({ appUser }) {
             return (
               <div key={dowKey} id={`day-${dowKey}`} style={{
                 background: 'white', borderRadius: 12, marginBottom: '12px',
-                border: `0.5px solid ${isToday ? C.linen : 'rgba(200,185,160,0.45)'}`,
+                border: `0.5px solid ${isToday ? color.linen : alpha.linenDk[45]}`,
                 borderLeft: isToday ? `3px solid ${arcColor}` : undefined,
                 overflow: 'hidden',
                 scrollMarginTop: '145px',
@@ -1220,12 +1215,12 @@ export default function ThisWeek({ appUser }) {
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '15px', fontWeight: 500, color: C.ink }}>
+                      <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '15px', fontWeight: 500, color: color.ink }}>
                         {DAY_NAMES[i]}
                       </span>
-                      <span style={{ fontSize: '12px', color: C.ink, opacity: 0.6 }}>{date.getDate()}</span>
+                      <span style={{ fontSize: '12px', color: color.ink, opacity: 0.6 }}>{date.getDate()}</span>
                       {isCollapsed && dayMeals.length > 0 && (
-                        <span style={{ fontSize: '12px', color: C.driftwood, fontWeight: 300 }}>
+                        <span style={{ fontSize: '12px', color: color.driftwood, fontWeight: 300 }}>
                           · {dayMeals.length} meal{dayMeals.length !== 1 ? 's' : ''}
                         </span>
                       )}
@@ -1239,7 +1234,7 @@ export default function ThisWeek({ appUser }) {
                           color: dt.color,
                         }}>{dt.name}</span>
                       )}
-                      <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{
+                      <svg viewBox="0 0 24 24" fill="none" stroke={color.driftwood} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{
                         width: 14, height: 14, opacity: 0.5,
                         transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
                         transition: 'transform 200ms ease-out',
@@ -1291,10 +1286,10 @@ export default function ThisWeek({ appUser }) {
                         return (
                           <div key={ev.id} style={{
                             fontSize: '12px', fontFamily: "'Jost', sans-serif", fontWeight: 400,
-                            color: C.honeyDark,
+                            color: color.honeyDk,
                             display: 'inline-flex', alignItems: 'center', gap: '6px',
-                            background: 'rgba(196,154,60,0.12)',
-                            border: '0.5px solid rgba(196,154,60,0.3)',
+                            background: alpha.honey[12],
+                            border: `0.5px solid ${alpha.honey[30]}`,
                             borderRadius: '20px',
                             padding: '3px 10px',
                             alignSelf: 'flex-start',
@@ -1305,7 +1300,7 @@ export default function ThisWeek({ appUser }) {
                         )
                       })}
                       {overflow > 0 && (
-                        <div style={{ fontSize: '11px', color: C.honeyDark, opacity: 0.6, paddingLeft: '4px' }}>+{overflow} more</div>
+                        <div style={{ fontSize: '11px', color: color.honeyDk, opacity: 0.6, paddingLeft: '4px' }}>+{overflow} more</div>
                       )}
                     </div>
                   )
@@ -1324,7 +1319,7 @@ export default function ThisWeek({ appUser }) {
                       .sort(([a], [b]) => (MEAL_TYPE_ORDER[a] ?? 99) - (MEAL_TYPE_ORDER[b] ?? 99))
                       .map(([type, typeMeals]) => (
                       <div key={type}>
-                        <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.driftwood, padding: '6px 0 2px' }}>
+                        <div style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px', textTransform: 'uppercase', color: color.driftwood, padding: '6px 0 2px' }}>
                           {MEAL_TYPE_LABELS[type] || 'Dinner'}
                         </div>
                         {typeMeals.map(meal => {
@@ -1335,22 +1330,22 @@ export default function ThisWeek({ appUser }) {
                         <div onClick={() => setBatchEditMealId(meal.id)} style={{
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                           padding: '8px 0',
-                          borderBottom: sageMatches ? 'none' : '1px solid rgba(200,185,160,0.15)',
+                          borderBottom: sageMatches ? 'none' : `1px solid ${alpha.linenDk[15]}`,
                           cursor: 'pointer',
                         }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontSize: '14px', fontWeight: 500, color: meal.status === 'cooked' ? C.sage : (meal.status === 'eating_out' || meal.entry_type === 'eating_out') ? C.driftwood : meal.linkedRecipes?.length > 0 ? arcColor : C.ink }}>
-                                {meal.status === 'cooked' && <span style={{ color: C.sage }}>✓ </span>}
+                              <span style={{ fontSize: '14px', fontWeight: 500, color: meal.status === 'cooked' ? color.sage : (meal.status === 'eating_out' || meal.entry_type === 'eating_out') ? color.driftwood : meal.linkedRecipes?.length > 0 ? arcColor : color.ink }}>
+                                {meal.status === 'cooked' && <span style={{ color: color.sage }}>✓ </span>}
                                 {getMealName(meal)}
                               </span>
                               {isGhost && (
-                                <svg viewBox="0 0 24 24" fill="none" stroke={C.honey} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12, flexShrink: 0, opacity: 0.8 }}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke={color.honey} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12, flexShrink: 0, opacity: 0.8 }}>
                                   <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>
                                 </svg>
                               )}
                               {meal.entry_type === 'eating_out' && meal.eating_out_cost && (
-                                <span style={{ fontSize: '11px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300 }}>
+                                <span style={{ fontSize: '11px', color: color.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 300 }}>
                                   ~${Number(meal.eating_out_cost).toFixed(0)}
                                 </span>
                               )}
@@ -1360,13 +1355,13 @@ export default function ThisWeek({ appUser }) {
                                 </span>
                               )}
                               {(meal.linkedRecipes?.length > 0 || meal.entry_type === 'linked') && meal.entry_type !== 'eating_out' && (
-                                <svg viewBox="0 0 24 24" fill="none" stroke={C.sage} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12, flexShrink: 0 }}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke={color.sage} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12, flexShrink: 0 }}>
                                   <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
                                 </svg>
                               )}
                             </div>
                             {meal.source_meal_name && (
-                              <div style={{ fontSize: '11px', color: C.driftwood, marginTop: '2px' }}>
+                              <div style={{ fontSize: '11px', color: color.driftwood, marginTop: '2px' }}>
                                 ↩ {meal.source_meal_name}
                               </div>
                             )}
@@ -1387,11 +1382,11 @@ export default function ThisWeek({ appUser }) {
                         {sageMatches && sageMatches.length > 0 && (
                           <div style={{
                             padding: '10px 12px', marginBottom: '6px',
-                            background: 'rgba(122,140,110,0.06)', borderRadius: '8px',
-                            borderLeft: `3px solid ${C.sage}`,
+                            background: alpha.sage[6], borderRadius: '8px',
+                            borderLeft: `3px solid ${color.sage}`,
                           }}>
-                            <div style={{ fontSize: '13px', color: C.ink, marginBottom: '8px', lineHeight: 1.5 }}>
-                              <span style={{ color: C.sage }}>✦</span> Recipes that might work:
+                            <div style={{ fontSize: '13px', color: color.ink, marginBottom: '8px', lineHeight: 1.5 }}>
+                              <span style={{ color: color.sage }}>✦</span> Recipes that might work:
                             </div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                               {sageMatches.map(match => (
@@ -1408,7 +1403,7 @@ export default function ThisWeek({ appUser }) {
                               }}>Save new recipe</button>
                               <button onClick={() => dismissSageMatch(meal.id)} style={{
                                 padding: '5px 10px', borderRadius: '8px', fontSize: '11px',
-                                background: 'none', color: C.driftwood, border: `1px solid ${C.linen}`,
+                                background: 'none', color: color.driftwood, border: `1px solid ${color.linen}`,
                                 cursor: 'pointer', fontFamily: "'Jost', sans-serif",
                               }}>Keep as-is</button>
                             </div>
@@ -1418,11 +1413,11 @@ export default function ThisWeek({ appUser }) {
                         {meal.sage_match_status === 'pending' && meal.sage_match_result && (!meal.sage_match_result.matches || meal.sage_match_result.matches.length === 0) && (
                           <div style={{
                             padding: '10px 12px', marginBottom: '6px',
-                            background: 'rgba(122,140,110,0.06)', borderRadius: '8px',
-                            borderLeft: `3px solid ${C.sage}`,
+                            background: alpha.sage[6], borderRadius: '8px',
+                            borderLeft: `3px solid ${color.sage}`,
                           }}>
-                            <div style={{ fontSize: '13px', color: C.driftwood, marginBottom: '8px', fontStyle: 'italic' }}>
-                              <span style={{ color: C.sage }}>✦</span> No matching recipes found — want to save one?
+                            <div style={{ fontSize: '13px', color: color.driftwood, marginBottom: '8px', fontStyle: 'italic' }}>
+                              <span style={{ color: color.sage }}>✦</span> No matching recipes found — want to save one?
                             </div>
                             <div style={{ display: 'flex', gap: '6px' }}>
                               <button onClick={() => navigate('/save-recipe', { state: { returnTo: 'week', plannedMealId: meal.id, mealName: getMealName(meal) } })} style={{
@@ -1432,7 +1427,7 @@ export default function ThisWeek({ appUser }) {
                               }}>Save a recipe</button>
                               <button onClick={() => dismissSageMatch(meal.id)} style={{
                                 padding: '5px 10px', borderRadius: '8px', fontSize: '11px',
-                                background: 'none', color: C.driftwood, border: `1px solid ${C.linen}`,
+                                background: 'none', color: color.driftwood, border: `1px solid ${color.linen}`,
                                 cursor: 'pointer', fontFamily: "'Jost', sans-serif",
                               }}>Keep as-is</button>
                             </div>
@@ -1463,10 +1458,10 @@ export default function ThisWeek({ appUser }) {
                           style={{
                             width: '100%', boxSizing: 'border-box',
                             padding: '8px 10px', borderRadius: '8px',
-                            border: `1px solid ${C.linen}`, outline: 'none',
-                            background: 'rgba(196,154,60,0.06)',
+                            border: `1px solid ${color.linen}`, outline: 'none',
+                            background: alpha.honey[8],
                             fontFamily: "'Caveat', cursive", fontSize: '17px',
-                            color: C.ink, lineHeight: 1.3, resize: 'vertical',
+                            color: color.ink, lineHeight: 1.3, resize: 'vertical',
                           }}
                         />
                       </div>
@@ -1484,15 +1479,15 @@ export default function ThisWeek({ appUser }) {
                         <div style={{
                           display: 'flex', alignItems: 'flex-start', gap: '6px',
                           padding: '6px 10px', borderRadius: '8px',
-                          background: 'rgba(196,154,60,0.08)',
-                          border: '0.5px solid rgba(196,154,60,0.25)',
+                          background: alpha.honey[8],
+                          border: `0.5px solid ${alpha.honey[30]}`,
                         }}>
                           <span style={{
                             flex: 1, fontFamily: "'Caveat', cursive",
-                            fontSize: '17px', color: C.ink, lineHeight: 1.3, whiteSpace: 'pre-wrap',
+                            fontSize: '17px', color: color.ink, lineHeight: 1.3, whiteSpace: 'pre-wrap',
                           }}>{note}</span>
                           {!isWeekLocked && (
-                            <svg viewBox="0 0 24 24" fill="none" stroke={C.driftwood} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12, flexShrink: 0, marginTop: '4px', opacity: 0.6 }}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke={color.driftwood} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12, flexShrink: 0, marginTop: '4px', opacity: 0.6 }}>
                               <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
                             </svg>
                           )}
@@ -1505,7 +1500,7 @@ export default function ThisWeek({ appUser }) {
                     <button onClick={() => startEditNote(dowKey)} style={{
                       padding: '4px 14px 8px',
                       background: 'none', border: 'none', cursor: 'pointer',
-                      fontSize: '12px', color: C.driftwood, fontWeight: 400,
+                      fontSize: '12px', color: color.driftwood, fontWeight: 400,
                       fontFamily: "'Jost', sans-serif", textAlign: 'left',
                     }}>
                       + Note for the day
@@ -1521,7 +1516,7 @@ export default function ThisWeek({ appUser }) {
                   color: arcColor, fontWeight: 400,
                   fontFamily: "'Jost', sans-serif",
                   textAlign: 'left',
-                  borderTop: dayMeals.length > 0 ? 'none' : `1px dashed ${C.linen}`,
+                  borderTop: dayMeals.length > 0 ? 'none' : `1px dashed ${color.linen}`,
                 }}>
                   {dayMeals.length > 0 ? '+ Add another' : `+ Add to ${isToday ? 'Today' : DAY_NAMES[i]}`}
                 </button>
@@ -1541,7 +1536,7 @@ export default function ThisWeek({ appUser }) {
             width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
             background: arcColor, color: 'white', cursor: 'pointer',
             fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
-            boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
+            boxShadow: elevation.modal,
           }}>{categorizing ? 'Organizing your ingredients…' : injecting ? 'Building...' : shoppingInjected ? 'View my list →' : 'Build my list →'}</button>
         </div>
       )}
@@ -1549,10 +1544,10 @@ export default function ThisWeek({ appUser }) {
       {/* ── Ingredient Cleanup Dialog ────────────────────────────── */}
       <BottomSheet isOpen={!!ingredientDialog} onClose={() => setIngredientDialog(null)}>
         <div style={{ padding: '20px 22px 24px' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '8px' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: color.ink, marginBottom: '8px' }}>
             Remove {ingredientDialog?.mealName}?
           </div>
-          <div style={{ fontSize: '14px', color: C.driftwood, lineHeight: 1.6, marginBottom: '20px' }}>
+          <div style={{ fontSize: '14px', color: color.driftwood, lineHeight: 1.6, marginBottom: '20px' }}>
             {ingredientDialog?.itemCount} ingredient{ingredientDialog?.itemCount !== 1 ? 's' : ''} for this meal {ingredientDialog?.itemCount !== 1 ? 'are' : 'is'} already on your shopping list. Remove {ingredientDialog?.itemCount !== 1 ? 'them' : 'it'} too?
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -1563,12 +1558,12 @@ export default function ThisWeek({ appUser }) {
             }}>Yes, remove ingredients</button>
             <button onClick={() => softDeleteMeal(ingredientDialog.mealId, ingredientDialog.mealName, true)} style={{
               width: '100%', padding: '12px', borderRadius: '14px',
-              background: 'none', color: C.ink, border: `1.5px solid ${C.linen}`,
+              background: 'none', color: color.ink, border: `1.5px solid ${color.linen}`,
               cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontSize: '14px',
             }}>Keep ingredients on my list</button>
             <button onClick={() => setIngredientDialog(null)} style={{
               width: '100%', padding: '10px', background: 'none', border: 'none',
-              cursor: 'pointer', color: C.driftwood, fontSize: '13px', fontWeight: 300,
+              cursor: 'pointer', color: color.driftwood, fontSize: '13px', fontWeight: 300,
               fontFamily: "'Jost', sans-serif",
             }}>Never mind, keep this meal</button>
           </div>
@@ -1579,14 +1574,14 @@ export default function ThisWeek({ appUser }) {
       <BottomSheet isOpen={shareSheetOpen} onClose={() => setShareSheetOpen(false)}>
         <div style={{ padding: '20px 22px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <span style={{ color: C.sage, fontSize: '18px' }}>✦</span>
-            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink }}>Your week is set.</span>
+            <span style={{ color: color.sage, fontSize: '18px' }}>✦</span>
+            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: color.ink }}>Your week is set.</span>
           </div>
-          <div style={{ fontSize: '14px', color: C.driftwood, lineHeight: 1.6, marginBottom: '20px' }}>
+          <div style={{ fontSize: '14px', color: color.driftwood, lineHeight: 1.6, marginBottom: '20px' }}>
             Ready to build your shopping list? I'll pull in everything you need from this week's recipes.
           </div>
           {ghostMeals.length > 0 && (
-            <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', marginBottom: '16px', paddingLeft: '4px' }}>
+            <div style={{ fontSize: '13px', color: color.driftwood, fontStyle: 'italic', marginBottom: '16px', paddingLeft: '4px' }}>
               {ghostNames.length === 1
                 ? `${ghostNames[0]} doesn't have a recipe — you can add those items manually.`
                 : ghostNames.length === 2
@@ -1600,11 +1595,11 @@ export default function ThisWeek({ appUser }) {
               width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
               background: arcColor, color: 'white', cursor: 'pointer',
               fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
-              boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
+              boxShadow: elevation.modal,
             }}>{categorizing ? 'Organizing your ingredients…' : injecting ? 'Building...' : 'Build my list →'}</button>
             <button onClick={() => setShareSheetOpen(false)} style={{
               width: '100%', padding: '12px', borderRadius: '14px', border: 'none',
-              background: 'none', color: C.driftwood, cursor: 'pointer',
+              background: 'none', color: color.driftwood, cursor: 'pointer',
               fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 300,
             }}>I'll do it later</button>
           </div>
@@ -1646,32 +1641,32 @@ export default function ThisWeek({ appUser }) {
         const currentBatch = editMeal.batch_multiplier || 1
         return (
           <div style={{
-            position: 'fixed', inset: 0, background: C.cream, zIndex: 200,
+            position: 'fixed', inset: 0, background: color.cream, zIndex: 200,
             display: 'flex', flexDirection: 'column', maxWidth: '430px', margin: '0 auto',
           }}>
             <div style={{
-              background: C.forest, padding: '10px 16px 12px',
+              background: color.forest, padding: '10px 16px 12px',
               display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
             }}>
               <button onClick={() => setBatchEditMealId(null)} style={{
-                background: 'rgba(250,247,242,0.15)', border: 'none', borderRadius: '50%',
+                background: alpha.cream[15], border: 'none', borderRadius: '50%',
                 width: 32, height: 32, color: 'white', fontSize: 18, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>‹</button>
-              <span style={{ fontFamily: "'Slabo 27px', serif", fontSize: 18, color: 'rgba(250,247,242,0.95)' }}>
+              <span style={{ fontFamily: "'Slabo 27px', serif", fontSize: 18, color: alpha.cream[95] }}>
                 Edit meal
               </span>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '16px 22px', paddingBottom: 120 }}>
                 {/* 1. Meal name */}
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: C.ink, marginBottom: '18px' }}>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 500, color: color.ink, marginBottom: '18px' }}>
                   {getMealName(editMeal)}
                 </div>
 
                 {/* 2. Linked recipes — hidden for eating-out meals (no recipes apply) */}
                 {editMeal.entry_type !== 'eating_out' && editMeal.status !== 'eating_out' && (
                   <>
-                    <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '8px' }}>Linked recipes</div>
+                    <div style={{ fontSize: '11px', color: color.driftwood, marginBottom: '8px' }}>Linked recipes</div>
                     <div style={{ marginBottom: '16px' }}>
                       {(editMeal.linkedRecipes || []).length > 0 ? (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
@@ -1679,13 +1674,13 @@ export default function ThisWeek({ appUser }) {
                             <span key={lr.recipe_id} style={{
                               display: 'inline-flex', alignItems: 'center', gap: '4px',
                               padding: '5px 10px', borderRadius: '8px', fontSize: '12px',
-                              background: 'rgba(61,107,79,0.08)', color: arcColor,
+                              background: alpha.forest[8], color: arcColor,
                               fontFamily: "'Jost', sans-serif", fontWeight: 500,
                             }}>
                               {lr.recipe_name}
                               <button onClick={() => unlinkRecipeFromMeal(editMeal.id, lr.recipe_id)} style={{
                                 background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                                fontSize: '14px', color: C.driftwood, lineHeight: 1, marginLeft: '2px',
+                                fontSize: '14px', color: color.driftwood, lineHeight: 1, marginLeft: '2px',
                               }}>×</button>
                             </span>
                           ))}
@@ -1693,7 +1688,7 @@ export default function ThisWeek({ appUser }) {
                       ) : null}
                       <button onClick={() => { setBatchEditMealId(null); openLinkSheet(editMeal) }} style={{
                         background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                        fontSize: '12px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 400,
+                        fontSize: '12px', color: color.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 400,
                       }}>{(editMeal.linkedRecipes || []).length > 0 ? '+ Add another recipe' : '+ Link a recipe'}</button>
                     </div>
                   </>
@@ -1711,7 +1706,7 @@ export default function ThisWeek({ appUser }) {
                       }}>✓ Cooked</button>
                       <button onClick={() => setShowAteOutInput(!showAteOutInput)} style={{
                         flex: 1, padding: '12px', borderRadius: '12px',
-                        border: `1.5px solid ${C.linen}`, background: showAteOutInput ? 'rgba(140,123,107,0.06)' : 'white', color: C.driftwood,
+                        border: `1.5px solid ${color.linen}`, background: showAteOutInput ? 'rgba(140,123,107,0.06)' : 'white', color: color.driftwood,
                         cursor: 'pointer', fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 400,
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                       }}>Ate out</button>
@@ -1719,12 +1714,12 @@ export default function ThisWeek({ appUser }) {
                     {showAteOutInput && (
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                         <div style={{ position: 'relative', flex: 1 }}>
-                          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '14px', color: C.driftwood }}>$</span>
+                          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '14px', color: color.driftwood }}>$</span>
                           <input type="text" inputMode="decimal" value={ateOutInput} onChange={e => setAteOutInput(e.target.value)}
                             placeholder="0.00" style={{
                               width: '100%', padding: '10px 12px 10px 24px', fontSize: '14px',
-                              fontFamily: "'Jost', sans-serif", border: `1.5px solid ${C.linen}`,
-                              borderRadius: '10px', outline: 'none', color: C.ink, boxSizing: 'border-box',
+                              fontFamily: "'Jost', sans-serif", border: `1.5px solid ${color.linen}`,
+                              borderRadius: '10px', outline: 'none', color: color.ink, boxSizing: 'border-box',
                             }} />
                         </div>
                         <button onClick={() => markAsAteOut(editMeal.id)} style={{
@@ -1734,7 +1729,7 @@ export default function ThisWeek({ appUser }) {
                         }}>Save</button>
                         <button onClick={() => { setAteOutInput(''); markAsAteOut(editMeal.id) }} style={{
                           background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                          fontSize: '12px', color: C.driftwood, fontFamily: "'Jost', sans-serif",
+                          fontSize: '12px', color: color.driftwood, fontFamily: "'Jost', sans-serif",
                         }}>Skip</button>
                       </div>
                     )}
@@ -1743,8 +1738,8 @@ export default function ThisWeek({ appUser }) {
                 {editMeal.status === 'cooked' && editMeal.cooked_at && editMeal.entry_type !== 'eating_out' && (
                   <div style={{
                     width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '16px',
-                    background: 'rgba(122,140,110,0.08)', textAlign: 'center',
-                    fontSize: '13px', color: C.sage, fontFamily: "'Jost', sans-serif", fontWeight: 400,
+                    background: alpha.sage[8], textAlign: 'center',
+                    fontSize: '13px', color: color.sage, fontFamily: "'Jost', sans-serif", fontWeight: 400,
                   }}>✓ Cooked {new Date(editMeal.cooked_at).toLocaleDateString('en-US', { weekday: 'long' })}</div>
                 )}
                 {(editMeal.status === 'eating_out' || editMeal.entry_type === 'eating_out') && (
@@ -1752,42 +1747,42 @@ export default function ThisWeek({ appUser }) {
                     <div style={{
                       width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '10px',
                       background: 'rgba(140,123,107,0.06)', textAlign: 'center',
-                      fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 400,
+                      fontSize: '13px', color: color.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 400,
                     }}>{editMeal.status === 'eating_out' ? 'Ate out' : 'Eating out'}{editMeal.eating_out_cost ? ` · Est. $${Number(editMeal.eating_out_cost).toFixed(2)}` : ''}</div>
 
                     {/* Actual cost capture — for past meals */}
                     {editMeal.planned_date && editMeal.planned_date < todayStr && (
                       editMeal.eating_out_actual_cost && !showActualCostEdit ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '4px' }}>
-                          <span style={{ fontSize: '14px', color: C.sage, fontWeight: 500 }}>Spent: ${Number(editMeal.eating_out_actual_cost).toFixed(2)} ✓</span>
+                          <span style={{ fontSize: '14px', color: color.sage, fontWeight: 500 }}>Spent: ${Number(editMeal.eating_out_actual_cost).toFixed(2)} ✓</span>
                           <button onClick={() => { setActualCostInput(String(editMeal.eating_out_actual_cost)); setShowActualCostEdit(true) }} style={{
                             background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                            fontSize: '12px', color: C.driftwood, fontFamily: "'Jost', sans-serif",
+                            fontSize: '12px', color: color.driftwood, fontFamily: "'Jost', sans-serif",
                           }}>Update</button>
                         </div>
                       ) : (
                         <div>
-                          <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '6px' }}>How much did you spend?</div>
+                          <div style={{ fontSize: '11px', color: color.driftwood, marginBottom: '6px' }}>How much did you spend?</div>
                           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             <div style={{ position: 'relative', flex: 1 }}>
-                              <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '14px', color: C.driftwood }}>$</span>
+                              <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '14px', color: color.driftwood }}>$</span>
                               <input type="text" inputMode="decimal" value={actualCostInput} onChange={e => setActualCostInput(e.target.value)}
                                 placeholder="0.00" style={{
                                   width: '100%', padding: '10px 12px 10px 24px', fontSize: '14px',
-                                  fontFamily: "'Jost', sans-serif", border: `1.5px solid ${C.linen}`,
-                                  borderRadius: '10px', outline: 'none', color: C.ink, boxSizing: 'border-box',
+                                  fontFamily: "'Jost', sans-serif", border: `1.5px solid ${color.linen}`,
+                                  borderRadius: '10px', outline: 'none', color: color.ink, boxSizing: 'border-box',
                                 }} />
                             </div>
                             <button onClick={() => saveActualCost(editMeal.id)} disabled={!actualCostInput.trim()} style={{
                               padding: '10px 16px', borderRadius: '10px', border: 'none',
-                              background: actualCostInput.trim() ? arcColor : C.linen, color: actualCostInput.trim() ? 'white' : C.driftwood,
+                              background: actualCostInput.trim() ? arcColor : color.linen, color: actualCostInput.trim() ? 'white' : color.driftwood,
                               cursor: actualCostInput.trim() ? 'pointer' : 'default',
                               fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 500,
                             }}>Save</button>
                           </div>
                           <button onClick={() => navigate(`/pantry/eating-out-receipt/${editMeal.id}`)} style={{
                             background: 'none', border: 'none', cursor: 'pointer', padding: '6px 0 0',
-                            fontSize: '12px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontStyle: 'italic',
+                            fontSize: '12px', color: color.driftwood, fontFamily: "'Jost', sans-serif", fontStyle: 'italic',
                           }}>or scan a receipt →</button>
                         </div>
                       )
@@ -1796,14 +1791,14 @@ export default function ThisWeek({ appUser }) {
                 )}
 
                 {/* 4. Batch size — compact */}
-                <div style={{ fontSize: '11px', color: C.driftwood, marginBottom: '6px' }}>Batch size</div>
+                <div style={{ fontSize: '11px', color: color.driftwood, marginBottom: '6px' }}>Batch size</div>
                 <div style={{ display: 'flex', gap: '5px', marginBottom: '20px' }}>
                   {BATCH_OPTIONS.map(val => (
                     <button key={val} onClick={() => changeBatchMultiplier(batchEditMealId, val)} style={{
                       flex: 1, padding: '6px 10px', height: '32px', borderRadius: '8px', fontSize: '13px',
-                      border: currentBatch === val ? `1.5px solid ${arcColor}` : `1px solid ${C.linen}`,
-                      background: currentBatch === val ? 'rgba(61,107,79,0.08)' : 'white',
-                      color: currentBatch === val ? arcColor : C.ink,
+                      border: currentBatch === val ? `1.5px solid ${arcColor}` : `1px solid ${color.linen}`,
+                      background: currentBatch === val ? alpha.forest[8] : 'white',
+                      color: currentBatch === val ? arcColor : color.ink,
                       cursor: 'pointer', fontFamily: "'Jost', sans-serif",
                       fontWeight: currentBatch === val ? 600 : 400,
                     }}>{BATCH_LABELS[val]}</button>
@@ -1815,14 +1810,14 @@ export default function ThisWeek({ appUser }) {
                   width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
                   background: arcColor, color: 'white', cursor: 'pointer',
                   fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
-                  boxShadow: '0 4px 16px rgba(30,55,35,0.25)', marginBottom: '16px',
+                  boxShadow: elevation.modal, marginBottom: '16px',
                 }}>Done</button>
 
                 {/* Divider + Move / Remove */}
-                <div style={{ borderTop: `1px solid ${C.linen}`, paddingTop: '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                <div style={{ borderTop: `1px solid ${color.linen}`, paddingTop: '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
                   <button onClick={() => openMovePicker(editMeal.id)} style={{
                     background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                    fontSize: '13px', color: C.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 400,
+                    fontSize: '13px', color: color.driftwood, fontFamily: "'Jost', sans-serif", fontWeight: 400,
                   }}>Move to another day →</button>
                   <button onClick={() => { setBatchEditMealId(null); initDeleteMeal(editMeal.id) }} style={{
                     background: 'none', border: 'none', cursor: 'pointer', padding: 0,
@@ -1837,7 +1832,7 @@ export default function ThisWeek({ appUser }) {
       {/* ── Move Meal Day Picker ─────────────────────────────────── */}
       <BottomSheet isOpen={moveDayPickerOpen} onClose={() => { setMoveDayPickerOpen(false); setMoveMealId(null) }} zIndex={300}>
         <div style={{ padding: '20px 22px 24px' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '16px' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: color.ink, marginBottom: '16px' }}>
             Move to another day
           </div>
           {(() => {
@@ -1854,22 +1849,22 @@ export default function ThisWeek({ appUser }) {
               return (
                 <button key={dateStr} onClick={() => !isCurrent && moveMealToDay(date)} disabled={isCurrent} style={{
                   width: '100%', padding: '12px 14px', borderRadius: '10px',
-                  border: `0.5px solid ${isCurrent ? C.linen : 'rgba(200,185,160,0.3)'}`,
-                  background: isCurrent ? C.linen : 'white',
+                  border: `0.5px solid ${isCurrent ? color.linen : alpha.linenDk[25]}`,
+                  background: isCurrent ? color.linen : 'white',
                   cursor: isCurrent ? 'default' : 'pointer',
                   opacity: isCurrent ? 0.5 : 1,
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   fontFamily: "'Jost', sans-serif",
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '14px', fontWeight: isToday ? 500 : 400, color: isToday ? arcColor : C.ink }}>
+                    <span style={{ fontSize: '14px', fontWeight: isToday ? 500 : 400, color: isToday ? arcColor : color.ink }}>
                       {DAY_NAMES[dayIdx]}
                     </span>
-                    <span style={{ fontSize: '12px', color: C.driftwood }}>
+                    <span style={{ fontSize: '12px', color: color.driftwood }}>
                       {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </span>
                   </div>
-                  <span style={{ fontSize: '12px', color: C.driftwood }}>
+                  <span style={{ fontSize: '12px', color: color.driftwood }}>
                     {mealCount > 0 ? `${mealCount} meal${mealCount !== 1 ? 's' : ''}` : ''}
                   </span>
                 </button>
@@ -1883,7 +1878,7 @@ export default function ThisWeek({ appUser }) {
                   if (thisWeekFiltered.length === 0) return null
                   return (
                     <>
-                      <div style={{ fontSize: '11px', color: C.driftwood, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>This week</div>
+                      <div style={{ fontSize: '11px', color: color.driftwood, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>This week</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '16px' }}>
                         {thisWeekFiltered.map(date => {
                           const dayIdx = date.getDay() === 0 ? 6 : date.getDay() - 1
@@ -1894,7 +1889,7 @@ export default function ThisWeek({ appUser }) {
                     </>
                   )
                 })()}
-                <div style={{ fontSize: '11px', color: C.driftwood, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>Next week</div>
+                <div style={{ fontSize: '11px', color: color.driftwood, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>Next week</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   {nextWeekDates.map(date => {
                     const dateStr = toLocalDateStr(date)
@@ -1917,24 +1912,24 @@ export default function ThisWeek({ appUser }) {
         const sheetMealName = addSheetLinkOpen ? (addInput.trim() || 'New meal') : getMealName(linkSheetMeal)
         return (
           <div style={{
-            position: 'fixed', inset: 0, background: C.cream, zIndex: 300,
+            position: 'fixed', inset: 0, background: color.cream, zIndex: 300,
             display: 'flex', flexDirection: 'column', maxWidth: '430px', margin: '0 auto',
           }}>
             <div style={{
-              background: C.forest, padding: '10px 16px 12px',
+              background: color.forest, padding: '10px 16px 12px',
               display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
             }}>
               <button onClick={closeLinkSheet} style={{
-                background: 'rgba(250,247,242,0.15)', border: 'none', borderRadius: '50%',
+                background: alpha.cream[15], border: 'none', borderRadius: '50%',
                 width: 32, height: 32, color: 'white', fontSize: 18, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>‹</button>
-              <span style={{ fontFamily: "'Slabo 27px', serif", fontSize: 18, color: 'rgba(250,247,242,0.95)' }}>
+              <span style={{ fontFamily: "'Slabo 27px', serif", fontSize: 18, color: alpha.cream[95] }}>
                 Link recipes
               </span>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '16px 22px', paddingBottom: 120 }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '14px' }}>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: color.ink, marginBottom: '14px' }}>
                 {sheetMealName}
               </div>
               {/* Recipe / Staple toggle */}
@@ -1944,7 +1939,7 @@ export default function ThisWeek({ appUser }) {
                     padding: '10px', textAlign: 'center',
                     fontFamily: "'Jost', sans-serif", fontSize: '12px',
                     fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase',
-                    color: linkType === type ? arcColor : C.driftwood,
+                    color: linkType === type ? arcColor : color.driftwood,
                     cursor: linkType === type ? 'default' : 'pointer', border: 'none', background: 'none',
                     borderBottom: linkType === type ? `2px solid ${arcColor}` : '2px solid transparent',
                     transition: 'color 0.2s, border-color 0.2s',
@@ -1957,13 +1952,13 @@ export default function ThisWeek({ appUser }) {
                 style={{
                   width: '100%', padding: '12px 14px', fontSize: '14px',
                   fontFamily: "'Jost', sans-serif", fontWeight: 300,
-                  border: `1.5px solid ${C.linen}`, borderRadius: '12px',
-                  outline: 'none', color: C.ink, boxSizing: 'border-box', marginBottom: '10px',
+                  border: `1.5px solid ${color.linen}`, borderRadius: '12px',
+                  outline: 'none', color: color.ink, boxSizing: 'border-box', marginBottom: '10px',
                 }}
               />
               <div>
                 {linkResults.length === 0 && (
-                  <div style={{ fontSize: '13px', color: C.driftwood, fontStyle: 'italic', padding: '12px 0' }}>
+                  <div style={{ fontSize: '13px', color: color.driftwood, fontStyle: 'italic', padding: '12px 0' }}>
                     {linkSearch.trim() ? `No ${linkType === 'quick' ? 'staples' : 'recipes'} found` : `Loading ${linkType === 'quick' ? 'staples' : 'recipes'}...`}
                   </div>
                 )}
@@ -1973,7 +1968,7 @@ export default function ThisWeek({ appUser }) {
                     <button key={r.id} onClick={() => isLinked ? unlinkFromSheet(r.id) : linkFromSheet(r.id, r.name)} style={{
                       display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
                       padding: '12px 0', background: 'none', border: 'none',
-                      borderBottom: '1px solid rgba(200,185,160,0.15)',
+                      borderBottom: `1px solid ${alpha.linenDk[15]}`,
                       cursor: 'pointer', textAlign: 'left', fontFamily: "'Jost', sans-serif",
                     }}>
                       {isLinked ? (
@@ -1981,9 +1976,9 @@ export default function ThisWeek({ appUser }) {
                           <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}><path d="M20 6L9 17l-5-5"/></svg>
                         </div>
                       ) : (
-                        <div style={{ width: 18, height: 18, borderRadius: '4px', border: `1.5px solid ${C.linen}`, flexShrink: 0 }} />
+                        <div style={{ width: 18, height: 18, borderRadius: '4px', border: `1.5px solid ${color.linen}`, flexShrink: 0 }} />
                       )}
-                      <span style={{ fontSize: '14px', color: isLinked ? arcColor : C.ink, fontWeight: isLinked ? 500 : 300 }}>{r.name}</span>
+                      <span style={{ fontSize: '14px', color: isLinked ? arcColor : color.ink, fontWeight: isLinked ? 500 : 300 }}>{r.name}</span>
                     </button>
                   )
                 })}
@@ -2001,7 +1996,7 @@ export default function ThisWeek({ appUser }) {
                 width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
                 background: arcColor, color: 'white', cursor: 'pointer', marginTop: '12px',
                 fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
-                boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
+                boxShadow: elevation.modal,
               }}>Done</button>
             </div>
           </div>
@@ -2014,7 +2009,7 @@ export default function ThisWeek({ appUser }) {
           position: 'fixed', top: '80px', left: '50%', transform: 'translateX(-50%)',
           background: arcColor, color: 'white', padding: '10px 22px', borderRadius: '10px',
           fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 500,
-          zIndex: 300, boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+          zIndex: 300, boxShadow: elevation.toast,
         }}>{toast}</div>
       )}
 
@@ -2026,10 +2021,10 @@ export default function ThisWeek({ appUser }) {
       <BottomSheet isOpen={!!deselectConfirm} onClose={() => setDeselectConfirm(null)}>
         {deselectConfirm && (
           <div style={{ padding: '16px 22px 24px' }}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: C.ink, marginBottom: '8px' }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 500, color: color.ink, marginBottom: '8px' }}>
               Remove {deselectConfirm.dayName}'s ingredients?
             </div>
-            <div style={{ fontSize: '13px', color: C.driftwood, lineHeight: 1.6, marginBottom: '20px' }}>
+            <div style={{ fontSize: '13px', color: color.driftwood, lineHeight: 1.6, marginBottom: '20px' }}>
               This will remove ingredients from {deselectConfirm.mealNames.join(', ')} from your list.
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -2040,7 +2035,7 @@ export default function ThisWeek({ appUser }) {
               }}>Remove from list</button>
               <button onClick={() => setDeselectConfirm(null)} style={{
                 flex: 1, padding: '12px', borderRadius: '12px',
-                border: `1px solid ${C.linen}`, background: 'none', color: C.driftwood,
+                border: `1px solid ${color.linen}`, background: 'none', color: color.driftwood,
                 fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 400, cursor: 'pointer',
               }}>Keep them</button>
             </div>
