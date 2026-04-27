@@ -52,7 +52,7 @@ import BottomSheet from './components/BottomSheet'
 import TopBar from './components/TopBar'
 import ScrollToTop from './components/ScrollToTop'
 import BottomNav from './components/BottomNav'
-import { color } from './styles/tokens'
+import { color, alpha } from './styles/tokens'
 // AppShell (Shell) removed — Phase 1 leftover, disconnected from routing
 
 function formatRelativeTime(dateStr) {
