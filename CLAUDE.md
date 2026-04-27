@@ -54,7 +54,7 @@ If any answer is clearly "no" — stop and flag it before proceeding.
 5. **Lauren decides. The system advances automatically.** She publishes plans and finalizes lists.
 6. **Sage is a helper, not a planner.** Observes, nudges, suggests — never acts unilaterally.
 7. **No swipe-only actions.** Destructive actions must have visible UI (icons, menus). Swipe = shortcut only.
-8. **4 tabs: Home / Week / Meals / Pantry.** Routes: `/` `/thisweek` `/meals` `/pantry`. Sage accessible via ✦ sparkle icon in topbar. Never reorder tabs.
+8. **5 tabs: Home / Meals / Plan / Events / Lists.** Routes: `/` `/meals` `/plan` `/events` `/shop`. Sage accessible via ✦ sparkle icon in topbar. Never reorder tabs. *Events* consolidates the older "Traditions" concept under a more flexible name; legacy `/meals/traditions` route stays for deep links but is not in nav.
 9. **Subscription tiers are `'free'` and `'full'` only.** No other tier names anywhere in the codebase. Hill House = `'full'`.
 10. **Sage has no free-form chat.** All interactions are app-triggered. Users respond with taps only. App always constructs the API prompt.
 

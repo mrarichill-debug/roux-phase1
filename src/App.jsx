@@ -448,12 +448,12 @@ function AuthenticatedApp({ appUser, setAppUser }) {
       {/* ── Global topbar icons — sage, bell, avatar — z-index 150 ──── */}
       {!isOnboarding && <div style={{
         position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)',
-        width: '100%', maxWidth: '430px', height: '66px',
+        width: '100%', maxWidth: '430px', height: '52px',
         display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-        padding: '0 14px', gap: '2px',
+        padding: '0 14px', gap: '4px',
         zIndex: 150, pointerEvents: 'none',
       }}>
-        {/* Bell */}
+        {/* Bell — monoline, 1.3 stroke, cream */}
         <button
           onClick={() => setNotifOpen(true)}
           aria-label="Notifications"
@@ -462,34 +462,35 @@ function AuthenticatedApp({ appUser, setAppUser }) {
             width: '32px', height: '32px', borderRadius: '50%',
             background: 'none', border: 'none', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'rgba(210,230,200,0.7)',
+            color: alpha.paper[95],
           }}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 19, height: 19 }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
           </svg>
           {totalBadge > 0 && (
             <span style={{
               position: 'absolute', top: '4px', right: '4px',
-              width: '8px', height: '8px', borderRadius: '50%',
-              background: color.honey, border: `1.5px solid ${color.forest}`,
+              width: '6px', height: '6px', borderRadius: '50%',
+              background: color.honey,
             }} />
           )}
         </button>
-        {/* Avatar */}
+        {/* Avatar — 28px circle, --forest-light fill, Playfair italic initial */}
         <button
           onClick={() => setProfileOpen(true)}
           aria-label="Profile"
           style={{
             pointerEvents: 'auto',
-            width: '32px', height: '32px', borderRadius: '50%',
-            background: 'rgba(255,255,255,0.18)',
-            color: 'rgba(250,247,242,0.95)',
+            width: '28px', height: '28px', borderRadius: '50%',
+            background: color.forestLight,
+            color: color.forestDark,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '12px', fontWeight: 500, cursor: 'pointer',
-            border: '1.5px solid rgba(255,255,255,0.25)',
-            userSelect: 'none', fontFamily: "'Jost', sans-serif",
+            fontSize: '14px', fontWeight: 500,
+            fontFamily: "'Playfair Display', serif", fontStyle: 'italic',
+            cursor: 'pointer', border: 'none',
+            userSelect: 'none', lineHeight: 1,
           }}
         >
           {firstName.charAt(0).toUpperCase() || '?'}
