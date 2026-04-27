@@ -1215,7 +1215,7 @@ export default function ThisWeek({ appUser }) {
           {[1,2,3].map(i => <div key={i} className="shimmer-block" style={{ height: '80px', borderRadius: '14px', marginBottom: '12px' }} />)}
         </div>
       ) : (
-        <div style={{ padding: '0 22px' }}>
+        <div>
           {weekDates.map((date, i) => {
             const dowKey = DOW_KEYS[i]
             const dateStr = toLocalDateStr(date)
@@ -1224,60 +1224,108 @@ export default function ThisWeek({ appUser }) {
             const dt = dayTypes[dowKey]
             const isCollapsed = collapsedDays.has(dowKey)
 
+            // Direction A summary line: surface a primary meal name + a mono
+            // status eyebrow when collapsed. Prefer dinner; fall back to first.
+            const primaryMeal = dayMeals.find(m => m.meal_type === 'dinner') || dayMeals[0]
+            const primaryName = primaryMeal ? getMealName(primaryMeal) : null
+            const statusEyebrow = (() => {
+              if (isToday && primaryMeal) return 'TONIGHT'
+              if (primaryMeal?.status === 'cooked') return 'MADE'
+              if (primaryMeal?.entry_type === 'eating_out' || primaryMeal?.status === 'eating_out') return 'EATING OUT'
+              if (primaryMeal?.entry_type === 'ghost') return 'PLANNED'
+              if (primaryMeal?.entry_type === 'linked') return 'PLANNED'
+              if (!primaryMeal && dt?.name) return dt.name.toUpperCase()
+              return null
+            })()
+
             return (
               <div key={dowKey} id={`day-${dowKey}`} style={{
-                background: 'white', borderRadius: 12, marginBottom: '12px',
-                border: `0.5px solid ${isToday ? color.rule : alpha.rule[45]}`,
-                borderLeft: isToday ? `3px solid ${arcColor}` : undefined,
-                overflow: 'hidden',
+                background: isToday ? color.honeyLight : 'transparent',
+                borderTop: i === 0 ? `1px solid ${color.rule}` : 'none',
+                borderBottom: `1px solid ${color.rule}`,
                 scrollMarginTop: '145px',
                 animation: `fadeUp 0.35s ease ${0.02 + i * 0.03}s both`,
               }}>
-                {/* Day header — tap to toggle */}
-                <div onClick={() => toggleDayCollapse(dowKey)} style={{ padding: '12px 14px', cursor: 'pointer', userSelect: 'none' }}>
-                  {isToday && (
-                    <div style={{
-                      fontSize: 11,
-                      color: arcColor,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.1em',
-                      fontWeight: 500,
-                      marginBottom: 4,
-                    }}>
-                      Today
-                    </div>
-                  )}
+                {/* Day header — tap to toggle. Direction A flat row layout. */}
+                <div onClick={() => toggleDayCollapse(dowKey)} style={{
+                  padding: '14px 22px', cursor: 'pointer', userSelect: 'none',
+                  display: 'grid', gridTemplateColumns: '52px 1fr auto', alignItems: 'center', gap: '14px',
+                }}>
+                  {/* Left: italic Playfair 3-letter day abbrev */}
                   <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    fontFamily: "'Playfair Display', serif",
+                    fontStyle: 'italic',
+                    fontSize: '17px',
+                    color: isToday ? color.honeyDark : color.sage,
+                    lineHeight: 1.1,
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '15px', fontWeight: 500, color: color.ink }}>
-                        {DAY_NAMES[i]}
-                      </span>
-                      <span style={{ fontSize: '12px', color: color.ink, opacity: 0.6 }}>{date.getDate()}</span>
-                      {isCollapsed && dayMeals.length > 0 && (
-                        <span style={{ fontSize: '12px', color: color.inkSoft, fontWeight: 300 }}>
-                          · {dayMeals.length} meal{dayMeals.length !== 1 ? 's' : ''}
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {dt && (
-                        <span style={{
-                          fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px', textTransform: 'uppercase',
-                          padding: '2px 8px', borderRadius: '4px',
-                          background: `${dt.color}18`,
-                          color: dt.color,
-                        }}>{dt.name}</span>
-                      )}
-                      <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{
-                        width: 14, height: 14, opacity: 0.5,
-                        transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
-                        transition: 'transform 200ms ease-out',
-                      }}>
-                        <polyline points="6 9 12 15 18 9" />
-                      </svg>
-                    </div>
+                    {DAY_ABBR[i]}
+                    <span style={{
+                      display: 'block',
+                      fontFamily: "'Jost', sans-serif",
+                      fontStyle: 'normal',
+                      fontSize: '10px',
+                      fontWeight: 300,
+                      color: color.inkSoft,
+                      letterSpacing: '0.04em',
+                      marginTop: '2px',
+                    }}>{date.getDate()}</span>
+                  </div>
+
+                  {/* Center: meal name + mono status eyebrow */}
+                  <div style={{ minWidth: 0 }}>
+                    {primaryName ? (
+                      <>
+                        <div style={{
+                          fontFamily: "'Playfair Display', serif",
+                          fontSize: '15px', fontWeight: 500,
+                          color: color.ink, lineHeight: 1.25,
+                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                        }}>
+                          {primaryName}
+                          {dayMeals.length > 1 && (
+                            <span style={{ fontSize: '12px', color: color.inkSoft, fontWeight: 300, marginLeft: '6px' }}>
+                              · +{dayMeals.length - 1}
+                            </span>
+                          )}
+                        </div>
+                        {statusEyebrow && (
+                          <div style={{
+                            fontFamily: "'Jost', sans-serif",
+                            fontSize: '9px', fontWeight: 500,
+                            letterSpacing: '0.16em', textTransform: 'uppercase',
+                            color: isToday ? color.honeyDark : color.inkSoft,
+                            marginTop: '4px',
+                          }}>{statusEyebrow}</div>
+                        )}
+                      </>
+                    ) : (
+                      <div style={{
+                        fontFamily: "'Playfair Display', serif",
+                        fontStyle: 'italic',
+                        fontSize: '14px',
+                        color: color.inkSoft,
+                      }}>nothing planned</div>
+                    )}
+                  </div>
+
+                  {/* Right: day-type pill (small) + chevron */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {dt && (
+                      <span style={{
+                        fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px', textTransform: 'uppercase',
+                        padding: '2px 8px', borderRadius: '4px',
+                        background: `${dt.color}18`,
+                        color: dt.color,
+                      }}>{dt.name}</span>
+                    )}
+                    <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{
+                      width: 14, height: 14, opacity: 0.5,
+                      transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                      transition: 'transform 200ms ease-out',
+                    }}>
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
                   </div>
                 </div>
 
@@ -1287,7 +1335,7 @@ export default function ThisWeek({ appUser }) {
                   gridTemplateRows: isCollapsed ? '0fr' : '1fr',
                   transition: 'grid-template-rows 200ms ease-out',
                 }}>
-                <div style={{ overflow: 'hidden', position: 'relative', paddingBottom: '52px' }}>
+                <div style={{ overflow: 'hidden', position: 'relative', padding: '0 8px 52px' }}>
 
                 {/* Calendar events — vertical, sorted by start time */}
                 {(() => {
