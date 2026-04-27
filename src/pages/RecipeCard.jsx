@@ -49,11 +49,7 @@ function scaleQty(qtyStr, scale) {
 function formatTime(m) { if (!m) return null; if (m < 60) return `${m}m`; const h = Math.floor(m/60); const r = m%60; return r ? `${h}h ${r}m` : `${h}h` }
 function displayCategory(cat) { return cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : null }
 
-// ── SVG Icons ───────────────────────────────────────────────────────────────
-const ClockIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-const FlameIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
-const PeopleIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-const SignalIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke={color.inkSoft} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><rect x="4" y="14" width="4" height="6" rx="1"/><rect x="10" y="10" width="4" height="10" rx="1"/><rect x="16" y="6" width="4" height="14" rx="1"/></svg>
+// Stat icons retired in Phase 4 — replaced with the mono eyebrow metadata line.
 
 // Session-scoped set to debounce recipe_viewed logging (one per recipe per session)
 const viewedThisSession = new Set()
@@ -217,10 +213,10 @@ export default function RecipeCard({ appUser }) {
         ]}
       />
 
-      {/* ── Hero ──────────────────────────────────────────────────────── */}
+      {/* ── Hero (aspect 1.4 — Direction A) ──────────────────────────── */}
       {heroUrl ? (
         <div style={{
-          width: '100%', height: '220px',
+          width: '100%', aspectRatio: '1.4',
           background: `url(${heroUrl}) center/cover no-repeat`,
           position: 'relative', overflow: 'hidden',
           animation: 'fadeUp 0.4s ease 0.05s both',
@@ -231,7 +227,7 @@ export default function RecipeCard({ appUser }) {
             <div style={{ position: 'absolute', bottom: '10px', left: '14px', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
               {recipeTags.map(tag => (
                 <div key={`t-${tag}`} style={{
-                  background: 'rgba(255,255,255,0.85)', border: 'none',
+                  background: alpha.paper[95], border: 'none',
                   borderRadius: '4px', padding: '3px 8px',
                   fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px',
                   textTransform: 'uppercase', color: color.inkSoft,
@@ -239,7 +235,7 @@ export default function RecipeCard({ appUser }) {
               ))}
               {recipeMethods.map(m => (
                 <div key={`m-${m}`} style={{
-                  background: 'rgba(255,255,255,0.85)', border: 'none',
+                  background: alpha.paper[95], border: 'none',
                   borderRadius: '4px', padding: '3px 8px',
                   fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px',
                   textTransform: 'uppercase', color: color.inkSoft,
@@ -249,29 +245,39 @@ export default function RecipeCard({ appUser }) {
           )}
         </div>
       ) : (
-        (recipeTags.length > 0 || recipeMethods.length > 0) && (
-          <div style={{
-            minHeight: '44px', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap',
-            padding: '8px 22px', borderBottom: `0.5px solid ${color.rule}`,
-          }}>
-            {recipeTags.map(tag => (
-              <div key={`t-${tag}`} style={{
-                background: 'transparent', border: '0.5px solid #C4B8A8',
-                borderRadius: '4px', padding: '3px 8px',
-                fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px',
-                textTransform: 'uppercase', color: color.inkSoft,
-              }}>{tag}</div>
-            ))}
-            {recipeMethods.map(m => (
-              <div key={`m-${m}`} style={{
-                background: 'transparent', border: '0.5px solid #C4B8A8',
-                borderRadius: '4px', padding: '3px 8px',
-                fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px',
-                textTransform: 'uppercase', color: color.inkSoft,
-              }}>{m}</div>
-            ))}
-          </div>
-        )
+        // Empty-state placeholder — surface bg with a forest-light category block at top
+        <div style={{
+          width: '100%', aspectRatio: '1.4',
+          background: color.surface,
+          position: 'relative', overflow: 'hidden',
+          animation: 'fadeUp 0.4s ease 0.05s both',
+          display: 'flex', flexDirection: 'column',
+        }}>
+          <div style={{ height: '40%', background: color.forestLight }} />
+          {(recipeTags.length > 0 || recipeMethods.length > 0) && (
+            <div style={{
+              position: 'absolute', bottom: '10px', left: '14px',
+              display: 'flex', gap: '4px', flexWrap: 'wrap',
+            }}>
+              {recipeTags.map(tag => (
+                <div key={`t-${tag}`} style={{
+                  background: 'transparent', border: `0.5px solid ${color.rule}`,
+                  borderRadius: '4px', padding: '3px 8px',
+                  fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px',
+                  textTransform: 'uppercase', color: color.inkSoft,
+                }}>{tag}</div>
+              ))}
+              {recipeMethods.map(m => (
+                <div key={`m-${m}`} style={{
+                  background: 'transparent', border: `0.5px solid ${color.rule}`,
+                  borderRadius: '4px', padding: '3px 8px',
+                  fontSize: '9px', fontWeight: 500, letterSpacing: '1.5px',
+                  textTransform: 'uppercase', color: color.inkSoft,
+                }}>{m}</div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {/* ── Photo Strip (secondary photos) ──────────────────────────── */}
@@ -294,8 +300,20 @@ export default function RecipeCard({ appUser }) {
 
       {/* ── Header Card ───────────────────────────────────────────────── */}
       <div style={{ padding: '20px 22px 0', animation: 'fadeUp 0.4s ease 0.10s both' }}>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 500, color: color.ink, lineHeight: 1.25, marginBottom: '4px' }}>
-          {recipe.name}
+        {/* Title — split-last-word italic --rust per Direction A */}
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '28px', fontWeight: 400, color: color.ink, lineHeight: 1.15, letterSpacing: '-0.01em', marginBottom: '4px' }}>
+          {(() => {
+            const words = (recipe.name || '').trim().split(/\s+/)
+            if (words.length < 2) return recipe.name
+            const head = words.slice(0, -1).join(' ')
+            const tail = words[words.length - 1]
+            return (
+              <>
+                {head}{' '}
+                <em style={{ fontStyle: 'italic', color: color.rust, fontWeight: 400 }}>{tail}</em>
+              </>
+            )
+          })()}
         </div>
         {attribution && (
           <div style={{ fontSize: '12px', color: color.inkSoft, fontWeight: 300, marginBottom: '4px' }}>
@@ -337,29 +355,27 @@ export default function RecipeCard({ appUser }) {
         )}
       </div>
 
-      {/* ── Stat Row ──────────────────────────────────────────────────── */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0',
-        margin: '16px 22px 0', background: 'white',
-        border: '1px solid rgba(200,185,160,0.45)', borderRadius: '12px',
-        overflow: 'hidden', animation: 'fadeUp 0.4s ease 0.14s both',
-      }}>
-        {[
-          { icon: <ClockIcon />, val: prepStr || '—', label: 'Prep' },
-          { icon: <FlameIcon />, val: cookStr || '—', label: 'Cook' },
-          { icon: <PeopleIcon />, val: recipe.servings || '—', label: 'Serves' },
-          { icon: <SignalIcon />, val: diffLabel, label: 'Level' },
-        ].map((stat, i) => (
-          <div key={stat.label} style={{
-            padding: '12px 6px', textAlign: 'center',
-            borderRight: i < 3 ? '1px solid rgba(200,185,160,0.35)' : 'none',
+      {/* ── Mono eyebrow metadata (Direction A — replaces 4-icon stat row) ── */}
+      {(() => {
+        const totalMin = (recipe.prep_time_minutes || 0) + (recipe.cook_time_minutes || 0)
+        const parts = []
+        if (totalMin > 0) parts.push(`${totalMin} MIN`)
+        if (recipe.servings) parts.push(`SERVES ${recipe.servings}`)
+        if (recipe.times_cooked > 0) parts.push(`COOKED ${recipe.times_cooked}×`)
+        if (parts.length === 0) return null
+        return (
+          <div style={{
+            margin: '14px 22px 0',
+            fontFamily: "'Jost', sans-serif",
+            fontSize: '9px', fontWeight: 500,
+            letterSpacing: '0.12em', textTransform: 'uppercase',
+            color: color.inkSoft,
+            animation: 'fadeUp 0.4s ease 0.14s both',
           }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>{stat.icon}</div>
-            <div style={{ fontFamily: "'Jost', sans-serif", fontSize: '15px', color: color.ink, fontWeight: 400 }}>{stat.val}</div>
-            <div style={{ fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: color.inkSoft, fontWeight: 300 }}>{stat.label}</div>
+            {parts.join(' · ')}
           </div>
-        ))}
-      </div>
+        )
+      })()}
 
       {/* ── Action Row ────────────────────────────────────────────────── */}
       <div style={{ padding: '14px 22px 0' }}>
@@ -428,36 +444,36 @@ export default function RecipeCard({ appUser }) {
                   const hasAlts = alts.length > 0
                   const isExpanded = expandedAlts.has(ing.id)
                   return (
-                    <div key={ing.id} style={{ borderBottom: idx < items.length - 1 ? '1px solid rgba(200,185,160,0.4)' : 'none' }}>
+                    <div key={ing.id} style={{ borderTop: idx === 0 ? `1px solid ${color.rule}` : 'none', borderBottom: `1px solid ${color.rule}` }}>
                       <div onClick={() => hasAlts ? setExpandedAlts(prev => { const n = new Set(prev); n.has(ing.id) ? n.delete(ing.id) : n.add(ing.id); return n }) : toggleChecked(ing.id)} style={{
                         display: 'flex', alignItems: 'center', gap: '12px',
-                        padding: '11px 0',
+                        padding: '12px 0',
                         cursor: 'pointer', opacity: isChecked ? 0.7 : 1, transition: 'opacity 0.15s',
                       }}>
                         <div onClick={e => { e.stopPropagation(); toggleChecked(ing.id) }} style={{
-                          width: '22px', height: '22px', borderRadius: '6px',
-                          border: isChecked ? 'none' : '1.5px solid rgba(200,185,160,0.7)',
+                          width: '18px', height: '18px', borderRadius: '4px',
+                          border: isChecked ? 'none' : `1.5px solid ${color.rule}`,
                           flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          background: isChecked ? color.sage : 'white', fontSize: '12px', color: 'white',
+                          background: isChecked ? color.sage : 'transparent', fontSize: '11px', color: 'white',
                           animation: isChecked ? 'checkPulse 0.2s ease' : 'none',
                           transition: 'background 0.15s, transform 0.1s',
                         }}>
                           {isChecked ? '✓' : ''}
                         </div>
-                        {amountStr && <div style={{ fontSize: '13px', fontWeight: 500, color: color.forest, minWidth: '58px', flexShrink: 0 }}>{amountStr}</div>}
-                        <div style={{ fontSize: '14px', color: isChecked ? color.rule : color.ink, lineHeight: 1.4, textDecoration: isChecked ? 'line-through' : 'none', transition: 'color 0.15s', flex: 1 }}>
+                        <div style={{ fontSize: '14px', color: isChecked ? color.inkSoft : color.ink, lineHeight: 1.4, textDecoration: isChecked ? 'line-through' : 'none', transition: 'color 0.15s', flex: 1, minWidth: 0 }}>
                           {nameStr}
                           {ing.is_optional && <span style={{ fontSize: '11px', color: color.inkSoft, marginLeft: '6px' }}>(optional)</span>}
                         </div>
                         {hasAlts && (
                           <span style={{
                             fontSize: '10px', fontWeight: 500, color: color.honey,
-                            background: 'rgba(196,154,60,0.1)', padding: '2px 6px', borderRadius: '4px',
+                            background: alpha.honey[10], padding: '2px 6px', borderRadius: '4px',
                             flexShrink: 0,
                           }}>
                             +{alts.length} alt{alts.length > 1 ? 's' : ''}
                           </span>
                         )}
+                        {amountStr && <div style={{ fontFamily: "'Jost', sans-serif", fontSize: '13px', fontWeight: 400, color: color.inkSoft, fontVariantNumeric: 'tabular-nums', flexShrink: 0, textAlign: 'right' }}>{amountStr}</div>}
                       </div>
                       {hasAlts && isExpanded && (
                         <div style={{ paddingLeft: '34px', paddingBottom: '8px' }}>
