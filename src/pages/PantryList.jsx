@@ -13,6 +13,8 @@ import { injectMealPlanToList } from '../lib/injectMealPlanToList'
 import { getWeekDatesTZ, getWeekStartTZ } from '../lib/dateUtils'
 import { hasSeenTooltip, dismissTooltip } from '../lib/tooltips'
 import TopBar from '../components/TopBar'
+import PageEyebrow from '../components/PageEyebrow'
+import KitchenNote from '../components/KitchenNote'
 import BottomSheet from '../components/BottomSheet'
 import BottomNav from '../components/BottomNav'
 import SageNudgeCard from '../components/SageNudgeCard'
@@ -719,6 +721,16 @@ export default function PantryList({ appUser }) {
       }}>
       <TopBar />
 
+      {/* Direction A page header */}
+      <PageEyebrow
+        kicker={`SHOPPING · ${(() => {
+          const d = new Date()
+          return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()
+        })()}`}
+        title="The list."
+        subtitle="Your family's living grocery list."
+      />
+
       {/* Sub-tab strip */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', margin: '0 22px' }}>
         {[['Items to Buy', 'items'], ['On Hand', 'on-hand'], ['Trips', 'trips']].map(([label, key]) => {
@@ -728,9 +740,9 @@ export default function PantryList({ appUser }) {
               padding: '14px', textAlign: 'center',
               fontFamily: "'Jost', sans-serif", fontSize: '12px',
               fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase',
-              color: active ? arcColor : color.inkSoft,
+              color: active ? color.sage : color.inkSoft,
               cursor: active ? 'default' : 'pointer', border: 'none', background: 'none',
-              borderBottom: active ? `2px solid ${arcColor}` : '2px solid transparent',
+              borderBottom: active ? `2px solid ${color.sage}` : '2px solid transparent',
               transition: 'color 0.2s cubic-bezier(0.22,1,0.36,1), border-color 0.2s cubic-bezier(0.22,1,0.36,1)',
             }}>{label}</button>
           )
@@ -889,7 +901,8 @@ export default function PantryList({ appUser }) {
 
         {grouped.map(group => (
           <div key={group.cat} style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: arcColor, marginBottom: '6px', marginTop: '24px', borderLeft: `3px solid ${arcColor}`, paddingLeft: '10px' }}>
+            {/* Direction A section header — Playfair italic */}
+            <div style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic', fontSize: '15px', color: color.ink, marginBottom: '6px', marginTop: '20px' }}>
               {group.label}
             </div>
             {group.items.map(item => {
@@ -1097,7 +1110,7 @@ export default function PantryList({ appUser }) {
                     )}
                     {ctGrouped.map(group => (
                       <div key={group.cat} style={{ marginTop: '10px' }}>
-                        <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: arcColor, marginBottom: '4px', marginTop: '24px', borderLeft: `3px solid ${arcColor}`, paddingLeft: '10px' }}>
+                        <div style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic', fontSize: '14px', color: color.ink, marginBottom: '4px', marginTop: '20px' }}>
                           {group.label}
                         </div>
                         {group.items.map(item => (
