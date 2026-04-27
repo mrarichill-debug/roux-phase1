@@ -3,10 +3,11 @@
  * Shows unique meal names from planned_meals with week count.
  * Tab strip: [ Meals ] [ Recipes ] [ Staples ]
  */
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { logActivity } from '../lib/activityLog'
+import { uploadMealPhoto } from '../lib/uploadMealPhoto'
 import TopBar from '../components/TopBar'
 import BottomSheet from '../components/BottomSheet'
 import BottomNav from '../components/BottomNav'
@@ -236,6 +237,38 @@ export default function Meals({ appUser }) {
     navigate('/plan', { state: { prefillMeal: meal.name, prefillType: meal.meal_type } })
   }
 
+  // Photo upload — meal-photos bucket, optimistic update, writes meals.photo_url.
+  // Only available on meals with a real id (not orphan/legacy rows aggregated
+  // from planned_meals.custom_name).
+  const photoInputRef = useRef(null)
+  const [uploadingMealId, setUploadingMealId] = useState(null)
+
+  async function handleMealPhoto(e, meal) {
+    const file = e.target.files?.[0]
+    if (!file || !meal?.id) return
+    e.target.value = '' // allow re-selecting the same file later
+    if (!appUser?.household_id) return
+    setUploadingMealId(meal.id)
+    try {
+      const { publicUrl } = await uploadMealPhoto({
+        file,
+        householdId: appUser.household_id,
+        mealId: meal.id,
+      })
+      const { error } = await supabase.from('meals').update({ photo_url: publicUrl }).eq('id', meal.id)
+      if (error) throw error
+      // Optimistic update of the local list
+      setMeals(prev => prev.map(m => m.id === meal.id ? { ...m, photo_url: publicUrl } : m))
+      setSelectedMeal(prev => prev && prev.id === meal.id ? { ...prev, photo_url: publicUrl } : prev)
+      logActivity({ user: appUser, actionType: 'meal_photo_added', targetType: 'meal', targetId: meal.id, targetName: meal.name })
+    } catch (err) {
+      console.error('[Meals] Photo upload failed:', err)
+      alert(`Photo upload failed: ${err.message || err}`)
+    } finally {
+      setUploadingMealId(null)
+    }
+  }
+
   const filterPill = (label, active, onClick) => (
     <button onClick={onClick} style={{
       padding: '6px 14px', borderRadius: '20px',
@@ -393,7 +426,7 @@ export default function Meals({ appUser }) {
               width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
               background: arcColor, color: 'white', cursor: 'pointer',
               fontFamily: "'Jost', sans-serif", fontSize: '15px', fontWeight: 500,
-              boxShadow: '0 4px 16px rgba(30,55,35,0.25)',
+              boxShadow: elevation.modal,
             }}>Add to this week</button>
             <button onClick={() => { setSelectedMeal(null); openFavPicker(selectedMeal) }} style={{
               width: '100%', padding: '12px', borderRadius: '14px',
@@ -401,6 +434,23 @@ export default function Meals({ appUser }) {
               color: color.ink, cursor: 'pointer',
               fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 400,
             }}>★ Mark as favorite</button>
+            {selectedMeal?.id && (
+              <button
+                onClick={() => photoInputRef.current?.click()}
+                disabled={uploadingMealId === selectedMeal?.id}
+                style={{
+                  width: '100%', padding: '12px', borderRadius: '14px',
+                  border: `1px solid ${color.rule}`, background: 'white',
+                  color: color.ink, cursor: 'pointer',
+                  fontFamily: "'Jost', sans-serif", fontSize: '14px', fontWeight: 400,
+                  opacity: uploadingMealId === selectedMeal?.id ? 0.6 : 1,
+                }}
+              >
+                {uploadingMealId === selectedMeal?.id
+                  ? 'Uploading…'
+                  : selectedMeal.photo_url ? '📷 Change photo' : '📷 Add a photo'}
+              </button>
+            )}
             <button onClick={() => setSelectedMeal(null)} style={{
               width: '100%', padding: '12px', borderRadius: '14px', border: 'none',
               background: 'none', color: color.inkSoft, cursor: 'pointer',
@@ -409,6 +459,14 @@ export default function Meals({ appUser }) {
           </div>
         </div>
       </BottomSheet>
+      {/* Hidden file input — single ref reused for whichever meal is selected */}
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/heic"
+        onChange={(e) => handleMealPhoto(e, selectedMeal)}
+        style={{ display: 'none' }}
+      />
 
       {/* Favorites member picker */}
       <BottomSheet isOpen={favPickerOpen} onClose={() => setFavPickerOpen(false)}>
