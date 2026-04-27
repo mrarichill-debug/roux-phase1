@@ -1224,40 +1224,48 @@ export default function ThisWeek({ appUser }) {
             const dt = dayTypes[dowKey]
             const isCollapsed = collapsedDays.has(dowKey)
 
-            // Direction A summary line: surface a primary meal name + a mono
-            // status eyebrow when collapsed. Prefer dinner; fall back to first.
-            const primaryMeal = dayMeals.find(m => m.meal_type === 'dinner') || dayMeals[0]
-            const primaryName = primaryMeal ? getMealName(primaryMeal) : null
-            const statusEyebrow = (() => {
-              if (isToday && primaryMeal) return 'TONIGHT'
-              if (primaryMeal?.status === 'cooked') return 'MADE'
-              if (primaryMeal?.entry_type === 'eating_out' || primaryMeal?.status === 'eating_out') return 'EATING OUT'
-              if (primaryMeal?.entry_type === 'ghost') return 'PLANNED'
-              if (primaryMeal?.entry_type === 'linked') return 'PLANNED'
-              if (!primaryMeal && dt?.name) return dt.name.toUpperCase()
-              return null
-            })()
+            // Order meals breakfast → lunch → dinner → snack → other → leftovers → eating_out.
+            const sortedDayMeals = [...dayMeals].sort(
+              (a, b) => (MEAL_TYPE_ORDER[a.meal_type] ?? 99) - (MEAL_TYPE_ORDER[b.meal_type] ?? 99)
+            )
+
+            // Mono status eyebrow per meal — small, uppercase, letterspaced.
+            // The "tonight" treatment goes ONLY on today's dinner so the
+            // honey-light wash is one row, not the whole day.
+            const statusFor = (meal) => {
+              if (isToday && meal.meal_type === 'dinner') return 'TONIGHT'
+              if (meal.status === 'cooked') return 'MADE'
+              if (meal.entry_type === 'eating_out' || meal.status === 'eating_out') return 'EATING OUT'
+              return (MEAL_TYPE_LABELS[meal.meal_type] || 'PLANNED').toUpperCase()
+            }
+            const isTonight = (meal) => isToday && meal.meal_type === 'dinner'
 
             return (
               <div key={dowKey} id={`day-${dowKey}`} style={{
-                background: isToday ? color.honeyLight : 'transparent',
                 borderTop: i === 0 ? `1px solid ${color.rule}` : 'none',
                 borderBottom: `1px solid ${color.rule}`,
                 scrollMarginTop: '145px',
                 animation: `fadeUp 0.35s ease ${0.02 + i * 0.03}s both`,
               }}>
-                {/* Day header — tap to toggle. Direction A flat row layout. */}
-                <div onClick={() => toggleDayCollapse(dowKey)} style={{
-                  padding: '14px 22px', cursor: 'pointer', userSelect: 'none',
-                  display: 'grid', gridTemplateColumns: '52px 1fr auto', alignItems: 'center', gap: '14px',
+                {/* Day row — Direction A flat layout. The day cell sits on
+                    the left, vertically aligned to the top; the meals stack
+                    in the center column with each meal independently
+                    tappable. The chevron toggles day-level expansion for
+                    calendar events / day note / speed-dial. */}
+                <div style={{
+                  padding: '14px 22px', userSelect: 'none',
+                  display: 'grid', gridTemplateColumns: '52px 1fr auto',
+                  alignItems: 'start', gap: '14px',
                 }}>
                   {/* Left: italic Playfair 3-letter day abbrev */}
-                  <div style={{
+                  <div onClick={() => toggleDayCollapse(dowKey)} style={{
+                    cursor: 'pointer',
                     fontFamily: "'Playfair Display', serif",
                     fontStyle: 'italic',
                     fontSize: '17px',
                     color: isToday ? color.honeyDark : color.sage,
                     lineHeight: 1.1,
+                    paddingTop: '2px',
                   }}>
                     {DAY_ABBR[i]}
                     <span style={{
@@ -1272,45 +1280,61 @@ export default function ThisWeek({ appUser }) {
                     }}>{date.getDate()}</span>
                   </div>
 
-                  {/* Center: meal name + mono status eyebrow */}
+                  {/* Center: stacked meal sub-rows (or "nothing planned") */}
                   <div style={{ minWidth: 0 }}>
-                    {primaryName ? (
-                      <>
-                        <div style={{
-                          fontFamily: "'Playfair Display', serif",
-                          fontSize: '15px', fontWeight: 500,
-                          color: color.ink, lineHeight: 1.25,
-                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                        }}>
-                          {primaryName}
-                          {dayMeals.length > 1 && (
-                            <span style={{ fontSize: '12px', color: color.inkSoft, fontWeight: 300, marginLeft: '6px' }}>
-                              · +{dayMeals.length - 1}
-                            </span>
-                          )}
-                        </div>
-                        {statusEyebrow && (
-                          <div style={{
-                            fontFamily: "'Jost', sans-serif",
-                            fontSize: '9px', fontWeight: 500,
-                            letterSpacing: '0.16em', textTransform: 'uppercase',
-                            color: isToday ? color.honeyDark : color.inkSoft,
-                            marginTop: '4px',
-                          }}>{statusEyebrow}</div>
-                        )}
-                      </>
-                    ) : (
-                      <div style={{
+                    {sortedDayMeals.length === 0 ? (
+                      <div onClick={() => toggleDayCollapse(dowKey)} style={{
+                        cursor: 'pointer',
                         fontFamily: "'Playfair Display', serif",
                         fontStyle: 'italic',
                         fontSize: '14px',
                         color: color.inkSoft,
+                        paddingTop: '2px',
                       }}>nothing planned</div>
+                    ) : (
+                      sortedDayMeals.map((meal, mi) => (
+                        <div
+                          key={meal.id}
+                          onClick={(e) => { e.stopPropagation(); setBatchEditMealId(meal.id) }}
+                          style={{
+                            cursor: 'pointer',
+                            padding: mi === 0 ? '0 0 8px' : '8px 0',
+                            borderTop: mi === 0 ? 'none' : `1px solid ${alpha.rule[25]}`,
+                            // honey-light wash for today's dinner row only —
+                            // lets the "TONIGHT" pulse live on a single sub-row
+                            // rather than the whole day's container.
+                            background: isTonight(meal) ? color.honeyLight : 'transparent',
+                            margin: isTonight(meal)
+                              ? `${mi === 0 ? '-14px' : '0'} -22px 0 -22px`
+                              : 0,
+                            paddingLeft: isTonight(meal) ? '22px' : 0,
+                            paddingRight: isTonight(meal) ? '22px' : 0,
+                            paddingTop: isTonight(meal) && mi === 0 ? '14px' : (mi === 0 ? '0' : '8px'),
+                          }}>
+                          <div style={{
+                            fontFamily: "'Playfair Display', serif",
+                            fontSize: '15px', fontWeight: 500,
+                            color: color.ink, lineHeight: 1.25,
+                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                          }}>{getMealName(meal)}</div>
+                          <div style={{
+                            fontFamily: "'Jost', sans-serif",
+                            fontSize: '9px', fontWeight: 500,
+                            letterSpacing: '0.16em', textTransform: 'uppercase',
+                            color: isTonight(meal) ? color.honeyDark : color.inkSoft,
+                            marginTop: '3px',
+                          }}>{statusFor(meal)}</div>
+                        </div>
+                      ))
                     )}
                   </div>
 
-                  {/* Right: day-type pill (small) + chevron */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {/* Right: day-type pill + chevron */}
+                  <div onClick={() => toggleDayCollapse(dowKey)} style={{
+                    cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    paddingTop: '2px',
+                  }}>
                     {dt && (
                       <span style={{
                         fontSize: '9px', fontWeight: 500, letterSpacing: '0.8px', textTransform: 'uppercase',
