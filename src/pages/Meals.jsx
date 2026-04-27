@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase'
 import { logActivity } from '../lib/activityLog'
 import { uploadMealPhoto } from '../lib/uploadMealPhoto'
 import TopBar from '../components/TopBar'
+import PageEyebrow from '../components/PageEyebrow'
 import BottomSheet from '../components/BottomSheet'
 import BottomNav from '../components/BottomNav'
 import { useArc } from '../context/ArcContext'
@@ -288,6 +289,13 @@ export default function Meals({ appUser }) {
     }}>
       <TopBar />
 
+      {/* Direction A page header */}
+      <PageEyebrow
+        kicker={`MEALS · ${meals.length} SAVED`}
+        title="The cookbook."
+        subtitle="Recipes you've made, edited, and trust."
+      />
+
       {/* Sub-tab strip */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', margin: '0 22px' }}>
         {[['Meals', '/meals/history'], ['Recipes', '/meals/recipes'], ['Staples', '/meals/staples']].map(([label, path]) => {
@@ -297,9 +305,9 @@ export default function Meals({ appUser }) {
               padding: '14px', textAlign: 'center',
               fontFamily: "'Jost', sans-serif", fontSize: '12px',
               fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase',
-              color: active ? arcColor : color.inkSoft,
+              color: active ? color.sage : color.inkSoft,
               cursor: active ? 'default' : 'pointer', border: 'none', background: 'none',
-              borderBottom: active ? `2px solid ${arcColor}` : '2px solid transparent',
+              borderBottom: active ? `2px solid ${color.sage}` : '2px solid transparent',
               transition: 'color 0.2s cubic-bezier(0.22,1,0.36,1), border-color 0.2s cubic-bezier(0.22,1,0.36,1)',
             }}>{label}</button>
           )
@@ -349,7 +357,40 @@ export default function Meals({ appUser }) {
         }}>{filterSummary}</button>
       )}
 
-      <div style={{ padding: '8px 22px 0' }}>
+      {/* Page-level filter chips — Direction A square style */}
+      <div style={{
+        padding: '4px 22px 12px',
+        display: 'flex', gap: '6px', flexWrap: 'wrap',
+      }}>
+        {[
+          ['All', null],
+          ['Breakfast', 'Breakfast'],
+          ['Lunch', 'Lunch'],
+          ['Dinner', 'Dinner'],
+          ['Snack', 'Snack'],
+        ].map(([label, val]) => {
+          const active = (val === null && !typeFilter) || typeFilter === val
+          return (
+            <button
+              key={label}
+              onClick={() => setTypeFilter(val)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '4px',
+                border: active ? `1px solid ${color.sage}` : `1px solid ${color.rule}`,
+                background: active ? color.sage : color.surface,
+                color: active ? 'white' : color.inkSoft,
+                fontFamily: "'Jost', sans-serif",
+                fontSize: '12px',
+                fontWeight: active ? 500 : 400,
+                cursor: 'pointer',
+              }}
+            >{label}</button>
+          )
+        })}
+      </div>
+
+      <div style={{ padding: '4px 22px 0' }}>
         {loading ? (
           <div>
             {[1,2,3,4,5].map(i => <div key={i} className="shimmer-block" style={{ height: '72px', borderRadius: '14px', marginBottom: '10px' }} />)}
@@ -365,54 +406,122 @@ export default function Meals({ appUser }) {
               </div>
             )}
           </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {filteredMeals.map((m, i) => {
-              const favMembers = getMealFavMembers(m.name)
-              return (
-                <button key={i} onClick={() => setSelectedMeal(m)} style={{
-                  background: 'white', borderRadius: '14px', padding: '14px 16px',
-                  border: `1px solid ${color.rule}`, cursor: 'pointer',
-                  textAlign: 'left', width: '100%',
-                  opacity: 0, animation: `fadeUp 0.4s ease ${0.03 * Math.min(i, 10)}s forwards`,
-                }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      fontFamily: "'Playfair Display', serif", fontSize: '16px',
-                      fontWeight: 500, color: color.ink, marginBottom: '6px',
-                    }}>{m.name}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      {MEAL_TYPE_LABELS[m.meal_type] && (
-                        <span style={{
-                          fontSize: '10px', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase',
-                          padding: '2px 8px', borderRadius: '4px',
-                          background: `${arcColor}12`, color: arcColor,
+        ) : (() => {
+          // Direction A mixed grid:
+          // - First up to 2 meals with photo_url → Featured (full-width).
+          // - Everything else → 2-col compact grid (photo if present, color block if not).
+          const photoMeals = filteredMeals.filter(m => m.photo_url)
+          const featured = photoMeals.slice(0, 2)
+          const featuredIds = new Set(featured.map(m => m.id))
+          const grid = filteredMeals.filter(m => !featuredIds.has(m.id))
+          return (
+            <>
+              {/* Featured row */}
+              {featured.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '14px' }}>
+                  {featured.map((m, i) => {
+                    const made = m.weekCount
+                    return (
+                      <button
+                        key={`feat-${m.id}`}
+                        onClick={() => setSelectedMeal(m)}
+                        style={{
+                          width: '100%', position: 'relative',
+                          padding: 0, border: 'none', cursor: 'pointer',
+                          borderRadius: '12px', overflow: 'hidden',
+                          background: `url(${m.photo_url}) center/cover no-repeat`,
+                          aspectRatio: '1.6',
+                          opacity: 0, animation: `fadeUp 0.4s ease ${0.03 * i}s forwards`,
+                        }}
+                      >
+                        <div style={{
+                          position: 'absolute', inset: 0,
+                          background: 'linear-gradient(transparent 50%, rgba(0,0,0,0.55))',
+                        }} />
+                        <div style={{
+                          position: 'absolute', left: '14px', right: '14px', bottom: '12px',
+                          textAlign: 'left',
+                        }}>
+                          <div style={{
+                            fontFamily: "'Playfair Display', serif",
+                            fontSize: '20px', fontWeight: 500,
+                            color: 'white', lineHeight: 1.2,
+                          }}>{m.name}</div>
+                          <div style={{
+                            fontFamily: "'Jost', sans-serif",
+                            fontSize: '11px', fontWeight: 300,
+                            color: 'rgba(255,255,255,0.7)',
+                            marginTop: '4px',
+                          }}>
+                            {made > 0 ? `Made ${made}× · ${formatLastDate(m.lastDate) || 'recently'}` : 'Saved'}
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* 2-col compact grid */}
+              <div style={{
+                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px',
+              }}>
+                {grid.map((m, i) => {
+                  const favMembers = getMealFavMembers(m.name)
+                  return (
+                    <button
+                      key={`grid-${m.id ?? `o-${i}`}`}
+                      onClick={() => setSelectedMeal(m)}
+                      style={{
+                        background: color.surface,
+                        borderRadius: '8px', padding: 0,
+                        border: `1px solid ${color.rule}`,
+                        cursor: 'pointer', textAlign: 'left', width: '100%',
+                        overflow: 'hidden',
+                        opacity: 0, animation: `fadeUp 0.4s ease ${0.03 * Math.min(i, 10)}s forwards`,
+                        display: 'flex', flexDirection: 'column',
+                      }}
+                    >
+                      {m.photo_url ? (
+                        <div style={{
+                          width: '100%', aspectRatio: '1.4',
+                          background: `url(${m.photo_url}) center/cover no-repeat`,
+                        }} />
+                      ) : (
+                        <div style={{
+                          width: '100%', height: '40px',
+                          background: color.forestLight,
+                        }} />
+                      )}
+                      <div style={{ padding: '10px 12px 12px' }}>
+                        <div style={{
+                          fontFamily: "'Playfair Display', serif", fontSize: '14px',
+                          fontWeight: 500, color: color.ink, lineHeight: 1.25,
+                          marginBottom: '4px',
+                        }}>{m.name}</div>
+                        <div style={{
                           fontFamily: "'Jost', sans-serif",
-                        }}>{MEAL_TYPE_LABELS[m.meal_type]}</span>
-                      )}
-                      <span style={{ fontSize: '12px', color: color.inkSoft, fontWeight: 300 }}>
-                        {m.weekCount} week{m.weekCount !== 1 ? 's' : ''}
-                      </span>
-                      {m.lastDate && (
-                        <span style={{ fontSize: '12px', color: color.inkSoft, fontWeight: 300 }}>
-                          · {formatLastDate(m.lastDate)}
-                        </span>
-                      )}
-                    </div>
-                    {favMembers.length > 0 && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px' }}>
-                        <span style={{ fontSize: '11px', color: color.honey }}>★</span>
-                        <span style={{ fontSize: '11px', color: color.inkSoft, fontWeight: 300 }}>
-                          {favMembers.map(fm => fm.name.split(' ')[0]).join(', ')}
-                        </span>
+                          fontSize: '11px', fontWeight: 300, color: color.inkSoft,
+                        }}>
+                          {m.weekCount > 0 ? `Made ${m.weekCount}×` : 'Saved'}
+                          {m.lastDate && ` · ${formatLastDate(m.lastDate)}`}
+                        </div>
+                        {favMembers.length > 0 && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', marginTop: '4px' }}>
+                            <span style={{ fontSize: '10px', color: color.honey }}>★</span>
+                            <span style={{ fontSize: '10px', color: color.inkSoft, fontWeight: 300 }}>
+                              {favMembers.map(fm => fm.name.split(' ')[0]).join(', ')}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-        )}
+                    </button>
+                  )
+                })}
+              </div>
+            </>
+          )
+        })()}
       </div>
 
       {/* Tap-to-add bottom sheet */}
