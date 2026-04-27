@@ -16,6 +16,7 @@ import { fetchCalendarEvents, getEventsForDate } from '../lib/calendarSync'
 import { sageBusyNightDetection } from '../lib/sageBusyNightDetection'
 import { hasSeenTooltip, dismissTooltip } from '../lib/tooltips'
 import TopBar from '../components/TopBar'
+import PageEyebrow from '../components/PageEyebrow'
 import SageNudgeCard from '../components/SageNudgeCard'
 import BottomSheet from '../components/BottomSheet'
 import BottomNav from '../components/BottomNav'
@@ -1015,6 +1016,16 @@ export default function ThisWeek({ appUser }) {
     }}>
       <TopBar />
 
+      {/* Direction A page header — sits above the existing week-nav.
+          Subtitle echoes the spec; "Drag to rearrange" still maps to
+          the existing accordion + speed-dial interactions, which Phase 7
+          preserves. */}
+      <PageEyebrow
+        kicker={`WEEK OF ${dateRangeStr}`}
+        title="The plan."
+        subtitle="Drag to rearrange. Roux fills the gaps."
+      />
+
       {/* ── Week Header (swipe left/right to change weeks) ─────── */}
       <div
         onTouchStart={e => setTouchStart(e.touches[0].clientX)}
@@ -1096,7 +1107,7 @@ export default function ThisWeek({ appUser }) {
       <div style={{
         display: 'flex', gap: '4px', padding: '8px 22px 12px',
         overflowX: 'auto', WebkitOverflowScrolling: 'touch',
-        position: 'sticky', top: '66px', zIndex: 10,
+        position: 'sticky', top: '52px', zIndex: 10,
         background: color.paper,
         boxShadow: elevation.cardRaised,
       }}>

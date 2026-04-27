@@ -392,7 +392,7 @@ export default function RecipeCard({ appUser }) {
       {/* ── Tabs ──────────────────────────────────────────────────────── */}
       <div style={{
         display: 'grid', gridTemplateColumns: '1fr 1fr',
-        margin: '16px 22px 0', position: 'sticky', top: '58px', zIndex: 50,
+        margin: '16px 22px 0', position: 'sticky', top: '52px', zIndex: 50,
         background: color.paper,
       }}>
         {['ingredients', 'directions'].map(tab => (
