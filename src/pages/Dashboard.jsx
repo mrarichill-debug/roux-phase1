@@ -11,6 +11,9 @@ import { fetchCalendarEvents } from '../lib/calendarSync'
 import { sageBusyNightDetection } from '../lib/sageBusyNightDetection'
 import WatermarkLayer from '../components/WatermarkLayer'
 import TopBar from '../components/TopBar'
+import PageEyebrow from '../components/PageEyebrow'
+import HairlineRow from '../components/HairlineRow'
+import KitchenNote from '../components/KitchenNote'
 import { getWeekDatesTZ, getWeekStartTZ, getDayOfWeekTZ, timeGreetingTZ } from '../lib/dateUtils'
 import BottomNav from '../components/BottomNav'
 import { getSageIntelligence } from '../lib/getSageIntelligence'
@@ -326,6 +329,27 @@ export default function Dashboard({ appUser }) {
   // Plan status text for greeting
   const plannedCount = Math.min(new Set(weekMeals.map(m => m.day_of_week)).size, 7)
 
+  // Up next: next 2 planned meals after today (Mon-based week ordering).
+  const upNextMeals = useMemo(() => {
+    if (loading) return []
+    const order = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']
+    const labels = { monday:'Mon', tuesday:'Tue', wednesday:'Wed', thursday:'Thu', friday:'Fri', saturday:'Sat', sunday:'Sun' }
+    const todayIdx = order.indexOf(todayDow)
+    const futureIdx = (dow) => {
+      const i = order.indexOf(dow)
+      return i > todayIdx ? i : i + 100  // push past-week days to the back
+    }
+    return weekMeals
+      .filter(m => order.indexOf(m.day_of_week) > todayIdx)
+      .sort((a, b) => futureIdx(a.day_of_week) - futureIdx(b.day_of_week))
+      .slice(0, 2)
+      .map(m => ({
+        day_of_week: m.day_of_week,
+        shortDow: labels[m.day_of_week] || '',
+        name: m.custom_name || m.note || 'Untitled',
+      }))
+  }, [loading, weekMeals, todayDow])
+
   return (
     <div className="page-scroll-container" style={{
       background: color.paper,
@@ -347,33 +371,14 @@ export default function Dashboard({ appUser }) {
       {/* ── Scrollable content ────────────────────────────────────────────── */}
       <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
 
-        {/* ── Greeting ──────────────────────────────────────────────────── */}
-        <div style={{
-          padding: '20px 18px 0',
-          animation: 'fadeUp 0.4s ease both',
-        }}>
-          <div style={{
-            fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase',
-            color: color.inkSoft, fontWeight: 500, marginBottom: '6px',
-          }}>
-            {formatGreetingDate(today)}
-          </div>
-
-          <h1 style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: '20px', fontWeight: 500, color: color.ink, lineHeight: 1.3,
-            margin: 0,
-          }}>
-            {timeGreetingTZ(tz)}, {loading ? '…' : `${firstName}.`}
-          </h1>
-
-          {!loading && (
-            <div style={{
-              marginTop: '4px', fontSize: '11px', color: color.inkSoft, fontWeight: 300,
-            }}>
-              {plannedCount} of 7 nights planned
-            </div>
-          )}
+        {/* ── Greeting (PageEyebrow) ────────────────────────────────────── */}
+        <div style={{ animation: 'fadeUp 0.4s ease both' }}>
+          <PageEyebrow
+            kicker={formatGreetingDate(today)}
+            title={`${timeGreetingTZ(tz)},`}
+            titleAccent={loading ? '…' : `${firstName}.`}
+            subtitle={loading ? null : `${plannedCount} of 7 nights planned`}
+          />
         </div>
 
         {/* ── This Week Strip ───────────────────────────────────────────── */}
@@ -426,14 +431,58 @@ export default function Dashboard({ appUser }) {
           </div>
         )}
 
-        {/* ── Intelligence section ─────────────────────────────────────── */}
+        {/* ── A note from your kitchen (Direction A pull-quote) ────────── */}
         {loading ? (
-          <ShimmerCard height="100px" margin="14px 18px 0" />
+          <ShimmerCard height="84px" margin="14px 0 0" />
         ) : intel ? (
-          <IntelligenceCard intel={intel} navigate={navigate} arcColor={arcColor} arcStage={arcStage} />
+          <KitchenNote>{intel.message}</KitchenNote>
         ) : jokeData ? (
-          <HumorCard joke={jokeData.text} arcColor={arcColor} />
+          <KitchenNote>{jokeData.text}</KitchenNote>
         ) : null}
+
+        {/* ── Up next this week (HairlineRow list — next 2 planned meals) ── */}
+        {!loading && (() => {
+          const rest = upNextMeals
+          if (rest.length === 0) return null
+          return (
+            <div style={{ marginTop: '14px' }}>
+              <div style={{
+                padding: '0 22px 8px',
+                fontSize: '9px', fontWeight: 500, letterSpacing: '0.12em',
+                textTransform: 'uppercase', color: color.inkSoft,
+                fontFamily: "'Jost', sans-serif",
+              }}>
+                Up next this week
+              </div>
+              {rest.map((m, i) => (
+                <HairlineRow
+                  key={m.day_of_week}
+                  isLast={i === rest.length - 1}
+                  onClick={() => navigate('/plan')}
+                  left={
+                    <span style={{
+                      fontFamily: "'Playfair Display', serif",
+                      fontStyle: 'italic',
+                      fontSize: '14px',
+                      color: color.sage,
+                      width: '40px',
+                      display: 'inline-block',
+                    }}>{m.shortDow}</span>
+                  }
+                  center={
+                    <span style={{
+                      fontFamily: "'Jost', sans-serif",
+                      fontSize: '14px',
+                      color: color.ink,
+                      fontWeight: 400,
+                    }}>{m.name}</span>
+                  }
+                  right={<span style={{ fontSize: '16px' }}>›</span>}
+                />
+              ))}
+            </div>
+          )
+        })()}
 
       </div>
 
@@ -729,7 +778,7 @@ function WeekStrip({ weekDates, weekMeals, todayMbIdx, onSeeAll, arcColor }) {
         </button>
       </div>
 
-      {/* Day tiles */}
+      {/* Day tiles — sage-light fill for planned, sage outline ring for today */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '5px' }}>
         {weekDates.map((d, i) => {
           const isToday    = i === todayMbIdx
@@ -743,24 +792,24 @@ function WeekStrip({ weekDates, weekMeals, todayMbIdx, onSeeAll, arcColor }) {
               style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
                 padding: '7px 2px 6px', borderRadius: '10px',
-                background: hasPlanned ? color.forest : 'transparent',
-                outline: isToday && !hasPlanned ? `1.5px solid ${arcColor}` : 'none',
-                outlineOffset: isToday && !hasPlanned ? '1px' : undefined,
-                border: hasPlanned ? 'none' : !isToday ? `1px solid ${color.rule}` : 'none',
+                background: hasPlanned ? color.sageLight : 'transparent',
+                outline: isToday ? `1.5px solid ${color.sage}` : 'none',
+                outlineOffset: isToday ? '1px' : undefined,
+                border: hasPlanned || isToday ? 'none' : `1px solid ${color.rule}`,
                 cursor: 'pointer',
               }}
             >
               <span style={{
                 fontSize: '8px', fontWeight: 500, letterSpacing: '0.8px',
                 textTransform: 'uppercase',
-                color: hasPlanned ? 'rgba(255,255,255,0.6)' : isToday ? arcColor : color.inkSoft,
+                color: hasPlanned ? color.sageDark : isToday ? color.sage : color.inkSoft,
               }}>
                 {MON_SHORT[i]}
               </span>
               <span style={{
                 fontFamily: "'Playfair Display', serif",
                 fontSize: '15px', fontWeight: 400, lineHeight: 1,
-                color: hasPlanned ? 'white' : isToday ? color.ink : 'rgba(140,123,107,0.5)',
+                color: hasPlanned ? color.ink : isToday ? color.ink : color.inkSoft,
               }}>
                 {d.getDate()}
               </span>
